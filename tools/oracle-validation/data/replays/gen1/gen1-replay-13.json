@@ -1,0 +1,3152 @@
+{
+  "id": "",
+  "format": "[Gen 1] OU",
+  "generation": 1,
+  "players": [
+    "BeeOrSomething",
+    "Isza"
+  ],
+  "teams": [
+    [
+      {
+        "species": "Tauros",
+        "level": 100,
+        "knownMoves": [
+          "body-slam"
+        ],
+        "nickname": "Spear Of Longinus"
+      },
+      {
+        "species": "Chansey",
+        "level": 100,
+        "knownMoves": [
+          "sing",
+          "soft-boiled",
+          "seismic-toss",
+          "thunder-wave"
+        ],
+        "nickname": "Terminal Dogma"
+      },
+      {
+        "species": "Cloyster",
+        "level": 100,
+        "knownMoves": [],
+        "nickname": "Chamber Of Guf"
+      },
+      {
+        "species": "Rhydon",
+        "level": 100,
+        "knownMoves": [
+          "body-slam",
+          "earthquake",
+          "substitute"
+        ],
+        "nickname": "Black Moon"
+      },
+      {
+        "species": "Starmie",
+        "level": 100,
+        "knownMoves": [
+          "thunder-wave"
+        ],
+        "nickname": "Dead Sea Scrolls"
+      },
+      {
+        "species": "Exeggutor",
+        "level": 100,
+        "knownMoves": [
+          "psychic",
+          "sleep-powder"
+        ],
+        "nickname": "Tree Of Life"
+      }
+    ],
+    [
+      {
+        "species": "Alakazam",
+        "level": 100,
+        "knownMoves": [
+          "psychic",
+          "thunder-wave"
+        ],
+        "nickname": "Alakazam"
+      },
+      {
+        "species": "Snorlax",
+        "level": 100,
+        "knownMoves": [
+          "counter",
+          "self-destruct"
+        ],
+        "nickname": "Snorlax"
+      },
+      {
+        "species": "Zapdos",
+        "level": 100,
+        "knownMoves": [
+          "thunderbolt",
+          "drill-peck"
+        ],
+        "nickname": "Zapdos"
+      },
+      {
+        "species": "Slowbro",
+        "level": 100,
+        "knownMoves": [
+          "surf",
+          "amnesia",
+          "rest"
+        ],
+        "nickname": "Slowbro"
+      },
+      {
+        "species": "Victreebel",
+        "level": 100,
+        "knownMoves": [
+          "razor-leaf",
+          "wrap",
+          "sleep-powder"
+        ],
+        "nickname": "Victreebel"
+      },
+      {
+        "species": "Tauros",
+        "level": 100,
+        "knownMoves": [
+          "body-slam"
+        ],
+        "nickname": "Tauros"
+      }
+    ]
+  ],
+  "turns": [
+    {
+      "turnNumber": 0,
+      "events": [
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Spear Of Longinus"
+          },
+          "species": "Tauros",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alakazam"
+          },
+          "species": "Alakazam",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 1,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 1
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          },
+          "species": "Chansey",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alakazam"
+          },
+          "moveName": "Psychic",
+          "moveId": "psychic",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          },
+          "hp": {
+            "current": 82,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          },
+          "stat": "spa",
+          "amount": 1
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          },
+          "stat": "spd",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "turnNumber": 2,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 2
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alakazam"
+          },
+          "moveName": "Thunder Wave",
+          "moveId": "thunder-wave",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          },
+          "statusId": "par",
+          "statusName": "paralysis"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          },
+          "moveName": "Sing",
+          "moveId": "sing",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alakazam"
+          }
+        },
+        {
+          "type": "miss",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          },
+          "targetIdent": null
+        }
+      ]
+    },
+    {
+      "turnNumber": 3,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 3
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alakazam"
+          },
+          "moveName": "Psychic",
+          "moveId": "psychic",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          }
+        },
+        {
+          "type": "crit",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          },
+          "hp": {
+            "current": 45,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          },
+          "stat": "spa",
+          "amount": 1
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          },
+          "stat": "spd",
+          "amount": 1
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          },
+          "moveName": "Sing",
+          "moveId": "sing",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alakazam"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alakazam"
+          },
+          "statusId": "slp",
+          "statusName": "sleep"
+        }
+      ]
+    },
+    {
+      "turnNumber": 4,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 4
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alakazam"
+          },
+          "reason": "slp"
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          },
+          "reason": "par"
+        }
+      ]
+    },
+    {
+      "turnNumber": 5,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 5
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alakazam"
+          },
+          "reason": "slp"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          },
+          "moveName": "Soft-Boiled",
+          "moveId": "soft-boiled",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          },
+          "hp": {
+            "current": 95,
+            "max": 100,
+            "status": "par"
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 6,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 6
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Spear Of Longinus"
+          },
+          "species": "Tauros",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alakazam"
+          },
+          "reason": "slp"
+        }
+      ]
+    },
+    {
+      "turnNumber": 7,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 7
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "species": "Snorlax",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Spear Of Longinus"
+          },
+          "moveName": "Body Slam",
+          "moveId": "body-slam",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Snorlax"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "hp": {
+            "current": 77,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 8,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 8
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Spear Of Longinus"
+          },
+          "moveName": "Body Slam",
+          "moveId": "body-slam",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Snorlax"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "hp": {
+            "current": 53,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "moveName": "Counter",
+          "moveId": "counter",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Spear Of Longinus"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Spear Of Longinus"
+          },
+          "hp": {
+            "current": 30,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 9,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 9
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chamber Of Guf"
+          },
+          "species": "Cloyster",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "moveName": "Self-Destruct",
+          "moveId": "self-destruct",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chamber Of Guf"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chamber Of Guf"
+          },
+          "hp": {
+            "current": 25,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Snorlax"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "species": "Zapdos",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 10,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 10
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "moveName": "Thunderbolt",
+          "moveId": "thunderbolt",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chamber Of Guf"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chamber Of Guf"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chamber Of Guf"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chamber Of Guf"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Black Moon"
+          },
+          "species": "Rhydon",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 11,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 11
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          },
+          "species": "Slowbro",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Black Moon"
+          },
+          "moveName": "Body Slam",
+          "moveId": "body-slam",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          }
+        },
+        {
+          "type": "crit",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          },
+          "hp": {
+            "current": 62,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          },
+          "statusId": "par",
+          "statusName": "paralysis"
+        }
+      ]
+    },
+    {
+      "turnNumber": 12,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 12
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          },
+          "species": "Chansey",
+          "level": 100,
+          "hp": {
+            "current": 95,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          },
+          "moveName": "Surf",
+          "moveId": "surf",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          },
+          "hp": {
+            "current": 81,
+            "max": 100,
+            "status": "par"
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 13,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 13
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          },
+          "moveName": "Seismic Toss",
+          "moveId": "seismic-toss",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          },
+          "hp": {
+            "current": 37,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          },
+          "moveName": "Amnesia",
+          "moveId": "amnesia",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          },
+          "stat": "spa",
+          "amount": 2
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          },
+          "stat": "spd",
+          "amount": 2
+        }
+      ]
+    },
+    {
+      "turnNumber": 14,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 14
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          },
+          "moveName": "Rest",
+          "moveId": "rest",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          },
+          "statusId": "slp",
+          "statusName": "sleep"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "slp"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          },
+          "moveName": "Seismic Toss",
+          "moveId": "seismic-toss",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          },
+          "hp": {
+            "current": 75,
+            "max": 100,
+            "status": "slp"
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 15,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 15
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          },
+          "reason": "slp"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          },
+          "moveName": "Seismic Toss",
+          "moveId": "seismic-toss",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          },
+          "hp": {
+            "current": 50,
+            "max": 100,
+            "status": "slp"
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 16,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 16
+        },
+        {
+          "type": "curestatus",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          },
+          "statusId": "slp"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          },
+          "moveName": "Thunder Wave",
+          "moveId": "thunder-wave",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          },
+          "statusId": "par",
+          "statusName": "paralysis"
+        }
+      ]
+    },
+    {
+      "turnNumber": 17,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 17
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          },
+          "moveName": "Seismic Toss",
+          "moveId": "seismic-toss",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          },
+          "hp": {
+            "current": 24,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          },
+          "moveName": "Rest",
+          "moveId": "rest",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          },
+          "statusId": "slp",
+          "statusName": "sleep"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "slp"
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 18,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 18
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          },
+          "reason": "par"
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          },
+          "reason": "slp"
+        }
+      ]
+    },
+    {
+      "turnNumber": 19,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 19
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          },
+          "moveName": "Seismic Toss",
+          "moveId": "seismic-toss",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          },
+          "hp": {
+            "current": 75,
+            "max": 100,
+            "status": "slp"
+          }
+        },
+        {
+          "type": "curestatus",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          },
+          "statusId": "slp"
+        }
+      ]
+    },
+    {
+      "turnNumber": 20,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 20
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          },
+          "moveName": "Thunder Wave",
+          "moveId": "thunder-wave",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          },
+          "statusId": "par",
+          "statusName": "paralysis"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          },
+          "moveName": "Amnesia",
+          "moveId": "amnesia",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          },
+          "stat": "spa",
+          "amount": 2
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          },
+          "stat": "spd",
+          "amount": 2
+        }
+      ]
+    },
+    {
+      "turnNumber": 21,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 21
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          },
+          "moveName": "Seismic Toss",
+          "moveId": "seismic-toss",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          },
+          "hp": {
+            "current": 50,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          },
+          "reason": "par"
+        }
+      ]
+    },
+    {
+      "turnNumber": 22,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 22
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Spear Of Longinus"
+          },
+          "species": "Tauros",
+          "level": 100,
+          "hp": {
+            "current": 30,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          },
+          "reason": "par"
+        }
+      ]
+    },
+    {
+      "turnNumber": 23,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 23
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Spear Of Longinus"
+          },
+          "moveName": "Body Slam",
+          "moveId": "body-slam",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          },
+          "hp": {
+            "current": 28,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          },
+          "moveName": "Surf",
+          "moveId": "surf",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Spear Of Longinus"
+          }
+        },
+        {
+          "type": "crit",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Spear Of Longinus"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Spear Of Longinus"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Spear Of Longinus"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Black Moon"
+          },
+          "species": "Rhydon",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 24,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 24
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Black Moon"
+          },
+          "moveName": "Earthquake",
+          "moveId": "earthquake",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Slowbro"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Victreebel"
+          },
+          "species": "Victreebel",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 25,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 25
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          },
+          "species": "Chansey",
+          "level": 100,
+          "hp": {
+            "current": 81,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Victreebel"
+          },
+          "moveName": "Razor Leaf",
+          "moveId": "razor-leaf",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          }
+        },
+        {
+          "type": "crit",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          },
+          "hp": {
+            "current": 62,
+            "max": 100,
+            "status": "par"
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 26,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 26
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Victreebel"
+          },
+          "moveName": "Wrap",
+          "moveId": "wrap",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          },
+          "hp": {
+            "current": 58,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          },
+          "reason": "partiallytrapped"
+        }
+      ]
+    },
+    {
+      "turnNumber": 27,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 27
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dead Sea Scrolls"
+          },
+          "species": "Starmie",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Victreebel"
+          },
+          "moveName": "Wrap",
+          "moveId": "wrap",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dead Sea Scrolls"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dead Sea Scrolls"
+          },
+          "hp": {
+            "current": 96,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 28,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 28
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dead Sea Scrolls"
+          },
+          "reason": "partiallytrapped"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Victreebel"
+          },
+          "moveName": "Wrap",
+          "moveId": "wrap",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dead Sea Scrolls"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dead Sea Scrolls"
+          },
+          "hp": {
+            "current": 92,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 29,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 29
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dead Sea Scrolls"
+          },
+          "reason": "partiallytrapped"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Victreebel"
+          },
+          "moveName": "Wrap",
+          "moveId": "wrap",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dead Sea Scrolls"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dead Sea Scrolls"
+          },
+          "hp": {
+            "current": 88,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 30,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 30
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dead Sea Scrolls"
+          },
+          "reason": "partiallytrapped"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Victreebel"
+          },
+          "moveName": "Wrap",
+          "moveId": "wrap",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dead Sea Scrolls"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dead Sea Scrolls"
+          },
+          "hp": {
+            "current": 84,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 31,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 31
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dead Sea Scrolls"
+          },
+          "reason": "partiallytrapped"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Victreebel"
+          },
+          "moveName": "Wrap",
+          "moveId": "wrap",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dead Sea Scrolls"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dead Sea Scrolls"
+          },
+          "hp": {
+            "current": 80,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 32,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 32
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alakazam"
+          },
+          "species": "Alakazam",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "slp"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dead Sea Scrolls"
+          },
+          "moveName": "Thunder Wave",
+          "moveId": "thunder-wave",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alakazam"
+          }
+        },
+        {
+          "type": "fail",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alakazam"
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 33,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 33
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          },
+          "species": "Chansey",
+          "level": 100,
+          "hp": {
+            "current": 58,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "curestatus",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alakazam"
+          },
+          "statusId": "slp"
+        }
+      ]
+    },
+    {
+      "turnNumber": 34,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 34
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tauros"
+          },
+          "species": "Tauros",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          },
+          "moveName": "Soft-Boiled",
+          "moveId": "soft-boiled",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "par"
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 35,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 35
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tauros"
+          },
+          "moveName": "Body Slam",
+          "moveId": "body-slam",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          }
+        },
+        {
+          "type": "crit",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          },
+          "hp": {
+            "current": 25,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          },
+          "moveName": "Thunder Wave",
+          "moveId": "thunder-wave",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tauros"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tauros"
+          },
+          "statusId": "par",
+          "statusName": "paralysis"
+        }
+      ]
+    },
+    {
+      "turnNumber": 36,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 36
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tauros"
+          },
+          "moveName": "Body Slam",
+          "moveId": "body-slam",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          }
+        },
+        {
+          "type": "crit",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Terminal Dogma"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tree Of Life"
+          },
+          "species": "Exeggutor",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 37,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 37
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tree Of Life"
+          },
+          "moveName": "Psychic",
+          "moveId": "psychic",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tauros"
+          }
+        },
+        {
+          "type": "crit",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tauros"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tauros"
+          },
+          "hp": {
+            "current": 10,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tauros"
+          },
+          "stat": "spa",
+          "amount": 1
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tauros"
+          },
+          "stat": "spd",
+          "amount": 1
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tauros"
+          },
+          "reason": "par"
+        }
+      ]
+    },
+    {
+      "turnNumber": 38,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 38
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "species": "Zapdos",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tree Of Life"
+          },
+          "moveName": "Psychic",
+          "moveId": "psychic",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 71,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 39,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 39
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tauros"
+          },
+          "species": "Tauros",
+          "level": 100,
+          "hp": {
+            "current": 10,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tree Of Life"
+          },
+          "moveName": "Sleep Powder",
+          "moveId": "sleep-powder",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tauros"
+          }
+        },
+        {
+          "type": "fail",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tauros"
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 40,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 40
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tree Of Life"
+          },
+          "moveName": "Psychic",
+          "moveId": "psychic",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tauros"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tauros"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tauros"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Victreebel"
+          },
+          "species": "Victreebel",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 41,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 41
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Victreebel"
+          },
+          "moveName": "Sleep Powder",
+          "moveId": "sleep-powder",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tree Of Life"
+          }
+        },
+        {
+          "type": "miss",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Victreebel"
+          },
+          "targetIdent": null
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tree Of Life"
+          },
+          "moveName": "Sleep Powder",
+          "moveId": "sleep-powder",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Victreebel"
+          }
+        },
+        {
+          "type": "miss",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tree Of Life"
+          },
+          "targetIdent": null
+        }
+      ]
+    },
+    {
+      "turnNumber": 42,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 42
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Victreebel"
+          },
+          "moveName": "Sleep Powder",
+          "moveId": "sleep-powder",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tree Of Life"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tree Of Life"
+          },
+          "statusId": "slp",
+          "statusName": "sleep"
+        },
+        {
+          "type": "curestatus",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tree Of Life"
+          },
+          "statusId": "slp"
+        }
+      ]
+    },
+    {
+      "turnNumber": 43,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 43
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Victreebel"
+          },
+          "moveName": "Sleep Powder",
+          "moveId": "sleep-powder",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tree Of Life"
+          }
+        },
+        {
+          "type": "miss",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Victreebel"
+          },
+          "targetIdent": null
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tree Of Life"
+          },
+          "moveName": "Sleep Powder",
+          "moveId": "sleep-powder",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Victreebel"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Victreebel"
+          },
+          "statusId": "slp",
+          "statusName": "sleep"
+        }
+      ]
+    },
+    {
+      "turnNumber": 44,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 44
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "species": "Zapdos",
+          "level": 100,
+          "hp": {
+            "current": 71,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tree Of Life"
+          },
+          "moveName": "Psychic",
+          "moveId": "psychic",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 42,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 45,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 45
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "moveName": "Drill Peck",
+          "moveId": "drill-peck",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tree Of Life"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tree Of Life"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tree Of Life"
+          },
+          "hp": {
+            "current": 47,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tree Of Life"
+          },
+          "moveName": "Psychic",
+          "moveId": "psychic",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 15,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 46,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 46
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Black Moon"
+          },
+          "species": "Rhydon",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "moveName": "Drill Peck",
+          "moveId": "drill-peck",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Black Moon"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Black Moon"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Black Moon"
+          },
+          "hp": {
+            "current": 91,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 47,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 47
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "moveName": "Drill Peck",
+          "moveId": "drill-peck",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Black Moon"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Black Moon"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Black Moon"
+          },
+          "hp": {
+            "current": 82,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Black Moon"
+          },
+          "moveName": "Substitute",
+          "moveId": "substitute",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Black Moon"
+          }
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Black Moon"
+          },
+          "effect": "Substitute"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Black Moon"
+          },
+          "hp": {
+            "current": 57,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 48,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 48
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "moveName": "Drill Peck",
+          "moveId": "drill-peck",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Black Moon"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Black Moon"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Black Moon"
+          },
+          "moveName": "Body Slam",
+          "moveId": "body-slam",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alakazam"
+          },
+          "species": "Alakazam",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 49,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 49
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alakazam"
+          },
+          "moveName": "Psychic",
+          "moveId": "psychic",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Black Moon"
+          }
+        },
+        {
+          "type": "end",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Black Moon"
+          },
+          "effect": "Substitute"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Black Moon"
+          },
+          "moveName": "Body Slam",
+          "moveId": "body-slam",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alakazam"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alakazam"
+          },
+          "hp": {
+            "current": 59,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alakazam"
+          },
+          "statusId": "par",
+          "statusName": "paralysis"
+        }
+      ]
+    },
+    {
+      "turnNumber": 50,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 50
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Black Moon"
+          },
+          "moveName": "Earthquake",
+          "moveId": "earthquake",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alakazam"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alakazam"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alakazam"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Victreebel"
+          },
+          "species": "Victreebel",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "slp"
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 51,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 51
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Victreebel"
+          },
+          "reason": "slp"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Black Moon"
+          },
+          "moveName": "Earthquake",
+          "moveId": "earthquake",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Victreebel"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Victreebel"
+          },
+          "hp": {
+            "current": 51,
+            "max": 100,
+            "status": "slp"
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 52,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 52
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Victreebel"
+          },
+          "reason": "slp"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Black Moon"
+          },
+          "moveName": "Earthquake",
+          "moveId": "earthquake",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Victreebel"
+          }
+        },
+        {
+          "type": "crit",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Victreebel"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Victreebel"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Victreebel"
+          }
+        },
+        {
+          "type": "win",
+          "winner": "BeeOrSomething"
+        }
+      ]
+    }
+  ],
+  "winner": "BeeOrSomething"
+}

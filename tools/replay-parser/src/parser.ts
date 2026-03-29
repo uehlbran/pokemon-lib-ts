@@ -368,7 +368,11 @@ function parseMoveLine(parts: (string | undefined)[]): ShowdownEvent {
   const moveName = req(parts, 3);
   const moveId = normalizeMoveName(moveName);
   const targetRaw = opt(parts, 4);
-  const targetIdent = targetRaw !== undefined ? parsePokemonIdent(targetRaw) : null;
+  // Showdown appends |[notarget] for moves that have no valid target (e.g., Thunder Wave
+  // targeting an already-paralyzed foe). These start with '[' and are not Pokemon idents.
+  const isFlag = targetRaw !== undefined && targetRaw.startsWith("[");
+  const targetIdent =
+    targetRaw !== undefined && !isFlag ? parsePokemonIdent(targetRaw) : null;
   return { type: "move", userIdent, moveName, moveId, targetIdent };
 }
 

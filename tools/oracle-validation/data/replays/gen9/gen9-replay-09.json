@@ -1,0 +1,1988 @@
+{
+  "id": "",
+  "format": "[Gen 9] OU",
+  "generation": 9,
+  "players": [
+    "Ivanpmd",
+    "swag_serotoninYT"
+  ],
+  "teams": [
+    [
+      {
+        "species": "Ting-Lu",
+        "level": 100,
+        "knownMoves": [
+          "stealth-rock",
+          "earthquake"
+        ],
+        "nickname": "Ting-Lu"
+      },
+      {
+        "species": "Pecharunt",
+        "level": 100,
+        "knownMoves": [
+          "malignant-chain",
+          "parting-shot"
+        ],
+        "nickname": "Pecharunt"
+      },
+      {
+        "species": "Hydrapple",
+        "level": 100,
+        "knownMoves": [
+          "nasty-plot"
+        ],
+        "nickname": "Hydrapple"
+      },
+      {
+        "species": "Kingambit",
+        "level": 100,
+        "knownMoves": [
+          "swords-dance",
+          "iron-head"
+        ],
+        "nickname": "Kingambit"
+      },
+      {
+        "species": "Zamazenta",
+        "level": 100,
+        "knownMoves": [
+          "close-combat",
+          "crunch"
+        ],
+        "nickname": "Zamazenta"
+      }
+    ],
+    [
+      {
+        "species": "Masquerain",
+        "level": 100,
+        "knownMoves": [
+          "sticky-web",
+          "stun-spore",
+          "ice-beam",
+          "bug-buzz"
+        ],
+        "nickname": "Masquerain"
+      },
+      {
+        "species": "Quaquaval",
+        "level": 100,
+        "knownMoves": [
+          "aqua-step",
+          "rapid-spin"
+        ],
+        "nickname": "Quaquaval"
+      },
+      {
+        "species": "Orthworm",
+        "level": 100,
+        "knownMoves": [
+          "body-press",
+          "stealth-rock"
+        ],
+        "nickname": "Orthworm"
+      },
+      {
+        "species": "Gholdengo",
+        "level": 100,
+        "knownMoves": [
+          "nasty-plot"
+        ],
+        "nickname": "Gholdengo"
+      },
+      {
+        "species": "Sandy Shocks",
+        "level": 100,
+        "knownMoves": [
+          "earth-power"
+        ],
+        "nickname": "Sandy Shocks"
+      },
+      {
+        "species": "Chandelure",
+        "level": 100,
+        "knownMoves": [
+          "energy-ball"
+        ],
+        "nickname": "Chandelure"
+      }
+    ]
+  ],
+  "turns": [
+    {
+      "turnNumber": 0,
+      "events": [
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ting-Lu"
+          },
+          "species": "Ting-Lu",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Masquerain"
+          },
+          "species": "Masquerain",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-ability|p2a: Masquerain|Intimidate|boost"
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ting-Lu"
+          },
+          "stat": "atk",
+          "amount": 1
+        },
+        {
+          "type": "unknown",
+          "raw": "|-ability|p1a: Ting-Lu|Vessel of Ruin"
+        }
+      ]
+    },
+    {
+      "turnNumber": 1,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 1
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Masquerain"
+          },
+          "moveName": "Sticky Web",
+          "moveId": "sticky-web",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ting-Lu"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sidestart|p1: Ivanpmd|move: Sticky Web"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ting-Lu"
+          },
+          "moveName": "Stealth Rock",
+          "moveId": "stealth-rock",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Masquerain"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sidestart|p2: swag_serotoninYT|move: Stealth Rock"
+        }
+      ]
+    },
+    {
+      "turnNumber": 2,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 2
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Masquerain"
+          },
+          "moveName": "Stun Spore",
+          "moveId": "stun-spore",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ting-Lu"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ting-Lu"
+          },
+          "statusId": "par",
+          "statusName": "paralysis"
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ting-Lu"
+          },
+          "reason": "par"
+        }
+      ]
+    },
+    {
+      "turnNumber": 3,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 3
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Quaquaval"
+          },
+          "species": "Quaquaval",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Quaquaval"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Pecharunt"
+          },
+          "species": "Pecharunt",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 4,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 4
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Quaquaval"
+          },
+          "moveName": "Aqua Step",
+          "moveId": "aqua-step",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Pecharunt"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Pecharunt"
+          },
+          "hp": {
+            "current": 77,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Quaquaval"
+          },
+          "stat": "spe",
+          "amount": 1
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Quaquaval"
+          },
+          "hp": {
+            "current": 84,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Life Orb"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Pecharunt"
+          },
+          "moveName": "Malignant Chain",
+          "moveId": "malignant-chain",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Quaquaval"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Quaquaval"
+          },
+          "hp": {
+            "current": 41,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Quaquaval"
+          },
+          "statusId": "tox",
+          "statusName": "badly-poisoned"
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Quaquaval"
+          },
+          "effect": "confusion",
+          "from": "ability: Poison Puppeteer"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Quaquaval"
+          },
+          "hp": {
+            "current": 35,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "psn"
+        }
+      ]
+    },
+    {
+      "turnNumber": 5,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 5
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Quaquaval"
+          },
+          "hp": {
+            "current": 19,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "confusion"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Pecharunt"
+          },
+          "moveName": "Parting Shot",
+          "moveId": "parting-shot",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Quaquaval"
+          }
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Quaquaval"
+          },
+          "stat": "atk",
+          "amount": 1
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Quaquaval"
+          },
+          "stat": "spa",
+          "amount": 1
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Hydrapple"
+          },
+          "species": "Hydrapple",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Quaquaval"
+          },
+          "hp": {
+            "current": 6,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "psn"
+        }
+      ]
+    },
+    {
+      "turnNumber": 6,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 6
+        },
+        {
+          "type": "end",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Quaquaval"
+          },
+          "effect": "confusion"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Quaquaval"
+          },
+          "moveName": "Rapid Spin",
+          "moveId": "rapid-spin",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Hydrapple"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Hydrapple"
+          },
+          "hp": {
+            "current": 93,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Quaquaval"
+          },
+          "stat": "spe",
+          "amount": 1
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sideend|p2: swag_serotoninYT|Stealth Rock|[from] move: Rapid Spin|[of] p2a: Quaquaval"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Quaquaval"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          },
+          "from": "item: Life Orb"
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Quaquaval"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Hydrapple"
+          },
+          "moveName": "Nasty Plot",
+          "moveId": "nasty-plot",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Hydrapple"
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Hydrapple"
+          },
+          "stat": "spa",
+          "amount": 2
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Masquerain"
+          },
+          "species": "Masquerain",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-ability|p2a: Masquerain|Intimidate|boost"
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Hydrapple"
+          },
+          "stat": "atk",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "turnNumber": 7,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 7
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Masquerain"
+          },
+          "moveName": "Ice Beam",
+          "moveId": "ice-beam",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Hydrapple"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Hydrapple"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Hydrapple"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Hydrapple"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Kingambit"
+          },
+          "species": "Kingambit",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Kingambit"
+          },
+          "effect": "fallen1"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-item|p1a: Kingambit|Air Balloon"
+        }
+      ]
+    },
+    {
+      "turnNumber": 8,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 8
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Masquerain"
+          },
+          "moveName": "Stun Spore",
+          "moveId": "stun-spore",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Kingambit"
+          }
+        },
+        {
+          "type": "miss",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Masquerain"
+          },
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Kingambit"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Kingambit"
+          },
+          "moveName": "Swords Dance",
+          "moveId": "swords-dance",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Kingambit"
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Kingambit"
+          },
+          "stat": "atk",
+          "amount": 2
+        }
+      ]
+    },
+    {
+      "turnNumber": 9,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 9
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Masquerain"
+          },
+          "moveName": "Stun Spore",
+          "moveId": "stun-spore",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Kingambit"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Kingambit"
+          },
+          "statusId": "par",
+          "statusName": "paralysis"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Kingambit"
+          },
+          "moveName": "Iron Head",
+          "moveId": "iron-head",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Masquerain"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-enditem|p2a: Masquerain|Focus Sash"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Masquerain"
+          },
+          "hp": {
+            "current": 1,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 10,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 10
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Masquerain"
+          },
+          "moveName": "Bug Buzz",
+          "moveId": "bug-buzz",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Kingambit"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Kingambit"
+          },
+          "hp": {
+            "current": 60,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Kingambit"
+          },
+          "stat": "spd",
+          "amount": 1
+        },
+        {
+          "type": "unknown",
+          "raw": "|-enditem|p1a: Kingambit|Air Balloon"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Kingambit"
+          },
+          "moveName": "Iron Head",
+          "moveId": "iron-head",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Masquerain"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Masquerain"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Masquerain"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Orthworm"
+          },
+          "species": "Orthworm",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 11,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 11
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Orthworm"
+          },
+          "moveName": "Body Press",
+          "moveId": "body-press",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Kingambit"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Kingambit"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Kingambit"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Kingambit"
+          }
+        },
+        {
+          "type": "end",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Kingambit"
+          },
+          "effect": "fallen1"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zamazenta"
+          },
+          "species": "Zamazenta",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-ability|p1a: Zamazenta|Dauntless Shield|boost"
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zamazenta"
+          },
+          "stat": "def",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "turnNumber": 12,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 12
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zamazenta"
+          },
+          "moveName": "Close Combat",
+          "moveId": "close-combat",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Orthworm"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Orthworm"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Orthworm"
+          },
+          "hp": {
+            "current": 34,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zamazenta"
+          },
+          "stat": "def",
+          "amount": 1
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zamazenta"
+          },
+          "stat": "spd",
+          "amount": 1
+        },
+        {
+          "type": "unknown",
+          "raw": "|-enditem|p2a: Orthworm|Sitrus Berry|[eat]"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Orthworm"
+          },
+          "hp": {
+            "current": 59,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Sitrus Berry"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Orthworm"
+          },
+          "moveName": "Stealth Rock",
+          "moveId": "stealth-rock",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zamazenta"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sidestart|p1: Ivanpmd|move: Stealth Rock"
+        }
+      ]
+    },
+    {
+      "turnNumber": 13,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 13
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zamazenta"
+          },
+          "moveName": "Close Combat",
+          "moveId": "close-combat",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Orthworm"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Orthworm"
+          }
+        },
+        {
+          "type": "crit",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Orthworm"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Orthworm"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zamazenta"
+          },
+          "stat": "def",
+          "amount": 1
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zamazenta"
+          },
+          "stat": "spd",
+          "amount": 1
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Orthworm"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gholdengo"
+          },
+          "species": "Gholdengo",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-item|p2a: Gholdengo|Air Balloon"
+        }
+      ]
+    },
+    {
+      "turnNumber": 14,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 14
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zamazenta"
+          },
+          "moveName": "Crunch",
+          "moveId": "crunch",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gholdengo"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gholdengo"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gholdengo"
+          },
+          "hp": {
+            "current": 46,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-enditem|p2a: Gholdengo|Air Balloon"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gholdengo"
+          },
+          "moveName": "Nasty Plot",
+          "moveId": "nasty-plot",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gholdengo"
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gholdengo"
+          },
+          "stat": "spa",
+          "amount": 2
+        }
+      ]
+    },
+    {
+      "turnNumber": 15,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 15
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zamazenta"
+          },
+          "moveName": "Crunch",
+          "moveId": "crunch",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gholdengo"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gholdengo"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gholdengo"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gholdengo"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Sandy Shocks"
+          },
+          "species": "Sandy Shocks",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-enditem|p2a: Sandy Shocks|Booster Energy"
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Sandy Shocks"
+          },
+          "effect": "protosynthesisspa"
+        }
+      ]
+    },
+    {
+      "turnNumber": 16,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 16
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ting-Lu"
+          },
+          "species": "Ting-Lu",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ting-Lu"
+          },
+          "stat": "spe",
+          "amount": 1
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ting-Lu"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": "par"
+          },
+          "from": "Stealth Rock"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-ability|p1a: Ting-Lu|Vessel of Ruin"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Sandy Shocks"
+          },
+          "moveName": "Earth Power",
+          "moveId": "earth-power",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ting-Lu"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ting-Lu"
+          },
+          "hp": {
+            "current": 70,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ting-Lu"
+          },
+          "hp": {
+            "current": 76,
+            "max": 100,
+            "status": "par"
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 17,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 17
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Sandy Shocks"
+          },
+          "moveName": "Earth Power",
+          "moveId": "earth-power",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ting-Lu"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ting-Lu"
+          },
+          "hp": {
+            "current": 52,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ting-Lu"
+          },
+          "moveName": "Earthquake",
+          "moveId": "earthquake",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Sandy Shocks"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Sandy Shocks"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Sandy Shocks"
+          },
+          "hp": {
+            "current": 10,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ting-Lu"
+          },
+          "hp": {
+            "current": 58,
+            "max": 100,
+            "status": "par"
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 18,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 18
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Sandy Shocks"
+          },
+          "moveName": "Earth Power",
+          "moveId": "earth-power",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ting-Lu"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ting-Lu"
+          },
+          "hp": {
+            "current": 34,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ting-Lu"
+          },
+          "reason": "par"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ting-Lu"
+          },
+          "hp": {
+            "current": 40,
+            "max": 100,
+            "status": "par"
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 19,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 19
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Sandy Shocks"
+          },
+          "moveName": "Earth Power",
+          "moveId": "earth-power",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ting-Lu"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ting-Lu"
+          },
+          "hp": {
+            "current": 18,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ting-Lu"
+          },
+          "reason": "par"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ting-Lu"
+          },
+          "hp": {
+            "current": 24,
+            "max": 100,
+            "status": "par"
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 20,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 20
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Sandy Shocks"
+          },
+          "moveName": "Earth Power",
+          "moveId": "earth-power",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ting-Lu"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ting-Lu"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ting-Lu"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zamazenta"
+          },
+          "species": "Zamazenta",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 21,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 21
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zamazenta"
+          },
+          "moveName": "Crunch",
+          "moveId": "crunch",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Sandy Shocks"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Sandy Shocks"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Sandy Shocks"
+          }
+        },
+        {
+          "type": "end",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Sandy Shocks"
+          },
+          "effect": "Protosynthesis"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chandelure"
+          },
+          "species": "Chandelure",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 22,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 22
+        },
+        {
+          "type": "unknown",
+          "raw": "|-terastallize|p1a: Zamazenta|Dark"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-terastallize|p2a: Chandelure|Grass"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zamazenta"
+          },
+          "moveName": "Crunch",
+          "moveId": "crunch",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chandelure"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chandelure"
+          },
+          "hp": {
+            "current": 49,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chandelure"
+          },
+          "moveName": "Energy Ball",
+          "moveId": "energy-ball",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zamazenta"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zamazenta"
+          },
+          "hp": {
+            "current": 52,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 23,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 23
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zamazenta"
+          },
+          "moveName": "Close Combat",
+          "moveId": "close-combat",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chandelure"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chandelure"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zamazenta"
+          },
+          "stat": "def",
+          "amount": 1
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zamazenta"
+          },
+          "stat": "spd",
+          "amount": 1
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chandelure"
+          }
+        },
+        {
+          "type": "win",
+          "winner": "Ivanpmd"
+        }
+      ]
+    }
+  ],
+  "winner": "Ivanpmd"
+}

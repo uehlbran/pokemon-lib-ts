@@ -1,0 +1,4426 @@
+{
+  "id": "",
+  "format": "[Gen 6] OU",
+  "generation": 6,
+  "players": [
+    "leanne8928921",
+    "NAAATTTHHH"
+  ],
+  "teams": [
+    [
+      {
+        "species": "Latios",
+        "level": 100,
+        "knownMoves": [],
+        "nickname": "Latios"
+      },
+      {
+        "species": "Clefable",
+        "level": 100,
+        "knownMoves": [
+          "stealth-rock",
+          "wish",
+          "ice-beam",
+          "moonblast"
+        ],
+        "nickname": "Clefable"
+      },
+      {
+        "species": "Tyranitar",
+        "level": 100,
+        "knownMoves": [
+          "dragon-dance",
+          "crunch",
+          "ice-punch"
+        ],
+        "nickname": "Tyranitar"
+      },
+      {
+        "species": "Scizor",
+        "level": 100,
+        "knownMoves": [
+          "u-turn"
+        ],
+        "nickname": "Scizor"
+      },
+      {
+        "species": "Volcanion",
+        "level": 100,
+        "knownMoves": [
+          "steam-eruption",
+          "sludge-bomb"
+        ],
+        "nickname": "Volcanion"
+      },
+      {
+        "species": "Talonflame",
+        "level": 100,
+        "knownMoves": [
+          "roost",
+          "swords-dance",
+          "brave-bird"
+        ],
+        "nickname": "Talonflame"
+      }
+    ],
+    [
+      {
+        "species": "Garchomp",
+        "level": 100,
+        "knownMoves": [
+          "outrage",
+          "stone-edge"
+        ],
+        "nickname": "Garchomp"
+      },
+      {
+        "species": "Heatran",
+        "level": 100,
+        "knownMoves": [
+          "toxic",
+          "stealth-rock",
+          "magma-storm",
+          "protect"
+        ],
+        "nickname": "Heatran"
+      },
+      {
+        "species": "Tangrowth",
+        "level": 100,
+        "knownMoves": [
+          "giga-drain"
+        ],
+        "nickname": "Tangrowth"
+      },
+      {
+        "species": "Rotom-Wash",
+        "level": 100,
+        "knownMoves": [
+          "pain-split",
+          "volt-switch",
+          "hydro-pump"
+        ],
+        "nickname": "Rotom"
+      },
+      {
+        "species": "Charizard",
+        "level": 100,
+        "knownMoves": [
+          "flamethrower",
+          "roost"
+        ],
+        "nickname": "Charizard"
+      },
+      {
+        "species": "Zapdos",
+        "level": 100,
+        "knownMoves": [
+          "toxic",
+          "volt-switch",
+          "roost",
+          "heat-wave"
+        ],
+        "nickname": "Zapdos"
+      }
+    ]
+  ],
+  "turns": [
+    {
+      "turnNumber": 0,
+      "events": [
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Latios"
+          },
+          "species": "Latios",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Garchomp"
+          },
+          "species": "Garchomp",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 1,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 1
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Garchomp"
+          },
+          "moveName": "Outrage",
+          "moveId": "outrage",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Latios"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Latios"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Latios"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Latios"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "species": "Clefable",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 2,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 2
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Garchomp"
+          },
+          "moveName": "Outrage",
+          "moveId": "outrage",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          }
+        },
+        {
+          "type": "immune",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "moveName": "Stealth Rock",
+          "moveId": "stealth-rock",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Garchomp"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sidestart|p2: NAAATTTHHH|move: Stealth Rock"
+        }
+      ]
+    },
+    {
+      "turnNumber": 3,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 3
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Heatran"
+          },
+          "species": "Heatran",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Heatran"
+          },
+          "hp": {
+            "current": 88,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "species": "Tyranitar",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[from] ability: Sand Stream|[of] p1a: Tyranitar"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Heatran"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 4,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 4
+        },
+        {
+          "type": "unknown",
+          "raw": "|detailschange|p1a: Tyranitar|Tyranitar-Mega, M"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-mega|p1a: Tyranitar|Tyranitar|Tyranitarite"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "moveName": "Dragon Dance",
+          "moveId": "dragon-dance",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tyranitar"
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "stat": "atk",
+          "amount": 1
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "stat": "spe",
+          "amount": 1
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Heatran"
+          },
+          "moveName": "Toxic",
+          "moveId": "toxic",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tyranitar"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "statusId": "tox",
+          "statusName": "badly-poisoned"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Heatran"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "psn"
+        }
+      ]
+    },
+    {
+      "turnNumber": 5,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 5
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "moveName": "Dragon Dance",
+          "moveId": "dragon-dance",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tyranitar"
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "stat": "atk",
+          "amount": 1
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "stat": "spe",
+          "amount": 1
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Heatran"
+          },
+          "moveName": "Stealth Rock",
+          "moveId": "stealth-rock",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tyranitar"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sidestart|p1: leanne8928921|move: Stealth Rock"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "hp": {
+            "current": 82,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "psn"
+        }
+      ]
+    },
+    {
+      "turnNumber": 6,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 6
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "moveName": "Crunch",
+          "moveId": "crunch",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Heatran"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Heatran"
+          },
+          "hp": {
+            "current": 13,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Heatran"
+          },
+          "moveName": "Magma Storm",
+          "moveId": "magma-storm",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tyranitar"
+          }
+        },
+        {
+          "type": "miss",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Heatran"
+          },
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tyranitar"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Heatran"
+          },
+          "hp": {
+            "current": 19,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "hp": {
+            "current": 64,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "psn"
+        }
+      ]
+    },
+    {
+      "turnNumber": 7,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 7
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Heatran"
+          },
+          "moveName": "Protect",
+          "moveId": "protect",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Heatran"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-singleturn|p2a: Heatran|Protect"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "moveName": "Crunch",
+          "moveId": "crunch",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Heatran"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|none"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Heatran"
+          },
+          "hp": {
+            "current": 25,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "hp": {
+            "current": 39,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "psn"
+        }
+      ]
+    },
+    {
+      "turnNumber": 8,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 8
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "moveName": "Crunch",
+          "moveId": "crunch",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Heatran"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Heatran"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Heatran"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "hp": {
+            "current": 8,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "psn"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tangrowth"
+          },
+          "species": "Tangrowth",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tangrowth"
+          },
+          "hp": {
+            "current": 88,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        }
+      ]
+    },
+    {
+      "turnNumber": 9,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 9
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "moveName": "Ice Punch",
+          "moveId": "ice-punch",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tangrowth"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tangrowth"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tangrowth"
+          },
+          "hp": {
+            "current": 23,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tangrowth"
+          },
+          "moveName": "Giga Drain",
+          "moveId": "giga-drain",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tyranitar"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tyranitar"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tangrowth"
+          },
+          "hp": {
+            "current": 26,
+            "max": 100,
+            "status": null
+          },
+          "from": "drain"
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tyranitar"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|detailschange|p1: Tyranitar|Tyranitar, M|[silent]"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Scizor"
+          },
+          "species": "Scizor",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Scizor"
+          },
+          "hp": {
+            "current": 88,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        }
+      ]
+    },
+    {
+      "turnNumber": 10,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 10
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "species": "Rotom-Wash",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "hp": {
+            "current": 88,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Scizor"
+          },
+          "moveName": "U-turn",
+          "moveId": "u-turn",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "hp": {
+            "current": 30,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "species": "Clefable",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "hp": {
+            "current": 35,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 11,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 11
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "moveName": "Pain Split",
+          "moveId": "pain-split",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sethp|p1a: Clefable|64/100|[from] move: Pain Split|[silent]"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sethp|p2a: Rotom|83/100|[from] move: Pain Split"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "moveName": "Wish",
+          "moveId": "wish",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "hp": {
+            "current": 89,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "hp": {
+            "current": 70,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 12,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 12
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcanion"
+          },
+          "species": "Volcanion",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcanion"
+          },
+          "hp": {
+            "current": 76,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "moveName": "Volt Switch",
+          "moveId": "volt-switch",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcanion"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcanion"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcanion"
+          },
+          "hp": {
+            "current": 50,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Garchomp"
+          },
+          "species": "Garchomp",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Garchomp"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcanion"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          },
+          "from": "move: Wish"
+        }
+      ]
+    },
+    {
+      "turnNumber": 13,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 13
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Garchomp"
+          },
+          "moveName": "Stone Edge",
+          "moveId": "stone-edge",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcanion"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcanion"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcanion"
+          },
+          "hp": {
+            "current": 43,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcanion"
+          },
+          "moveName": "Steam Eruption",
+          "moveId": "steam-eruption",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Garchomp"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Garchomp"
+          },
+          "hp": {
+            "current": 40,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Garchomp"
+          },
+          "statusId": "brn",
+          "statusName": "burn"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Garchomp"
+          },
+          "hp": {
+            "current": 28,
+            "max": 100,
+            "status": "brn"
+          },
+          "from": "brn"
+        }
+      ]
+    },
+    {
+      "turnNumber": 14,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 14
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Scizor"
+          },
+          "species": "Scizor",
+          "level": 100,
+          "hp": {
+            "current": 88,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Scizor"
+          },
+          "hp": {
+            "current": 76,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Garchomp"
+          },
+          "moveName": "Stone Edge",
+          "moveId": "stone-edge",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Scizor"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Scizor"
+          },
+          "hp": {
+            "current": 59,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Garchomp"
+          },
+          "hp": {
+            "current": 16,
+            "max": 100,
+            "status": "brn"
+          },
+          "from": "brn"
+        }
+      ]
+    },
+    {
+      "turnNumber": 15,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 15
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Garchomp"
+          },
+          "moveName": "Stone Edge",
+          "moveId": "stone-edge",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Scizor"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Scizor"
+          },
+          "hp": {
+            "current": 42,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Scizor"
+          },
+          "moveName": "U-turn",
+          "moveId": "u-turn",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Garchomp"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Garchomp"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Scizor"
+          },
+          "hp": {
+            "current": 30,
+            "max": 100,
+            "status": null
+          },
+          "from": "ability: Rough Skin"
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Garchomp"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "species": "Clefable",
+          "level": 100,
+          "hp": {
+            "current": 70,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "hp": {
+            "current": 76,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Charizard"
+          },
+          "species": "Charizard",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Charizard"
+          },
+          "hp": {
+            "current": 50,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        }
+      ]
+    },
+    {
+      "turnNumber": 16,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 16
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Scizor"
+          },
+          "species": "Scizor",
+          "level": 100,
+          "hp": {
+            "current": 30,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Scizor"
+          },
+          "hp": {
+            "current": 18,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        },
+        {
+          "type": "unknown",
+          "raw": "|detailschange|p2a: Charizard|Charizard-Mega-Y, M"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-mega|p2a: Charizard|Charizard|Charizardite Y"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|SunnyDay|[from] ability: Drought|[of] p2a: Charizard"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Charizard"
+          },
+          "moveName": "Flamethrower",
+          "moveId": "flamethrower",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Scizor"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Scizor"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Scizor"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Scizor"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|SunnyDay|[upkeep]"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Talonflame"
+          },
+          "species": "Talonflame",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Talonflame"
+          },
+          "hp": {
+            "current": 51,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        }
+      ]
+    },
+    {
+      "turnNumber": 17,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 17
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Talonflame"
+          },
+          "moveName": "Roost",
+          "moveId": "roost",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Talonflame"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Talonflame"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-singleturn|p1a: Talonflame|move: Roost"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Charizard"
+          },
+          "moveName": "Roost",
+          "moveId": "roost",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Charizard"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Charizard"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-singleturn|p2a: Charizard|move: Roost"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|SunnyDay|[upkeep]"
+        }
+      ]
+    },
+    {
+      "turnNumber": 18,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 18
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Talonflame"
+          },
+          "moveName": "Swords Dance",
+          "moveId": "swords-dance",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Talonflame"
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Talonflame"
+          },
+          "stat": "atk",
+          "amount": 2
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Charizard"
+          },
+          "moveName": "Flamethrower",
+          "moveId": "flamethrower",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Talonflame"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Talonflame"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Talonflame"
+          },
+          "hp": {
+            "current": 26,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|SunnyDay|[upkeep]"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Talonflame"
+          },
+          "hp": {
+            "current": 32,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 19,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 19
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Talonflame"
+          },
+          "moveName": "Brave Bird",
+          "moveId": "brave-bird",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Charizard"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Charizard"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Charizard"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|detailschange|p2: Charizard|Charizard, M|[silent]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Talonflame"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          },
+          "from": "Recoil"
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Talonflame"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|SunnyDay|[upkeep]"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "species": "Clefable",
+          "level": 100,
+          "hp": {
+            "current": 76,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "species": "Zapdos",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 76,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        }
+      ]
+    },
+    {
+      "turnNumber": 20,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 20
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "moveName": "Toxic",
+          "moveId": "toxic",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "statusId": "tox",
+          "statusName": "badly-poisoned"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "moveName": "Wish",
+          "moveId": "wish",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|none"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 82,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "hp": {
+            "current": 82,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 21,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 21
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "moveName": "Volt Switch",
+          "moveId": "volt-switch",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "hp": {
+            "current": 56,
+            "max": 100,
+            "status": "tox"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tangrowth"
+          },
+          "species": "Tangrowth",
+          "level": 100,
+          "hp": {
+            "current": 59,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tangrowth"
+          },
+          "hp": {
+            "current": 47,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "moveName": "Ice Beam",
+          "moveId": "ice-beam",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tangrowth"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tangrowth"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tangrowth"
+          },
+          "hp": {
+            "current": 6,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "move: Wish"
+        }
+      ]
+    },
+    {
+      "turnNumber": 22,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 22
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "moveName": "Moonblast",
+          "moveId": "moonblast",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tangrowth"
+          }
+        },
+        {
+          "type": "crit",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tangrowth"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tangrowth"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tangrowth"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "species": "Rotom-Wash",
+          "level": 100,
+          "hp": {
+            "current": 89,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "hp": {
+            "current": 77,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        }
+      ]
+    },
+    {
+      "turnNumber": 23,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 23
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "moveName": "Hydro Pump",
+          "moveId": "hydro-pump",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "hp": {
+            "current": 63,
+            "max": 100,
+            "status": "tox"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "moveName": "Moonblast",
+          "moveId": "moonblast",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "hp": {
+            "current": 53,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "hp": {
+            "current": 59,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "hp": {
+            "current": 69,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 24,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 24
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "moveName": "Volt Switch",
+          "moveId": "volt-switch",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "hp": {
+            "current": 46,
+            "max": 100,
+            "status": "tox"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "species": "Zapdos",
+          "level": 100,
+          "hp": {
+            "current": 82,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 57,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "moveName": "Wish",
+          "moveId": "wish",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 63,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "hp": {
+            "current": 52,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 25,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 25
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "moveName": "Roost",
+          "moveId": "roost",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-singleturn|p2a: Zapdos|move: Roost"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "moveName": "Ice Beam",
+          "moveId": "ice-beam",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 81,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "move: Wish"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 87,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 26,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 26
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "moveName": "Heat Wave",
+          "moveId": "heat-wave",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "hp": {
+            "current": 74,
+            "max": 100,
+            "status": "tox"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "moveName": "Moonblast",
+          "moveId": "moonblast",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 58,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 64,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "hp": {
+            "current": 80,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 27,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 27
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "moveName": "Heat Wave",
+          "moveId": "heat-wave",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "hp": {
+            "current": 56,
+            "max": 100,
+            "status": "tox"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "moveName": "Moonblast",
+          "moveId": "moonblast",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 35,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 41,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "hp": {
+            "current": 62,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 28,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 28
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "moveName": "Heat Wave",
+          "moveId": "heat-wave",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "hp": {
+            "current": 37,
+            "max": 100,
+            "status": "tox"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "moveName": "Moonblast",
+          "moveId": "moonblast",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 10,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 16,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "hp": {
+            "current": 43,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 29,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 29
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "moveName": "Roost",
+          "moveId": "roost",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 66,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-singleturn|p2a: Zapdos|move: Roost"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "moveName": "Wish",
+          "moveId": "wish",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 72,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "hp": {
+            "current": 49,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 30,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 30
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "moveName": "Heat Wave",
+          "moveId": "heat-wave",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "hp": {
+            "current": 25,
+            "max": 100,
+            "status": "tox"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "moveName": "Moonblast",
+          "moveId": "moonblast",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 39,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "stat": "spa",
+          "amount": 1
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "hp": {
+            "current": 75,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "move: Wish"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 45,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "hp": {
+            "current": 81,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 31,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 31
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "moveName": "Volt Switch",
+          "moveId": "volt-switch",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "hp": {
+            "current": 62,
+            "max": 100,
+            "status": "tox"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "species": "Rotom-Wash",
+          "level": 100,
+          "hp": {
+            "current": 59,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "hp": {
+            "current": 46,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "moveName": "Moonblast",
+          "moveId": "moonblast",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "hp": {
+            "current": 24,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "hp": {
+            "current": 30,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "hp": {
+            "current": 68,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 32,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 32
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "moveName": "Pain Split",
+          "moveId": "pain-split",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sethp|p1a: Clefable|46/100 tox|[from] move: Pain Split|[silent]"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sethp|p2a: Rotom|59/100|[from] move: Pain Split"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "moveName": "Wish",
+          "moveId": "wish",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "hp": {
+            "current": 65,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "hp": {
+            "current": 52,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 33,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 33
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "moveName": "Hydro Pump",
+          "moveId": "hydro-pump",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "hp": {
+            "current": 18,
+            "max": 100,
+            "status": "tox"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "moveName": "Moonblast",
+          "moveId": "moonblast",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "hp": {
+            "current": 41,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "hp": {
+            "current": 68,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "move: Wish"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "hp": {
+            "current": 47,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "hp": {
+            "current": 74,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 34,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 34
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "moveName": "Hydro Pump",
+          "moveId": "hydro-pump",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          }
+        },
+        {
+          "type": "miss",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "moveName": "Wish",
+          "moveId": "wish",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "hp": {
+            "current": 53,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "hp": {
+            "current": 80,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 35,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 35
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "moveName": "Hydro Pump",
+          "moveId": "hydro-pump",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          }
+        },
+        {
+          "type": "miss",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "moveName": "Moonblast",
+          "moveId": "moonblast",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "hp": {
+            "current": 31,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "stat": "spa",
+          "amount": 1
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "move: Wish"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "hp": {
+            "current": 37,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 36,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 36
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "moveName": "Pain Split",
+          "moveId": "pain-split",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sethp|p1a: Clefable|64/100 tox|[from] move: Pain Split|[silent]"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sethp|p2a: Rotom|84/100|[from] move: Pain Split"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "moveName": "Moonblast",
+          "moveId": "moonblast",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "hp": {
+            "current": 59,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "hp": {
+            "current": 65,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "hp": {
+            "current": 71,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 37,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 37
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "moveName": "Pain Split",
+          "moveId": "pain-split",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sethp|p1a: Clefable|60/100 tox|[from] move: Pain Split|[silent]"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sethp|p2a: Rotom|78/100|[from] move: Pain Split"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "moveName": "Ice Beam",
+          "moveId": "ice-beam",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "hp": {
+            "current": 70,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "hp": {
+            "current": 76,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "hp": {
+            "current": 66,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 38,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 38
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "moveName": "Volt Switch",
+          "moveId": "volt-switch",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "hp": {
+            "current": 51,
+            "max": 100,
+            "status": "tox"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "species": "Zapdos",
+          "level": 100,
+          "hp": {
+            "current": 45,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 20,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "moveName": "Ice Beam",
+          "moveId": "ice-beam",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "hp": {
+            "current": 57,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "species": "Rotom-Wash",
+          "level": 100,
+          "hp": {
+            "current": 76,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "hp": {
+            "current": 64,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        }
+      ]
+    },
+    {
+      "turnNumber": 39,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 39
+        },
+        {
+          "type": "unknown",
+          "raw": "|n|☆leanne8928921|leanne8928921"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "moveName": "Hydro Pump",
+          "moveId": "hydro-pump",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "hp": {
+            "current": 20,
+            "max": 100,
+            "status": "tox"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "moveName": "Wish",
+          "moveId": "wish",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "hp": {
+            "current": 70,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Clefable"
+          },
+          "hp": {
+            "current": 26,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 40,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 40
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcanion"
+          },
+          "species": "Volcanion",
+          "level": 100,
+          "hp": {
+            "current": 43,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcanion"
+          },
+          "hp": {
+            "current": 18,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "moveName": "Hydro Pump",
+          "moveId": "hydro-pump",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcanion"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcanion"
+          },
+          "hp": {
+            "current": 43,
+            "max": 100,
+            "status": null
+          },
+          "from": "ability: Water Absorb"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcanion"
+          },
+          "hp": {
+            "current": 97,
+            "max": 100,
+            "status": null
+          },
+          "from": "move: Wish"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "hp": {
+            "current": 76,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 41,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 41
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "moveName": "Volt Switch",
+          "moveId": "volt-switch",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcanion"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcanion"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcanion"
+          },
+          "hp": {
+            "current": 72,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcanion"
+          },
+          "moveName": "Sludge Bomb",
+          "moveId": "sludge-bomb",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "hp": {
+            "current": 55,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "statusId": "psn",
+          "statusName": "poison"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "hp": {
+            "current": 61,
+            "max": 100,
+            "status": "psn"
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "hp": {
+            "current": 49,
+            "max": 100,
+            "status": "psn"
+          },
+          "from": "psn"
+        }
+      ]
+    },
+    {
+      "turnNumber": 42,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 42
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "moveName": "Volt Switch",
+          "moveId": "volt-switch",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcanion"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcanion"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcanion"
+          },
+          "hp": {
+            "current": 45,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcanion"
+          },
+          "moveName": "Sludge Bomb",
+          "moveId": "sludge-bomb",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "hp": {
+            "current": 29,
+            "max": 100,
+            "status": "psn"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "hp": {
+            "current": 35,
+            "max": 100,
+            "status": "psn"
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "hp": {
+            "current": 23,
+            "max": 100,
+            "status": "psn"
+          },
+          "from": "psn"
+        }
+      ]
+    },
+    {
+      "turnNumber": 43,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 43
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "moveName": "Pain Split",
+          "moveId": "pain-split",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcanion"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sethp|p1a: Volcanion|32/100|[from] move: Pain Split|[silent]"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sethp|p2a: Rotom|38/100 psn|[from] move: Pain Split"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcanion"
+          },
+          "moveName": "Sludge Bomb",
+          "moveId": "sludge-bomb",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "hp": {
+            "current": 19,
+            "max": 100,
+            "status": "psn"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "hp": {
+            "current": 25,
+            "max": 100,
+            "status": "psn"
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "hp": {
+            "current": 13,
+            "max": 100,
+            "status": "psn"
+          },
+          "from": "psn"
+        }
+      ]
+    },
+    {
+      "turnNumber": 44,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 44
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "moveName": "Pain Split",
+          "moveId": "pain-split",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcanion"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sethp|p1a: Volcanion|21/100|[from] move: Pain Split|[silent]"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sethp|p2a: Rotom|26/100 psn|[from] move: Pain Split"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcanion"
+          },
+          "moveName": "Sludge Bomb",
+          "moveId": "sludge-bomb",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "hp": {
+            "current": 7,
+            "max": 100,
+            "status": "psn"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "hp": {
+            "current": 13,
+            "max": 100,
+            "status": "psn"
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          },
+          "from": "psn"
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rotom"
+          }
+        },
+        {
+          "type": "win",
+          "winner": "leanne8928921"
+        }
+      ]
+    }
+  ],
+  "winner": "leanne8928921"
+}

@@ -1,0 +1,4038 @@
+{
+  "id": "",
+  "format": "[Gen 1] OU",
+  "generation": 1,
+  "players": [
+    "violet river",
+    "dangerk1d"
+  ],
+  "teams": [
+    [
+      {
+        "species": "Starmie",
+        "level": 100,
+        "knownMoves": [
+          "recover"
+        ],
+        "nickname": "Starmie"
+      },
+      {
+        "species": "Exeggutor",
+        "level": 100,
+        "knownMoves": [
+          "sleep-powder",
+          "stun-spore",
+          "psychic"
+        ],
+        "nickname": "Exeggutor"
+      },
+      {
+        "species": "Chansey",
+        "level": 100,
+        "knownMoves": [
+          "seismic-toss",
+          "thunder-wave",
+          "soft-boiled",
+          "sing"
+        ],
+        "nickname": "Chansey"
+      },
+      {
+        "species": "Snorlax",
+        "level": 100,
+        "knownMoves": [
+          "body-slam",
+          "rest"
+        ],
+        "nickname": "Snorlax"
+      },
+      {
+        "species": "Tauros",
+        "level": 100,
+        "knownMoves": [
+          "body-slam",
+          "hyper-beam",
+          "earthquake"
+        ],
+        "nickname": "Tauros"
+      },
+      {
+        "species": "Rhydon",
+        "level": 100,
+        "knownMoves": [
+          "earthquake",
+          "body-slam"
+        ],
+        "nickname": "Rhydon"
+      }
+    ],
+    [
+      {
+        "species": "Gengar",
+        "level": 100,
+        "knownMoves": [
+          "night-shade",
+          "thunderbolt"
+        ],
+        "nickname": "Gengar"
+      },
+      {
+        "species": "Chansey",
+        "level": 100,
+        "knownMoves": [
+          "thunder-wave",
+          "ice-beam",
+          "soft-boiled",
+          "thunderbolt"
+        ],
+        "nickname": "Chansey"
+      },
+      {
+        "species": "Exeggutor",
+        "level": 100,
+        "knownMoves": [
+          "sleep-powder",
+          "psychic",
+          "rest"
+        ],
+        "nickname": "Exeggutor"
+      },
+      {
+        "species": "Starmie",
+        "level": 100,
+        "knownMoves": [
+          "thunder-wave",
+          "recover",
+          "psychic"
+        ],
+        "nickname": "Starmie"
+      },
+      {
+        "species": "Rhydon",
+        "level": 100,
+        "knownMoves": [
+          "earthquake"
+        ],
+        "nickname": "Rhydon"
+      },
+      {
+        "species": "Tauros",
+        "level": 100,
+        "knownMoves": [
+          "body-slam",
+          "earthquake"
+        ],
+        "nickname": "Tauros"
+      }
+    ]
+  ],
+  "turns": [
+    {
+      "turnNumber": 0,
+      "events": [
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "species": "Starmie",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "species": "Gengar",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 1,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 1
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "species": "Exeggutor",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "species": "Chansey",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 2,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 2
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "species": "Gengar",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "moveName": "Sleep Powder",
+          "moveId": "sleep-powder",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gengar"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "statusId": "slp",
+          "statusName": "sleep"
+        }
+      ]
+    },
+    {
+      "turnNumber": 3,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 3
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "species": "Chansey",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "moveName": "Stun Spore",
+          "moveId": "stun-spore",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "statusId": "par",
+          "statusName": "paralysis"
+        }
+      ]
+    },
+    {
+      "turnNumber": 4,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 4
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "species": "Exeggutor",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "moveName": "Psychic",
+          "moveId": "psychic",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Exeggutor"
+          }
+        },
+        {
+          "type": "crit",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Exeggutor"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Exeggutor"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "hp": {
+            "current": 74,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 5,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 5
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "moveName": "Sleep Powder",
+          "moveId": "sleep-powder",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Exeggutor"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "statusId": "slp",
+          "statusName": "sleep"
+        },
+        {
+          "type": "curestatus",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "statusId": "slp"
+        }
+      ]
+    },
+    {
+      "turnNumber": 6,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 6
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "moveName": "Stun Spore",
+          "moveId": "stun-spore",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Exeggutor"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "statusId": "par",
+          "statusName": "paralysis"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "moveName": "Sleep Powder",
+          "moveId": "sleep-powder",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Exeggutor"
+          }
+        },
+        {
+          "type": "miss",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "targetIdent": null
+        }
+      ]
+    },
+    {
+      "turnNumber": 7,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 7
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "moveName": "Psychic",
+          "moveId": "psychic",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Exeggutor"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Exeggutor"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "hp": {
+            "current": 60,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "moveName": "Sleep Powder",
+          "moveId": "sleep-powder",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Exeggutor"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "statusId": "slp",
+          "statusName": "sleep"
+        }
+      ]
+    },
+    {
+      "turnNumber": 8,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 8
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "species": "Chansey",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "moveName": "Psychic",
+          "moveId": "psychic",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          }
+        },
+        {
+          "type": "crit",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "hp": {
+            "current": 65,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 9,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 9
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "species": "Chansey",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "moveName": "Seismic Toss",
+          "moveId": "seismic-toss",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "hp": {
+            "current": 86,
+            "max": 100,
+            "status": "par"
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 10,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 10
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "species": "Snorlax",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "moveName": "Thunder Wave",
+          "moveId": "thunder-wave",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "statusId": "par",
+          "statusName": "paralysis"
+        }
+      ]
+    },
+    {
+      "turnNumber": 11,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 11
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "species": "Gengar",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "slp"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "moveName": "Body Slam",
+          "moveId": "body-slam",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gengar"
+          }
+        },
+        {
+          "type": "immune",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gengar"
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 12,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 12
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tauros"
+          },
+          "species": "Tauros",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "reason": "slp"
+        }
+      ]
+    },
+    {
+      "turnNumber": 13,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 13
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "species": "Starmie",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tauros"
+          },
+          "moveName": "Body Slam",
+          "moveId": "body-slam",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Starmie"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "hp": {
+            "current": 66,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 14,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 14
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "species": "Chansey",
+          "level": 100,
+          "hp": {
+            "current": 65,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "moveName": "Thunder Wave",
+          "moveId": "thunder-wave",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "statusId": "par",
+          "statusName": "paralysis"
+        }
+      ]
+    },
+    {
+      "turnNumber": 15,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 15
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "species": "Chansey",
+          "level": 100,
+          "hp": {
+            "current": 86,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "moveName": "Thunder Wave",
+          "moveId": "thunder-wave",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          }
+        },
+        {
+          "type": "fail",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "reason": "par"
+        }
+      ]
+    },
+    {
+      "turnNumber": 16,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 16
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "moveName": "Thunder Wave",
+          "moveId": "thunder-wave",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          }
+        },
+        {
+          "type": "fail",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "reason": "par"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "moveName": "Ice Beam",
+          "moveId": "ice-beam",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "hp": {
+            "current": 54,
+            "max": 100,
+            "status": "par"
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 17,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 17
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rhydon"
+          },
+          "species": "Rhydon",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "moveName": "Thunder Wave",
+          "moveId": "thunder-wave",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rhydon"
+          }
+        },
+        {
+          "type": "immune",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rhydon"
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 18,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 18
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "species": "Starmie",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rhydon"
+          },
+          "moveName": "Earthquake",
+          "moveId": "earthquake",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "hp": {
+            "current": 49,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 19,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 19
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "moveName": "Recover",
+          "moveId": "recover",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "hp": {
+            "current": 99,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rhydon"
+          },
+          "moveName": "Earthquake",
+          "moveId": "earthquake",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "hp": {
+            "current": 50,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 20,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 20
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "species": "Chansey",
+          "level": 100,
+          "hp": {
+            "current": 86,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "moveName": "Recover",
+          "moveId": "recover",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "hp": {
+            "current": 99,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 21,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 21
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "species": "Snorlax",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "reason": "par"
+        }
+      ]
+    },
+    {
+      "turnNumber": 22,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 22
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          },
+          "species": "Rhydon",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "reason": "par"
+        }
+      ]
+    },
+    {
+      "turnNumber": 23,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 23
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "species": "Exeggutor",
+          "level": 100,
+          "hp": {
+            "current": 60,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          },
+          "moveName": "Earthquake",
+          "moveId": "earthquake",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Exeggutor"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Exeggutor"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "hp": {
+            "current": 41,
+            "max": 100,
+            "status": "par"
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 24,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 24
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "species": "Chansey",
+          "level": 100,
+          "hp": {
+            "current": 54,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "moveName": "Rest",
+          "moveId": "rest",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Exeggutor"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "statusId": "slp",
+          "statusName": "sleep"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "slp"
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 25,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 25
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "reason": "slp"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "moveName": "Seismic Toss",
+          "moveId": "seismic-toss",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Exeggutor"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "hp": {
+            "current": 75,
+            "max": 100,
+            "status": "slp"
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 26,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 26
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "species": "Chansey",
+          "level": 100,
+          "hp": {
+            "current": 86,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "reason": "par"
+        }
+      ]
+    },
+    {
+      "turnNumber": 27,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 27
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rhydon"
+          },
+          "species": "Rhydon",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "moveName": "Soft-Boiled",
+          "moveId": "soft-boiled",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "par"
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 28,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 28
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "species": "Starmie",
+          "level": 100,
+          "hp": {
+            "current": 99,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Rhydon"
+          },
+          "moveName": "Earthquake",
+          "moveId": "earthquake",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "hp": {
+            "current": 52,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 29,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 29
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "species": "Chansey",
+          "level": 100,
+          "hp": {
+            "current": 86,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "moveName": "Recover",
+          "moveId": "recover",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 30,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 30
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "species": "Snorlax",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tauros"
+          },
+          "species": "Tauros",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 31,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 31
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tauros"
+          },
+          "moveName": "Body Slam",
+          "moveId": "body-slam",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          }
+        },
+        {
+          "type": "crit",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "hp": {
+            "current": 53,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "reason": "par"
+        }
+      ]
+    },
+    {
+      "turnNumber": 32,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 32
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "species": "Gengar",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "slp"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "moveName": "Body Slam",
+          "moveId": "body-slam",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gengar"
+          }
+        },
+        {
+          "type": "immune",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gengar"
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 33,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 33
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "reason": "slp"
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "reason": "par"
+        }
+      ]
+    },
+    {
+      "turnNumber": 34,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 34
+        },
+        {
+          "type": "curestatus",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "statusId": "slp"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "moveName": "Rest",
+          "moveId": "rest",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "statusId": "slp",
+          "statusName": "sleep"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "slp"
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 35,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 35
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "moveName": "Night Shade",
+          "moveId": "night-shade",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "hp": {
+            "current": 81,
+            "max": 100,
+            "status": "slp"
+          }
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "reason": "slp"
+        }
+      ]
+    },
+    {
+      "turnNumber": 36,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 36
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "moveName": "Thunderbolt",
+          "moveId": "thunderbolt",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "hp": {
+            "current": 58,
+            "max": 100,
+            "status": "slp"
+          }
+        },
+        {
+          "type": "curestatus",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "statusId": "slp"
+        }
+      ]
+    },
+    {
+      "turnNumber": 37,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 37
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          },
+          "species": "Rhydon",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "moveName": "Night Shade",
+          "moveId": "night-shade",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          },
+          "hp": {
+            "current": 76,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 38,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 38
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "species": "Exeggutor",
+          "level": 100,
+          "hp": {
+            "current": 75,
+            "max": 100,
+            "status": "slp"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tauros"
+          },
+          "species": "Tauros",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 39,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 39
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tauros"
+          },
+          "moveName": "Body Slam",
+          "moveId": "body-slam",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Exeggutor"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "hp": {
+            "current": 49,
+            "max": 100,
+            "status": "slp"
+          }
+        },
+        {
+          "type": "curestatus",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "statusId": "slp"
+        }
+      ]
+    },
+    {
+      "turnNumber": 40,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 40
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tauros"
+          },
+          "moveName": "Hyper Beam",
+          "moveId": "hyper-beam",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Exeggutor"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Exeggutor"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tauros"
+          },
+          "species": "Tauros",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 41,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 41
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tauros"
+          },
+          "moveName": "Body Slam",
+          "moveId": "body-slam",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tauros"
+          }
+        },
+        {
+          "type": "crit",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tauros"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tauros"
+          },
+          "hp": {
+            "current": 43,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tauros"
+          },
+          "moveName": "Body Slam",
+          "moveId": "body-slam",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tauros"
+          }
+        },
+        {
+          "type": "crit",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tauros"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tauros"
+          },
+          "hp": {
+            "current": 47,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 42,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 42
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          },
+          "species": "Rhydon",
+          "level": 100,
+          "hp": {
+            "current": 76,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tauros"
+          },
+          "moveName": "Body Slam",
+          "moveId": "body-slam",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          },
+          "hp": {
+            "current": 66,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          },
+          "statusId": "par",
+          "statusName": "paralysis"
+        }
+      ]
+    },
+    {
+      "turnNumber": 43,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 43
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "species": "Starmie",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tauros"
+          },
+          "moveName": "Earthquake",
+          "moveId": "earthquake",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "hp": {
+            "current": 72,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 44,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 44
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "moveName": "Recover",
+          "moveId": "recover",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tauros"
+          },
+          "moveName": "Body Slam",
+          "moveId": "body-slam",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "hp": {
+            "current": 65,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 45,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 45
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "species": "Chansey",
+          "level": 100,
+          "hp": {
+            "current": 86,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "moveName": "Recover",
+          "moveId": "recover",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 46,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 46
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "species": "Snorlax",
+          "level": 100,
+          "hp": {
+            "current": 58,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "moveName": "Ice Beam",
+          "moveId": "ice-beam",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "hp": {
+            "current": 38,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 47,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 47
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "moveName": "Rest",
+          "moveId": "rest",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "statusId": "slp",
+          "statusName": "sleep"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "slp"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "moveName": "Ice Beam",
+          "moveId": "ice-beam",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "hp": {
+            "current": 81,
+            "max": 100,
+            "status": "slp"
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 48,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 48
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "species": "Gengar",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "reason": "slp"
+        }
+      ]
+    },
+    {
+      "turnNumber": 49,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 49
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "moveName": "Night Shade",
+          "moveId": "night-shade",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "hp": {
+            "current": 62,
+            "max": 100,
+            "status": "slp"
+          }
+        },
+        {
+          "type": "curestatus",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "statusId": "slp"
+        }
+      ]
+    },
+    {
+      "turnNumber": 50,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 50
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          },
+          "species": "Rhydon",
+          "level": 100,
+          "hp": {
+            "current": 66,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "moveName": "Night Shade",
+          "moveId": "night-shade",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          },
+          "hp": {
+            "current": 42,
+            "max": 100,
+            "status": "par"
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 51,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 51
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "species": "Starmie",
+          "level": 100,
+          "hp": {
+            "current": 66,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          },
+          "moveName": "Earthquake",
+          "moveId": "earthquake",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Starmie"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "hp": {
+            "current": 17,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 52,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 52
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "moveName": "Recover",
+          "moveId": "recover",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Starmie"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "hp": {
+            "current": 66,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          },
+          "moveName": "Body Slam",
+          "moveId": "body-slam",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Starmie"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "hp": {
+            "current": 39,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 53,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 53
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "species": "Chansey",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "moveName": "Recover",
+          "moveId": "recover",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Starmie"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "hp": {
+            "current": 89,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 54,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 54
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "species": "Chansey",
+          "level": 100,
+          "hp": {
+            "current": 86,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "reason": "par"
+        }
+      ]
+    },
+    {
+      "turnNumber": 55,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 55
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "moveName": "Seismic Toss",
+          "moveId": "seismic-toss",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "hp": {
+            "current": 72,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "moveName": "Thunder Wave",
+          "moveId": "thunder-wave",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          }
+        },
+        {
+          "type": "fail",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "reason": "par"
+        }
+      ]
+    },
+    {
+      "turnNumber": 56,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 56
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "moveName": "Soft-Boiled",
+          "moveId": "soft-boiled",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "moveName": "Seismic Toss",
+          "moveId": "seismic-toss",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "hp": {
+            "current": 86,
+            "max": 100,
+            "status": "par"
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 57,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 57
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "reason": "par"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "moveName": "Ice Beam",
+          "moveId": "ice-beam",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          }
+        },
+        {
+          "type": "crit",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "hp": {
+            "current": 81,
+            "max": 100,
+            "status": "par"
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 58,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 58
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "moveName": "Ice Beam",
+          "moveId": "ice-beam",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "hp": {
+            "current": 71,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "moveName": "Seismic Toss",
+          "moveId": "seismic-toss",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "hp": {
+            "current": 72,
+            "max": 100,
+            "status": "par"
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 59,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 59
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "moveName": "Sing",
+          "moveId": "sing",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          }
+        },
+        {
+          "type": "miss",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "targetIdent": null
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "moveName": "Soft-Boiled",
+          "moveId": "soft-boiled",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "par"
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 60,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 60
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "moveName": "Sing",
+          "moveId": "sing",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          }
+        },
+        {
+          "type": "fail",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "moveName": "Thunderbolt",
+          "moveId": "thunderbolt",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "hp": {
+            "current": 61,
+            "max": 100,
+            "status": "par"
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 61,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 61
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "moveName": "Sing",
+          "moveId": "sing",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          }
+        },
+        {
+          "type": "miss",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "targetIdent": null
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "reason": "par"
+        }
+      ]
+    },
+    {
+      "turnNumber": 62,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 62
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tauros"
+          },
+          "species": "Tauros",
+          "level": 100,
+          "hp": {
+            "current": 43,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "moveName": "Soft-Boiled",
+          "moveId": "soft-boiled",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "par"
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 63,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 63
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "species": "Snorlax",
+          "level": 100,
+          "hp": {
+            "current": 62,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tauros"
+          },
+          "moveName": "Body Slam",
+          "moveId": "body-slam",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          }
+        },
+        {
+          "type": "crit",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "hp": {
+            "current": 12,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 64,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 64
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "species": "Starmie",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tauros"
+          },
+          "moveName": "Body Slam",
+          "moveId": "body-slam",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          }
+        },
+        {
+          "type": "crit",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "hp": {
+            "current": 30,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "statusId": "par",
+          "statusName": "paralysis"
+        }
+      ]
+    },
+    {
+      "turnNumber": 65,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 65
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          },
+          "species": "Rhydon",
+          "level": 100,
+          "hp": {
+            "current": 42,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tauros"
+          },
+          "moveName": "Body Slam",
+          "moveId": "body-slam",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          },
+          "hp": {
+            "current": 32,
+            "max": 100,
+            "status": "par"
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 66,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 66
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "species": "Chansey",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tauros"
+          },
+          "moveName": "Earthquake",
+          "moveId": "earthquake",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "hp": {
+            "current": 70,
+            "max": 100,
+            "status": "par"
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 67,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 67
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tauros"
+          },
+          "moveName": "Body Slam",
+          "moveId": "body-slam",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          }
+        },
+        {
+          "type": "crit",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tauros"
+          },
+          "species": "Tauros",
+          "level": 100,
+          "hp": {
+            "current": 47,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 68,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 68
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "species": "Gengar",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tauros"
+          },
+          "moveName": "Earthquake",
+          "moveId": "earthquake",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gengar"
+          }
+        },
+        {
+          "type": "crit",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gengar"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gengar"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gengar"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "species": "Starmie",
+          "level": 100,
+          "hp": {
+            "current": 89,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 69,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 69
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "species": "Starmie",
+          "level": 100,
+          "hp": {
+            "current": 30,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "moveName": "Psychic",
+          "moveId": "psychic",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "hp": {
+            "current": 14,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "stat": "spa",
+          "amount": 1
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "stat": "spd",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "turnNumber": 70,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 70
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "moveName": "Psychic",
+          "moveId": "psychic",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tauros"
+          },
+          "species": "Tauros",
+          "level": 100,
+          "hp": {
+            "current": 47,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 71,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 71
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "moveName": "Thunder Wave",
+          "moveId": "thunder-wave",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tauros"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tauros"
+          },
+          "statusId": "par",
+          "statusName": "paralysis"
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tauros"
+          },
+          "reason": "par"
+        }
+      ]
+    },
+    {
+      "turnNumber": 72,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 72
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "moveName": "Psychic",
+          "moveId": "psychic",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tauros"
+          }
+        },
+        {
+          "type": "crit",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tauros"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tauros"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tauros"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-message|violet river forfeited."
+        },
+        {
+          "type": "win",
+          "winner": "dangerk1d"
+        }
+      ]
+    }
+  ],
+  "winner": "dangerk1d"
+}

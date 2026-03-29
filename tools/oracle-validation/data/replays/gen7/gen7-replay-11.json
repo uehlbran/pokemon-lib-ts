@@ -1,0 +1,1308 @@
+{
+  "id": "",
+  "format": "[Gen 7] OU",
+  "generation": 7,
+  "players": [
+    "ALEFTKJ",
+    "caldruki"
+  ],
+  "teams": [
+    [
+      {
+        "species": "Milotic",
+        "level": 100,
+        "knownMoves": [
+          "surf",
+          "ice-beam"
+        ],
+        "nickname": "Milotic"
+      },
+      {
+        "species": "Weavile",
+        "level": 100,
+        "knownMoves": [
+          "fake-out",
+          "subzero-slammer",
+          "ice-shard",
+          "knock-off"
+        ],
+        "nickname": "Weavile"
+      },
+      {
+        "species": "Arcanine",
+        "level": 100,
+        "knownMoves": [
+          "extreme-speed"
+        ],
+        "nickname": "Arcanine"
+      },
+      {
+        "species": "Lopunny",
+        "level": 100,
+        "knownMoves": [
+          "drain-punch",
+          "return",
+          "quick-attack"
+        ],
+        "nickname": "Lopunny"
+      }
+    ],
+    [
+      {
+        "species": "Excadrill",
+        "level": 100,
+        "knownMoves": [
+          "stealth-rock"
+        ],
+        "nickname": "BE GONE SPIK"
+      },
+      {
+        "species": "Kommo-o",
+        "level": 100,
+        "knownMoves": [
+          "clangorous-soulblaze",
+          "close-combat"
+        ],
+        "nickname": "Clingy clang"
+      },
+      {
+        "species": "Hawlucha",
+        "level": 100,
+        "knownMoves": [
+          "swords-dance"
+        ],
+        "nickname": "Goatucha"
+      },
+      {
+        "species": "Gardevoir",
+        "level": 100,
+        "knownMoves": [
+          "will-o-wisp",
+          "hyper-voice"
+        ],
+        "nickname": "Sylvia"
+      },
+      {
+        "species": "Greninja",
+        "level": 100,
+        "knownMoves": [
+          "surf"
+        ],
+        "nickname": "Second hand"
+      },
+      {
+        "species": "Volcarona",
+        "level": 100,
+        "knownMoves": [
+          "quiver-dance"
+        ],
+        "nickname": "Moth"
+      }
+    ]
+  ],
+  "turns": [
+    {
+      "turnNumber": 0,
+      "events": [
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Milotic"
+          },
+          "species": "Milotic",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "BE GONE SPIK"
+          },
+          "species": "Excadrill",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-ability|p2a: BE GONE SPIK|Mold Breaker"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-item|p2a: BE GONE SPIK|Air Balloon"
+        }
+      ]
+    },
+    {
+      "turnNumber": 1,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 1
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "BE GONE SPIK"
+          },
+          "moveName": "Stealth Rock",
+          "moveId": "stealth-rock",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Milotic"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sidestart|p1: ALEFTKJ|move: Stealth Rock"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Milotic"
+          },
+          "moveName": "Surf",
+          "moveId": "surf",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "BE GONE SPIK"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "BE GONE SPIK"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "BE GONE SPIK"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-enditem|p2a: BE GONE SPIK|Air Balloon"
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "BE GONE SPIK"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Clingy clang"
+          },
+          "species": "Kommo-o",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 2,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 2
+        },
+        {
+          "type": "unknown",
+          "raw": "|-zpower|p2a: Clingy clang"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Clingy clang"
+          },
+          "moveName": "Clangorous Soulblaze",
+          "moveId": "clangorous-soulblaze",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Milotic"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Milotic"
+          },
+          "hp": {
+            "current": 59,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Clingy clang"
+          },
+          "stat": "atk",
+          "amount": 1
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Clingy clang"
+          },
+          "stat": "def",
+          "amount": 1
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Clingy clang"
+          },
+          "stat": "spa",
+          "amount": 1
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Clingy clang"
+          },
+          "stat": "spd",
+          "amount": 1
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Clingy clang"
+          },
+          "stat": "spe",
+          "amount": 1
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Milotic"
+          },
+          "moveName": "Ice Beam",
+          "moveId": "ice-beam",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Clingy clang"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Clingy clang"
+          }
+        },
+        {
+          "type": "crit",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Clingy clang"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Clingy clang"
+          },
+          "hp": {
+            "current": 5,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 3,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 3
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Clingy clang"
+          },
+          "moveName": "Close Combat",
+          "moveId": "close-combat",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Milotic"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Milotic"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Clingy clang"
+          },
+          "stat": "def",
+          "amount": 1
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Clingy clang"
+          },
+          "stat": "spd",
+          "amount": 1
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Milotic"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Weavile"
+          },
+          "species": "Weavile",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Weavile"
+          },
+          "hp": {
+            "current": 76,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-ability|p1a: Weavile|Pressure"
+        }
+      ]
+    },
+    {
+      "turnNumber": 4,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 4
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Weavile"
+          },
+          "moveName": "Fake Out",
+          "moveId": "fake-out",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Clingy clang"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Clingy clang"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Clingy clang"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Goatucha"
+          },
+          "species": "Hawlucha",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 5,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 5
+        },
+        {
+          "type": "unknown",
+          "raw": "|-zpower|p1a: Weavile"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Weavile"
+          },
+          "moveName": "Subzero Slammer",
+          "moveId": "subzero-slammer",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Goatucha"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Goatucha"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-enditem|p2a: Goatucha|Focus Sash"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Goatucha"
+          },
+          "hp": {
+            "current": 1,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Goatucha"
+          },
+          "moveName": "Swords Dance",
+          "moveId": "swords-dance",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Goatucha"
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Goatucha"
+          },
+          "stat": "atk",
+          "amount": 2
+        }
+      ]
+    },
+    {
+      "turnNumber": 6,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 6
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Weavile"
+          },
+          "moveName": "Ice Shard",
+          "moveId": "ice-shard",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Goatucha"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Goatucha"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Goatucha"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Goatucha"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Sylvia"
+          },
+          "species": "Gardevoir",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-ability|p2a: Sylvia|Pressure|Trace|[from] ability: Trace|[of] p1a: Weavile"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-ability|p2a: Sylvia|Pressure"
+        }
+      ]
+    },
+    {
+      "turnNumber": 7,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 7
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Weavile"
+          },
+          "moveName": "Knock Off",
+          "moveId": "knock-off",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Sylvia"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Sylvia"
+          },
+          "hp": {
+            "current": 41,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Sylvia"
+          },
+          "moveName": "Will-O-Wisp",
+          "moveId": "will-o-wisp",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Weavile"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Weavile"
+          },
+          "statusId": "brn",
+          "statusName": "burn"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Weavile"
+          },
+          "hp": {
+            "current": 70,
+            "max": 100,
+            "status": "brn"
+          },
+          "from": "brn"
+        }
+      ]
+    },
+    {
+      "turnNumber": 8,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 8
+        },
+        {
+          "type": "unknown",
+          "raw": "|detailschange|p2a: Sylvia|Gardevoir-Mega, M, shiny"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-mega|p2a: Sylvia|Gardevoir|Gardevoirite"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Weavile"
+          },
+          "moveName": "Knock Off",
+          "moveId": "knock-off",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Sylvia"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Sylvia"
+          },
+          "hp": {
+            "current": 12,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Sylvia"
+          },
+          "moveName": "Hyper Voice",
+          "moveId": "hyper-voice",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Weavile"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Weavile"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Weavile"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Weavile"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Arcanine"
+          },
+          "species": "Arcanine",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Arcanine"
+          },
+          "hp": {
+            "current": 76,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-ability|p1a: Arcanine|Intimidate|boost"
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Sylvia"
+          },
+          "stat": "atk",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "turnNumber": 9,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 9
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Arcanine"
+          },
+          "moveName": "Extreme Speed",
+          "moveId": "extreme-speed",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Sylvia"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Sylvia"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Sylvia"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|detailschange|p2: Sylvia|Gardevoir, M, shiny|[silent]"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Second hand"
+          },
+          "species": "Greninja",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 10,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 10
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Second hand"
+          },
+          "moveName": "Surf",
+          "moveId": "surf",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Arcanine"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Arcanine"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Arcanine"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Arcanine"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|detailschange|p2a: Second hand|Greninja-Ash, M"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Second hand"
+          },
+          "hp": {
+            "current": 91,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Life Orb"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Lopunny"
+          },
+          "species": "Lopunny",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Lopunny"
+          },
+          "hp": {
+            "current": 88,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        }
+      ]
+    },
+    {
+      "turnNumber": 11,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 11
+        },
+        {
+          "type": "unknown",
+          "raw": "|detailschange|p1a: Lopunny|Lopunny-Mega, F, shiny"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-mega|p1a: Lopunny|Lopunny|Lopunnite"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Lopunny"
+          },
+          "moveName": "Drain Punch",
+          "moveId": "drain-punch",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Second hand"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Second hand"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Second hand"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Lopunny"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          },
+          "from": "drain"
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Second hand"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|detailschange|p2: Second hand|Greninja, M|[silent]"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Moth"
+          },
+          "species": "Volcarona",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 12,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 12
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Lopunny"
+          },
+          "moveName": "Return",
+          "moveId": "return",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Moth"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Moth"
+          },
+          "hp": {
+            "current": 14,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Lopunny"
+          },
+          "statusId": "brn",
+          "statusName": "burn"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Moth"
+          },
+          "moveName": "Quiver Dance",
+          "moveId": "quiver-dance",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Moth"
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Moth"
+          },
+          "stat": "spa",
+          "amount": 1
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Moth"
+          },
+          "stat": "spd",
+          "amount": 1
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Moth"
+          },
+          "stat": "spe",
+          "amount": 1
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Lopunny"
+          },
+          "hp": {
+            "current": 95,
+            "max": 100,
+            "status": "brn"
+          },
+          "from": "brn"
+        }
+      ]
+    },
+    {
+      "turnNumber": 13,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 13
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Lopunny"
+          },
+          "moveName": "Quick Attack",
+          "moveId": "quick-attack",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Moth"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Moth"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Moth"
+          }
+        },
+        {
+          "type": "win",
+          "winner": "ALEFTKJ"
+        }
+      ]
+    }
+  ],
+  "winner": "ALEFTKJ"
+}

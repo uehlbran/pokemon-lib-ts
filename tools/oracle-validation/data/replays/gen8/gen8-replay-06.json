@@ -1,0 +1,822 @@
+{
+  "id": "",
+  "format": "[Gen 8] OU",
+  "generation": 8,
+  "players": [
+    "CrownOFF",
+    "LaughingCamelzz"
+  ],
+  "teams": [
+    [
+      {
+        "species": "Ninetales-Alola",
+        "level": 100,
+        "knownMoves": [
+          "freeze-dry",
+          "hypnosis",
+          "aurora-veil"
+        ],
+        "nickname": "Ninetales"
+      },
+      {
+        "species": "Volcarona",
+        "level": 100,
+        "knownMoves": [
+          "quiver-dance",
+          "bug-buzz"
+        ],
+        "nickname": "Volcarona"
+      }
+    ],
+    [
+      {
+        "species": "Pelipper",
+        "level": 100,
+        "knownMoves": [
+          "u-turn"
+        ],
+        "nickname": "Pelipper"
+      },
+      {
+        "species": "Ferrothorn",
+        "level": 100,
+        "knownMoves": [
+          "knock-off",
+          "leech-seed"
+        ],
+        "nickname": "Ferrothorn"
+      },
+      {
+        "species": "Garchomp",
+        "level": 100,
+        "knownMoves": [
+          "swords-dance"
+        ],
+        "nickname": "Garchomp"
+      },
+      {
+        "species": "Barraskewda",
+        "level": 100,
+        "knownMoves": [],
+        "nickname": "Barraskewda"
+      }
+    ]
+  ],
+  "turns": [
+    {
+      "turnNumber": 0,
+      "events": [
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ninetales"
+          },
+          "species": "Ninetales-Alola",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Pelipper"
+          },
+          "species": "Pelipper",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Hail|[from] ability: Snow Warning|[of] p1a: Ninetales"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[from] ability: Drizzle|[of] p2a: Pelipper"
+        }
+      ]
+    },
+    {
+      "turnNumber": 1,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 1
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ferrothorn"
+          },
+          "species": "Ferrothorn",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ninetales"
+          },
+          "moveName": "Freeze-Dry",
+          "moveId": "freeze-dry",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ferrothorn"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ferrothorn"
+          },
+          "hp": {
+            "current": 88,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[upkeep]"
+        }
+      ]
+    },
+    {
+      "turnNumber": 2,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 2
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ninetales"
+          },
+          "moveName": "Hypnosis",
+          "moveId": "hypnosis",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ferrothorn"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ferrothorn"
+          },
+          "statusId": "slp",
+          "statusName": "sleep"
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ferrothorn"
+          },
+          "reason": "slp"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[upkeep]"
+        }
+      ]
+    },
+    {
+      "turnNumber": 3,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 3
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ninetales"
+          },
+          "moveName": "Aurora Veil",
+          "moveId": "aurora-veil",
+          "targetIdent": null
+        },
+        {
+          "type": "fail",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ninetales"
+          }
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ferrothorn"
+          },
+          "reason": "slp"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[upkeep]"
+        }
+      ]
+    },
+    {
+      "turnNumber": 4,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 4
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ninetales"
+          },
+          "moveName": "Aurora Veil",
+          "moveId": "aurora-veil",
+          "targetIdent": null
+        },
+        {
+          "type": "fail",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ninetales"
+          }
+        },
+        {
+          "type": "curestatus",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ferrothorn"
+          },
+          "statusId": "slp"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ferrothorn"
+          },
+          "moveName": "Knock Off",
+          "moveId": "knock-off",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ninetales"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ninetales"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ninetales"
+          },
+          "hp": {
+            "current": 87,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-enditem|p1a: Ninetales|Light Clay|[from] move: Knock Off|[of] p2a: Ferrothorn"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[upkeep]"
+        }
+      ]
+    },
+    {
+      "turnNumber": 5,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 5
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ninetales"
+          },
+          "moveName": "Aurora Veil",
+          "moveId": "aurora-veil",
+          "targetIdent": null
+        },
+        {
+          "type": "fail",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ninetales"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ferrothorn"
+          },
+          "moveName": "Leech Seed",
+          "moveId": "leech-seed",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ninetales"
+          }
+        },
+        {
+          "type": "miss",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ferrothorn"
+          },
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ninetales"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[upkeep]"
+        }
+      ]
+    },
+    {
+      "turnNumber": 6,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 6
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ninetales"
+          },
+          "moveName": "Hypnosis",
+          "moveId": "hypnosis",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ferrothorn"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ferrothorn"
+          },
+          "statusId": "slp",
+          "statusName": "sleep"
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ferrothorn"
+          },
+          "reason": "slp"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[upkeep]"
+        }
+      ]
+    },
+    {
+      "turnNumber": 7,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 7
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcarona"
+          },
+          "species": "Volcarona",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ferrothorn"
+          },
+          "reason": "slp"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[upkeep]"
+        }
+      ]
+    },
+    {
+      "turnNumber": 8,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 8
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Garchomp"
+          },
+          "species": "Garchomp",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcarona"
+          },
+          "moveName": "Quiver Dance",
+          "moveId": "quiver-dance",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcarona"
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcarona"
+          },
+          "stat": "spa",
+          "amount": 1
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcarona"
+          },
+          "stat": "spd",
+          "amount": 1
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcarona"
+          },
+          "stat": "spe",
+          "amount": 1
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|none"
+        }
+      ]
+    },
+    {
+      "turnNumber": 9,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 9
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcarona"
+          },
+          "moveName": "Quiver Dance",
+          "moveId": "quiver-dance",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcarona"
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcarona"
+          },
+          "stat": "spa",
+          "amount": 1
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcarona"
+          },
+          "stat": "spd",
+          "amount": 1
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcarona"
+          },
+          "stat": "spe",
+          "amount": 1
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Garchomp"
+          },
+          "moveName": "Swords Dance",
+          "moveId": "swords-dance",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Garchomp"
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Garchomp"
+          },
+          "stat": "atk",
+          "amount": 2
+        }
+      ]
+    },
+    {
+      "turnNumber": 10,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 10
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcarona"
+          },
+          "moveName": "Bug Buzz",
+          "moveId": "bug-buzz",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Garchomp"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Garchomp"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Garchomp"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Pelipper"
+          },
+          "species": "Pelipper",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[from] ability: Drizzle|[of] p2a: Pelipper"
+        }
+      ]
+    },
+    {
+      "turnNumber": 11,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 11
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcarona"
+          },
+          "moveName": "Quiver Dance",
+          "moveId": "quiver-dance",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcarona"
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcarona"
+          },
+          "stat": "spa",
+          "amount": 1
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcarona"
+          },
+          "stat": "spd",
+          "amount": 1
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcarona"
+          },
+          "stat": "spe",
+          "amount": 1
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Pelipper"
+          },
+          "moveName": "U-turn",
+          "moveId": "u-turn",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcarona"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcarona"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Volcarona"
+          },
+          "hp": {
+            "current": 93,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Barraskewda"
+          },
+          "species": "Barraskewda",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[upkeep]"
+        }
+      ]
+    },
+    {
+      "turnNumber": 12,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 12
+        },
+        {
+          "type": "unknown",
+          "raw": "|-message|LaughingCamelzz forfeited."
+        },
+        {
+          "type": "win",
+          "winner": "CrownOFF"
+        }
+      ]
+    }
+  ],
+  "winner": "CrownOFF"
+}

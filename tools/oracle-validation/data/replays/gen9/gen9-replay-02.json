@@ -1,0 +1,3258 @@
+{
+  "id": "",
+  "format": "[Gen 9] OU",
+  "generation": 9,
+  "players": [
+    "ALVinsoul",
+    "pfelyx1"
+  ],
+  "teams": [
+    [
+      {
+        "species": "Tyranitar",
+        "level": 100,
+        "knownMoves": [
+          "ice-punch",
+          "knock-off"
+        ],
+        "nickname": "Godzilla"
+      },
+      {
+        "species": "Garganacl",
+        "level": 100,
+        "knownMoves": [
+          "salt-cure",
+          "protect",
+          "recover",
+          "stealth-rock"
+        ],
+        "nickname": "Donkey Kong"
+      },
+      {
+        "species": "Heatran",
+        "level": 100,
+        "knownMoves": [
+          "magma-storm"
+        ],
+        "nickname": "Goyito"
+      },
+      {
+        "species": "Landorus-Therian",
+        "level": 100,
+        "knownMoves": [
+          "u-turn"
+        ],
+        "nickname": "Chestherian"
+      },
+      {
+        "species": "Great Tusk",
+        "level": 100,
+        "knownMoves": [
+          "close-combat"
+        ],
+        "nickname": "Unga Bunga"
+      },
+      {
+        "species": "Excadrill",
+        "level": 100,
+        "knownMoves": [
+          "swords-dance",
+          "earthquake"
+        ],
+        "nickname": "Gaara"
+      }
+    ],
+    [
+      {
+        "species": "Meowscarada",
+        "level": 100,
+        "knownMoves": [
+          "flower-trick"
+        ],
+        "nickname": "Meowscarada"
+      },
+      {
+        "species": "Alomomola",
+        "level": 100,
+        "knownMoves": [
+          "flip-turn",
+          "wish",
+          "protect"
+        ],
+        "nickname": "Alomomola"
+      },
+      {
+        "species": "Gholdengo",
+        "level": 100,
+        "knownMoves": [
+          "make-it-rain",
+          "trick",
+          "focus-blast"
+        ],
+        "nickname": "Gholdengo"
+      },
+      {
+        "species": "Gliscor",
+        "level": 100,
+        "knownMoves": [
+          "earthquake",
+          "protect",
+          "swords-dance",
+          "facade"
+        ],
+        "nickname": "Gliscor"
+      },
+      {
+        "species": "Corviknight",
+        "level": 100,
+        "knownMoves": [
+          "brave-bird"
+        ],
+        "nickname": "Corviknight"
+      },
+      {
+        "species": "Toxapex",
+        "level": 100,
+        "knownMoves": [
+          "baneful-bunker"
+        ],
+        "nickname": "Toxapex"
+      }
+    ]
+  ],
+  "turns": [
+    {
+      "turnNumber": 0,
+      "events": [
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Godzilla"
+          },
+          "species": "Tyranitar",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Meowscarada"
+          },
+          "species": "Meowscarada",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[from] ability: Sand Stream|[of] p1a: Godzilla"
+        }
+      ]
+    },
+    {
+      "turnNumber": 1,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 1
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Meowscarada"
+          },
+          "moveName": "Flower Trick",
+          "moveId": "flower-trick",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Godzilla"
+          }
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Meowscarada"
+          },
+          "effect": "typechange"
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Godzilla"
+          }
+        },
+        {
+          "type": "crit",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Godzilla"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Godzilla"
+          },
+          "hp": {
+            "current": 4,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Godzilla"
+          },
+          "moveName": "Ice Punch",
+          "moveId": "ice-punch",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Meowscarada"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Meowscarada"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Meowscarada"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Meowscarada"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alomomola"
+          },
+          "species": "Alomomola",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 2,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 2
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Donkey Kong"
+          },
+          "species": "Garganacl",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alomomola"
+          },
+          "moveName": "Flip Turn",
+          "moveId": "flip-turn",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Donkey Kong"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Donkey Kong"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Donkey Kong"
+          },
+          "hp": {
+            "current": 85,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gholdengo"
+          },
+          "species": "Gholdengo",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Donkey Kong"
+          },
+          "hp": {
+            "current": 91,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 3,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 3
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gholdengo"
+          },
+          "moveName": "Make It Rain",
+          "moveId": "make-it-rain",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Donkey Kong"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Donkey Kong"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Donkey Kong"
+          },
+          "hp": {
+            "current": 13,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gholdengo"
+          },
+          "stat": "spa",
+          "amount": 1
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Donkey Kong"
+          },
+          "moveName": "Salt Cure",
+          "moveId": "salt-cure",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gholdengo"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gholdengo"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gholdengo"
+          },
+          "hp": {
+            "current": 92,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gholdengo"
+          },
+          "effect": "Salt Cure"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Donkey Kong"
+          },
+          "hp": {
+            "current": 19,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gholdengo"
+          },
+          "hp": {
+            "current": 67,
+            "max": 100,
+            "status": null
+          },
+          "from": "Salt Cure"
+        }
+      ]
+    },
+    {
+      "turnNumber": 4,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 4
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Donkey Kong"
+          },
+          "moveName": "Protect",
+          "moveId": "protect",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Donkey Kong"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-singleturn|p1a: Donkey Kong|Protect"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gholdengo"
+          },
+          "moveName": "Make It Rain",
+          "moveId": "make-it-rain",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Donkey Kong"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Donkey Kong"
+          },
+          "hp": {
+            "current": 25,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gholdengo"
+          },
+          "hp": {
+            "current": 42,
+            "max": 100,
+            "status": null
+          },
+          "from": "Salt Cure"
+        }
+      ]
+    },
+    {
+      "turnNumber": 5,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 5
+        },
+        {
+          "type": "unknown",
+          "raw": "|-terastallize|p1a: Donkey Kong|Water"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gholdengo"
+          },
+          "moveName": "Make It Rain",
+          "moveId": "make-it-rain",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Donkey Kong"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Donkey Kong"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Donkey Kong"
+          },
+          "hp": {
+            "current": 7,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gholdengo"
+          },
+          "stat": "spa",
+          "amount": 1
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Donkey Kong"
+          },
+          "moveName": "Recover",
+          "moveId": "recover",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Donkey Kong"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Donkey Kong"
+          },
+          "hp": {
+            "current": 57,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|none"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Donkey Kong"
+          },
+          "hp": {
+            "current": 63,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gholdengo"
+          },
+          "hp": {
+            "current": 18,
+            "max": 100,
+            "status": null
+          },
+          "from": "Salt Cure"
+        }
+      ]
+    },
+    {
+      "turnNumber": 6,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 6
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alomomola"
+          },
+          "species": "Alomomola",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Donkey Kong"
+          },
+          "moveName": "Stealth Rock",
+          "moveId": "stealth-rock",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alomomola"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sidestart|p2: pfelyx1|move: Stealth Rock"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Donkey Kong"
+          },
+          "hp": {
+            "current": 69,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 7,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 7
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alomomola"
+          },
+          "moveName": "Wish",
+          "moveId": "wish",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alomomola"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Donkey Kong"
+          },
+          "moveName": "Salt Cure",
+          "moveId": "salt-cure",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alomomola"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alomomola"
+          },
+          "hp": {
+            "current": 93,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alomomola"
+          },
+          "effect": "Salt Cure"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Donkey Kong"
+          },
+          "hp": {
+            "current": 75,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alomomola"
+          },
+          "hp": {
+            "current": 68,
+            "max": 100,
+            "status": null
+          },
+          "from": "Salt Cure"
+        }
+      ]
+    },
+    {
+      "turnNumber": 8,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 8
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alomomola"
+          },
+          "moveName": "Flip Turn",
+          "moveId": "flip-turn",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Donkey Kong"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Donkey Kong"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Donkey Kong"
+          },
+          "hp": {
+            "current": 71,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gholdengo"
+          },
+          "species": "Gholdengo",
+          "level": 100,
+          "hp": {
+            "current": 18,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gholdengo"
+          },
+          "hp": {
+            "current": 12,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Donkey Kong"
+          },
+          "moveName": "Recover",
+          "moveId": "recover",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Donkey Kong"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Donkey Kong"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gholdengo"
+          },
+          "hp": {
+            "current": 96,
+            "max": 100,
+            "status": null
+          },
+          "from": "move: Wish"
+        }
+      ]
+    },
+    {
+      "turnNumber": 9,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 9
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Goyito"
+          },
+          "species": "Heatran",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-item|p1a: Goyito|Air Balloon"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gholdengo"
+          },
+          "moveName": "Trick",
+          "moveId": "trick",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Goyito"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-item|p1a: Goyito|Choice Scarf|[from] move: Trick"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-item|p2a: Gholdengo|Air Balloon"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-item|p2a: Gholdengo|Air Balloon|[from] move: Trick"
+        }
+      ]
+    },
+    {
+      "turnNumber": 10,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 10
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gholdengo"
+          },
+          "moveName": "Focus Blast",
+          "moveId": "focus-blast",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Goyito"
+          }
+        },
+        {
+          "type": "miss",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gholdengo"
+          },
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Goyito"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Goyito"
+          },
+          "moveName": "Magma Storm",
+          "moveId": "magma-storm",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gholdengo"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gholdengo"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gholdengo"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-enditem|p2a: Gholdengo|Air Balloon"
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gholdengo"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "species": "Gliscor",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "hp": {
+            "current": 88,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        }
+      ]
+    },
+    {
+      "turnNumber": 11,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 11
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Goyito"
+          },
+          "moveName": "Magma Storm",
+          "moveId": "magma-storm",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "hp": {
+            "current": 52,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "moveName": "Earthquake",
+          "moveId": "earthquake",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Goyito"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Goyito"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Goyito"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Goyito"
+          }
+        },
+        {
+          "type": "end",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "effect": "Magma Storm"
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "statusId": "tox",
+          "statusName": "badly-poisoned"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Donkey Kong"
+          },
+          "species": "Garganacl",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 12,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 12
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "moveName": "Protect",
+          "moveId": "protect",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-singleturn|p2a: Gliscor|Protect"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Donkey Kong"
+          },
+          "moveName": "Salt Cure",
+          "moveId": "salt-cure",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "hp": {
+            "current": 65,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "ability: Poison Heal"
+        }
+      ]
+    },
+    {
+      "turnNumber": 13,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 13
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "moveName": "Swords Dance",
+          "moveId": "swords-dance",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "stat": "atk",
+          "amount": 2
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Donkey Kong"
+          },
+          "moveName": "Salt Cure",
+          "moveId": "salt-cure",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "hp": {
+            "current": 54,
+            "max": 100,
+            "status": "tox"
+          }
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "effect": "Salt Cure"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "hp": {
+            "current": 66,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "ability: Poison Heal"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "hp": {
+            "current": 54,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "Salt Cure"
+        }
+      ]
+    },
+    {
+      "turnNumber": 14,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 14
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "moveName": "Swords Dance",
+          "moveId": "swords-dance",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "stat": "atk",
+          "amount": 2
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Donkey Kong"
+          },
+          "moveName": "Recover",
+          "moveId": "recover",
+          "targetIdent": null
+        },
+        {
+          "type": "fail",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Donkey Kong"
+          },
+          "reason": "heal"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "hp": {
+            "current": 66,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "ability: Poison Heal"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "hp": {
+            "current": 54,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "Salt Cure"
+        }
+      ]
+    },
+    {
+      "turnNumber": 15,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 15
+        },
+        {
+          "type": "unknown",
+          "raw": "|-terastallize|p2a: Gliscor|Normal"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "moveName": "Facade",
+          "moveId": "facade",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Donkey Kong"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Donkey Kong"
+          },
+          "hp": {
+            "current": 27,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Donkey Kong"
+          },
+          "moveName": "Salt Cure",
+          "moveId": "salt-cure",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "hp": {
+            "current": 43,
+            "max": 100,
+            "status": "tox"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Donkey Kong"
+          },
+          "hp": {
+            "current": 33,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "hp": {
+            "current": 56,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "ability: Poison Heal"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "hp": {
+            "current": 43,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "Salt Cure"
+        }
+      ]
+    },
+    {
+      "turnNumber": 16,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 16
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chestherian"
+          },
+          "species": "Landorus-Therian",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-ability|p1a: Chestherian|Intimidate|boost"
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "stat": "atk",
+          "amount": 1
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "moveName": "Facade",
+          "moveId": "facade",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chestherian"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chestherian"
+          },
+          "hp": {
+            "current": 27,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "hp": {
+            "current": 27,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "item: Rocky Helmet"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "hp": {
+            "current": 39,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "ability: Poison Heal"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "hp": {
+            "current": 27,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "Salt Cure"
+        }
+      ]
+    },
+    {
+      "turnNumber": 17,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 17
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alomomola"
+          },
+          "species": "Alomomola",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chestherian"
+          },
+          "moveName": "U-turn",
+          "moveId": "u-turn",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alomomola"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alomomola"
+          },
+          "hp": {
+            "current": 90,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Godzilla"
+          },
+          "species": "Tyranitar",
+          "level": 100,
+          "hp": {
+            "current": 4,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[from] ability: Sand Stream|[of] p1a: Godzilla"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alomomola"
+          },
+          "hp": {
+            "current": 84,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        }
+      ]
+    },
+    {
+      "turnNumber": 18,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 18
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Godzilla"
+          },
+          "moveName": "Knock Off",
+          "moveId": "knock-off",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alomomola"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alomomola"
+          },
+          "hp": {
+            "current": 36,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-enditem|p2a: Alomomola|Heavy-Duty Boots|[from] move: Knock Off|[of] p1a: Godzilla"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alomomola"
+          },
+          "moveName": "Wish",
+          "moveId": "wish",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alomomola"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alomomola"
+          },
+          "hp": {
+            "current": 30,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        }
+      ]
+    },
+    {
+      "turnNumber": 19,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 19
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alomomola"
+          },
+          "moveName": "Protect",
+          "moveId": "protect",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alomomola"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-singleturn|p2a: Alomomola|Protect"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Godzilla"
+          },
+          "moveName": "Knock Off",
+          "moveId": "knock-off",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alomomola"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alomomola"
+          },
+          "hp": {
+            "current": 24,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alomomola"
+          },
+          "hp": {
+            "current": 74,
+            "max": 100,
+            "status": null
+          },
+          "from": "move: Wish"
+        }
+      ]
+    },
+    {
+      "turnNumber": 20,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 20
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Godzilla"
+          },
+          "moveName": "Knock Off",
+          "moveId": "knock-off",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alomomola"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alomomola"
+          },
+          "hp": {
+            "current": 42,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alomomola"
+          },
+          "moveName": "Wish",
+          "moveId": "wish",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alomomola"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alomomola"
+          },
+          "hp": {
+            "current": 36,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        }
+      ]
+    },
+    {
+      "turnNumber": 21,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 21
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chestherian"
+          },
+          "species": "Landorus-Therian",
+          "level": 100,
+          "hp": {
+            "current": 27,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-ability|p1a: Chestherian|Intimidate|boost"
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alomomola"
+          },
+          "stat": "atk",
+          "amount": 1
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alomomola"
+          },
+          "moveName": "Flip Turn",
+          "moveId": "flip-turn",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chestherian"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chestherian"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chestherian"
+          },
+          "hp": {
+            "current": 12,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alomomola"
+          },
+          "hp": {
+            "current": 19,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Rocky Helmet"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "species": "Gliscor",
+          "level": 100,
+          "hp": {
+            "current": 27,
+            "max": 100,
+            "status": "tox"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "hp": {
+            "current": 14,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "Stealth Rock"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|none"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "hp": {
+            "current": 90,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "move: Wish"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "ability: Poison Heal"
+        }
+      ]
+    },
+    {
+      "turnNumber": 22,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 22
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "moveName": "Facade",
+          "moveId": "facade",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chestherian"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chestherian"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "hp": {
+            "current": 84,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "item: Rocky Helmet"
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chestherian"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "hp": {
+            "current": 97,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "ability: Poison Heal"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Godzilla"
+          },
+          "species": "Tyranitar",
+          "level": 100,
+          "hp": {
+            "current": 4,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[from] ability: Sand Stream|[of] p1a: Godzilla"
+        }
+      ]
+    },
+    {
+      "turnNumber": 23,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 23
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "moveName": "Facade",
+          "moveId": "facade",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Godzilla"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Godzilla"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Godzilla"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Godzilla"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "hp": {
+            "current": 90,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "ability: Poison Heal"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Unga Bunga"
+          },
+          "species": "Great Tusk",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 24,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 24
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Corviknight"
+          },
+          "species": "Corviknight",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Corviknight"
+          },
+          "hp": {
+            "current": 88,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-ability|p2a: Corviknight|Pressure"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Unga Bunga"
+          },
+          "moveName": "Close Combat",
+          "moveId": "close-combat",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Corviknight"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Corviknight"
+          },
+          "hp": {
+            "current": 50,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Unga Bunga"
+          },
+          "stat": "def",
+          "amount": 1
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Unga Bunga"
+          },
+          "stat": "spd",
+          "amount": 1
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Unga Bunga"
+          },
+          "hp": {
+            "current": 84,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Rocky Helmet"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        }
+      ]
+    },
+    {
+      "turnNumber": 25,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 25
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Unga Bunga"
+          },
+          "moveName": "Close Combat",
+          "moveId": "close-combat",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Corviknight"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Corviknight"
+          },
+          "hp": {
+            "current": 10,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Unga Bunga"
+          },
+          "stat": "def",
+          "amount": 1
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Unga Bunga"
+          },
+          "stat": "spd",
+          "amount": 1
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Unga Bunga"
+          },
+          "hp": {
+            "current": 68,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Rocky Helmet"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Corviknight"
+          },
+          "moveName": "Brave Bird",
+          "moveId": "brave-bird",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Unga Bunga"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Unga Bunga"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Unga Bunga"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Unga Bunga"
+          }
+        },
+        {
+          "type": "end",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Unga Bunga"
+          },
+          "effect": "Protosynthesis"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Corviknight"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          },
+          "from": "Recoil"
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Corviknight"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gaara"
+          },
+          "species": "Excadrill",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "species": "Gliscor",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "tox"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-item|p1a: Gaara|Air Balloon"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "hp": {
+            "current": 88,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "Stealth Rock"
+        }
+      ]
+    },
+    {
+      "turnNumber": 26,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 26
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gaara"
+          },
+          "moveName": "Swords Dance",
+          "moveId": "swords-dance",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gaara"
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gaara"
+          },
+          "stat": "atk",
+          "amount": 2
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "moveName": "Swords Dance",
+          "moveId": "swords-dance",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "stat": "atk",
+          "amount": 2
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "hp": {
+            "current": 82,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "ability: Poison Heal"
+        }
+      ]
+    },
+    {
+      "turnNumber": 27,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 27
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gaara"
+          },
+          "moveName": "Earthquake",
+          "moveId": "earthquake",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "hp": {
+            "current": 3,
+            "max": 100,
+            "status": "tox"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "moveName": "Facade",
+          "moveId": "facade",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gaara"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gaara"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gaara"
+          },
+          "hp": {
+            "current": 40,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-enditem|p1a: Gaara|Air Balloon"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|none"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "hp": {
+            "current": 15,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "ability: Poison Heal"
+        }
+      ]
+    },
+    {
+      "turnNumber": 28,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 28
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "moveName": "Protect",
+          "moveId": "protect",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-singleturn|p2a: Gliscor|Protect"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gaara"
+          },
+          "moveName": "Earthquake",
+          "moveId": "earthquake",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "hp": {
+            "current": 28,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "ability: Poison Heal"
+        }
+      ]
+    },
+    {
+      "turnNumber": 29,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 29
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alomomola"
+          },
+          "species": "Alomomola",
+          "level": 100,
+          "hp": {
+            "current": 52,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alomomola"
+          },
+          "hp": {
+            "current": 40,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gaara"
+          },
+          "moveName": "Earthquake",
+          "moveId": "earthquake",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alomomola"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alomomola"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alomomola"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Toxapex"
+          },
+          "species": "Toxapex",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Toxapex"
+          },
+          "hp": {
+            "current": 88,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        }
+      ]
+    },
+    {
+      "turnNumber": 30,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 30
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Toxapex"
+          },
+          "moveName": "Baneful Bunker",
+          "moveId": "baneful-bunker",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Toxapex"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-singleturn|p2a: Toxapex|move: Protect"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gaara"
+          },
+          "moveName": "Earthquake",
+          "moveId": "earthquake",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Toxapex"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Toxapex"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 31,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 31
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gaara"
+          },
+          "moveName": "Earthquake",
+          "moveId": "earthquake",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Toxapex"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Toxapex"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Toxapex"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Toxapex"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "species": "Gliscor",
+          "level": 100,
+          "hp": {
+            "current": 28,
+            "max": 100,
+            "status": "tox"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "hp": {
+            "current": 15,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "Stealth Rock"
+        }
+      ]
+    },
+    {
+      "turnNumber": 32,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 32
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "moveName": "Protect",
+          "moveId": "protect",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-singleturn|p2a: Gliscor|Protect"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gaara"
+          },
+          "moveName": "Earthquake",
+          "moveId": "earthquake",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "hp": {
+            "current": 28,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "ability: Poison Heal"
+        }
+      ]
+    },
+    {
+      "turnNumber": 33,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 33
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gaara"
+          },
+          "moveName": "Earthquake",
+          "moveId": "earthquake",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gliscor"
+          }
+        },
+        {
+          "type": "win",
+          "winner": "ALVinsoul"
+        }
+      ]
+    }
+  ],
+  "winner": "ALVinsoul"
+}

@@ -1,0 +1,5063 @@
+{
+  "id": "",
+  "format": "[Gen 3] OU",
+  "generation": 3,
+  "players": [
+    "Naryar",
+    "Bad_english_4_ever"
+  ],
+  "teams": [
+    [
+      {
+        "species": "Vaporeon",
+        "level": 100,
+        "knownMoves": [
+          "surf",
+          "baton-pass",
+          "wish"
+        ],
+        "nickname": "Vaporeon"
+      },
+      {
+        "species": "Zapdos",
+        "level": 100,
+        "knownMoves": [
+          "thunderbolt",
+          "toxic",
+          "hidden-power"
+        ],
+        "nickname": "Zapdos"
+      },
+      {
+        "species": "Claydol",
+        "level": 100,
+        "knownMoves": [
+          "earthquake",
+          "explosion"
+        ],
+        "nickname": "Claydol"
+      },
+      {
+        "species": "Rhydon",
+        "level": 100,
+        "knownMoves": [
+          "earthquake",
+          "rock-slide"
+        ],
+        "nickname": "Rhydon"
+      },
+      {
+        "species": "Blissey",
+        "level": 100,
+        "knownMoves": [
+          "thunder-wave"
+        ],
+        "nickname": "Blissey"
+      },
+      {
+        "species": "Gyarados",
+        "level": 100,
+        "knownMoves": [
+          "taunt",
+          "dragon-dance",
+          "hidden-power",
+          "earthquake"
+        ],
+        "nickname": "Gyarados"
+      }
+    ],
+    [
+      {
+        "species": "Tyranitar",
+        "level": 100,
+        "knownMoves": [
+          "rock-slide"
+        ],
+        "nickname": "Tyranitar"
+      },
+      {
+        "species": "Gyarados",
+        "level": 100,
+        "knownMoves": [
+          "dragon-dance",
+          "hidden-power",
+          "earthquake"
+        ],
+        "nickname": "Gyarados"
+      },
+      {
+        "species": "Heracross",
+        "level": 100,
+        "knownMoves": [
+          "substitute",
+          "megahorn"
+        ],
+        "nickname": "Heracross"
+      },
+      {
+        "species": "Blissey",
+        "level": 100,
+        "knownMoves": [
+          "thunder-wave",
+          "aromatherapy",
+          "seismic-toss"
+        ],
+        "nickname": "Blissey"
+      },
+      {
+        "species": "Gengar",
+        "level": 100,
+        "knownMoves": [
+          "giga-drain",
+          "taunt"
+        ],
+        "nickname": "Gengar"
+      },
+      {
+        "species": "Swampert",
+        "level": 100,
+        "knownMoves": [
+          "toxic",
+          "protect",
+          "hydro-pump"
+        ],
+        "nickname": "Swampert"
+      }
+    ]
+  ],
+  "turns": [
+    {
+      "turnNumber": 0,
+      "events": [
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "species": "Vaporeon",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "species": "Tyranitar",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[from] ability: Sand Stream|[of] p2a: Tyranitar"
+        }
+      ]
+    },
+    {
+      "turnNumber": 1,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 1
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "species": "Gyarados",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-ability|p2a: Gyarados|Intimidate|boost"
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "stat": "atk",
+          "amount": 1
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "moveName": "Surf",
+          "moveId": "surf",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 81,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 75,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 81,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 2,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 2
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "moveName": "Dragon Dance",
+          "moveId": "dragon-dance",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "stat": "atk",
+          "amount": 1
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "stat": "spe",
+          "amount": 1
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "moveName": "Baton Pass",
+          "moveId": "baton-pass",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "species": "Zapdos",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 75,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 81,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 3,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 3
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "species": "Tyranitar",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "moveName": "Thunderbolt",
+          "moveId": "thunderbolt",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "hp": {
+            "current": 55,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 4,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 4
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Claydol"
+          },
+          "species": "Claydol",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "moveName": "Rock Slide",
+          "moveId": "rock-slide",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Claydol"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Claydol"
+          }
+        },
+        {
+          "type": "crit",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Claydol"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Claydol"
+          },
+          "hp": {
+            "current": 53,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Claydol"
+          },
+          "hp": {
+            "current": 59,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 5,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 5
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Heracross"
+          },
+          "species": "Heracross",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Claydol"
+          },
+          "moveName": "Earthquake",
+          "moveId": "earthquake",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Heracross"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Heracross"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Heracross"
+          },
+          "hp": {
+            "current": 75,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Heracross"
+          },
+          "hp": {
+            "current": 69,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Heracross"
+          },
+          "hp": {
+            "current": 75,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Claydol"
+          },
+          "hp": {
+            "current": 66,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 6,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 6
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Heracross"
+          },
+          "moveName": "Substitute",
+          "moveId": "substitute",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Heracross"
+          }
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Heracross"
+          },
+          "effect": "Substitute"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Heracross"
+          },
+          "hp": {
+            "current": 50,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Claydol"
+          },
+          "moveName": "Explosion",
+          "moveId": "explosion",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Heracross"
+          }
+        },
+        {
+          "type": "end",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Heracross"
+          },
+          "effect": "Substitute"
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Claydol"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "species": "Zapdos",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Heracross"
+          },
+          "hp": {
+            "current": 44,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Heracross"
+          },
+          "hp": {
+            "current": 50,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 7,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 7
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "species": "Blissey",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "moveName": "Thunderbolt",
+          "moveId": "thunderbolt",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Blissey"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "hp": {
+            "current": 83,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "hp": {
+            "current": 77,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "hp": {
+            "current": 83,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 8,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 8
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "moveName": "Toxic",
+          "moveId": "toxic",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Blissey"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "statusId": "tox",
+          "statusName": "badly-poisoned"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "moveName": "Thunder Wave",
+          "moveId": "thunder-wave",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "statusId": "par",
+          "statusName": "paralysis"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "hp": {
+            "current": 77,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": "par"
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "hp": {
+            "current": 83,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "hp": {
+            "current": 77,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "psn"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "par"
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 9,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 9
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          },
+          "species": "Rhydon",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "moveName": "Aromatherapy",
+          "moveId": "aromatherapy",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Blissey"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-cureteam|p2a: Blissey|[from] move: Aromatherapy"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "hp": {
+            "current": 71,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "hp": {
+            "current": 77,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 10,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 10
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "species": "Gengar",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          },
+          "moveName": "Earthquake",
+          "moveId": "earthquake",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gengar"
+          }
+        },
+        {
+          "type": "immune",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gengar"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 11,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 11
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "species": "Blissey",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "moveName": "Giga Drain",
+          "moveId": "giga-drain",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "hp": {
+            "current": 93,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "hp": {
+            "current": 87,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "hp": {
+            "current": 93,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 12,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 12
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "moveName": "Taunt",
+          "moveId": "taunt",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          }
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "effect": "move: Taunt"
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "reason": "move: Taunt",
+          "moveName": "Thunder Wave"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "hp": {
+            "current": 87,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "hp": {
+            "current": 93,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 13,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 13
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "species": "Tyranitar",
+          "level": 100,
+          "hp": {
+            "current": 55,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "species": "Zapdos",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": "par"
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "par"
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 14,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 14
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          },
+          "species": "Rhydon",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "moveName": "Rock Slide",
+          "moveId": "rock-slide",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          },
+          "hp": {
+            "current": 85,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          },
+          "hp": {
+            "current": 91,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 15,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 15
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "species": "Swampert",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          },
+          "moveName": "Rock Slide",
+          "moveId": "rock-slide",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "hp": {
+            "current": 79,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          },
+          "hp": {
+            "current": 97,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "hp": {
+            "current": 86,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 16,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 16
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "species": "Blissey",
+          "level": 100,
+          "hp": {
+            "current": 93,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "moveName": "Toxic",
+          "moveId": "toxic",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "statusId": "tox",
+          "statusName": "badly-poisoned"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "hp": {
+            "current": 87,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "hp": {
+            "current": 92,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "hp": {
+            "current": 93,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "hp": {
+            "current": 87,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "psn"
+        }
+      ]
+    },
+    {
+      "turnNumber": 17,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 17
+        },
+        {
+          "type": "curestatus",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "statusId": "tox"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "species": "Gyarados",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-ability|p1a: Gyarados|Intimidate|boost"
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "stat": "atk",
+          "amount": 1
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "moveName": "Protect",
+          "moveId": "protect",
+          "targetIdent": null
+        },
+        {
+          "type": "fail",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "hp": {
+            "current": 98,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 18,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 18
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "moveName": "Taunt",
+          "moveId": "taunt",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          }
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "effect": "move: Taunt"
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "reason": "move: Taunt",
+          "moveName": "Toxic"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 19,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 19
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "species": "Gengar",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "moveName": "Dragon Dance",
+          "moveId": "dragon-dance",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "stat": "atk",
+          "amount": 1
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "stat": "spe",
+          "amount": 1
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 20,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 20
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "moveName": "Hidden Power",
+          "moveId": "hidden-power",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gengar"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gengar"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "species": "Gyarados",
+          "level": 100,
+          "hp": {
+            "current": 81,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-ability|p2a: Gyarados|Intimidate|boost"
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "stat": "atk",
+          "amount": 1
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 75,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 81,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 21,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 21
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "moveName": "Taunt",
+          "moveId": "taunt",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          }
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "effect": "move: Taunt"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "moveName": "Hidden Power",
+          "moveId": "hidden-power",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 54,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 48,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 75,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 54,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 81,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 22,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 22
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          },
+          "species": "Rhydon",
+          "level": 100,
+          "hp": {
+            "current": 97,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "moveName": "Hidden Power",
+          "moveId": "hidden-power",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          },
+          "hp": {
+            "current": 81,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 75,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 81,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "end",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "effect": "move: Taunt"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          },
+          "hp": {
+            "current": 87,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 23,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 23
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "species": "Swampert",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          },
+          "moveName": "Rock Slide",
+          "moveId": "rock-slide",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "hp": {
+            "current": 82,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          },
+          "hp": {
+            "current": 93,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "hp": {
+            "current": 88,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 24,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 24
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "species": "Zapdos",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "moveName": "Hydro Pump",
+          "moveId": "hydro-pump",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 58,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 52,
+            "max": 100,
+            "status": "par"
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "hp": {
+            "current": 95,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 58,
+            "max": 100,
+            "status": "par"
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 25,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 25
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "moveName": "Toxic",
+          "moveId": "toxic",
+          "targetIdent": null
+        },
+        {
+          "type": "fail",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "moveName": "Hidden Power",
+          "moveId": "hidden-power",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "hp": {
+            "current": 36,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 52,
+            "max": 100,
+            "status": "par"
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "hp": {
+            "current": 42,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 58,
+            "max": 100,
+            "status": "par"
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 26,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 26
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "species": "Vaporeon",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "moveName": "Hydro Pump",
+          "moveId": "hydro-pump",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          }
+        },
+        {
+          "type": "immune",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "hp": {
+            "current": 49,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 27,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 27
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "moveName": "Wish",
+          "moveId": "wish",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "moveName": "Toxic",
+          "moveId": "toxic",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "statusId": "tox",
+          "statusName": "badly-poisoned"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "psn"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "hp": {
+            "current": 55,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 28,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 28
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "species": "Gyarados",
+          "level": 100,
+          "hp": {
+            "current": 54,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-ability|p1a: Gyarados|Intimidate|boost"
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "stat": "atk",
+          "amount": 1
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "moveName": "Hydro Pump",
+          "moveId": "hydro-pump",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 35,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 85,
+            "max": 100,
+            "status": null
+          },
+          "from": "move: Wish"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 79,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 85,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "hp": {
+            "current": 61,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 29,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 29
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "species": "Gyarados",
+          "level": 100,
+          "hp": {
+            "current": 81,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-ability|p2a: Gyarados|Intimidate|boost"
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "stat": "atk",
+          "amount": 1
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "moveName": "Taunt",
+          "moveId": "taunt",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          }
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "effect": "move: Taunt"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 75,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 79,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 81,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 85,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 30,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 30
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "species": "Zapdos",
+          "level": 100,
+          "hp": {
+            "current": 58,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "moveName": "Hidden Power",
+          "moveId": "hidden-power",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          }
+        },
+        {
+          "type": "crit",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 8,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 75,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 2,
+            "max": 100,
+            "status": "par"
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 81,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "end",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "effect": "move: Taunt"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 8,
+            "max": 100,
+            "status": "par"
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 31,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 31
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "moveName": "Hidden Power",
+          "moveId": "hidden-power",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          },
+          "species": "Rhydon",
+          "level": 100,
+          "hp": {
+            "current": 93,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 75,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 81,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          },
+          "hp": {
+            "current": 99,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 32,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 32
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "species": "Swampert",
+          "level": 100,
+          "hp": {
+            "current": 61,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          },
+          "moveName": "Earthquake",
+          "moveId": "earthquake",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "hp": {
+            "current": 11,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "hp": {
+            "current": 17,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 33,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 33
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          },
+          "moveName": "Earthquake",
+          "moveId": "earthquake",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "species": "Gyarados",
+          "level": 100,
+          "hp": {
+            "current": 81,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-ability|p2a: Gyarados|Intimidate|boost"
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          },
+          "stat": "atk",
+          "amount": 1
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 75,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 81,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 34,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 34
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "moveName": "Dragon Dance",
+          "moveId": "dragon-dance",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "stat": "atk",
+          "amount": 1
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "stat": "spe",
+          "amount": 1
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          },
+          "moveName": "Rock Slide",
+          "moveId": "rock-slide",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 11,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 5,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 11,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 35,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 35
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "species": "Gyarados",
+          "level": 100,
+          "hp": {
+            "current": 85,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-ability|p1a: Gyarados|Intimidate|boost"
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "stat": "atk",
+          "amount": 1
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "moveName": "Earthquake",
+          "moveId": "earthquake",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          }
+        },
+        {
+          "type": "immune",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 5,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 79,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 11,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 85,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 36,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 36
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "moveName": "Hidden Power",
+          "moveId": "hidden-power",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 38,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "moveName": "Dragon Dance",
+          "moveId": "dragon-dance",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "stat": "atk",
+          "amount": 1
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "stat": "spe",
+          "amount": 1
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 5,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 32,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 11,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 38,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 37,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 37
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "species": "Vaporeon",
+          "level": 100,
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": "tox"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "moveName": "Hidden Power",
+          "moveId": "hidden-power",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "hp": {
+            "current": 52,
+            "max": 100,
+            "status": "tox"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 5,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "hp": {
+            "current": 46,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 11,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "hp": {
+            "current": 52,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "hp": {
+            "current": 46,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "psn"
+        }
+      ]
+    },
+    {
+      "turnNumber": 38,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 38
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "moveName": "Hidden Power",
+          "moveId": "hidden-power",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "hp": {
+            "current": 4,
+            "max": 100,
+            "status": "tox"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "moveName": "Surf",
+          "moveId": "surf",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Gyarados"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "species": "Tyranitar",
+          "level": 100,
+          "hp": {
+            "current": 55,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "species": "Gyarados",
+          "level": 100,
+          "hp": {
+            "current": 38,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-ability|p1a: Gyarados|Intimidate|boost"
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "stat": "atk",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "turnNumber": 39,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 39
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "moveName": "Earthquake",
+          "moveId": "earthquake",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "species": "Blissey",
+          "level": 100,
+          "hp": {
+            "current": 77,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 32,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "hp": {
+            "current": 71,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gyarados"
+          },
+          "hp": {
+            "current": 38,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "hp": {
+            "current": 77,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 40,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 40
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "species": "Blissey",
+          "level": 100,
+          "hp": {
+            "current": 87,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "moveName": "Seismic Toss",
+          "moveId": "seismic-toss",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "hp": {
+            "current": 73,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "hp": {
+            "current": 67,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "hp": {
+            "current": 71,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "hp": {
+            "current": 73,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "hp": {
+            "current": 77,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 41,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 41
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "moveName": "Thunder Wave",
+          "moveId": "thunder-wave",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "statusId": "par",
+          "statusName": "paralysis"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "moveName": "Thunder Wave",
+          "moveId": "thunder-wave",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Blissey"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "statusId": "par",
+          "statusName": "paralysis"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "hp": {
+            "current": 67,
+            "max": 100,
+            "status": "par"
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "hp": {
+            "current": 71,
+            "max": 100,
+            "status": "par"
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "hp": {
+            "current": 77,
+            "max": 100,
+            "status": "par"
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "hp": {
+            "current": 73,
+            "max": 100,
+            "status": "par"
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 42,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 42
+        },
+        {
+          "type": "curestatus",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "statusId": "par"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          },
+          "species": "Rhydon",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "curestatus",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "statusId": "par"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Heracross"
+          },
+          "species": "Heracross",
+          "level": 100,
+          "hp": {
+            "current": 50,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Heracross"
+          },
+          "hp": {
+            "current": 44,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Heracross"
+          },
+          "hp": {
+            "current": 50,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 43,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 43
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "species": "Blissey",
+          "level": 100,
+          "hp": {
+            "current": 77,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          },
+          "moveName": "Rock Slide",
+          "moveId": "rock-slide",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Blissey"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "hp": {
+            "current": 42,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "hp": {
+            "current": 36,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "hp": {
+            "current": 42,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 44,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 44
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          },
+          "moveName": "Earthquake",
+          "moveId": "earthquake",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Blissey"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Blissey"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Heracross"
+          },
+          "species": "Heracross",
+          "level": 100,
+          "hp": {
+            "current": 50,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Heracross"
+          },
+          "hp": {
+            "current": 44,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Heracross"
+          },
+          "hp": {
+            "current": 50,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 45,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 45
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Heracross"
+          },
+          "moveName": "Megahorn",
+          "moveId": "megahorn",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          },
+          "hp": {
+            "current": 54,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhydon"
+          },
+          "moveName": "Rock Slide",
+          "moveId": "rock-slide",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Heracross"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Heracross"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Heracross"
+          }
+        },
+        {
+          "type": "win",
+          "winner": "Naryar"
+        }
+      ]
+    }
+  ],
+  "winner": "Naryar"
+}

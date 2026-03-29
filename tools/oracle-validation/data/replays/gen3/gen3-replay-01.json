@@ -1,0 +1,4903 @@
+{
+  "id": "",
+  "format": "[Gen 3] OU",
+  "generation": 3,
+  "players": [
+    "ddiverdown",
+    "fire eyes2"
+  ],
+  "teams": [
+    [
+      {
+        "species": "Skarmory",
+        "level": 100,
+        "knownMoves": [
+          "spikes",
+          "roar",
+          "protect"
+        ],
+        "nickname": "Airmure"
+      },
+      {
+        "species": "Moltres",
+        "level": 100,
+        "knownMoves": [
+          "flamethrower",
+          "protect",
+          "toxic",
+          "rest"
+        ],
+        "nickname": "Sulfura"
+      },
+      {
+        "species": "Flygon",
+        "level": 100,
+        "knownMoves": [
+          "toxic",
+          "protect",
+          "earthquake"
+        ],
+        "nickname": "Libégon"
+      },
+      {
+        "species": "Blissey",
+        "level": 100,
+        "knownMoves": [
+          "aromatherapy",
+          "soft-boiled",
+          "ice-beam"
+        ],
+        "nickname": "Leuphorie"
+      },
+      {
+        "species": "Misdreavus",
+        "level": 100,
+        "knownMoves": [
+          "thunderbolt",
+          "perish-song",
+          "rest"
+        ],
+        "nickname": "Feuforêve"
+      },
+      {
+        "species": "Zapdos",
+        "level": 100,
+        "knownMoves": [
+          "roar"
+        ],
+        "nickname": "Electhor"
+      }
+    ],
+    [
+      {
+        "species": "Aerodactyl",
+        "level": 100,
+        "knownMoves": [
+          "rock-slide",
+          "double-edge",
+          "hidden-power"
+        ],
+        "nickname": "Aerodactyl"
+      },
+      {
+        "species": "Magneton",
+        "level": 100,
+        "knownMoves": [
+          "thunderbolt"
+        ],
+        "nickname": "Magneton"
+      },
+      {
+        "species": "Swampert",
+        "level": 100,
+        "knownMoves": [
+          "refresh",
+          "surf",
+          "toxic"
+        ],
+        "nickname": "Swampert"
+      },
+      {
+        "species": "Celebi",
+        "level": 100,
+        "knownMoves": [
+          "leech-seed",
+          "baton-pass",
+          "recover",
+          "hidden-power"
+        ],
+        "nickname": "Celebi"
+      },
+      {
+        "species": "Tyranitar",
+        "level": 100,
+        "knownMoves": [
+          "pursuit",
+          "ice-beam"
+        ],
+        "nickname": "Tyranitar"
+      },
+      {
+        "species": "Skarmory",
+        "level": 100,
+        "knownMoves": [
+          "spikes",
+          "protect"
+        ],
+        "nickname": "Skarmory"
+      }
+    ]
+  ],
+  "turns": [
+    {
+      "turnNumber": 0,
+      "events": [
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Airmure"
+          },
+          "species": "Skarmory",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Aerodactyl"
+          },
+          "species": "Aerodactyl",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 1,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 1
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Magneton"
+          },
+          "species": "Magneton",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Airmure"
+          },
+          "moveName": "Spikes",
+          "moveId": "spikes",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Magneton"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sidestart|p2: fire eyes2|Spikes"
+        }
+      ]
+    },
+    {
+      "turnNumber": 2,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 2
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Magneton"
+          },
+          "moveName": "Thunderbolt",
+          "moveId": "thunderbolt",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Airmure"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Airmure"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Airmure"
+          },
+          "hp": {
+            "current": 5,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Airmure"
+          },
+          "moveName": "Roar",
+          "moveId": "roar",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Magneton"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|drag|p2a: Celebi|Celebi|100/100"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "hp": {
+            "current": 88,
+            "max": 100,
+            "status": null
+          },
+          "from": "Spikes"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Airmure"
+          },
+          "hp": {
+            "current": 11,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 3,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 3
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          },
+          "species": "Moltres",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "moveName": "Baton Pass",
+          "moveId": "baton-pass",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Aerodactyl"
+          },
+          "species": "Aerodactyl",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 4,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 4
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Libégon"
+          },
+          "species": "Flygon",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Aerodactyl"
+          },
+          "moveName": "Rock Slide",
+          "moveId": "rock-slide",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Libégon"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Libégon"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Libégon"
+          },
+          "hp": {
+            "current": 80,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Libégon"
+          },
+          "hp": {
+            "current": 86,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 5,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 5
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "species": "Swampert",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "hp": {
+            "current": 88,
+            "max": 100,
+            "status": null
+          },
+          "from": "Spikes"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Libégon"
+          },
+          "moveName": "Toxic",
+          "moveId": "toxic",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "statusId": "tox",
+          "statusName": "badly-poisoned"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Libégon"
+          },
+          "hp": {
+            "current": 92,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "hp": {
+            "current": 88,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "psn"
+        }
+      ]
+    },
+    {
+      "turnNumber": 6,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 6
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Libégon"
+          },
+          "moveName": "Protect",
+          "moveId": "protect",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Libégon"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-singleturn|p1a: Libégon|Protect"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "moveName": "Refresh",
+          "moveId": "refresh",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          }
+        },
+        {
+          "type": "curestatus",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "statusId": "tox"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Libégon"
+          },
+          "hp": {
+            "current": 98,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 7,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 7
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Libégon"
+          },
+          "moveName": "Earthquake",
+          "moveId": "earthquake",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "hp": {
+            "current": 64,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "moveName": "Surf",
+          "moveId": "surf",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Libégon"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Libégon"
+          },
+          "hp": {
+            "current": 66,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Libégon"
+          },
+          "hp": {
+            "current": 72,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "hp": {
+            "current": 71,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 8,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 8
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Libégon"
+          },
+          "moveName": "Earthquake",
+          "moveId": "earthquake",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "hp": {
+            "current": 44,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "moveName": "Toxic",
+          "moveId": "toxic",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Libégon"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Libégon"
+          },
+          "statusId": "tox",
+          "statusName": "badly-poisoned"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Libégon"
+          },
+          "hp": {
+            "current": 78,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Libégon"
+          },
+          "hp": {
+            "current": 72,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "psn"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "hp": {
+            "current": 50,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 9,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 9
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "species": "Celebi",
+          "level": 100,
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "hp": {
+            "current": 82,
+            "max": 100,
+            "status": null
+          },
+          "from": "Spikes"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Libégon"
+          },
+          "moveName": "Earthquake",
+          "moveId": "earthquake",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "hp": {
+            "current": 68,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "hp": {
+            "current": 75,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Libégon"
+          },
+          "hp": {
+            "current": 78,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Libégon"
+          },
+          "hp": {
+            "current": 66,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "psn"
+        }
+      ]
+    },
+    {
+      "turnNumber": 10,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 10
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Leuphorie"
+          },
+          "species": "Blissey",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "moveName": "Leech Seed",
+          "moveId": "leech-seed",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Leuphorie"
+          }
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Leuphorie"
+          },
+          "effect": "move: Leech Seed"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "hp": {
+            "current": 81,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Leuphorie"
+          },
+          "hp": {
+            "current": 88,
+            "max": 100,
+            "status": null
+          },
+          "from": "Leech Seed"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 11,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 11
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "moveName": "Baton Pass",
+          "moveId": "baton-pass",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "species": "Tyranitar",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "hp": {
+            "current": 88,
+            "max": 100,
+            "status": null
+          },
+          "from": "Spikes"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[from] ability: Sand Stream|[of] p2a: Tyranitar"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Leuphorie"
+          },
+          "moveName": "Aromatherapy",
+          "moveId": "aromatherapy",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Leuphorie"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-cureteam|p1a: Leuphorie|[from] move: Aromatherapy"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Leuphorie"
+          },
+          "hp": {
+            "current": 82,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Leuphorie"
+          },
+          "hp": {
+            "current": 88,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Leuphorie"
+          },
+          "hp": {
+            "current": 76,
+            "max": 100,
+            "status": null
+          },
+          "from": "Leech Seed"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 12,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 12
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Skarmory"
+          },
+          "species": "Skarmory",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Libégon"
+          },
+          "species": "Flygon",
+          "level": 100,
+          "hp": {
+            "current": 66,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Libégon"
+          },
+          "hp": {
+            "current": 72,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 13,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 13
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          },
+          "species": "Moltres",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Skarmory"
+          },
+          "moveName": "Spikes",
+          "moveId": "spikes",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sidestart|p1: ddiverdown|Spikes"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 14,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 14
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Skarmory"
+          },
+          "moveName": "Protect",
+          "moveId": "protect",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Skarmory"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-singleturn|p2a: Skarmory|Protect"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          },
+          "moveName": "Flamethrower",
+          "moveId": "flamethrower",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Skarmory"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 15,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 15
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "species": "Tyranitar",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "hp": {
+            "current": 88,
+            "max": 100,
+            "status": null
+          },
+          "from": "Spikes"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          },
+          "moveName": "Flamethrower",
+          "moveId": "flamethrower",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "hp": {
+            "current": 64,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "hp": {
+            "current": 70,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 16,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 16
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "moveName": "Pursuit",
+          "moveId": "pursuit",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          },
+          "hp": {
+            "current": 63,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Libégon"
+          },
+          "species": "Flygon",
+          "level": 100,
+          "hp": {
+            "current": 72,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Libégon"
+          },
+          "hp": {
+            "current": 78,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "hp": {
+            "current": 76,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 17,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 17
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Libégon"
+          },
+          "moveName": "Earthquake",
+          "moveId": "earthquake",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "hp": {
+            "current": 16,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "moveName": "Ice Beam",
+          "moveId": "ice-beam",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Libégon"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Libégon"
+          }
+        },
+        {
+          "type": "crit",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Libégon"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Libégon"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Libégon"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          },
+          "species": "Moltres",
+          "level": 100,
+          "hp": {
+            "current": 63,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          },
+          "hp": {
+            "current": 57,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          },
+          "hp": {
+            "current": 63,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "hp": {
+            "current": 22,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 18,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 18
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          },
+          "moveName": "Flamethrower",
+          "moveId": "flamethrower",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Aerodactyl"
+          },
+          "species": "Aerodactyl",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          },
+          "hp": {
+            "current": 57,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          },
+          "hp": {
+            "current": 63,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 19,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 19
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          },
+          "moveName": "Protect",
+          "moveId": "protect",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-singleturn|p1a: Sulfura|Protect"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Aerodactyl"
+          },
+          "moveName": "Double-Edge",
+          "moveId": "double-edge",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          },
+          "hp": {
+            "current": 57,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          },
+          "hp": {
+            "current": 63,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 20,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 20
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Aerodactyl"
+          },
+          "moveName": "Double-Edge",
+          "moveId": "double-edge",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          },
+          "hp": {
+            "current": 10,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          },
+          "moveName": "Toxic",
+          "moveId": "toxic",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Aerodactyl"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Aerodactyl"
+          },
+          "statusId": "tox",
+          "statusName": "badly-poisoned"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          },
+          "hp": {
+            "current": 4,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Aerodactyl"
+          },
+          "hp": {
+            "current": 95,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "psn"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          },
+          "hp": {
+            "current": 10,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 21,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 21
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          },
+          "moveName": "Protect",
+          "moveId": "protect",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-singleturn|p1a: Sulfura|Protect"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Aerodactyl"
+          },
+          "moveName": "Double-Edge",
+          "moveId": "double-edge",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          },
+          "hp": {
+            "current": 4,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Aerodactyl"
+          },
+          "hp": {
+            "current": 83,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "psn"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          },
+          "hp": {
+            "current": 10,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 22,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 22
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Feuforêve"
+          },
+          "species": "Misdreavus",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Aerodactyl"
+          },
+          "moveName": "Double-Edge",
+          "moveId": "double-edge",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Feuforêve"
+          }
+        },
+        {
+          "type": "immune",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Feuforêve"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Feuforêve"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Aerodactyl"
+          },
+          "hp": {
+            "current": 65,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "psn"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Feuforêve"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 23,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 23
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "species": "Celebi",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "hp": {
+            "current": 88,
+            "max": 100,
+            "status": null
+          },
+          "from": "Spikes"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Feuforêve"
+          },
+          "moveName": "Thunderbolt",
+          "moveId": "thunderbolt",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "hp": {
+            "current": 82,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "hp": {
+            "current": 76,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Feuforêve"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "hp": {
+            "current": 82,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Feuforêve"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 24,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 24
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "moveName": "Leech Seed",
+          "moveId": "leech-seed",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Feuforêve"
+          }
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Feuforêve"
+          },
+          "effect": "move: Leech Seed"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Feuforêve"
+          },
+          "moveName": "Perish Song",
+          "moveId": "perish-song",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Feuforêve"
+          }
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Feuforêve"
+          },
+          "effect": "perish3"
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "effect": "perish3"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-fieldactivate|move: Perish Song"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "hp": {
+            "current": 76,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Feuforêve"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "hp": {
+            "current": 82,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Feuforêve"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Feuforêve"
+          },
+          "hp": {
+            "current": 88,
+            "max": 100,
+            "status": null
+          },
+          "from": "Leech Seed"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "hp": {
+            "current": 92,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "effect": "perish3"
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Feuforêve"
+          },
+          "effect": "perish3"
+        }
+      ]
+    },
+    {
+      "turnNumber": 25,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 25
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "species": "Swampert",
+          "level": 100,
+          "hp": {
+            "current": 50,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "hp": {
+            "current": 38,
+            "max": 100,
+            "status": null
+          },
+          "from": "Spikes"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Airmure"
+          },
+          "species": "Skarmory",
+          "level": 100,
+          "hp": {
+            "current": 11,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Airmure"
+          },
+          "hp": {
+            "current": 17,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "hp": {
+            "current": 44,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 26,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 26
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Airmure"
+          },
+          "moveName": "Protect",
+          "moveId": "protect",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Airmure"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-singleturn|p1a: Airmure|Protect"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "moveName": "Surf",
+          "moveId": "surf",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Airmure"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Airmure"
+          },
+          "hp": {
+            "current": 23,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "hp": {
+            "current": 50,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 27,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 27
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Electhor"
+          },
+          "species": "Zapdos",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "moveName": "Surf",
+          "moveId": "surf",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Electhor"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Electhor"
+          },
+          "hp": {
+            "current": 81,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Electhor"
+          },
+          "hp": {
+            "current": 75,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Electhor"
+          },
+          "hp": {
+            "current": 81,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "hp": {
+            "current": 56,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 28,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 28
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "moveName": "Toxic",
+          "moveId": "toxic",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Electhor"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Electhor"
+          },
+          "statusId": "tox",
+          "statusName": "badly-poisoned"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Electhor"
+          },
+          "moveName": "Roar",
+          "moveId": "roar",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|drag|p2a: Celebi|Celebi|92/100"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "hp": {
+            "current": 80,
+            "max": 100,
+            "status": null
+          },
+          "from": "Spikes"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "hp": {
+            "current": 73,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Electhor"
+          },
+          "hp": {
+            "current": 75,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "hp": {
+            "current": 80,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Electhor"
+          },
+          "hp": {
+            "current": 81,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Electhor"
+          },
+          "hp": {
+            "current": 75,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "psn"
+        }
+      ]
+    },
+    {
+      "turnNumber": 29,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 29
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "moveName": "Leech Seed",
+          "moveId": "leech-seed",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Electhor"
+          }
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Electhor"
+          },
+          "effect": "move: Leech Seed"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Electhor"
+          },
+          "moveName": "Roar",
+          "moveId": "roar",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|drag|p2a: Aerodactyl|Aerodactyl, M|65/100 tox"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Electhor"
+          },
+          "hp": {
+            "current": 69,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Aerodactyl"
+          },
+          "hp": {
+            "current": 59,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "psn"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Electhor"
+          },
+          "hp": {
+            "current": 75,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Electhor"
+          },
+          "hp": {
+            "current": 63,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "Leech Seed"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Aerodactyl"
+          },
+          "hp": {
+            "current": 74,
+            "max": 100,
+            "status": "tox"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Electhor"
+          },
+          "hp": {
+            "current": 51,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "psn"
+        }
+      ]
+    },
+    {
+      "turnNumber": 30,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 30
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Aerodactyl"
+          },
+          "moveName": "Rock Slide",
+          "moveId": "rock-slide",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Electhor"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Electhor"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Electhor"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Electhor"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Airmure"
+          },
+          "species": "Skarmory",
+          "level": 100,
+          "hp": {
+            "current": 23,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Aerodactyl"
+          },
+          "hp": {
+            "current": 62,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "psn"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Airmure"
+          },
+          "hp": {
+            "current": 29,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 31,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 31
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Magneton"
+          },
+          "species": "Magneton",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Magneton"
+          },
+          "hp": {
+            "current": 88,
+            "max": 100,
+            "status": null
+          },
+          "from": "Spikes"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Airmure"
+          },
+          "moveName": "Roar",
+          "moveId": "roar",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Magneton"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|drag|p2a: Celebi|Celebi|80/100"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "hp": {
+            "current": 67,
+            "max": 100,
+            "status": null
+          },
+          "from": "Spikes"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "hp": {
+            "current": 61,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "hp": {
+            "current": 67,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Airmure"
+          },
+          "hp": {
+            "current": 35,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 32,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 32
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "moveName": "Leech Seed",
+          "moveId": "leech-seed",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Airmure"
+          }
+        },
+        {
+          "type": "miss",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Airmure"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Airmure"
+          },
+          "moveName": "Spikes",
+          "moveId": "spikes",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sidestart|p2: fire eyes2|Spikes"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "hp": {
+            "current": 61,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "hp": {
+            "current": 67,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Airmure"
+          },
+          "hp": {
+            "current": 41,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 33,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 33
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "moveName": "Leech Seed",
+          "moveId": "leech-seed",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Airmure"
+          }
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Airmure"
+          },
+          "effect": "move: Leech Seed"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Airmure"
+          },
+          "moveName": "Roar",
+          "moveId": "roar",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|drag|p2a: Magneton|Magneton|88/100"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Magneton"
+          },
+          "hp": {
+            "current": 71,
+            "max": 100,
+            "status": null
+          },
+          "from": "Spikes"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Airmure"
+          },
+          "hp": {
+            "current": 47,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Airmure"
+          },
+          "hp": {
+            "current": 35,
+            "max": 100,
+            "status": null
+          },
+          "from": "Leech Seed"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Magneton"
+          },
+          "hp": {
+            "current": 88,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 34,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 34
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Airmure"
+          },
+          "moveName": "Protect",
+          "moveId": "protect",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Airmure"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-singleturn|p1a: Airmure|Protect"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Magneton"
+          },
+          "moveName": "Thunderbolt",
+          "moveId": "thunderbolt",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Airmure"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Airmure"
+          },
+          "hp": {
+            "current": 41,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Airmure"
+          },
+          "hp": {
+            "current": 28,
+            "max": 100,
+            "status": null
+          },
+          "from": "Leech Seed"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Magneton"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 35,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 35
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Magneton"
+          },
+          "moveName": "Thunderbolt",
+          "moveId": "thunderbolt",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Airmure"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Airmure"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Airmure"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Airmure"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          },
+          "species": "Moltres",
+          "level": 100,
+          "hp": {
+            "current": 10,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          },
+          "hp": {
+            "current": 4,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          },
+          "hp": {
+            "current": 10,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 36,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 36
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          },
+          "moveName": "Rest",
+          "moveId": "rest",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          },
+          "statusId": "slp",
+          "statusName": "sleep"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "slp"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Magneton"
+          },
+          "moveName": "Thunderbolt",
+          "moveId": "thunderbolt",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sulfura"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Leuphorie"
+          },
+          "species": "Blissey",
+          "level": 100,
+          "hp": {
+            "current": 76,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Leuphorie"
+          },
+          "hp": {
+            "current": 63,
+            "max": 100,
+            "status": null
+          },
+          "from": "Spikes"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Leuphorie"
+          },
+          "hp": {
+            "current": 57,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Leuphorie"
+          },
+          "hp": {
+            "current": 63,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 37,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 37
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "species": "Celebi",
+          "level": 100,
+          "hp": {
+            "current": 67,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "hp": {
+            "current": 51,
+            "max": 100,
+            "status": null
+          },
+          "from": "Spikes"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Leuphorie"
+          },
+          "moveName": "Soft-Boiled",
+          "moveId": "soft-boiled",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Leuphorie"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Leuphorie"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "hp": {
+            "current": 44,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Leuphorie"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "hp": {
+            "current": 51,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Leuphorie"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 38,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 38
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "moveName": "Recover",
+          "moveId": "recover",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Leuphorie"
+          },
+          "moveName": "Ice Beam",
+          "moveId": "ice-beam",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "hp": {
+            "current": 68,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "hp": {
+            "current": 62,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Leuphorie"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "hp": {
+            "current": 68,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Leuphorie"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 39,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 39
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "moveName": "Leech Seed",
+          "moveId": "leech-seed",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Leuphorie"
+          }
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Leuphorie"
+          },
+          "effect": "move: Leech Seed"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Leuphorie"
+          },
+          "moveName": "Ice Beam",
+          "moveId": "ice-beam",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "hp": {
+            "current": 32,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "hp": {
+            "current": 26,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Leuphorie"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "hp": {
+            "current": 32,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Leuphorie"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Leuphorie"
+          },
+          "hp": {
+            "current": 88,
+            "max": 100,
+            "status": null
+          },
+          "from": "Leech Seed"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "hp": {
+            "current": 52,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 40,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 40
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Feuforêve"
+          },
+          "species": "Misdreavus",
+          "level": 100,
+          "hp": {
+            "current": 88,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "moveName": "Recover",
+          "moveId": "recover",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Feuforêve"
+          },
+          "hp": {
+            "current": 82,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Feuforêve"
+          },
+          "hp": {
+            "current": 88,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 41,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 41
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "moveName": "Hidden Power",
+          "moveId": "hidden-power",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Feuforêve"
+          }
+        },
+        {
+          "type": "crit",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Feuforêve"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Feuforêve"
+          },
+          "hp": {
+            "current": 50,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Feuforêve"
+          },
+          "moveName": "Perish Song",
+          "moveId": "perish-song",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Feuforêve"
+          }
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Feuforêve"
+          },
+          "effect": "perish3"
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "effect": "perish3"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-fieldactivate|move: Perish Song"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Feuforêve"
+          },
+          "hp": {
+            "current": 44,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Feuforêve"
+          },
+          "hp": {
+            "current": 50,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Celebi"
+          },
+          "effect": "perish3"
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Feuforêve"
+          },
+          "effect": "perish3"
+        }
+      ]
+    },
+    {
+      "turnNumber": 42,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 42
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Aerodactyl"
+          },
+          "species": "Aerodactyl",
+          "level": 100,
+          "hp": {
+            "current": 62,
+            "max": 100,
+            "status": "tox"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Feuforêve"
+          },
+          "moveName": "Rest",
+          "moveId": "rest",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Feuforêve"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Feuforêve"
+          },
+          "statusId": "slp",
+          "statusName": "sleep"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Feuforêve"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "slp"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Feuforêve"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": "slp"
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Aerodactyl"
+          },
+          "hp": {
+            "current": 56,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "psn"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Feuforêve"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "slp"
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Feuforêve"
+          },
+          "effect": "perish2"
+        }
+      ]
+    },
+    {
+      "turnNumber": 43,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 43
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Aerodactyl"
+          },
+          "moveName": "Hidden Power",
+          "moveId": "hidden-power",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Feuforêve"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Feuforêve"
+          },
+          "hp": {
+            "current": 27,
+            "max": 100,
+            "status": "slp"
+          }
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Feuforêve"
+          },
+          "reason": "slp"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Feuforêve"
+          },
+          "hp": {
+            "current": 21,
+            "max": 100,
+            "status": "slp"
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Aerodactyl"
+          },
+          "hp": {
+            "current": 44,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "psn"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Feuforêve"
+          },
+          "hp": {
+            "current": 27,
+            "max": 100,
+            "status": "slp"
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Feuforêve"
+          },
+          "effect": "perish1"
+        }
+      ]
+    },
+    {
+      "turnNumber": 44,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 44
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Leuphorie"
+          },
+          "species": "Blissey",
+          "level": 100,
+          "hp": {
+            "current": 88,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Leuphorie"
+          },
+          "hp": {
+            "current": 76,
+            "max": 100,
+            "status": null
+          },
+          "from": "Spikes"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Aerodactyl"
+          },
+          "moveName": "Hidden Power",
+          "moveId": "hidden-power",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Leuphorie"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Leuphorie"
+          },
+          "hp": {
+            "current": 28,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Leuphorie"
+          },
+          "hp": {
+            "current": 22,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Aerodactyl"
+          },
+          "hp": {
+            "current": 26,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "psn"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Leuphorie"
+          },
+          "hp": {
+            "current": 28,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 45,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 45
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Aerodactyl"
+          },
+          "moveName": "Hidden Power",
+          "moveId": "hidden-power",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Leuphorie"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Leuphorie"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Leuphorie"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-message|ddiverdown forfeited."
+        },
+        {
+          "type": "win",
+          "winner": "fire eyes2"
+        }
+      ]
+    }
+  ],
+  "winner": "fire eyes2"
+}

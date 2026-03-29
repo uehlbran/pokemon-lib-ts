@@ -1,0 +1,1202 @@
+{
+  "id": "",
+  "format": "[Gen 9] OU",
+  "generation": 9,
+  "players": [
+    "mn3xd",
+    "Zoak89"
+  ],
+  "teams": [
+    [
+      {
+        "species": "Great Tusk",
+        "level": 100,
+        "knownMoves": [
+          "headlong-rush",
+          "rapid-spin",
+          "ice-spinner",
+          "stealth-rock"
+        ],
+        "nickname": "Uvogin"
+      },
+      {
+        "species": "Pecharunt",
+        "level": 100,
+        "knownMoves": [],
+        "nickname": "Kurapika"
+      },
+      {
+        "species": "Ogerpon-Wellspring",
+        "level": 100,
+        "knownMoves": [
+          "ivy-cudgel",
+          "quick-attack"
+        ],
+        "nickname": "Bisky"
+      },
+      {
+        "species": "Lucario",
+        "level": 100,
+        "knownMoves": [
+          "extreme-speed"
+        ],
+        "nickname": "Leorio"
+      }
+    ],
+    [
+      {
+        "species": "Deoxys-Speed",
+        "level": 100,
+        "knownMoves": [
+          "taunt",
+          "stealth-rock",
+          "spikes"
+        ],
+        "nickname": "Deoxys"
+      },
+      {
+        "species": "Great Tusk",
+        "level": 100,
+        "knownMoves": [
+          "bulk-up",
+          "rapid-spin",
+          "headlong-rush"
+        ],
+        "nickname": "Great Tusk"
+      }
+    ]
+  ],
+  "turns": [
+    {
+      "turnNumber": 0,
+      "events": [
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Uvogin"
+          },
+          "species": "Great Tusk",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Deoxys"
+          },
+          "species": "Deoxys-Speed",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-ability|p2a: Deoxys|Pressure"
+        }
+      ]
+    },
+    {
+      "turnNumber": 1,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 1
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Deoxys"
+          },
+          "moveName": "Taunt",
+          "moveId": "taunt",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Uvogin"
+          }
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Uvogin"
+          },
+          "effect": "move: Taunt"
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Uvogin"
+          },
+          "reason": "move: Taunt",
+          "moveName": "Stealth Rock"
+        }
+      ]
+    },
+    {
+      "turnNumber": 2,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 2
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Deoxys"
+          },
+          "moveName": "Stealth Rock",
+          "moveId": "stealth-rock",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Uvogin"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sidestart|p1: mn3xd|move: Stealth Rock"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Uvogin"
+          },
+          "moveName": "Headlong Rush",
+          "moveId": "headlong-rush",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Deoxys"
+          }
+        },
+        {
+          "type": "crit",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Deoxys"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-enditem|p2a: Deoxys|Focus Sash"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Deoxys"
+          },
+          "hp": {
+            "current": 1,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Uvogin"
+          },
+          "stat": "def",
+          "amount": 1
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Uvogin"
+          },
+          "stat": "spd",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "turnNumber": 3,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 3
+        },
+        {
+          "type": "unknown",
+          "raw": "|-terastallize|p2a: Deoxys|Ghost"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Deoxys"
+          },
+          "moveName": "Spikes",
+          "moveId": "spikes",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Uvogin"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sidestart|p1: mn3xd|Spikes"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Uvogin"
+          },
+          "moveName": "Rapid Spin",
+          "moveId": "rapid-spin",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Deoxys"
+          }
+        },
+        {
+          "type": "immune",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Deoxys"
+          }
+        },
+        {
+          "type": "end",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Uvogin"
+          },
+          "effect": "move: Taunt"
+        }
+      ]
+    },
+    {
+      "turnNumber": 4,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 4
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Deoxys"
+          },
+          "moveName": "Taunt",
+          "moveId": "taunt",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Uvogin"
+          }
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Uvogin"
+          },
+          "effect": "move: Taunt"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Uvogin"
+          },
+          "moveName": "Ice Spinner",
+          "moveId": "ice-spinner",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Deoxys"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Deoxys"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Deoxys"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "species": "Great Tusk",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-enditem|p2a: Great Tusk|Booster Energy"
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "effect": "protosynthesisspe"
+        }
+      ]
+    },
+    {
+      "turnNumber": 5,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 5
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "moveName": "Bulk Up",
+          "moveId": "bulk-up",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "stat": "atk",
+          "amount": 1
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "stat": "def",
+          "amount": 1
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Uvogin"
+          },
+          "moveName": "Rapid Spin",
+          "moveId": "rapid-spin",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "hp": {
+            "current": 93,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Uvogin"
+          },
+          "stat": "spe",
+          "amount": 1
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sideend|p1: mn3xd|Spikes|[from] move: Rapid Spin|[of] p1a: Uvogin"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sideend|p1: mn3xd|Stealth Rock|[from] move: Rapid Spin|[of] p1a: Uvogin"
+        }
+      ]
+    },
+    {
+      "turnNumber": 6,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 6
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "moveName": "Bulk Up",
+          "moveId": "bulk-up",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "stat": "atk",
+          "amount": 1
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "stat": "def",
+          "amount": 1
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Uvogin"
+          },
+          "moveName": "Ice Spinner",
+          "moveId": "ice-spinner",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "hp": {
+            "current": 77,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "end",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Uvogin"
+          },
+          "effect": "move: Taunt"
+        }
+      ]
+    },
+    {
+      "turnNumber": 7,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 7
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "moveName": "Bulk Up",
+          "moveId": "bulk-up",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "stat": "atk",
+          "amount": 1
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "stat": "def",
+          "amount": 1
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Uvogin"
+          },
+          "moveName": "Ice Spinner",
+          "moveId": "ice-spinner",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "hp": {
+            "current": 62,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 8,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 8
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "moveName": "Rapid Spin",
+          "moveId": "rapid-spin",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Uvogin"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Uvogin"
+          },
+          "hp": {
+            "current": 71,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "stat": "spe",
+          "amount": 1
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Uvogin"
+          },
+          "moveName": "Stealth Rock",
+          "moveId": "stealth-rock",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sidestart|p2: Zoak89|move: Stealth Rock"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Uvogin"
+          },
+          "hp": {
+            "current": 77,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 9,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 9
+        },
+        {
+          "type": "end",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Uvogin"
+          },
+          "effect": "Protosynthesis"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Kurapika"
+          },
+          "species": "Pecharunt",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "moveName": "Bulk Up",
+          "moveId": "bulk-up",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "stat": "atk",
+          "amount": 1
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "stat": "def",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "turnNumber": 10,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 10
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "moveName": "Headlong Rush",
+          "moveId": "headlong-rush",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Kurapika"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Kurapika"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Kurapika"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "stat": "def",
+          "amount": 1
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "stat": "spd",
+          "amount": 1
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Kurapika"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Bisky"
+          },
+          "species": "Ogerpon-Wellspring",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 11,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 11
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "moveName": "Rapid Spin",
+          "moveId": "rapid-spin",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Bisky"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Bisky"
+          },
+          "hp": {
+            "current": 42,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "stat": "spe",
+          "amount": 1
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sideend|p2: Zoak89|Stealth Rock|[from] move: Rapid Spin|[of] p2a: Great Tusk"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Bisky"
+          },
+          "moveName": "Ivy Cudgel",
+          "moveId": "ivy-cudgel",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "hp": {
+            "current": 34,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 12,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 12
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Bisky"
+          },
+          "moveName": "Quick Attack",
+          "moveId": "quick-attack",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "hp": {
+            "current": 30,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "moveName": "Rapid Spin",
+          "moveId": "rapid-spin",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Bisky"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Bisky"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "stat": "spe",
+          "amount": 1
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Bisky"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Leorio"
+          },
+          "species": "Lucario",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 13,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 13
+        },
+        {
+          "type": "unknown",
+          "raw": "|-terastallize|p1a: Leorio|Normal"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Leorio"
+          },
+          "moveName": "Extreme Speed",
+          "moveId": "extreme-speed",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "hp": {
+            "current": 17,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Leorio"
+          },
+          "hp": {
+            "current": 91,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Life Orb"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "moveName": "Headlong Rush",
+          "moveId": "headlong-rush",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Leorio"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Leorio"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "stat": "def",
+          "amount": 1
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "stat": "spd",
+          "amount": 1
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Leorio"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-message|mn3xd forfeited."
+        },
+        {
+          "type": "win",
+          "winner": "Zoak89"
+        }
+      ]
+    }
+  ],
+  "winner": "Zoak89"
+}

@@ -1,0 +1,1747 @@
+{
+  "id": "",
+  "format": "[Gen 9] OU",
+  "generation": 9,
+  "players": [
+    "pink spoon",
+    "sukana09"
+  ],
+  "teams": [
+    [
+      {
+        "species": "Bruxish",
+        "level": 100,
+        "knownMoves": [
+          "flip-turn",
+          "wave-crash"
+        ],
+        "nickname": "Bruxish"
+      },
+      {
+        "species": "Iron Treads",
+        "level": 100,
+        "knownMoves": [
+          "knock-off",
+          "stealth-rock"
+        ],
+        "nickname": "Iron Treads"
+      },
+      {
+        "species": "Pelipper",
+        "level": 100,
+        "knownMoves": [
+          "u-turn"
+        ],
+        "nickname": "Pelipper"
+      },
+      {
+        "species": "Raging Bolt",
+        "level": 100,
+        "knownMoves": [
+          "weather-ball"
+        ],
+        "nickname": "Raging Bolt"
+      },
+      {
+        "species": "Overqwil",
+        "level": 100,
+        "knownMoves": [
+          "liquidation",
+          "gunk-shot",
+          "crunch"
+        ],
+        "nickname": "Overqwil"
+      }
+    ],
+    [
+      {
+        "species": "Darkrai",
+        "level": 100,
+        "knownMoves": [
+          "dark-pulse"
+        ],
+        "nickname": "Void"
+      },
+      {
+        "species": "Great Tusk",
+        "level": 100,
+        "knownMoves": [
+          "stealth-rock"
+        ],
+        "nickname": "Great Tusk"
+      },
+      {
+        "species": "Hatterene",
+        "level": 100,
+        "knownMoves": [],
+        "nickname": "Hatterene"
+      },
+      {
+        "species": "Ceruledge",
+        "level": 100,
+        "knownMoves": [
+          "poltergeist",
+          "close-combat"
+        ],
+        "nickname": "Ceruledge"
+      },
+      {
+        "species": "Raging Bolt",
+        "level": 100,
+        "knownMoves": [
+          "dragon-pulse",
+          "calm-mind",
+          "thunderclap"
+        ],
+        "nickname": "Raging Bolt"
+      },
+      {
+        "species": "Dragonite",
+        "level": 100,
+        "knownMoves": [],
+        "nickname": "Ryuu"
+      }
+    ]
+  ],
+  "turns": [
+    {
+      "turnNumber": 0,
+      "events": [
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Bruxish"
+          },
+          "species": "Bruxish",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Void"
+          },
+          "species": "Darkrai",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 1,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 1
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Bruxish"
+          },
+          "moveName": "Flip Turn",
+          "moveId": "flip-turn",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Void"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Void"
+          },
+          "hp": {
+            "current": 65,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Iron Treads"
+          },
+          "species": "Iron Treads",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-enditem|p1a: Iron Treads|Booster Energy"
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Iron Treads"
+          },
+          "effect": "quarkdrivespe"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Void"
+          },
+          "moveName": "Dark Pulse",
+          "moveId": "dark-pulse",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Iron Treads"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Iron Treads"
+          },
+          "hp": {
+            "current": 58,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 2,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 2
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "species": "Great Tusk",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Iron Treads"
+          },
+          "moveName": "Knock Off",
+          "moveId": "knock-off",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Iron Treads"
+          },
+          "hp": {
+            "current": 42,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Rocky Helmet"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-enditem|p2a: Great Tusk|Rocky Helmet|[from] move: Knock Off|[of] p1a: Iron Treads"
+        }
+      ]
+    },
+    {
+      "turnNumber": 3,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 3
+        },
+        {
+          "type": "end",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Iron Treads"
+          },
+          "effect": "Quark Drive"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Pelipper"
+          },
+          "species": "Pelipper",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[from] ability: Drizzle|[of] p1a: Pelipper"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "moveName": "Stealth Rock",
+          "moveId": "stealth-rock",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Pelipper"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sidestart|p1: pink spoon|move: Stealth Rock"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[upkeep]"
+        }
+      ]
+    },
+    {
+      "turnNumber": 4,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 4
+        },
+        {
+          "type": "end",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "effect": "Protosynthesis"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Hatterene"
+          },
+          "species": "Hatterene",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Pelipper"
+          },
+          "moveName": "U-turn",
+          "moveId": "u-turn",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Hatterene"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Hatterene"
+          },
+          "hp": {
+            "current": 90,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Bruxish"
+          },
+          "species": "Bruxish",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Bruxish"
+          },
+          "hp": {
+            "current": 88,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[upkeep]"
+        }
+      ]
+    },
+    {
+      "turnNumber": 5,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 5
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Bruxish"
+          },
+          "moveName": "Wave Crash",
+          "moveId": "wave-crash",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Hatterene"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Hatterene"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Hatterene"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Bruxish"
+          },
+          "hp": {
+            "current": 54,
+            "max": 100,
+            "status": null
+          },
+          "from": "Recoil"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[upkeep]"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ceruledge"
+          },
+          "species": "Ceruledge",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 6,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 6
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Bruxish"
+          },
+          "moveName": "Wave Crash",
+          "moveId": "wave-crash",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ceruledge"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ceruledge"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-enditem|p2a: Ceruledge|Focus Sash"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ceruledge"
+          },
+          "hp": {
+            "current": 1,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-ability|p2a: Ceruledge|Weak Armor|boost"
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ceruledge"
+          },
+          "stat": "def",
+          "amount": 1
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ceruledge"
+          },
+          "stat": "spe",
+          "amount": 2
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Bruxish"
+          },
+          "hp": {
+            "current": 20,
+            "max": 100,
+            "status": null
+          },
+          "from": "Recoil"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ceruledge"
+          },
+          "moveName": "Poltergeist",
+          "moveId": "poltergeist",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Bruxish"
+          }
+        },
+        {
+          "type": "miss",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ceruledge"
+          },
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Bruxish"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[upkeep]"
+        }
+      ]
+    },
+    {
+      "turnNumber": 7,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 7
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Raging Bolt"
+          },
+          "species": "Raging Bolt",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Raging Bolt"
+          },
+          "hp": {
+            "current": 88,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-enditem|p1a: Raging Bolt|Booster Energy"
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Raging Bolt"
+          },
+          "effect": "protosynthesisspa"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ceruledge"
+          },
+          "moveName": "Close Combat",
+          "moveId": "close-combat",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Raging Bolt"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Raging Bolt"
+          },
+          "hp": {
+            "current": 50,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ceruledge"
+          },
+          "stat": "def",
+          "amount": 1
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ceruledge"
+          },
+          "stat": "spd",
+          "amount": 1
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[upkeep]"
+        }
+      ]
+    },
+    {
+      "turnNumber": 8,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 8
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "species": "Great Tusk",
+          "level": 100,
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Raging Bolt"
+          },
+          "moveName": "Weather Ball",
+          "moveId": "weather-ball",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          }
+        },
+        {
+          "type": "end",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "effect": "Protosynthesis"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[upkeep]"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Raging Bolt"
+          },
+          "species": "Raging Bolt",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-enditem|p2a: Raging Bolt|Booster Energy"
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Raging Bolt"
+          },
+          "effect": "protosynthesisspa"
+        }
+      ]
+    },
+    {
+      "turnNumber": 9,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 9
+        },
+        {
+          "type": "end",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Raging Bolt"
+          },
+          "effect": "Protosynthesis"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Iron Treads"
+          },
+          "species": "Iron Treads",
+          "level": 100,
+          "hp": {
+            "current": 42,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Iron Treads"
+          },
+          "hp": {
+            "current": 39,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Raging Bolt"
+          },
+          "moveName": "Dragon Pulse",
+          "moveId": "dragon-pulse",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Iron Treads"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Iron Treads"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Iron Treads"
+          },
+          "hp": {
+            "current": 6,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[upkeep]"
+        }
+      ]
+    },
+    {
+      "turnNumber": 10,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 10
+        },
+        {
+          "type": "end",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Raging Bolt"
+          },
+          "effect": "Protosynthesis"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ceruledge"
+          },
+          "species": "Ceruledge",
+          "level": 100,
+          "hp": {
+            "current": 1,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Iron Treads"
+          },
+          "moveName": "Stealth Rock",
+          "moveId": "stealth-rock",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ceruledge"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sidestart|p2: sukana09|move: Stealth Rock"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|none"
+        }
+      ]
+    },
+    {
+      "turnNumber": 11,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 11
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Iron Treads"
+          },
+          "moveName": "Knock Off",
+          "moveId": "knock-off",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ceruledge"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ceruledge"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ceruledge"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ceruledge"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Void"
+          },
+          "species": "Darkrai",
+          "level": 100,
+          "hp": {
+            "current": 65,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 12,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 12
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Void"
+          },
+          "moveName": "Dark Pulse",
+          "moveId": "dark-pulse",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Iron Treads"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Iron Treads"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Iron Treads"
+          }
+        },
+        {
+          "type": "end",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Iron Treads"
+          },
+          "effect": "Quark Drive"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Pelipper"
+          },
+          "species": "Pelipper",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Pelipper"
+          },
+          "hp": {
+            "current": 76,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[from] ability: Drizzle|[of] p1a: Pelipper"
+        }
+      ]
+    },
+    {
+      "turnNumber": 13,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 13
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Void"
+          },
+          "moveName": "Dark Pulse",
+          "moveId": "dark-pulse",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Pelipper"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Pelipper"
+          },
+          "hp": {
+            "current": 18,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Pelipper"
+          },
+          "moveName": "U-turn",
+          "moveId": "u-turn",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Void"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Void"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Void"
+          },
+          "hp": {
+            "current": 40,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Overqwil"
+          },
+          "species": "Overqwil",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Overqwil"
+          },
+          "hp": {
+            "current": 88,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[upkeep]"
+        }
+      ]
+    },
+    {
+      "turnNumber": 14,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 14
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Overqwil"
+          },
+          "moveName": "Liquidation",
+          "moveId": "liquidation",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Void"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Void"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Void"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Overqwil"
+          },
+          "hp": {
+            "current": 78,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Life Orb"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[upkeep]"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ryuu"
+          },
+          "species": "Dragonite",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ryuu"
+          },
+          "hp": {
+            "current": 76,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        }
+      ]
+    },
+    {
+      "turnNumber": 15,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 15
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Overqwil"
+          },
+          "moveName": "Gunk Shot",
+          "moveId": "gunk-shot",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ryuu"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ryuu"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ryuu"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Overqwil"
+          },
+          "hp": {
+            "current": 68,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Life Orb"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[upkeep]"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Raging Bolt"
+          },
+          "species": "Raging Bolt",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Raging Bolt"
+          },
+          "hp": {
+            "current": 88,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        }
+      ]
+    },
+    {
+      "turnNumber": 16,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 16
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Overqwil"
+          },
+          "moveName": "Crunch",
+          "moveId": "crunch",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Raging Bolt"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Raging Bolt"
+          },
+          "hp": {
+            "current": 44,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Overqwil"
+          },
+          "hp": {
+            "current": 58,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Life Orb"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Raging Bolt"
+          },
+          "moveName": "Calm Mind",
+          "moveId": "calm-mind",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Raging Bolt"
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Raging Bolt"
+          },
+          "stat": "spa",
+          "amount": 1
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Raging Bolt"
+          },
+          "stat": "spd",
+          "amount": 1
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[upkeep]"
+        }
+      ]
+    },
+    {
+      "turnNumber": 17,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 17
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Raging Bolt"
+          },
+          "moveName": "Thunderclap",
+          "moveId": "thunderclap",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Overqwil"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Overqwil"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Overqwil"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[upkeep]"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Bruxish"
+          },
+          "species": "Bruxish",
+          "level": 100,
+          "hp": {
+            "current": 20,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Bruxish"
+          },
+          "hp": {
+            "current": 7,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        }
+      ]
+    },
+    {
+      "turnNumber": 18,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 18
+        },
+        {
+          "type": "unknown",
+          "raw": "|-terastallize|p1a: Bruxish|Water"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Raging Bolt"
+          },
+          "moveName": "Thunderclap",
+          "moveId": "thunderclap",
+          "targetIdent": null
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Bruxish"
+          },
+          "reason": "ability: Dazzling",
+          "moveName": "Thunderclap"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Bruxish"
+          },
+          "moveName": "Wave Crash",
+          "moveId": "wave-crash",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Raging Bolt"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Raging Bolt"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Raging Bolt"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Raging Bolt"
+          }
+        },
+        {
+          "type": "end",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Raging Bolt"
+          },
+          "effect": "Protosynthesis"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Bruxish"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          },
+          "from": "Recoil"
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Bruxish"
+          }
+        },
+        {
+          "type": "win",
+          "winner": "pink spoon"
+        }
+      ]
+    }
+  ],
+  "winner": "pink spoon"
+}

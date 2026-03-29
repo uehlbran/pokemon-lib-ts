@@ -1,0 +1,1174 @@
+{
+  "id": "",
+  "format": "[Gen 4] OU",
+  "generation": 4,
+  "players": [
+    "TheBruce",
+    "autumn912"
+  ],
+  "teams": [
+    [
+      {
+        "species": "Empoleon",
+        "level": 100,
+        "knownMoves": [
+          "grass-knot",
+          "stealth-rock",
+          "hydro-pump"
+        ],
+        "nickname": "Empoleon"
+      },
+      {
+        "species": "Tyranitar",
+        "level": 100,
+        "knownMoves": [],
+        "nickname": "Tyranitar"
+      },
+      {
+        "species": "Bronzong",
+        "level": 100,
+        "knownMoves": [
+          "trick-room",
+          "earthquake",
+          "explosion"
+        ],
+        "nickname": "Bronzong"
+      },
+      {
+        "species": "Starmie",
+        "level": 100,
+        "knownMoves": [
+          "rapid-spin",
+          "hydro-pump"
+        ],
+        "nickname": "Starmie"
+      }
+    ],
+    [
+      {
+        "species": "Swampert",
+        "level": 100,
+        "knownMoves": [
+          "stealth-rock",
+          "hydro-pump"
+        ],
+        "nickname": "Swampert"
+      },
+      {
+        "species": "Latias",
+        "level": 100,
+        "knownMoves": [
+          "trick"
+        ],
+        "nickname": "Latias"
+      },
+      {
+        "species": "Jirachi",
+        "level": 100,
+        "knownMoves": [
+          "iron-head"
+        ],
+        "nickname": "Jirachi"
+      },
+      {
+        "species": "Metagross",
+        "level": 100,
+        "knownMoves": [
+          "trick",
+          "earthquake"
+        ],
+        "nickname": "Metagross"
+      }
+    ]
+  ],
+  "turns": [
+    {
+      "turnNumber": 0,
+      "events": [
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Empoleon"
+          },
+          "species": "Empoleon",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "species": "Swampert",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 1,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 1
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Latias"
+          },
+          "species": "Latias",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Empoleon"
+          },
+          "moveName": "Grass Knot",
+          "moveId": "grass-knot",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Latias"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Latias"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Latias"
+          },
+          "hp": {
+            "current": 91,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 2,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 2
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Latias"
+          },
+          "moveName": "Trick",
+          "moveId": "trick",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Empoleon"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-item|p1a: Empoleon|Choice Scarf|[from] move: Trick"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-item|p2a: Latias|Focus Sash|[from] move: Trick"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Empoleon"
+          },
+          "moveName": "Stealth Rock",
+          "moveId": "stealth-rock",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Latias"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sidestart|p2: autumn912|move: Stealth Rock"
+        }
+      ]
+    },
+    {
+      "turnNumber": 3,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 3
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Jirachi"
+          },
+          "species": "Jirachi",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Jirachi"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "species": "Tyranitar",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[from] ability: Sand Stream|[of] p1a: Tyranitar"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        }
+      ]
+    },
+    {
+      "turnNumber": 4,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 4
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Bronzong"
+          },
+          "species": "Bronzong",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Jirachi"
+          },
+          "moveName": "Iron Head",
+          "moveId": "iron-head",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Bronzong"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Bronzong"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Bronzong"
+          },
+          "hp": {
+            "current": 87,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        }
+      ]
+    },
+    {
+      "turnNumber": 5,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 5
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "species": "Swampert",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Bronzong"
+          },
+          "moveName": "Trick Room",
+          "moveId": "trick-room",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Bronzong"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-fieldstart|move: Trick Room|[of] p1a: Bronzong"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 6,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 6
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Bronzong"
+          },
+          "moveName": "Earthquake",
+          "moveId": "earthquake",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "hp": {
+            "current": 71,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "moveName": "Stealth Rock",
+          "moveId": "stealth-rock",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Bronzong"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sidestart|p1: TheBruce|move: Stealth Rock"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "hp": {
+            "current": 77,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 7,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 7
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Bronzong"
+          },
+          "moveName": "Earthquake",
+          "moveId": "earthquake",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "hp": {
+            "current": 43,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "moveName": "Hydro Pump",
+          "moveId": "hydro-pump",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Bronzong"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Bronzong"
+          },
+          "hp": {
+            "current": 40,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "hp": {
+            "current": 49,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 8,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 8
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Bronzong"
+          },
+          "moveName": "Explosion",
+          "moveId": "explosion",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          }
+        },
+        {
+          "type": "crit",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Bronzong"
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swampert"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "species": "Starmie",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Metagross"
+          },
+          "species": "Metagross",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Metagross"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "hp": {
+            "current": 88,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        }
+      ]
+    },
+    {
+      "turnNumber": 9,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 9
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Metagross"
+          },
+          "moveName": "Trick",
+          "moveId": "trick",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-item|p1a: Starmie|Iron Ball|[from] move: Trick"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-item|p2a: Metagross|Leftovers|[from] move: Trick"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "moveName": "Rapid Spin",
+          "moveId": "rapid-spin",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Metagross"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Metagross"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Metagross"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sideend|p1: TheBruce|Stealth Rock|[from] move: Rapid Spin|[of] p1a: Starmie"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "hp": {
+            "current": 82,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Metagross"
+          },
+          "hp": {
+            "current": 99,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-fieldend|move: Trick Room"
+        }
+      ]
+    },
+    {
+      "turnNumber": 10,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 10
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Metagross"
+          },
+          "moveName": "Earthquake",
+          "moveId": "earthquake",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "hp": {
+            "current": 31,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "moveName": "Hydro Pump",
+          "moveId": "hydro-pump",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Metagross"
+          }
+        },
+        {
+          "type": "miss",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Metagross"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "hp": {
+            "current": 25,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Metagross"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 11,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 11
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Metagross"
+          },
+          "moveName": "Earthquake",
+          "moveId": "earthquake",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Starmie"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Empoleon"
+          },
+          "species": "Empoleon",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 12,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 12
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Empoleon"
+          },
+          "moveName": "Hydro Pump",
+          "moveId": "hydro-pump",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Metagross"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Metagross"
+          },
+          "hp": {
+            "current": 41,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Metagross"
+          },
+          "moveName": "Earthquake",
+          "moveId": "earthquake",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Empoleon"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Empoleon"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Empoleon"
+          },
+          "hp": {
+            "current": 11,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Metagross"
+          },
+          "hp": {
+            "current": 47,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 13,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 13
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Latias"
+          },
+          "species": "Latias",
+          "level": 100,
+          "hp": {
+            "current": 91,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Latias"
+          },
+          "hp": {
+            "current": 78,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Empoleon"
+          },
+          "moveName": "Hydro Pump",
+          "moveId": "hydro-pump",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Latias"
+          }
+        },
+        {
+          "type": "miss",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Empoleon"
+          },
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Latias"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Latias"
+          },
+          "hp": {
+            "current": 72,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        }
+      ]
+    },
+    {
+      "turnNumber": 14,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 14
+        },
+        {
+          "type": "unknown",
+          "raw": "|-message|TheBruce forfeited."
+        },
+        {
+          "type": "win",
+          "winner": "autumn912"
+        }
+      ]
+    }
+  ],
+  "winner": "autumn912"
+}

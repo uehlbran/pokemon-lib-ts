@@ -1,0 +1,1646 @@
+{
+  "id": "",
+  "format": "[Gen 5] OU",
+  "generation": 5,
+  "players": [
+    "Zorroduweb",
+    "BWLT2 MeEsSm"
+  ],
+  "teams": [
+    [
+      {
+        "species": "Breloom",
+        "level": 100,
+        "knownMoves": [
+          "bullet-seed"
+        ],
+        "nickname": "Breloom"
+      },
+      {
+        "species": "Sableye",
+        "level": 100,
+        "knownMoves": [
+          "confuse-ray",
+          "will-o-wisp",
+          "night-shade"
+        ],
+        "nickname": "Sableye"
+      },
+      {
+        "species": "Machamp",
+        "level": 100,
+        "knownMoves": [
+          "dynamic-punch",
+          "ice-punch"
+        ],
+        "nickname": "Machamp"
+      },
+      {
+        "species": "Alakazam",
+        "level": 100,
+        "knownMoves": [],
+        "nickname": "Alakazam"
+      },
+      {
+        "species": "Gorebyss",
+        "level": 100,
+        "knownMoves": [
+          "shell-smash",
+          "ice-beam",
+          "surf"
+        ],
+        "nickname": "Gorebyss"
+      }
+    ],
+    [
+      {
+        "species": "Skarmory",
+        "level": 100,
+        "knownMoves": [
+          "stealth-rock",
+          "spikes"
+        ],
+        "nickname": "Skarmory"
+      },
+      {
+        "species": "Alakazam",
+        "level": 100,
+        "knownMoves": [
+          "shadow-ball"
+        ],
+        "nickname": "Alakazam"
+      },
+      {
+        "species": "Garchomp",
+        "level": 100,
+        "knownMoves": [
+          "outrage"
+        ],
+        "nickname": "Garchomp"
+      },
+      {
+        "species": "Latios",
+        "level": 100,
+        "knownMoves": [
+          "draco-meteor",
+          "dragon-pulse"
+        ],
+        "nickname": "Latios"
+      },
+      {
+        "species": "Tyranitar",
+        "level": 100,
+        "knownMoves": [],
+        "nickname": "Tyranitar"
+      },
+      {
+        "species": "Jellicent",
+        "level": 100,
+        "knownMoves": [],
+        "nickname": "Jellicent"
+      }
+    ]
+  ],
+  "turns": [
+    {
+      "turnNumber": 0,
+      "events": [
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Breloom"
+          },
+          "species": "Breloom",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Skarmory"
+          },
+          "species": "Skarmory",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 1,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 1
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sableye"
+          },
+          "species": "Sableye",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Skarmory"
+          },
+          "moveName": "Stealth Rock",
+          "moveId": "stealth-rock",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sableye"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sidestart|p1: Zorroduweb|move: Stealth Rock"
+        }
+      ]
+    },
+    {
+      "turnNumber": 2,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 2
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sableye"
+          },
+          "moveName": "Confuse Ray",
+          "moveId": "confuse-ray",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Skarmory"
+          }
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Skarmory"
+          },
+          "effect": "confusion"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Skarmory"
+          },
+          "hp": {
+            "current": 95,
+            "max": 100,
+            "status": null
+          },
+          "from": "confusion"
+        }
+      ]
+    },
+    {
+      "turnNumber": 3,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 3
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sableye"
+          },
+          "moveName": "Will-O-Wisp",
+          "moveId": "will-o-wisp",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Skarmory"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Skarmory"
+          },
+          "statusId": "brn",
+          "statusName": "burn"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Skarmory"
+          },
+          "hp": {
+            "current": 89,
+            "max": 100,
+            "status": "brn"
+          },
+          "from": "confusion"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Skarmory"
+          },
+          "hp": {
+            "current": 77,
+            "max": 100,
+            "status": "brn"
+          },
+          "from": "brn"
+        }
+      ]
+    },
+    {
+      "turnNumber": 4,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 4
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Skarmory"
+          },
+          "hp": {
+            "current": 71,
+            "max": 100,
+            "status": "brn"
+          },
+          "from": "confusion"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sableye"
+          },
+          "moveName": "Night Shade",
+          "moveId": "night-shade",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Skarmory"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Skarmory"
+          },
+          "hp": {
+            "current": 41,
+            "max": 100,
+            "status": "brn"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Skarmory"
+          },
+          "hp": {
+            "current": 29,
+            "max": 100,
+            "status": "brn"
+          },
+          "from": "brn"
+        }
+      ]
+    },
+    {
+      "turnNumber": 5,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 5
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Skarmory"
+          },
+          "moveName": "Spikes",
+          "moveId": "spikes",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sableye"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sidestart|p1: Zorroduweb|Spikes"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sableye"
+          },
+          "moveName": "Night Shade",
+          "moveId": "night-shade",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Skarmory"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Skarmory"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Skarmory"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alakazam"
+          },
+          "species": "Alakazam",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 6,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 6
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sableye"
+          },
+          "moveName": "Confuse Ray",
+          "moveId": "confuse-ray",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alakazam"
+          }
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alakazam"
+          },
+          "effect": "confusion"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alakazam"
+          },
+          "hp": {
+            "current": 92,
+            "max": 100,
+            "status": null
+          },
+          "from": "confusion"
+        }
+      ]
+    },
+    {
+      "turnNumber": 7,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 7
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alakazam"
+          },
+          "moveName": "Shadow Ball",
+          "moveId": "shadow-ball",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sableye"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sableye"
+          },
+          "hp": {
+            "current": 59,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sableye"
+          },
+          "moveName": "Night Shade",
+          "moveId": "night-shade",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alakazam"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Alakazam"
+          },
+          "hp": {
+            "current": 52,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sableye"
+          },
+          "hp": {
+            "current": 66,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 8,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 8
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Garchomp"
+          },
+          "species": "Garchomp",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sableye"
+          },
+          "moveName": "Night Shade",
+          "moveId": "night-shade",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Garchomp"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Garchomp"
+          },
+          "hp": {
+            "current": 72,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sableye"
+          },
+          "hp": {
+            "current": 72,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 9,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 9
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sableye"
+          },
+          "moveName": "Confuse Ray",
+          "moveId": "confuse-ray",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Garchomp"
+          }
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Garchomp"
+          },
+          "effect": "confusion"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-enditem|p2a: Garchomp|Lum Berry|[eat]"
+        },
+        {
+          "type": "end",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Garchomp"
+          },
+          "effect": "confusion"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Garchomp"
+          },
+          "moveName": "Outrage",
+          "moveId": "outrage",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sableye"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sableye"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Sableye"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Machamp"
+          },
+          "species": "Machamp",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Machamp"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Machamp"
+          },
+          "hp": {
+            "current": 82,
+            "max": 100,
+            "status": null
+          },
+          "from": "Spikes"
+        }
+      ]
+    },
+    {
+      "turnNumber": 10,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 10
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Garchomp"
+          },
+          "moveName": "Outrage",
+          "moveId": "outrage",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Machamp"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Machamp"
+          },
+          "hp": {
+            "current": 17,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Machamp"
+          },
+          "moveName": "Dynamic Punch",
+          "moveId": "dynamic-punch",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Garchomp"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Garchomp"
+          },
+          "hp": {
+            "current": 28,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Garchomp"
+          },
+          "effect": "confusion"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Machamp"
+          },
+          "hp": {
+            "current": 4,
+            "max": 100,
+            "status": null
+          },
+          "from": "ability: Rough Skin"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Machamp"
+          },
+          "hp": {
+            "current": 11,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 11,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 11
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Garchomp"
+          },
+          "hp": {
+            "current": 13,
+            "max": 100,
+            "status": null
+          },
+          "from": "confusion"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Machamp"
+          },
+          "moveName": "Ice Punch",
+          "moveId": "ice-punch",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Garchomp"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Garchomp"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Garchomp"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Machamp"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          },
+          "from": "ability: Rough Skin"
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Machamp"
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Garchomp"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Latios"
+          },
+          "species": "Latios",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Breloom"
+          },
+          "species": "Breloom",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Breloom"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Breloom"
+          },
+          "hp": {
+            "current": 82,
+            "max": 100,
+            "status": null
+          },
+          "from": "Spikes"
+        }
+      ]
+    },
+    {
+      "turnNumber": 12,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 12
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Alakazam"
+          },
+          "species": "Alakazam",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Latios"
+          },
+          "moveName": "Draco Meteor",
+          "moveId": "draco-meteor",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Alakazam"
+          }
+        },
+        {
+          "type": "crit",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Alakazam"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Alakazam"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Latios"
+          },
+          "stat": "spa",
+          "amount": 2
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Alakazam"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gorebyss"
+          },
+          "species": "Gorebyss",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gorebyss"
+          },
+          "hp": {
+            "current": 88,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gorebyss"
+          },
+          "hp": {
+            "current": 76,
+            "max": 100,
+            "status": null
+          },
+          "from": "Spikes"
+        }
+      ]
+    },
+    {
+      "turnNumber": 13,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 13
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Latios"
+          },
+          "moveName": "Draco Meteor",
+          "moveId": "draco-meteor",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gorebyss"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gorebyss"
+          },
+          "hp": {
+            "current": 11,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Latios"
+          },
+          "stat": "spa",
+          "amount": 2
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gorebyss"
+          },
+          "moveName": "Shell Smash",
+          "moveId": "shell-smash",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gorebyss"
+          }
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gorebyss"
+          },
+          "stat": "def",
+          "amount": 1
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gorebyss"
+          },
+          "stat": "spd",
+          "amount": 1
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gorebyss"
+          },
+          "stat": "atk",
+          "amount": 2
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gorebyss"
+          },
+          "stat": "spa",
+          "amount": 2
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gorebyss"
+          },
+          "stat": "spe",
+          "amount": 2
+        },
+        {
+          "type": "unknown",
+          "raw": "|-enditem|p1a: Gorebyss|White Herb"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-clearnegativeboost|p1a: Gorebyss|[silent]"
+        }
+      ]
+    },
+    {
+      "turnNumber": 14,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 14
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "species": "Tyranitar",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[from] ability: Sand Stream|[of] p2a: Tyranitar"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gorebyss"
+          },
+          "moveName": "Ice Beam",
+          "moveId": "ice-beam",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "hp": {
+            "current": 62,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gorebyss"
+          },
+          "hp": {
+            "current": 5,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        }
+      ]
+    },
+    {
+      "turnNumber": 15,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 15
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Jellicent"
+          },
+          "species": "Jellicent",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gorebyss"
+          },
+          "moveName": "Surf",
+          "moveId": "surf",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Jellicent"
+          }
+        },
+        {
+          "type": "immune",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Jellicent"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gorebyss"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Jellicent"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gorebyss"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Breloom"
+          },
+          "species": "Breloom",
+          "level": 100,
+          "hp": {
+            "current": 82,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Breloom"
+          },
+          "hp": {
+            "current": 76,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Breloom"
+          },
+          "hp": {
+            "current": 64,
+            "max": 100,
+            "status": null
+          },
+          "from": "Spikes"
+        }
+      ]
+    },
+    {
+      "turnNumber": 16,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 16
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Breloom"
+          },
+          "moveName": "Bullet Seed",
+          "moveId": "bullet-seed",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Jellicent"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Jellicent"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Jellicent"
+          },
+          "hp": {
+            "current": 62,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Jellicent"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Jellicent"
+          },
+          "hp": {
+            "current": 31,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "hitcount",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Jellicent"
+          },
+          "count": 2
+        },
+        {
+          "type": "unknown",
+          "raw": "|-enditem|p2a: Jellicent|Eject Button"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Latios"
+          },
+          "species": "Latios",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Latios"
+          },
+          "hp": {
+            "current": 95,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Breloom"
+          },
+          "hp": {
+            "current": 58,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        }
+      ]
+    },
+    {
+      "turnNumber": 17,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 17
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Latios"
+          },
+          "moveName": "Dragon Pulse",
+          "moveId": "dragon-pulse",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Breloom"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Breloom"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Breloom"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Latios"
+          },
+          "hp": {
+            "current": 89,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-message|Zorroduweb forfeited."
+        },
+        {
+          "type": "win",
+          "winner": "BWLT2 MeEsSm"
+        }
+      ]
+    }
+  ],
+  "winner": "BWLT2 MeEsSm"
+}

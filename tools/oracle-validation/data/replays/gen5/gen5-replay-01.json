@@ -1,0 +1,799 @@
+{
+  "id": "",
+  "format": "[Gen 5] OU",
+  "generation": 5,
+  "players": [
+    "Voiryn",
+    "Max OKLM"
+  ],
+  "teams": [
+    [
+      {
+        "species": "Zapdos",
+        "level": 100,
+        "knownMoves": [
+          "volt-switch",
+          "thunderbolt"
+        ],
+        "nickname": "Zapdos"
+      },
+      {
+        "species": "Chansey",
+        "level": 100,
+        "knownMoves": [
+          "seismic-toss"
+        ],
+        "nickname": "Chansey"
+      },
+      {
+        "species": "Ninetales",
+        "level": 100,
+        "knownMoves": [
+          "flamethrower"
+        ],
+        "nickname": "Ninetales"
+      },
+      {
+        "species": "Gastrodon",
+        "level": 100,
+        "knownMoves": [
+          "scald"
+        ],
+        "nickname": "Gastrodon"
+      }
+    ],
+    [
+      {
+        "species": "Espeon",
+        "level": 100,
+        "knownMoves": [
+          "light-screen"
+        ],
+        "nickname": "Espeon"
+      },
+      {
+        "species": "Breloom",
+        "level": 100,
+        "knownMoves": [
+          "swords-dance"
+        ],
+        "nickname": "Breloom"
+      },
+      {
+        "species": "Tyranitar",
+        "level": 100,
+        "knownMoves": [
+          "dragon-dance",
+          "crunch"
+        ],
+        "nickname": "Tyranitar"
+      }
+    ]
+  ],
+  "turns": [
+    {
+      "turnNumber": 0,
+      "events": [
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "species": "Zapdos",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Espeon"
+          },
+          "species": "Espeon",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-ability|p1a: Zapdos|Pressure"
+        }
+      ]
+    },
+    {
+      "turnNumber": 1,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 1
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Espeon"
+          },
+          "moveName": "Light Screen",
+          "moveId": "light-screen",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Espeon"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sidestart|p2: Max OKLM|move: Light Screen"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "moveName": "Volt Switch",
+          "moveId": "volt-switch",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Espeon"
+          }
+        },
+        {
+          "type": "crit",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Espeon"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Espeon"
+          },
+          "hp": {
+            "current": 17,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "species": "Chansey",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 2,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 2
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Breloom"
+          },
+          "species": "Breloom",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "moveName": "Seismic Toss",
+          "moveId": "seismic-toss",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Breloom"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Breloom"
+          },
+          "hp": {
+            "current": 62,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 3,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 3
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ninetales"
+          },
+          "species": "Ninetales",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|SunnyDay|[from] ability: Drought|[of] p1a: Ninetales"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Breloom"
+          },
+          "moveName": "Swords Dance",
+          "moveId": "swords-dance",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Breloom"
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Breloom"
+          },
+          "stat": "atk",
+          "amount": 2
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|SunnyDay|[upkeep]"
+        }
+      ]
+    },
+    {
+      "turnNumber": 4,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 4
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "species": "Tyranitar",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[from] ability: Sand Stream|[of] p2a: Tyranitar"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ninetales"
+          },
+          "moveName": "Flamethrower",
+          "moveId": "flamethrower",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "hp": {
+            "current": 95,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ninetales"
+          },
+          "hp": {
+            "current": 90,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Life Orb"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ninetales"
+          },
+          "hp": {
+            "current": 84,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        }
+      ]
+    },
+    {
+      "turnNumber": 5,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 5
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gastrodon"
+          },
+          "species": "Gastrodon",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "moveName": "Dragon Dance",
+          "moveId": "dragon-dance",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "stat": "atk",
+          "amount": 1
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "stat": "spe",
+          "amount": 1
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        }
+      ]
+    },
+    {
+      "turnNumber": 6,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 6
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "moveName": "Crunch",
+          "moveId": "crunch",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gastrodon"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gastrodon"
+          },
+          "hp": {
+            "current": 45,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gastrodon"
+          },
+          "stat": "def",
+          "amount": 1
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gastrodon"
+          },
+          "moveName": "Scald",
+          "moveId": "scald",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "hp": {
+            "current": 76,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gastrodon"
+          },
+          "hp": {
+            "current": 51,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 7,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 7
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "moveName": "Crunch",
+          "moveId": "crunch",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gastrodon"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gastrodon"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gastrodon"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "species": "Zapdos",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-ability|p1a: Zapdos|Pressure"
+        }
+      ]
+    },
+    {
+      "turnNumber": 8,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 8
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "moveName": "Crunch",
+          "moveId": "crunch",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 51,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "stat": "def",
+          "amount": 1
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "moveName": "Thunderbolt",
+          "moveId": "thunderbolt",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "hp": {
+            "current": 62,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 45,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 51,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sideend|p2: Max OKLM|move: Light Screen"
+        }
+      ]
+    },
+    {
+      "turnNumber": 9,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 9
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "moveName": "Crunch",
+          "moveId": "crunch",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-message|Voiryn forfeited."
+        },
+        {
+          "type": "win",
+          "winner": "Max OKLM"
+        }
+      ]
+    }
+  ],
+  "winner": "Max OKLM"
+}

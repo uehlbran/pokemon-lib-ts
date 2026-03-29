@@ -1,0 +1,446 @@
+{
+  "id": "",
+  "format": "[Gen 6] OU",
+  "generation": 6,
+  "players": [
+    "killoooooon",
+    "vanis_511"
+  ],
+  "teams": [
+    [
+      {
+        "species": "Flygon",
+        "level": 100,
+        "knownMoves": [],
+        "nickname": "Flygon"
+      },
+      {
+        "species": "Roserade",
+        "level": 100,
+        "knownMoves": [
+          "toxic-spikes"
+        ],
+        "nickname": "Roserade"
+      },
+      {
+        "species": "Chansey",
+        "level": 100,
+        "knownMoves": [],
+        "nickname": "Chansey"
+      }
+    ],
+    [
+      {
+        "species": "Serperior",
+        "level": 100,
+        "knownMoves": [
+          "dragon-pulse"
+        ],
+        "nickname": "gigi"
+      },
+      {
+        "species": "Scolipede",
+        "level": 100,
+        "knownMoves": [
+          "swords-dance",
+          "earthquake",
+          "megahorn"
+        ],
+        "nickname": "bibi"
+      }
+    ]
+  ],
+  "turns": [
+    {
+      "turnNumber": 0,
+      "events": [
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Flygon"
+          },
+          "species": "Flygon",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "gigi"
+          },
+          "species": "Serperior",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 1,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 1
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Roserade"
+          },
+          "species": "Roserade",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "gigi"
+          },
+          "moveName": "Dragon Pulse",
+          "moveId": "dragon-pulse",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Roserade"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Roserade"
+          },
+          "hp": {
+            "current": 64,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Roserade"
+          },
+          "hp": {
+            "current": 70,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 2,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 2
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "bibi"
+          },
+          "species": "Scolipede",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Roserade"
+          },
+          "moveName": "Toxic Spikes",
+          "moveId": "toxic-spikes",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "bibi"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sidestart|p2: vanis_511|move: Toxic Spikes"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Roserade"
+          },
+          "hp": {
+            "current": 76,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 3,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 3
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "species": "Chansey",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "bibi"
+          },
+          "moveName": "Swords Dance",
+          "moveId": "swords-dance",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "bibi"
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "bibi"
+          },
+          "stat": "atk",
+          "amount": 2
+        },
+        {
+          "type": "unknown",
+          "raw": "|-ability|p2a: bibi|Speed Boost|boost"
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "bibi"
+          },
+          "stat": "spe",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "turnNumber": 4,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 4
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "bibi"
+          },
+          "moveName": "Earthquake",
+          "moveId": "earthquake",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Chansey"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "bibi"
+          },
+          "hp": {
+            "current": 91,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Life Orb"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-ability|p2a: bibi|Speed Boost|boost"
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "bibi"
+          },
+          "stat": "spe",
+          "amount": 1
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Flygon"
+          },
+          "species": "Flygon",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 5,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 5
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "bibi"
+          },
+          "moveName": "Megahorn",
+          "moveId": "megahorn",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Flygon"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Flygon"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Flygon"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "bibi"
+          },
+          "hp": {
+            "current": 81,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Life Orb"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-ability|p2a: bibi|Speed Boost|boost"
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "bibi"
+          },
+          "stat": "spe",
+          "amount": 1
+        },
+        {
+          "type": "unknown",
+          "raw": "|-message|killoooooon lost due to inactivity."
+        },
+        {
+          "type": "win",
+          "winner": "vanis_511"
+        }
+      ]
+    }
+  ],
+  "winner": "vanis_511"
+}

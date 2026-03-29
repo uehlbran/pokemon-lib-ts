@@ -1,0 +1,917 @@
+{
+  "id": "",
+  "format": "[Gen 7] OU",
+  "generation": 7,
+  "players": [
+    "Raton Colorao",
+    "green_lewis"
+  ],
+  "teams": [
+    [
+      {
+        "species": "Venomoth",
+        "level": 100,
+        "knownMoves": [
+          "quiver-dance",
+          "psychic"
+        ],
+        "nickname": "Polilla"
+      },
+      {
+        "species": "Lapras",
+        "level": 100,
+        "knownMoves": [
+          "dragon-dance",
+          "ice-shard",
+          "drill-run"
+        ],
+        "nickname": "LaConcha"
+      },
+      {
+        "species": "Golbat",
+        "level": 100,
+        "knownMoves": [],
+        "nickname": "Toxicómano"
+      }
+    ],
+    [
+      {
+        "species": "Torkoal",
+        "level": 100,
+        "knownMoves": [
+          "stealth-rock",
+          "overheat",
+          "earthquake"
+        ],
+        "nickname": "Torkoal"
+      },
+      {
+        "species": "Lilligant",
+        "level": 100,
+        "knownMoves": [
+          "sleep-powder",
+          "quiver-dance"
+        ],
+        "nickname": "Lilligant"
+      },
+      {
+        "species": "Tapu Lele",
+        "level": 100,
+        "knownMoves": [
+          "psychic"
+        ],
+        "nickname": "Tapu Lele"
+      }
+    ]
+  ],
+  "turns": [
+    {
+      "turnNumber": 0,
+      "events": [
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Polilla"
+          },
+          "species": "Venomoth",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Torkoal"
+          },
+          "species": "Torkoal",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|SunnyDay|[from] ability: Drought|[of] p2a: Torkoal"
+        }
+      ]
+    },
+    {
+      "turnNumber": 1,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 1
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Polilla"
+          },
+          "moveName": "Quiver Dance",
+          "moveId": "quiver-dance",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Polilla"
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Polilla"
+          },
+          "stat": "spa",
+          "amount": 1
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Polilla"
+          },
+          "stat": "spd",
+          "amount": 1
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Polilla"
+          },
+          "stat": "spe",
+          "amount": 1
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Torkoal"
+          },
+          "moveName": "Stealth Rock",
+          "moveId": "stealth-rock",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Polilla"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sidestart|p1: Raton Colorao|move: Stealth Rock"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|SunnyDay|[upkeep]"
+        }
+      ]
+    },
+    {
+      "turnNumber": 2,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 2
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Polilla"
+          },
+          "moveName": "Quiver Dance",
+          "moveId": "quiver-dance",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Polilla"
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Polilla"
+          },
+          "stat": "spa",
+          "amount": 1
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Polilla"
+          },
+          "stat": "spd",
+          "amount": 1
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Polilla"
+          },
+          "stat": "spe",
+          "amount": 1
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Torkoal"
+          },
+          "moveName": "Overheat",
+          "moveId": "overheat",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Polilla"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Polilla"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Polilla"
+          },
+          "hp": {
+            "current": 17,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Torkoal"
+          },
+          "stat": "spa",
+          "amount": 2
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|SunnyDay|[upkeep]"
+        }
+      ]
+    },
+    {
+      "turnNumber": 3,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 3
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Polilla"
+          },
+          "moveName": "Psychic",
+          "moveId": "psychic",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Torkoal"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Torkoal"
+          },
+          "hp": {
+            "current": 52,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Torkoal"
+          },
+          "moveName": "Earthquake",
+          "moveId": "earthquake",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Polilla"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Polilla"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Polilla"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|SunnyDay|[upkeep]"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "LaConcha"
+          },
+          "species": "Lapras",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "LaConcha"
+          },
+          "hp": {
+            "current": 76,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        }
+      ]
+    },
+    {
+      "turnNumber": 4,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 4
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Lilligant"
+          },
+          "species": "Lilligant",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "LaConcha"
+          },
+          "moveName": "Dragon Dance",
+          "moveId": "dragon-dance",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "LaConcha"
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "LaConcha"
+          },
+          "stat": "atk",
+          "amount": 1
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "LaConcha"
+          },
+          "stat": "spe",
+          "amount": 1
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|SunnyDay|[upkeep]"
+        }
+      ]
+    },
+    {
+      "turnNumber": 5,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 5
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "LaConcha"
+          },
+          "moveName": "Ice Shard",
+          "moveId": "ice-shard",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Lilligant"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Lilligant"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Lilligant"
+          },
+          "hp": {
+            "current": 28,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Lilligant"
+          },
+          "moveName": "Sleep Powder",
+          "moveId": "sleep-powder",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "LaConcha"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "LaConcha"
+          },
+          "statusId": "slp",
+          "statusName": "sleep"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|SunnyDay|[upkeep]"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Lilligant"
+          },
+          "hp": {
+            "current": 34,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 6,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 6
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "LaConcha"
+          },
+          "reason": "slp"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Lilligant"
+          },
+          "moveName": "Quiver Dance",
+          "moveId": "quiver-dance",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Lilligant"
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Lilligant"
+          },
+          "stat": "spa",
+          "amount": 1
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Lilligant"
+          },
+          "stat": "spd",
+          "amount": 1
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Lilligant"
+          },
+          "stat": "spe",
+          "amount": 1
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|SunnyDay|[upkeep]"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Lilligant"
+          },
+          "hp": {
+            "current": 40,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 7,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 7
+        },
+        {
+          "type": "curestatus",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "LaConcha"
+          },
+          "statusId": "slp"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "LaConcha"
+          },
+          "moveName": "Ice Shard",
+          "moveId": "ice-shard",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Lilligant"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Lilligant"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Lilligant"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Lilligant"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|SunnyDay|[upkeep]"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tapu Lele"
+          },
+          "species": "Tapu Lele",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-fieldstart|move: Psychic Terrain|[from] ability: Psychic Surge|[of] p2a: Tapu Lele"
+        }
+      ]
+    },
+    {
+      "turnNumber": 8,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 8
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tapu Lele"
+          },
+          "moveName": "Psychic",
+          "moveId": "psychic",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "LaConcha"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "LaConcha"
+          },
+          "hp": {
+            "current": 8,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "LaConcha"
+          },
+          "moveName": "Drill Run",
+          "moveId": "drill-run",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tapu Lele"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tapu Lele"
+          },
+          "hp": {
+            "current": 52,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|none"
+        }
+      ]
+    },
+    {
+      "turnNumber": 9,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 9
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tapu Lele"
+          },
+          "moveName": "Psychic",
+          "moveId": "psychic",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "LaConcha"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "LaConcha"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "LaConcha"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Toxicómano"
+          },
+          "species": "Golbat",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Toxicómano"
+          },
+          "hp": {
+            "current": 76,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        }
+      ]
+    },
+    {
+      "turnNumber": 10,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 10
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Tapu Lele"
+          },
+          "moveName": "Psychic",
+          "moveId": "psychic",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Toxicómano"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Toxicómano"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Toxicómano"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Toxicómano"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-message|Raton Colorao forfeited."
+        },
+        {
+          "type": "win",
+          "winner": "green_lewis"
+        }
+      ]
+    }
+  ],
+  "winner": "green_lewis"
+}

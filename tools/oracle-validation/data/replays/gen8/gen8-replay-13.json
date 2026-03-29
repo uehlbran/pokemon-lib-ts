@@ -1,0 +1,1115 @@
+{
+  "id": "",
+  "format": "[Gen 8] OU",
+  "generation": 8,
+  "players": [
+    "PokemonGT7",
+    "Imtryingtolosehaha"
+  ],
+  "teams": [
+    [
+      {
+        "species": "Froslass",
+        "level": 100,
+        "knownMoves": [],
+        "nickname": "Froslass"
+      },
+      {
+        "species": "Slurpuff",
+        "level": 100,
+        "knownMoves": [
+          "belly-drum",
+          "play-rough",
+          "facade",
+          "drain-punch"
+        ],
+        "nickname": "Slurpuff"
+      },
+      {
+        "species": "Barbaracle",
+        "level": 100,
+        "knownMoves": [
+          "shell-smash"
+        ],
+        "nickname": "Dddddsaf Legacy"
+      },
+      {
+        "species": "Rhyperior",
+        "level": 100,
+        "knownMoves": [],
+        "nickname": "Rhyperior"
+      },
+      {
+        "species": "Noctowl",
+        "level": 100,
+        "knownMoves": [],
+        "nickname": "Noctowl"
+      }
+    ],
+    [
+      {
+        "species": "Barraskewda",
+        "level": 100,
+        "knownMoves": [
+          "fishious-rend"
+        ],
+        "nickname": "Barraskewda"
+      },
+      {
+        "species": "Toxicroak",
+        "level": 100,
+        "knownMoves": [
+          "baneful-bunker",
+          "mach-punch"
+        ],
+        "nickname": "Toxicroak"
+      },
+      {
+        "species": "Mandibuzz",
+        "level": 100,
+        "knownMoves": [
+          "protect",
+          "sucker-punch"
+        ],
+        "nickname": "Mandibuzz"
+      },
+      {
+        "species": "Mamoswine",
+        "level": 100,
+        "knownMoves": [
+          "protect",
+          "thousand-arrows",
+          "ice-shard",
+          "glacial-lance"
+        ],
+        "nickname": "Mamoswine"
+      }
+    ]
+  ],
+  "turns": [
+    {
+      "turnNumber": 0,
+      "events": [
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Froslass"
+          },
+          "species": "Froslass",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Barraskewda"
+          },
+          "species": "Barraskewda",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 1,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 1
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Barraskewda"
+          },
+          "moveName": "Fishious Rend",
+          "moveId": "fishious-rend",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Froslass"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Froslass"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Barraskewda"
+          },
+          "effect": "Disable"
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Froslass"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Slurpuff"
+          },
+          "species": "Slurpuff",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 2,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 2
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Toxicroak"
+          },
+          "species": "Toxicroak",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Slurpuff"
+          },
+          "moveName": "Belly Drum",
+          "moveId": "belly-drum",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Slurpuff"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Slurpuff"
+          },
+          "hp": {
+            "current": 50,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-setboost|p1a: Slurpuff|atk|6|[from] move: Belly Drum"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-enditem|p1a: Slurpuff|Sitrus Berry|[eat]"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Slurpuff"
+          },
+          "hp": {
+            "current": 75,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Sitrus Berry"
+        }
+      ]
+    },
+    {
+      "turnNumber": 3,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 3
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Toxicroak"
+          },
+          "moveName": "Baneful Bunker",
+          "moveId": "baneful-bunker",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Toxicroak"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-singleturn|p2a: Toxicroak|move: Protect"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Slurpuff"
+          },
+          "moveName": "Play Rough",
+          "moveId": "play-rough",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Toxicroak"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Slurpuff"
+          },
+          "statusId": "psn",
+          "statusName": "poison"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Slurpuff"
+          },
+          "hp": {
+            "current": 63,
+            "max": 100,
+            "status": "psn"
+          },
+          "from": "psn"
+        }
+      ]
+    },
+    {
+      "turnNumber": 4,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 4
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Toxicroak"
+          },
+          "moveName": "Mach Punch",
+          "moveId": "mach-punch",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Slurpuff"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Slurpuff"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Slurpuff"
+          },
+          "hp": {
+            "current": 50,
+            "max": 100,
+            "status": "psn"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Toxicroak"
+          },
+          "hp": {
+            "current": 91,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Life Orb"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Slurpuff"
+          },
+          "moveName": "Facade",
+          "moveId": "facade",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Toxicroak"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Toxicroak"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Toxicroak"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Slurpuff"
+          },
+          "hp": {
+            "current": 37,
+            "max": 100,
+            "status": "psn"
+          },
+          "from": "psn"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Mandibuzz"
+          },
+          "species": "Mandibuzz",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 5,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 5
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Mandibuzz"
+          },
+          "moveName": "Protect",
+          "moveId": "protect",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Mandibuzz"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-singleturn|p2a: Mandibuzz|Protect"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Slurpuff"
+          },
+          "moveName": "Play Rough",
+          "moveId": "play-rough",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Mandibuzz"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Slurpuff"
+          },
+          "hp": {
+            "current": 25,
+            "max": 100,
+            "status": "psn"
+          },
+          "from": "psn"
+        }
+      ]
+    },
+    {
+      "turnNumber": 6,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 6
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Mandibuzz"
+          },
+          "moveName": "Sucker Punch",
+          "moveId": "sucker-punch",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Slurpuff"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Slurpuff"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Slurpuff"
+          },
+          "hp": {
+            "current": 15,
+            "max": 100,
+            "status": "psn"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Slurpuff"
+          },
+          "moveName": "Play Rough",
+          "moveId": "play-rough",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Mandibuzz"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Mandibuzz"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Mandibuzz"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Mandibuzz"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Slurpuff"
+          },
+          "hp": {
+            "current": 3,
+            "max": 100,
+            "status": "psn"
+          },
+          "from": "psn"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Mamoswine"
+          },
+          "species": "Mamoswine",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 7,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 7
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Mamoswine"
+          },
+          "moveName": "Protect",
+          "moveId": "protect",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Mamoswine"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-singleturn|p2a: Mamoswine|Protect"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Slurpuff"
+          },
+          "moveName": "Drain Punch",
+          "moveId": "drain-punch",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Mamoswine"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Slurpuff"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          },
+          "from": "psn"
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Slurpuff"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dddddsaf Legacy"
+          },
+          "species": "Barbaracle",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 8,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 8
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Mamoswine"
+          },
+          "moveName": "Thousand Arrows",
+          "moveId": "thousand-arrows",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dddddsaf Legacy"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dddddsaf Legacy"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-enditem|p1a: Dddddsaf Legacy|Focus Sash"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dddddsaf Legacy"
+          },
+          "hp": {
+            "current": 1,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Mamoswine"
+          },
+          "hp": {
+            "current": 91,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Life Orb"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dddddsaf Legacy"
+          },
+          "moveName": "Shell Smash",
+          "moveId": "shell-smash",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dddddsaf Legacy"
+          }
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dddddsaf Legacy"
+          },
+          "stat": "def",
+          "amount": 1
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dddddsaf Legacy"
+          },
+          "stat": "spd",
+          "amount": 1
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dddddsaf Legacy"
+          },
+          "stat": "atk",
+          "amount": 2
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dddddsaf Legacy"
+          },
+          "stat": "spa",
+          "amount": 2
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dddddsaf Legacy"
+          },
+          "stat": "spe",
+          "amount": 2
+        }
+      ]
+    },
+    {
+      "turnNumber": 9,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 9
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Mamoswine"
+          },
+          "moveName": "Ice Shard",
+          "moveId": "ice-shard",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dddddsaf Legacy"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dddddsaf Legacy"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dddddsaf Legacy"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dddddsaf Legacy"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Mamoswine"
+          },
+          "hp": {
+            "current": 81,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Life Orb"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhyperior"
+          },
+          "species": "Rhyperior",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 10,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 10
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Mamoswine"
+          },
+          "moveName": "Glacial Lance",
+          "moveId": "glacial-lance",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhyperior"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhyperior"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhyperior"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Rhyperior"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Mamoswine"
+          },
+          "hp": {
+            "current": 71,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Life Orb"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Noctowl"
+          },
+          "species": "Noctowl",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 11,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 11
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Mamoswine"
+          },
+          "moveName": "Glacial Lance",
+          "moveId": "glacial-lance",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Noctowl"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Noctowl"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Noctowl"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Noctowl"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Mamoswine"
+          },
+          "hp": {
+            "current": 61,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Life Orb"
+        },
+        {
+          "type": "win",
+          "winner": "Imtryingtolosehaha"
+        },
+        {
+          "type": "unknown",
+          "raw": "|n|☆PokemonGT7|pokemongt7"
+        },
+        {
+          "type": "unknown",
+          "raw": "|n|☆Imtryingtolosehaha|imtryingtolosehaha"
+        },
+        {
+          "type": "unknown",
+          "raw": "|n|*Lady Monita |ladymonita"
+        },
+        {
+          "type": "unknown",
+          "raw": "|n| SnakeL|snakel"
+        },
+        {
+          "type": "unknown",
+          "raw": "|n| New Lunar Dance|newlunardance"
+        },
+        {
+          "type": "unknown",
+          "raw": "|n| furyacephoenix|furyacephoenix"
+        },
+        {
+          "type": "unknown",
+          "raw": "|n| baddieprathikmon|baddieprathikmon"
+        },
+        {
+          "type": "unknown",
+          "raw": "|n| calypsak|calypsak"
+        },
+        {
+          "type": "unknown",
+          "raw": "|n| BRO THats rare|brothatsrare"
+        }
+      ]
+    }
+  ],
+  "winner": "Imtryingtolosehaha"
+}

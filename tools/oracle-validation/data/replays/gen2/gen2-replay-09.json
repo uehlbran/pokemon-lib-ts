@@ -1,0 +1,3148 @@
+{
+  "id": "",
+  "format": "[Gen 2] OU",
+  "generation": 2,
+  "players": [
+    "drogba in shenhua",
+    "Vileman"
+  ],
+  "teams": [
+    [
+      {
+        "species": "Zapdos",
+        "level": 100,
+        "knownMoves": [
+          "hidden-power",
+          "thunder",
+          "rest",
+          "sleep-talk"
+        ],
+        "nickname": "Zapdos"
+      },
+      {
+        "species": "Exeggutor",
+        "level": 100,
+        "knownMoves": [
+          "sleep-powder"
+        ],
+        "nickname": "Exeggutor"
+      },
+      {
+        "species": "Steelix",
+        "level": 100,
+        "knownMoves": [
+          "roar",
+          "explosion"
+        ],
+        "nickname": "Steelix"
+      },
+      {
+        "species": "Cloyster",
+        "level": 100,
+        "knownMoves": [
+          "spikes"
+        ],
+        "nickname": "Cloyster"
+      },
+      {
+        "species": "Snorlax",
+        "level": 100,
+        "knownMoves": [
+          "curse",
+          "double-edge"
+        ],
+        "nickname": "Snorlax"
+      },
+      {
+        "species": "Vaporeon",
+        "level": 100,
+        "knownMoves": [
+          "growth",
+          "rest",
+          "sleep-talk"
+        ],
+        "nickname": "Vaporeon"
+      }
+    ],
+    [
+      {
+        "species": "Snorlax",
+        "level": 100,
+        "knownMoves": [
+          "curse",
+          "lovely-kiss",
+          "double-edge"
+        ],
+        "nickname": "Neverender"
+      },
+      {
+        "species": "Zapdos",
+        "level": 100,
+        "knownMoves": [
+          "thunder",
+          "hidden-power",
+          "sleep-talk",
+          "rest"
+        ],
+        "nickname": "Let There Be Light"
+      },
+      {
+        "species": "Golem",
+        "level": 100,
+        "knownMoves": [
+          "explosion"
+        ],
+        "nickname": "Stop"
+      },
+      {
+        "species": "Raikou",
+        "level": 100,
+        "knownMoves": [
+          "thunderbolt"
+        ],
+        "nickname": "Brianvision"
+      }
+    ]
+  ],
+  "turns": [
+    {
+      "turnNumber": 0,
+      "events": [
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "species": "Zapdos",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "species": "Snorlax",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 1,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 1
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "species": "Exeggutor",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "moveName": "Curse",
+          "moveId": "curse",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          }
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "stat": "spe",
+          "amount": 1
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "stat": "atk",
+          "amount": 1
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "stat": "def",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "turnNumber": 2,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 2
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Let There Be Light"
+          },
+          "species": "Zapdos",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "moveName": "Sleep Powder",
+          "moveId": "sleep-powder",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Let There Be Light"
+          }
+        },
+        {
+          "type": "miss",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "targetIdent": null
+        }
+      ]
+    },
+    {
+      "turnNumber": 3,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 3
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Steelix"
+          },
+          "species": "Steelix",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Let There Be Light"
+          },
+          "moveName": "Thunder",
+          "moveId": "thunder",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Steelix"
+          }
+        },
+        {
+          "type": "immune",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Steelix"
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 4,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 4
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Let There Be Light"
+          },
+          "moveName": "Hidden Power",
+          "moveId": "hidden-power",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Steelix"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Steelix"
+          },
+          "hp": {
+            "current": 78,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Steelix"
+          },
+          "moveName": "Roar",
+          "moveId": "roar",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Let There Be Light"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|drag|p2a: Stop|Golem, M|100/100"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Steelix"
+          },
+          "hp": {
+            "current": 84,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 5,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 5
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Let There Be Light"
+          },
+          "species": "Zapdos",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Cloyster"
+          },
+          "species": "Cloyster",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 6,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 6
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "species": "Snorlax",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Let There Be Light"
+          },
+          "moveName": "Hidden Power",
+          "moveId": "hidden-power",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "hp": {
+            "current": 90,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "hp": {
+            "current": 96,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 7,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 7
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Let There Be Light"
+          },
+          "moveName": "Thunder",
+          "moveId": "thunder",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          }
+        },
+        {
+          "type": "miss",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Let There Be Light"
+          },
+          "targetIdent": null
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "moveName": "Curse",
+          "moveId": "curse",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          }
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "stat": "spe",
+          "amount": 1
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "stat": "atk",
+          "amount": 1
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "stat": "def",
+          "amount": 1
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 8,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 8
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Let There Be Light"
+          },
+          "moveName": "Thunder",
+          "moveId": "thunder",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "hp": {
+            "current": 72,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "moveName": "Double-Edge",
+          "moveId": "double-edge",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Let There Be Light"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Let There Be Light"
+          },
+          "hp": {
+            "current": 30,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "hp": {
+            "current": 59,
+            "max": 100,
+            "status": null
+          },
+          "from": "Recoil"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Let There Be Light"
+          },
+          "hp": {
+            "current": 36,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "hp": {
+            "current": 65,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 9,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 9
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Stop"
+          },
+          "species": "Golem",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "moveName": "Double-Edge",
+          "moveId": "double-edge",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Stop"
+          }
+        },
+        {
+          "type": "crit",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Stop"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Stop"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Stop"
+          },
+          "hp": {
+            "current": 48,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "hp": {
+            "current": 56,
+            "max": 100,
+            "status": null
+          },
+          "from": "Recoil"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Stop"
+          },
+          "hp": {
+            "current": 54,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "hp": {
+            "current": 62,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 10,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 10
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Stop"
+          },
+          "moveName": "Explosion",
+          "moveId": "explosion",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Stop"
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Snorlax"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Let There Be Light"
+          },
+          "species": "Zapdos",
+          "level": 100,
+          "hp": {
+            "current": 36,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Cloyster"
+          },
+          "species": "Cloyster",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Let There Be Light"
+          },
+          "hp": {
+            "current": 42,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 11,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 11
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "species": "Exeggutor",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Let There Be Light"
+          },
+          "moveName": "Thunder",
+          "moveId": "thunder",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Exeggutor"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Exeggutor"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "hp": {
+            "current": 74,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "statusId": "par",
+          "statusName": "paralysis"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Let There Be Light"
+          },
+          "hp": {
+            "current": 48,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "hp": {
+            "current": 80,
+            "max": 100,
+            "status": "par"
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 12,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 12
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Let There Be Light"
+          },
+          "moveName": "Hidden Power",
+          "moveId": "hidden-power",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Exeggutor"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Exeggutor"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "hp": {
+            "current": 39,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "reason": "par"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Let There Be Light"
+          },
+          "hp": {
+            "current": 54,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "hp": {
+            "current": 46,
+            "max": 100,
+            "status": "par"
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 13,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 13
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Let There Be Light"
+          },
+          "moveName": "Hidden Power",
+          "moveId": "hidden-power",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Exeggutor"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Exeggutor"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "hp": {
+            "current": 6,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "moveName": "Sleep Powder",
+          "moveId": "sleep-powder",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Let There Be Light"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Let There Be Light"
+          },
+          "statusId": "slp",
+          "statusName": "sleep"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Let There Be Light"
+          },
+          "hp": {
+            "current": 60,
+            "max": 100,
+            "status": "slp"
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "hp": {
+            "current": 12,
+            "max": 100,
+            "status": "par"
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 14,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 14
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Steelix"
+          },
+          "species": "Steelix",
+          "level": 100,
+          "hp": {
+            "current": 84,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Let There Be Light"
+          },
+          "reason": "slp"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Let There Be Light"
+          },
+          "moveName": "Sleep Talk",
+          "moveId": "sleep-talk",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Let There Be Light"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Let There Be Light"
+          },
+          "moveName": "Rest",
+          "moveId": "rest",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Let There Be Light"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Let There Be Light"
+          },
+          "statusId": "slp",
+          "statusName": "sleep"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Let There Be Light"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "slp"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Steelix"
+          },
+          "hp": {
+            "current": 90,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 15,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 15
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Let There Be Light"
+          },
+          "reason": "slp"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Let There Be Light"
+          },
+          "moveName": "Sleep Talk",
+          "moveId": "sleep-talk",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Let There Be Light"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Let There Be Light"
+          },
+          "moveName": "Thunder",
+          "moveId": "thunder",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Steelix"
+          }
+        },
+        {
+          "type": "immune",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Steelix"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Steelix"
+          },
+          "moveName": "Explosion",
+          "moveId": "explosion",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Let There Be Light"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Let There Be Light"
+          },
+          "hp": {
+            "current": 3,
+            "max": 100,
+            "status": "slp"
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Steelix"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "species": "Zapdos",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Let There Be Light"
+          },
+          "hp": {
+            "current": 9,
+            "max": 100,
+            "status": "slp"
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 16,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 16
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Brianvision"
+          },
+          "species": "Raikou",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "moveName": "Hidden Power",
+          "moveId": "hidden-power",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Brianvision"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Brianvision"
+          },
+          "hp": {
+            "current": 83,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Brianvision"
+          },
+          "hp": {
+            "current": 89,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 17,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 17
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Brianvision"
+          },
+          "moveName": "Thunderbolt",
+          "moveId": "thunderbolt",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 65,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "moveName": "Thunder",
+          "moveId": "thunder",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Brianvision"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Brianvision"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Brianvision"
+          },
+          "hp": {
+            "current": 66,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Brianvision"
+          },
+          "hp": {
+            "current": 72,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 71,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 18,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 18
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Brianvision"
+          },
+          "moveName": "Thunderbolt",
+          "moveId": "thunderbolt",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 37,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "moveName": "Thunder",
+          "moveId": "thunder",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Brianvision"
+          }
+        },
+        {
+          "type": "miss",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "targetIdent": null
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Brianvision"
+          },
+          "hp": {
+            "current": 78,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 43,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 19,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 19
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "species": "Snorlax",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "moveName": "Rest",
+          "moveId": "rest",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "statusId": "slp",
+          "statusName": "sleep"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "slp"
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 20,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 20
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Cloyster"
+          },
+          "species": "Cloyster",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "moveName": "Lovely Kiss",
+          "moveId": "lovely-kiss",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Cloyster"
+          }
+        },
+        {
+          "type": "miss",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "targetIdent": null
+        }
+      ]
+    },
+    {
+      "turnNumber": 21,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 21
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Cloyster"
+          },
+          "moveName": "Spikes",
+          "moveId": "spikes",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sidestart|p2: Vileman|Spikes"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "moveName": "Lovely Kiss",
+          "moveId": "lovely-kiss",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Cloyster"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Cloyster"
+          },
+          "statusId": "slp",
+          "statusName": "sleep"
+        }
+      ]
+    },
+    {
+      "turnNumber": 22,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 22
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "species": "Zapdos",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "slp"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "moveName": "Curse",
+          "moveId": "curse",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          }
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "stat": "spe",
+          "amount": 1
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "stat": "atk",
+          "amount": 1
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "stat": "def",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "turnNumber": 23,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 23
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Cloyster"
+          },
+          "species": "Cloyster",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "slp"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "moveName": "Double-Edge",
+          "moveId": "double-edge",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Cloyster"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Cloyster"
+          },
+          "hp": {
+            "current": 51,
+            "max": 100,
+            "status": "slp"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "hp": {
+            "current": 93,
+            "max": 100,
+            "status": null
+          },
+          "from": "Recoil"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Cloyster"
+          },
+          "hp": {
+            "current": 57,
+            "max": 100,
+            "status": "slp"
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "hp": {
+            "current": 99,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 24,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 24
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Cloyster"
+          },
+          "reason": "slp"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "moveName": "Double-Edge",
+          "moveId": "double-edge",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Cloyster"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Cloyster"
+          },
+          "hp": {
+            "current": 7,
+            "max": 100,
+            "status": "slp"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "hp": {
+            "current": 92,
+            "max": 100,
+            "status": null
+          },
+          "from": "Recoil"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Cloyster"
+          },
+          "hp": {
+            "current": 13,
+            "max": 100,
+            "status": "slp"
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "hp": {
+            "current": 99,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 25,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 25
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Cloyster"
+          },
+          "reason": "slp"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "moveName": "Double-Edge",
+          "moveId": "double-edge",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Cloyster"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Cloyster"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "hp": {
+            "current": 97,
+            "max": 100,
+            "status": null
+          },
+          "from": "Recoil"
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Cloyster"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "species": "Exeggutor",
+          "level": 100,
+          "hp": {
+            "current": 12,
+            "max": 100,
+            "status": "par"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "hp": {
+            "current": 18,
+            "max": 100,
+            "status": "par"
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 26,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 26
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "moveName": "Double-Edge",
+          "moveId": "double-edge",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Exeggutor"
+          }
+        },
+        {
+          "type": "crit",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Exeggutor"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Exeggutor"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "hp": {
+            "current": 97,
+            "max": 100,
+            "status": null
+          },
+          "from": "Recoil"
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Exeggutor"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "species": "Zapdos",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "slp"
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 27,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 27
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "reason": "slp"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "moveName": "Sleep Talk",
+          "moveId": "sleep-talk",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "moveName": "Hidden Power",
+          "moveId": "hidden-power",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "hp": {
+            "current": 90,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "moveName": "Double-Edge",
+          "moveId": "double-edge",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 30,
+            "max": 100,
+            "status": "slp"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "hp": {
+            "current": 77,
+            "max": 100,
+            "status": null
+          },
+          "from": "Recoil"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 36,
+            "max": 100,
+            "status": "slp"
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "hp": {
+            "current": 83,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 28,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 28
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "reason": "slp"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "moveName": "Sleep Talk",
+          "moveId": "sleep-talk",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "moveName": "Rest",
+          "moveId": "rest",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "statusId": "slp",
+          "statusName": "sleep"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "slp"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "moveName": "Double-Edge",
+          "moveId": "double-edge",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 40,
+            "max": 100,
+            "status": "slp"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "hp": {
+            "current": 72,
+            "max": 100,
+            "status": null
+          },
+          "from": "Recoil"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 46,
+            "max": 100,
+            "status": "slp"
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "hp": {
+            "current": 78,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 29,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 29
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "reason": "slp"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "moveName": "Sleep Talk",
+          "moveId": "sleep-talk",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "moveName": "Thunder",
+          "moveId": "thunder",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          }
+        },
+        {
+          "type": "miss",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "targetIdent": null
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "moveName": "Double-Edge",
+          "moveId": "double-edge",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "hp": {
+            "current": 70,
+            "max": 100,
+            "status": null
+          },
+          "from": "Recoil"
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Zapdos"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "species": "Vaporeon",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "hp": {
+            "current": 76,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 30,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 30
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "moveName": "Growth",
+          "moveId": "growth",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "stat": "spa",
+          "amount": 1
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "moveName": "Double-Edge",
+          "moveId": "double-edge",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "hp": {
+            "current": 33,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "hp": {
+            "current": 61,
+            "max": 100,
+            "status": null
+          },
+          "from": "Recoil"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "hp": {
+            "current": 39,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "hp": {
+            "current": 67,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 31,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 31
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "moveName": "Rest",
+          "moveId": "rest",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "statusId": "slp",
+          "statusName": "sleep"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "slp"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "moveName": "Double-Edge",
+          "moveId": "double-edge",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "hp": {
+            "current": 35,
+            "max": 100,
+            "status": "slp"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "hp": {
+            "current": 53,
+            "max": 100,
+            "status": null
+          },
+          "from": "Recoil"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "hp": {
+            "current": 41,
+            "max": 100,
+            "status": "slp"
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "hp": {
+            "current": 59,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 32,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 32
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "reason": "slp"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "moveName": "Sleep Talk",
+          "moveId": "sleep-talk",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "moveName": "Rest",
+          "moveId": "rest",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "statusId": "slp",
+          "statusName": "sleep"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "slp"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "moveName": "Double-Edge",
+          "moveId": "double-edge",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "hp": {
+            "current": 39,
+            "max": 100,
+            "status": "slp"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "hp": {
+            "current": 45,
+            "max": 100,
+            "status": null
+          },
+          "from": "Recoil"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "hp": {
+            "current": 45,
+            "max": 100,
+            "status": "slp"
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "hp": {
+            "current": 51,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 33,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 33
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "reason": "slp"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "moveName": "Sleep Talk",
+          "moveId": "sleep-talk",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "moveName": "Growth",
+          "moveId": "growth",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "stat": "spa",
+          "amount": 1
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "moveName": "Double-Edge",
+          "moveId": "double-edge",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Neverender"
+          },
+          "hp": {
+            "current": 42,
+            "max": 100,
+            "status": null
+          },
+          "from": "Recoil"
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Vaporeon"
+          }
+        },
+        {
+          "type": "win",
+          "winner": "Vileman"
+        }
+      ]
+    }
+  ],
+  "winner": "Vileman"
+}

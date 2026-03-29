@@ -1,0 +1,2067 @@
+{
+  "id": "",
+  "format": "[Gen 3] OU",
+  "generation": 3,
+  "players": [
+    "Eggydillo",
+    "darkrainydog"
+  ],
+  "teams": [
+    [
+      {
+        "species": "Dunsparce",
+        "level": 100,
+        "knownMoves": [
+          "ice-beam",
+          "calm-mind"
+        ],
+        "nickname": "Dunsparce"
+      },
+      {
+        "species": "Gengar",
+        "level": 100,
+        "knownMoves": [
+          "will-o-wisp",
+          "thunderbolt",
+          "ice-punch"
+        ],
+        "nickname": "Gengar"
+      },
+      {
+        "species": "Tyranitar",
+        "level": 100,
+        "knownMoves": [
+          "focus-punch"
+        ],
+        "nickname": "Tyranitar"
+      },
+      {
+        "species": "Blissey",
+        "level": 100,
+        "knownMoves": [
+          "toxic"
+        ],
+        "nickname": "Blissey"
+      },
+      {
+        "species": "Swampert",
+        "level": 100,
+        "knownMoves": [],
+        "nickname": "Swampert"
+      },
+      {
+        "species": "Skarmory",
+        "level": 100,
+        "knownMoves": [],
+        "nickname": "Skarmory"
+      }
+    ],
+    [
+      {
+        "species": "Marowak",
+        "level": 100,
+        "knownMoves": [
+          "bonemerang",
+          "rock-slide",
+          "protect"
+        ],
+        "nickname": "Marowak"
+      },
+      {
+        "species": "Kangaskhan",
+        "level": 100,
+        "knownMoves": [
+          "rest",
+          "crush-claw",
+          "shadow-ball"
+        ],
+        "nickname": "Kangaskhan"
+      },
+      {
+        "species": "Ludicolo",
+        "level": 100,
+        "knownMoves": [
+          "razor-leaf",
+          "rain-dance",
+          "hydro-pump"
+        ],
+        "nickname": "Ludicolo"
+      },
+      {
+        "species": "Swellow",
+        "level": 100,
+        "knownMoves": [
+          "focus-energy",
+          "baton-pass"
+        ],
+        "nickname": "Swellow"
+      }
+    ]
+  ],
+  "turns": [
+    {
+      "turnNumber": 0,
+      "events": [
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dunsparce"
+          },
+          "species": "Dunsparce",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Marowak"
+          },
+          "species": "Marowak",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 1,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 1
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Marowak"
+          },
+          "moveName": "Bonemerang",
+          "moveId": "bonemerang",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dunsparce"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dunsparce"
+          },
+          "hp": {
+            "current": 60,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dunsparce"
+          },
+          "hp": {
+            "current": 23,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "hitcount",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dunsparce"
+          },
+          "count": 2
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dunsparce"
+          },
+          "moveName": "Ice Beam",
+          "moveId": "ice-beam",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Marowak"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Marowak"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Marowak"
+          },
+          "hp": {
+            "current": 52,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dunsparce"
+          },
+          "hp": {
+            "current": 29,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 2,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 2
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "species": "Gengar",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Marowak"
+          },
+          "moveName": "Bonemerang",
+          "moveId": "bonemerang",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gengar"
+          }
+        },
+        {
+          "type": "immune",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gengar"
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 3,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 3
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Kangaskhan"
+          },
+          "species": "Kangaskhan",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "moveName": "Will-O-Wisp",
+          "moveId": "will-o-wisp",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Kangaskhan"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Kangaskhan"
+          },
+          "statusId": "brn",
+          "statusName": "burn"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Kangaskhan"
+          },
+          "hp": {
+            "current": 88,
+            "max": 100,
+            "status": "brn"
+          },
+          "from": "brn"
+        }
+      ]
+    },
+    {
+      "turnNumber": 4,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 4
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "moveName": "Thunderbolt",
+          "moveId": "thunderbolt",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Kangaskhan"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Kangaskhan"
+          },
+          "hp": {
+            "current": 63,
+            "max": 100,
+            "status": "brn"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Kangaskhan"
+          },
+          "moveName": "Rest",
+          "moveId": "rest",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Kangaskhan"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Kangaskhan"
+          },
+          "statusId": "slp",
+          "statusName": "sleep"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Kangaskhan"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "slp"
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 5,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 5
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dunsparce"
+          },
+          "species": "Dunsparce",
+          "level": 100,
+          "hp": {
+            "current": 29,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Kangaskhan"
+          },
+          "reason": "slp"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dunsparce"
+          },
+          "hp": {
+            "current": 36,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 6,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 6
+        },
+        {
+          "type": "curestatus",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Kangaskhan"
+          },
+          "statusId": "slp"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Kangaskhan"
+          },
+          "moveName": "Crush Claw",
+          "moveId": "crush-claw",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dunsparce"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dunsparce"
+          },
+          "hp": {
+            "current": 1,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dunsparce"
+          },
+          "moveName": "Calm Mind",
+          "moveId": "calm-mind",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dunsparce"
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dunsparce"
+          },
+          "stat": "spa",
+          "amount": 1
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dunsparce"
+          },
+          "stat": "spd",
+          "amount": 1
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dunsparce"
+          },
+          "hp": {
+            "current": 8,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 7,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 7
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Kangaskhan"
+          },
+          "moveName": "Crush Claw",
+          "moveId": "crush-claw",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dunsparce"
+          }
+        },
+        {
+          "type": "crit",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dunsparce"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dunsparce"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Dunsparce"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "species": "Gengar",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 8,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 8
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "moveName": "Will-O-Wisp",
+          "moveId": "will-o-wisp",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Kangaskhan"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Kangaskhan"
+          },
+          "statusId": "brn",
+          "statusName": "burn"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Kangaskhan"
+          },
+          "moveName": "Shadow Ball",
+          "moveId": "shadow-ball",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gengar"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gengar"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "hp": {
+            "current": 64,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "hp": {
+            "current": 70,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Kangaskhan"
+          },
+          "hp": {
+            "current": 88,
+            "max": 100,
+            "status": "brn"
+          },
+          "from": "brn"
+        }
+      ]
+    },
+    {
+      "turnNumber": 9,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 9
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "species": "Tyranitar",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[from] ability: Sand Stream|[of] p1a: Tyranitar"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Kangaskhan"
+          },
+          "moveName": "Rest",
+          "moveId": "rest",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Kangaskhan"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Kangaskhan"
+          },
+          "statusId": "slp",
+          "statusName": "sleep"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Kangaskhan"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": "slp"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Kangaskhan"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": "slp"
+          },
+          "from": "Sandstorm"
+        }
+      ]
+    },
+    {
+      "turnNumber": 10,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 10
+        },
+        {
+          "type": "unknown",
+          "raw": "|-singleturn|p1a: Tyranitar|move: Focus Punch"
+        },
+        {
+          "type": "cant",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Kangaskhan"
+          },
+          "reason": "slp"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tyranitar"
+          },
+          "moveName": "Focus Punch",
+          "moveId": "focus-punch",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Kangaskhan"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Kangaskhan"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Kangaskhan"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Kangaskhan"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Marowak"
+          },
+          "species": "Marowak",
+          "level": 100,
+          "hp": {
+            "current": 52,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        }
+      ]
+    },
+    {
+      "turnNumber": 11,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 11
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "species": "Gengar",
+          "level": 100,
+          "hp": {
+            "current": 70,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Marowak"
+          },
+          "moveName": "Rock Slide",
+          "moveId": "rock-slide",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gengar"
+          }
+        },
+        {
+          "type": "miss",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Marowak"
+          },
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gengar"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "hp": {
+            "current": 64,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "hp": {
+            "current": 70,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 12,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 12
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "moveName": "Ice Punch",
+          "moveId": "ice-punch",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Marowak"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Marowak"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Marowak"
+          },
+          "hp": {
+            "current": 8,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Marowak"
+          },
+          "moveName": "Rock Slide",
+          "moveId": "rock-slide",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gengar"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "hp": {
+            "current": 11,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "hp": {
+            "current": 5,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "hp": {
+            "current": 11,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 13,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 13
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Marowak"
+          },
+          "moveName": "Protect",
+          "moveId": "protect",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Marowak"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-singleturn|p2a: Marowak|Protect"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "moveName": "Ice Punch",
+          "moveId": "ice-punch",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Marowak"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "hp": {
+            "current": 5,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "hp": {
+            "current": 11,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 14,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 14
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ludicolo"
+          },
+          "species": "Ludicolo",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "moveName": "Will-O-Wisp",
+          "moveId": "will-o-wisp",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ludicolo"
+          }
+        },
+        {
+          "type": "miss",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ludicolo"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "hp": {
+            "current": 5,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ludicolo"
+          },
+          "hp": {
+            "current": 95,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "hp": {
+            "current": 11,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 15,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 15
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "species": "Blissey",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ludicolo"
+          },
+          "moveName": "Razor Leaf",
+          "moveId": "razor-leaf",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "hp": {
+            "current": 90,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ludicolo"
+          },
+          "hp": {
+            "current": 89,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "hp": {
+            "current": 84,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "hp": {
+            "current": 90,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 16,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 16
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Marowak"
+          },
+          "species": "Marowak",
+          "level": 100,
+          "hp": {
+            "current": 8,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "moveName": "Toxic",
+          "moveId": "toxic",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Marowak"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Marowak"
+          },
+          "statusId": "tox",
+          "statusName": "badly-poisoned"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "hp": {
+            "current": 84,
+            "max": 100,
+            "status": null
+          },
+          "from": "Sandstorm"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "hp": {
+            "current": 90,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Marowak"
+          },
+          "hp": {
+            "current": 2,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "psn"
+        }
+      ]
+    },
+    {
+      "turnNumber": 17,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 17
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "species": "Swampert",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Marowak"
+          },
+          "moveName": "Rock Slide",
+          "moveId": "rock-slide",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Swampert"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Swampert"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "hp": {
+            "current": 88,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|Sandstorm|[upkeep]"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "hp": {
+            "current": 95,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Marowak"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          },
+          "from": "psn"
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Marowak"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ludicolo"
+          },
+          "species": "Ludicolo",
+          "level": 100,
+          "hp": {
+            "current": 89,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 18,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 18
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "species": "Blissey",
+          "level": 100,
+          "hp": {
+            "current": 90,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ludicolo"
+          },
+          "moveName": "Rain Dance",
+          "moveId": "rain-dance",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ludicolo"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[upkeep]"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "hp": {
+            "current": 96,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 19,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 19
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swellow"
+          },
+          "species": "Swellow",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "moveName": "Toxic",
+          "moveId": "toxic",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swellow"
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swellow"
+          },
+          "statusId": "tox",
+          "statusName": "badly-poisoned"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swellow"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "psn"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 20,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 20
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "species": "Gengar",
+          "level": 100,
+          "hp": {
+            "current": 11,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swellow"
+          },
+          "moveName": "Focus Energy",
+          "moveId": "focus-energy",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swellow"
+          }
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swellow"
+          },
+          "effect": "move: Focus Energy"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swellow"
+          },
+          "hp": {
+            "current": 82,
+            "max": 100,
+            "status": "tox"
+          },
+          "from": "psn"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Gengar"
+          },
+          "hp": {
+            "current": 17,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 21,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 21
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Skarmory"
+          },
+          "species": "Skarmory",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swellow"
+          },
+          "moveName": "Baton Pass",
+          "moveId": "baton-pass",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Swellow"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ludicolo"
+          },
+          "species": "Ludicolo",
+          "level": 100,
+          "hp": {
+            "current": 89,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[upkeep]"
+        }
+      ]
+    },
+    {
+      "turnNumber": 22,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 22
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "species": "Blissey",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ludicolo"
+          },
+          "moveName": "Hydro Pump",
+          "moveId": "hydro-pump",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          }
+        },
+        {
+          "type": "crit",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "hp": {
+            "current": 33,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|none"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "hp": {
+            "current": 39,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 23,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 23
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ludicolo"
+          },
+          "moveName": "Hydro Pump",
+          "moveId": "hydro-pump",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          }
+        },
+        {
+          "type": "crit",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Blissey"
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Skarmory"
+          },
+          "species": "Skarmory",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 24,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 24
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Ludicolo"
+          },
+          "moveName": "Hydro Pump",
+          "moveId": "hydro-pump",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Skarmory"
+          }
+        },
+        {
+          "type": "crit",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Skarmory"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Skarmory"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Skarmory"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-message|Eggydillo forfeited."
+        },
+        {
+          "type": "win",
+          "winner": "darkrainydog"
+        }
+      ]
+    }
+  ],
+  "winner": "darkrainydog"
+}

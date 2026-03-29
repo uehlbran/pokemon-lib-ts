@@ -1,0 +1,987 @@
+{
+  "id": "",
+  "format": "[Gen 7] OU",
+  "generation": 7,
+  "players": [
+    "Leanne28272722",
+    "ThOmKs"
+  ],
+  "teams": [
+    [
+      {
+        "species": "Pelipper",
+        "level": 100,
+        "knownMoves": [
+          "u-turn"
+        ],
+        "nickname": "Pelipper"
+      },
+      {
+        "species": "Ferrothorn",
+        "level": 100,
+        "knownMoves": [
+          "stealth-rock"
+        ],
+        "nickname": "Ferrothorn"
+      },
+      {
+        "species": "Crawdaunt",
+        "level": 100,
+        "knownMoves": [
+          "knock-off"
+        ],
+        "nickname": "Crawdaunt"
+      },
+      {
+        "species": "Tornadus-Therian",
+        "level": 100,
+        "knownMoves": [
+          "hurricane"
+        ],
+        "nickname": "Tornadus"
+      },
+      {
+        "species": "Swampert",
+        "level": 100,
+        "knownMoves": [
+          "waterfall"
+        ],
+        "nickname": "Swampert"
+      }
+    ],
+    [
+      {
+        "species": "Garchomp",
+        "level": 100,
+        "knownMoves": [],
+        "nickname": "Garchomp"
+      },
+      {
+        "species": "Zapdos",
+        "level": 100,
+        "knownMoves": [
+          "volt-switch"
+        ],
+        "nickname": "Zapdos"
+      },
+      {
+        "species": "Chandelure",
+        "level": 100,
+        "knownMoves": [
+          "fire-blast"
+        ],
+        "nickname": "Chandelure"
+      },
+      {
+        "species": "Empoleon",
+        "level": 100,
+        "knownMoves": [
+          "defog"
+        ],
+        "nickname": "Empoleon"
+      },
+      {
+        "species": "Medicham",
+        "level": 100,
+        "knownMoves": [
+          "high-jump-kick"
+        ],
+        "nickname": "Medicham"
+      },
+      {
+        "species": "Scizor",
+        "level": 100,
+        "knownMoves": [
+          "bullet-punch",
+          "swords-dance"
+        ],
+        "nickname": "Scizor"
+      }
+    ]
+  ],
+  "turns": [
+    {
+      "turnNumber": 0,
+      "events": [
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Pelipper"
+          },
+          "species": "Pelipper",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Garchomp"
+          },
+          "species": "Garchomp",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[from] ability: Drizzle|[of] p1a: Pelipper"
+        }
+      ]
+    },
+    {
+      "turnNumber": 1,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 1
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "species": "Zapdos",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ferrothorn"
+          },
+          "species": "Ferrothorn",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[upkeep]"
+        }
+      ]
+    },
+    {
+      "turnNumber": 2,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 2
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "moveName": "Volt Switch",
+          "moveId": "volt-switch",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ferrothorn"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ferrothorn"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ferrothorn"
+          },
+          "hp": {
+            "current": 90,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chandelure"
+          },
+          "species": "Chandelure",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ferrothorn"
+          },
+          "moveName": "Stealth Rock",
+          "moveId": "stealth-rock",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chandelure"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sidestart|p2: ThOmKs|move: Stealth Rock"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[upkeep]"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Ferrothorn"
+          },
+          "hp": {
+            "current": 97,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 3,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 3
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Crawdaunt"
+          },
+          "species": "Crawdaunt",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chandelure"
+          },
+          "moveName": "Fire Blast",
+          "moveId": "fire-blast",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Crawdaunt"
+          }
+        },
+        {
+          "type": "miss",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Chandelure"
+          },
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Crawdaunt"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[upkeep]"
+        }
+      ]
+    },
+    {
+      "turnNumber": 4,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 4
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "species": "Zapdos",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 76,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Crawdaunt"
+          },
+          "moveName": "Knock Off",
+          "moveId": "knock-off",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-enditem|p2a: Zapdos|Leftovers|[from] move: Knock Off|[of] p1a: Crawdaunt"
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Zapdos"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[upkeep]"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Empoleon"
+          },
+          "species": "Empoleon",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Empoleon"
+          },
+          "hp": {
+            "current": 94,
+            "max": 100,
+            "status": null
+          },
+          "from": "Stealth Rock"
+        }
+      ]
+    },
+    {
+      "turnNumber": 5,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 5
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Crawdaunt"
+          },
+          "moveName": "Knock Off",
+          "moveId": "knock-off",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Empoleon"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Empoleon"
+          },
+          "hp": {
+            "current": 2,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-enditem|p2a: Empoleon|Leftovers|[from] move: Knock Off|[of] p1a: Crawdaunt"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Empoleon"
+          },
+          "moveName": "Defog",
+          "moveId": "defog",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Crawdaunt"
+          }
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Crawdaunt"
+          },
+          "stat": "evasion",
+          "amount": 1
+        },
+        {
+          "type": "unknown",
+          "raw": "|-sideend|p2: ThOmKs|Stealth Rock|[from] move: Defog|[of] p2a: Empoleon"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[upkeep]"
+        }
+      ]
+    },
+    {
+      "turnNumber": 6,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 6
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Crawdaunt"
+          },
+          "moveName": "Knock Off",
+          "moveId": "knock-off",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Empoleon"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Empoleon"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Empoleon"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[upkeep]"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Medicham"
+          },
+          "species": "Medicham",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 7,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 7
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tornadus"
+          },
+          "species": "Tornadus-Therian",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|detailschange|p2a: Medicham|Medicham-Mega, F"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-mega|p2a: Medicham|Medicham|Medichamite"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Medicham"
+          },
+          "moveName": "High Jump Kick",
+          "moveId": "high-jump-kick",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tornadus"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tornadus"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tornadus"
+          },
+          "hp": {
+            "current": 43,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Medicham"
+          },
+          "hp": {
+            "current": 84,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Rocky Helmet"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[upkeep]"
+        }
+      ]
+    },
+    {
+      "turnNumber": 8,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 8
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Tornadus"
+          },
+          "moveName": "Hurricane",
+          "moveId": "hurricane",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Medicham"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Medicham"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Medicham"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Medicham"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|detailschange|p2: Medicham|Medicham, F|[silent]"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|none"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Scizor"
+          },
+          "species": "Scizor",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 9,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 9
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Pelipper"
+          },
+          "species": "Pelipper",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[from] ability: Drizzle|[of] p1a: Pelipper"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Scizor"
+          },
+          "moveName": "Bullet Punch",
+          "moveId": "bullet-punch",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Pelipper"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Pelipper"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Pelipper"
+          },
+          "hp": {
+            "current": 83,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Scizor"
+          },
+          "hp": {
+            "current": 91,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Life Orb"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[upkeep]"
+        }
+      ]
+    },
+    {
+      "turnNumber": 10,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 10
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Scizor"
+          },
+          "moveName": "Swords Dance",
+          "moveId": "swords-dance",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Scizor"
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Scizor"
+          },
+          "stat": "atk",
+          "amount": 2
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Pelipper"
+          },
+          "moveName": "U-turn",
+          "moveId": "u-turn",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Scizor"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Scizor"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Scizor"
+          },
+          "hp": {
+            "current": 85,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "species": "Swampert",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[upkeep]"
+        }
+      ]
+    },
+    {
+      "turnNumber": 11,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 11
+        },
+        {
+          "type": "unknown",
+          "raw": "|detailschange|p1a: Swampert|Swampert-Mega, M"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-mega|p1a: Swampert|Swampert|Swampertite"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Swampert"
+          },
+          "moveName": "Waterfall",
+          "moveId": "waterfall",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Scizor"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Scizor"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Scizor"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[upkeep]"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-message|ThOmKs forfeited."
+        },
+        {
+          "type": "win",
+          "winner": "Leanne28272722"
+        }
+      ]
+    }
+  ],
+  "winner": "Leanne28272722"
+}

@@ -1,0 +1,568 @@
+{
+  "id": "",
+  "format": "[Gen 9] OU",
+  "generation": 9,
+  "players": [
+    "AmygdalanResponse",
+    "potayo"
+  ],
+  "teams": [
+    [
+      {
+        "species": "Iron Treads",
+        "level": 100,
+        "knownMoves": [
+          "earth-power"
+        ],
+        "nickname": "Iron Treads"
+      },
+      {
+        "species": "Pelipper",
+        "level": 100,
+        "knownMoves": [],
+        "nickname": "Pelipper"
+      },
+      {
+        "species": "Kingambit",
+        "level": 100,
+        "knownMoves": [
+          "sucker-punch"
+        ],
+        "nickname": "Kingambit"
+      }
+    ],
+    [
+      {
+        "species": "Jolteon",
+        "level": 100,
+        "knownMoves": [
+          "tera-blast",
+          "volt-switch"
+        ],
+        "nickname": "Jolteon"
+      },
+      {
+        "species": "Hawlucha",
+        "level": 100,
+        "knownMoves": [],
+        "nickname": "Hawlucha"
+      }
+    ]
+  ],
+  "turns": [
+    {
+      "turnNumber": 0,
+      "events": [
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Iron Treads"
+          },
+          "species": "Iron Treads",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Jolteon"
+          },
+          "species": "Jolteon",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-enditem|p1a: Iron Treads|Booster Energy"
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Iron Treads"
+          },
+          "effect": "quarkdrivespe"
+        }
+      ]
+    },
+    {
+      "turnNumber": 1,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 1
+        },
+        {
+          "type": "unknown",
+          "raw": "|-terastallize|p2a: Jolteon|Ice"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Iron Treads"
+          },
+          "moveName": "Earth Power",
+          "moveId": "earth-power",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Jolteon"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Jolteon"
+          },
+          "hp": {
+            "current": 56,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Jolteon"
+          },
+          "moveName": "Tera Blast",
+          "moveId": "tera-blast",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Iron Treads"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Iron Treads"
+          },
+          "hp": {
+            "current": 40,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Jolteon"
+          },
+          "statusId": "brn",
+          "statusName": "burn"
+        }
+      ]
+    },
+    {
+      "turnNumber": 2,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 2
+        },
+        {
+          "type": "end",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Iron Treads"
+          },
+          "effect": "Quark Drive"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Pelipper"
+          },
+          "species": "Pelipper",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[from] ability: Drizzle|[of] p1a: Pelipper"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Jolteon"
+          },
+          "moveName": "Tera Blast",
+          "moveId": "tera-blast",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Pelipper"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Pelipper"
+          },
+          "hp": {
+            "current": 45,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Jolteon"
+          },
+          "hp": {
+            "current": 50,
+            "max": 100,
+            "status": "brn"
+          },
+          "from": "brn"
+        }
+      ]
+    },
+    {
+      "turnNumber": 3,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 3
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Kingambit"
+          },
+          "species": "Kingambit",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Jolteon"
+          },
+          "moveName": "Tera Blast",
+          "moveId": "tera-blast",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Kingambit"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Kingambit"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Kingambit"
+          },
+          "hp": {
+            "current": 79,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[upkeep]"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Kingambit"
+          },
+          "hp": {
+            "current": 85,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Jolteon"
+          },
+          "hp": {
+            "current": 44,
+            "max": 100,
+            "status": "brn"
+          },
+          "from": "brn"
+        }
+      ]
+    },
+    {
+      "turnNumber": 4,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 4
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Hawlucha"
+          },
+          "species": "Hawlucha",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-ability|p2a: Hawlucha|Mold Breaker"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Kingambit"
+          },
+          "moveName": "Sucker Punch",
+          "moveId": "sucker-punch",
+          "targetIdent": null
+        },
+        {
+          "type": "fail",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Kingambit"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[upkeep]"
+        },
+        {
+          "type": "heal",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Kingambit"
+          },
+          "hp": {
+            "current": 91,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Leftovers"
+        }
+      ]
+    },
+    {
+      "turnNumber": 5,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 5
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Jolteon"
+          },
+          "species": "Jolteon",
+          "level": 100,
+          "hp": {
+            "current": 44,
+            "max": 100,
+            "status": "brn"
+          }
+        },
+        {
+          "type": "end",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Kingambit"
+          },
+          "effect": "fallenundefined"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Iron Treads"
+          },
+          "species": "Iron Treads",
+          "level": 100,
+          "hp": {
+            "current": 40,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[upkeep]"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Jolteon"
+          },
+          "hp": {
+            "current": 39,
+            "max": 100,
+            "status": "brn"
+          },
+          "from": "brn"
+        }
+      ]
+    },
+    {
+      "turnNumber": 6,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 6
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Jolteon"
+          },
+          "moveName": "Volt Switch",
+          "moveId": "volt-switch",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Iron Treads"
+          }
+        },
+        {
+          "type": "immune",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Iron Treads"
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Iron Treads"
+          },
+          "moveName": "Earth Power",
+          "moveId": "earth-power",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Jolteon"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Jolteon"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Jolteon"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|RainDance|[upkeep]"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-message|potayo forfeited."
+        },
+        {
+          "type": "win",
+          "winner": "AmygdalanResponse"
+        }
+      ]
+    }
+  ],
+  "winner": "AmygdalanResponse"
+}

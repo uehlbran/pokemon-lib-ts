@@ -16,7 +16,14 @@
     "@pokemon-lib-ts/battle": "*",
     "@pokemon-lib-ts/core": "*",
     "@pokemon-lib-ts/gen1": "*",
-    "@pokemon-lib-ts/gen2": "*"
+    "@pokemon-lib-ts/gen2": "*",
+    "@pokemon-lib-ts/gen3": "*",
+    "@pokemon-lib-ts/gen4": "*",
+    "@pokemon-lib-ts/gen5": "*",
+    "@pokemon-lib-ts/gen6": "*",
+    "@pokemon-lib-ts/gen7": "*",
+    "@pokemon-lib-ts/gen8": "*",
+    "@pokemon-lib-ts/gen9": "*"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^2.0.0",

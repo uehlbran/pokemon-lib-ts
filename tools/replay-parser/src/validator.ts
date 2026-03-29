@@ -1,6 +1,14 @@
 import type { DataManager, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
 import { getTypeEffectiveness } from "@pokemon-lib-ts/core";
 import { createGen1DataManager } from "@pokemon-lib-ts/gen1";
+import { createGen2DataManager } from "@pokemon-lib-ts/gen2";
+import { createGen3DataManager } from "@pokemon-lib-ts/gen3";
+import { createGen4DataManager } from "@pokemon-lib-ts/gen4";
+import { createGen5DataManager } from "@pokemon-lib-ts/gen5";
+import { createGen6DataManager } from "@pokemon-lib-ts/gen6";
+import { createGen7DataManager } from "@pokemon-lib-ts/gen7";
+import { createGen8DataManager } from "@pokemon-lib-ts/gen8";
+import { createGen9DataManager } from "@pokemon-lib-ts/gen9";
 import type {
   ParsedReplay,
   ReconstructedPokemon,
@@ -8,22 +16,43 @@ import type {
   ValidationResult,
 } from "./replay-types.js";
 
-// Cache the data manager (expensive to create)
-let cachedDm: DataManager | null = null;
-function getDataManager(): DataManager {
-  if (!cachedDm) cachedDm = createGen1DataManager();
-  return cachedDm;
+// Cache data managers by generation (expensive to create)
+const _dataManagerCache = new Map<number, DataManager>();
+
+function getDataManager(generation: number): DataManager {
+  if (_dataManagerCache.has(generation)) {
+    return _dataManagerCache.get(generation) as DataManager;
+  }
+  const creators: Record<number, () => DataManager> = {
+    1: createGen1DataManager,
+    2: createGen2DataManager,
+    3: createGen3DataManager,
+    4: createGen4DataManager,
+    5: createGen5DataManager,
+    6: createGen6DataManager,
+    7: createGen7DataManager,
+    8: createGen8DataManager,
+    9: createGen9DataManager,
+  };
+  const create = creators[generation] ?? createGen1DataManager;
+  const dm = create();
+  _dataManagerCache.set(generation, dm);
+  return dm;
 }
 
-/** Status IDs that are immune to each status condition (Gen 1 rules).
- * Note: Electric paralysis immunity and Ice freeze immunity were introduced
- * in later generations (Gen 6+ and Gen 2+ respectively), NOT Gen 1.
+/**
+ * Status types that are immune to each status condition, by generation.
+ * - Gen 2+: Ice types cannot be frozen (Source: Bulbapedia "Freeze")
+ * - Gen 6+: Electric types cannot be paralyzed (Source: Bulbapedia "Paralysis")
+ * - All gens: Fire types cannot be burned, Poison types cannot be poisoned/badly poisoned
  */
-const STATUS_IMMUNE_TYPES: Record<string, string[]> = {
-  brn: ["fire"],
-  psn: ["poison"],
-  tox: ["poison"],
-};
+function getStatusImmuneTypes(statusId: string, generation: number): string[] {
+  if (statusId === "brn") return ["fire"];
+  if (statusId === "psn" || statusId === "tox") return ["poison", "steel"];
+  if (statusId === "frz" && generation >= 2) return ["ice"];
+  if (statusId === "par" && generation >= 6) return ["electric"];
+  return [];
+}
 
 /**
  * Resolve a nickname to a ReconstructedPokemon using side (0 = p1, 1 = p2).
@@ -40,7 +69,8 @@ function resolvePokemon(
 }
 
 export function validateReplay(replay: ParsedReplay): ValidationResult {
-  const dm = getDataManager();
+  const generation = replay.generation > 0 ? replay.generation : 1;
+  const dm = getDataManager(generation);
   const typeChart = dm.getTypeChart();
   const mismatches: ValidationMismatch[] = [];
   let passed = 0;
@@ -170,10 +200,10 @@ export function validateReplay(replay: ParsedReplay): ValidationResult {
       // -----------------------------------------------------------------------
       if (event.type === "status") {
         const statusEvent = event;
-        const immuneTypes = STATUS_IMMUNE_TYPES[statusEvent.statusId];
+        const immuneTypes = getStatusImmuneTypes(statusEvent.statusId, generation);
 
         // Only validate if we know the immunity rule for this status
-        if (immuneTypes !== undefined) {
+        if (immuneTypes.length > 0) {
           const afflictedNickname = statusEvent.ident.nickname;
           const afflictedPokemon = resolvePokemon(
             afflictedNickname,

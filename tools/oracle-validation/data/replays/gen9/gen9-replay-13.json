@@ -1,0 +1,1254 @@
+{
+  "id": "",
+  "format": "[Gen 9] OU",
+  "generation": 9,
+  "players": [
+    "firecharmander004",
+    "BarronCosimo"
+  ],
+  "teams": [
+    [
+      {
+        "species": "Torkoal",
+        "level": 100,
+        "knownMoves": [
+          "will-o-wisp"
+        ],
+        "nickname": "Torkoal"
+      },
+      {
+        "species": "Charizard",
+        "level": 100,
+        "knownMoves": [],
+        "nickname": "Charizard"
+      },
+      {
+        "species": "Walking Wake",
+        "level": 100,
+        "knownMoves": [
+          "draco-meteor",
+          "hydro-steam"
+        ],
+        "nickname": "Walking Wake"
+      },
+      {
+        "species": "Hatterene",
+        "level": 100,
+        "knownMoves": [
+          "nuzzle"
+        ],
+        "nickname": "Hatterene"
+      },
+      {
+        "species": "Slither Wing",
+        "level": 100,
+        "knownMoves": [
+          "flare-blitz"
+        ],
+        "nickname": "Slither Wing"
+      }
+    ],
+    [
+      {
+        "species": "Dragonite",
+        "level": 100,
+        "knownMoves": [
+          "earthquake",
+          "outrage"
+        ],
+        "nickname": "Dragonite"
+      },
+      {
+        "species": "Iron Valiant",
+        "level": 100,
+        "knownMoves": [
+          "moonblast"
+        ],
+        "nickname": "Iron Valiant"
+      },
+      {
+        "species": "Great Tusk",
+        "level": 100,
+        "knownMoves": [
+          "headlong-rush"
+        ],
+        "nickname": "Great Tusk"
+      },
+      {
+        "species": "Latios",
+        "level": 100,
+        "knownMoves": [
+          "agility",
+          "calm-mind",
+          "stored-power"
+        ],
+        "nickname": "Latios"
+      }
+    ]
+  ],
+  "turns": [
+    {
+      "turnNumber": 0,
+      "events": [
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Torkoal"
+          },
+          "species": "Torkoal",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Dragonite"
+          },
+          "species": "Dragonite",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|SunnyDay|[from] ability: Drought|[of] p1a: Torkoal"
+        }
+      ]
+    },
+    {
+      "turnNumber": 1,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 1
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Dragonite"
+          },
+          "moveName": "Earthquake",
+          "moveId": "earthquake",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Torkoal"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Torkoal"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Torkoal"
+          },
+          "hp": {
+            "current": 22,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Dragonite"
+          },
+          "hp": {
+            "current": 91,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Life Orb"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Torkoal"
+          },
+          "moveName": "Will-O-Wisp",
+          "moveId": "will-o-wisp",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Dragonite"
+          }
+        },
+        {
+          "type": "miss",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Torkoal"
+          },
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Dragonite"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|SunnyDay|[upkeep]"
+        }
+      ]
+    },
+    {
+      "turnNumber": 2,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 2
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Charizard"
+          },
+          "species": "Charizard",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Dragonite"
+          },
+          "moveName": "Outrage",
+          "moveId": "outrage",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Charizard"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Charizard"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Charizard"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Dragonite"
+          },
+          "hp": {
+            "current": 81,
+            "max": 100,
+            "status": null
+          },
+          "from": "item: Life Orb"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|SunnyDay|[upkeep]"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Walking Wake"
+          },
+          "species": "Walking Wake",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Walking Wake"
+          },
+          "effect": "protosynthesisspe"
+        }
+      ]
+    },
+    {
+      "turnNumber": 3,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 3
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Walking Wake"
+          },
+          "moveName": "Draco Meteor",
+          "moveId": "draco-meteor",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Dragonite"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Dragonite"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Dragonite"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Walking Wake"
+          },
+          "stat": "spa",
+          "amount": 2
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Dragonite"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|SunnyDay|[upkeep]"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Iron Valiant"
+          },
+          "species": "Iron Valiant",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-enditem|p2a: Iron Valiant|Booster Energy"
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Iron Valiant"
+          },
+          "effect": "quarkdrivespe"
+        }
+      ]
+    },
+    {
+      "turnNumber": 4,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 4
+        },
+        {
+          "type": "end",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Walking Wake"
+          },
+          "effect": "Protosynthesis"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Hatterene"
+          },
+          "species": "Hatterene",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Iron Valiant"
+          },
+          "moveName": "Moonblast",
+          "moveId": "moonblast",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Hatterene"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Hatterene"
+          },
+          "hp": {
+            "current": 50,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Hatterene"
+          },
+          "stat": "spa",
+          "amount": 1
+        },
+        {
+          "type": "unknown",
+          "raw": "|-enditem|p1a: Hatterene|Eject Button"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Slither Wing"
+          },
+          "species": "Slither Wing",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Slither Wing"
+          },
+          "effect": "protosynthesisatk"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|SunnyDay|[upkeep]"
+        }
+      ]
+    },
+    {
+      "turnNumber": 5,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 5
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Iron Valiant"
+          },
+          "moveName": "Moonblast",
+          "moveId": "moonblast",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Slither Wing"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Slither Wing"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Slither Wing"
+          },
+          "hp": {
+            "current": 45,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Slither Wing"
+          },
+          "moveName": "Flare Blitz",
+          "moveId": "flare-blitz",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Iron Valiant"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Iron Valiant"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Iron Valiant"
+          }
+        },
+        {
+          "type": "end",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Iron Valiant"
+          },
+          "effect": "Quark Drive"
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Slither Wing"
+          },
+          "hp": {
+            "current": 20,
+            "max": 100,
+            "status": null
+          },
+          "from": "Recoil"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|SunnyDay|[upkeep]"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "species": "Great Tusk",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "effect": "protosynthesisspe"
+        }
+      ]
+    },
+    {
+      "turnNumber": 6,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 6
+        },
+        {
+          "type": "unknown",
+          "raw": "|-terastallize|p1a: Slither Wing|Ghost"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "moveName": "Headlong Rush",
+          "moveId": "headlong-rush",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Slither Wing"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Slither Wing"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "stat": "def",
+          "amount": 1
+        },
+        {
+          "type": "unboost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "stat": "spd",
+          "amount": 1
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Slither Wing"
+          }
+        },
+        {
+          "type": "end",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Slither Wing"
+          },
+          "effect": "Protosynthesis"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|SunnyDay|[upkeep]"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Walking Wake"
+          },
+          "species": "Walking Wake",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Walking Wake"
+          },
+          "effect": "protosynthesisspe"
+        }
+      ]
+    },
+    {
+      "turnNumber": 7,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 7
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Walking Wake"
+          },
+          "moveName": "Hydro Steam",
+          "moveId": "hydro-steam",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          }
+        },
+        {
+          "type": "supereffective",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          }
+        },
+        {
+          "type": "end",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Great Tusk"
+          },
+          "effect": "Protosynthesis"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|SunnyDay|[upkeep]"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Latios"
+          },
+          "species": "Latios",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        }
+      ]
+    },
+    {
+      "turnNumber": 8,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 8
+        },
+        {
+          "type": "end",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Walking Wake"
+          },
+          "effect": "Protosynthesis"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Hatterene"
+          },
+          "species": "Hatterene",
+          "level": 100,
+          "hp": {
+            "current": 50,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Latios"
+          },
+          "moveName": "Agility",
+          "moveId": "agility",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Latios"
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Latios"
+          },
+          "stat": "spe",
+          "amount": 2
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|none"
+        }
+      ]
+    },
+    {
+      "turnNumber": 9,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 9
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Latios"
+          },
+          "moveName": "Agility",
+          "moveId": "agility",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Latios"
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Latios"
+          },
+          "stat": "spe",
+          "amount": 2
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Hatterene"
+          },
+          "moveName": "Nuzzle",
+          "moveId": "nuzzle",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Latios"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Latios"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Latios"
+          },
+          "hp": {
+            "current": 99,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "status",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Latios"
+          },
+          "statusId": "par",
+          "statusName": "paralysis"
+        }
+      ]
+    },
+    {
+      "turnNumber": 10,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 10
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Torkoal"
+          },
+          "species": "Torkoal",
+          "level": 100,
+          "hp": {
+            "current": 22,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|SunnyDay|[from] ability: Drought|[of] p1a: Torkoal"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Latios"
+          },
+          "moveName": "Agility",
+          "moveId": "agility",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Latios"
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Latios"
+          },
+          "stat": "spe",
+          "amount": 2
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|SunnyDay|[upkeep]"
+        }
+      ]
+    },
+    {
+      "turnNumber": 11,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 11
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Hatterene"
+          },
+          "species": "Hatterene",
+          "level": 100,
+          "hp": {
+            "current": 50,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Latios"
+          },
+          "moveName": "Calm Mind",
+          "moveId": "calm-mind",
+          "targetIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Latios"
+          }
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Latios"
+          },
+          "stat": "spa",
+          "amount": 1
+        },
+        {
+          "type": "boost",
+          "ident": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Latios"
+          },
+          "stat": "spd",
+          "amount": 1
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|SunnyDay|[upkeep]"
+        }
+      ]
+    },
+    {
+      "turnNumber": 12,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 12
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Latios"
+          },
+          "moveName": "Stored Power",
+          "moveId": "stored-power",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Hatterene"
+          }
+        },
+        {
+          "type": "resisted",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Hatterene"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Hatterene"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Hatterene"
+          }
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|SunnyDay|[upkeep]"
+        },
+        {
+          "type": "switch",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Walking Wake"
+          },
+          "species": "Walking Wake",
+          "level": 100,
+          "hp": {
+            "current": 100,
+            "max": 100,
+            "status": null
+          }
+        },
+        {
+          "type": "start",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Walking Wake"
+          },
+          "effect": "protosynthesisspe"
+        }
+      ]
+    },
+    {
+      "turnNumber": 13,
+      "events": [
+        {
+          "type": "turn",
+          "turnNumber": 13
+        },
+        {
+          "type": "unknown",
+          "raw": "|-terastallize|p2a: Latios|Fighting"
+        },
+        {
+          "type": "move",
+          "userIdent": {
+            "side": 1,
+            "position": "a",
+            "nickname": "Latios"
+          },
+          "moveName": "Stored Power",
+          "moveId": "stored-power",
+          "targetIdent": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Walking Wake"
+          }
+        },
+        {
+          "type": "damage",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Walking Wake"
+          },
+          "hp": {
+            "current": 0,
+            "max": 0,
+            "status": null
+          }
+        },
+        {
+          "type": "faint",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Walking Wake"
+          }
+        },
+        {
+          "type": "end",
+          "ident": {
+            "side": 0,
+            "position": "a",
+            "nickname": "Walking Wake"
+          },
+          "effect": "Protosynthesis"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-weather|SunnyDay|[upkeep]"
+        },
+        {
+          "type": "unknown",
+          "raw": "|-message|firecharmander004 forfeited."
+        },
+        {
+          "type": "win",
+          "winner": "BarronCosimo"
+        }
+      ]
+    }
+  ],
+  "winner": "BarronCosimo"
+}

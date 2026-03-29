@@ -4,32 +4,61 @@ import type { DataManager } from "@pokemon-lib-ts/core";
 import { SeededRandom } from "@pokemon-lib-ts/core";
 import { createGen1DataManager, Gen1Ruleset } from "@pokemon-lib-ts/gen1";
 import { createGen2DataManager, Gen2Ruleset } from "@pokemon-lib-ts/gen2";
+import { createGen3DataManager, Gen3Ruleset } from "@pokemon-lib-ts/gen3";
+import { createGen4DataManager, Gen4Ruleset } from "@pokemon-lib-ts/gen4";
+import { createGen5DataManager, Gen5Ruleset } from "@pokemon-lib-ts/gen5";
+import { createGen6DataManager, Gen6Ruleset } from "@pokemon-lib-ts/gen6";
+import { createGen7DataManager, Gen7Ruleset } from "@pokemon-lib-ts/gen7";
+import { createGen8DataManager, Gen8Ruleset } from "@pokemon-lib-ts/gen8";
+import { createGen9DataManager, Gen9Ruleset } from "@pokemon-lib-ts/gen9";
 import { checkAllInvariants } from "./invariant-checker.js";
 import { generateRandomTeam } from "./team-generator.js";
-import type { BatchReport, BattleReport, BattleRunConfig, InvariantViolation } from "./types.js";
+import type {
+  BatchReport,
+  BattleReport,
+  BattleRunConfig,
+  InvariantViolation,
+  SupportedGeneration,
+} from "./types.js";
 
 // Cache data managers to avoid reinitializing per battle
-let _gen1DataManager: DataManager | null = null;
-let _gen2DataManager: DataManager | null = null;
+const _dataManagers = new Map<SupportedGeneration, DataManager>();
 
-function getGen1DataManager(): DataManager {
-  if (!_gen1DataManager) _gen1DataManager = createGen1DataManager();
-  return _gen1DataManager;
+function getDataManager(generation: SupportedGeneration): DataManager {
+  if (!_dataManagers.has(generation)) {
+    const creators: Record<SupportedGeneration, () => DataManager> = {
+      1: createGen1DataManager,
+      2: createGen2DataManager,
+      3: createGen3DataManager,
+      4: createGen4DataManager,
+      5: createGen5DataManager,
+      6: createGen6DataManager,
+      7: createGen7DataManager,
+      8: createGen8DataManager,
+      9: createGen9DataManager,
+    };
+    _dataManagers.set(generation, creators[generation]());
+  }
+  return _dataManagers.get(generation) as DataManager;
 }
 
-function getGen2DataManager(): DataManager {
-  if (!_gen2DataManager) _gen2DataManager = createGen2DataManager();
-  return _gen2DataManager;
-}
-
-function createGenContext(generation: 1 | 2): {
+function createGenContext(generation: SupportedGeneration): {
   ruleset: GenerationRuleset;
   dataManager: DataManager;
 } {
-  if (generation === 1) {
-    return { ruleset: new Gen1Ruleset(), dataManager: getGen1DataManager() };
-  }
-  return { ruleset: new Gen2Ruleset(), dataManager: getGen2DataManager() };
+  const dataManager = getDataManager(generation);
+  const rulesets: Record<SupportedGeneration, () => GenerationRuleset> = {
+    1: () => new Gen1Ruleset(),
+    2: () => new Gen2Ruleset(),
+    3: () => new Gen3Ruleset(),
+    4: () => new Gen4Ruleset(),
+    5: () => new Gen5Ruleset(),
+    6: () => new Gen6Ruleset(),
+    7: () => new Gen7Ruleset(),
+    8: () => new Gen8Ruleset(),
+    9: () => new Gen9Ruleset(),
+  };
+  return { ruleset: rulesets[generation](), dataManager };
 }
 
 /**

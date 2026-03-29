@@ -1,6 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { runReplaySuite } from "./battle-replay.js";
 import { runDamageSuite } from "./compare-damage.js";
 import { runDataSuite } from "./compare-data.js";
 import { runGimmicksSuite } from "./compare-gimmicks.js";
@@ -8,10 +9,12 @@ import { runGroundTruthSuite } from "./compare-ground-truth.js";
 import { runMechanicsSuite } from "./compare-mechanics.js";
 import { runStatsSuite } from "./compare-stats.js";
 import { runTerrainSuite } from "./compare-terrain.js";
+import { runDamageTraceSuite } from "./damage-trace.js";
 import { loadDisagreementRegistrySummary } from "./disagreement-registry.js";
 import { discoverImplementedGenerations, type ImplementedGeneration } from "./gen-discovery.js";
 import { formatRunnerOutput } from "./reporter.js";
 import { type GenerationResult, runnerOutputSchema, type SuiteResult } from "./result-schema.js";
+import { runSmokeSuite } from "./smoke-runner.js";
 
 type SupportedSuite =
   | "data"
@@ -21,6 +24,9 @@ type SupportedSuite =
   | "mechanics"
   | "terrain"
   | "gimmicks"
+  | "replay"
+  | "damageTrace"
+  | "smoke"
   | "fast";
 const SUPPORTED_SUITES: ReadonlySet<SupportedSuite> = new Set([
   "data",
@@ -30,6 +36,9 @@ const SUPPORTED_SUITES: ReadonlySet<SupportedSuite> = new Set([
   "mechanics",
   "terrain",
   "gimmicks",
+  "replay",
+  "damageTrace",
+  "smoke",
   "fast",
 ]);
 
@@ -121,6 +130,12 @@ async function main(): Promise<void> {
           suiteResults[suite] = runTerrainSuite(generation, registry.knownDisagreements);
         } else if (suite === "gimmicks") {
           suiteResults[suite] = runGimmicksSuite(generation, registry.knownDisagreements);
+        } else if (suite === "replay") {
+          suiteResults[suite] = runReplaySuite(generation, repoRoot);
+        } else if (suite === "damageTrace") {
+          suiteResults[suite] = runDamageTraceSuite(generation);
+        } else if (suite === "smoke") {
+          suiteResults[suite] = runSmokeSuite(generation);
         }
       }
 
