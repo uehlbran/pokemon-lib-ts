@@ -1,5 +1,7 @@
 # Spec Status Index
 
+> **See also**: Run `npm run oracle:fast` for quick compliance check (data + stats, ~2 min). Run `npm run compliance` for full suite including replay and smoke tests (~15 min).
+
 This file is the trust map for all spec documents. It tells you which specs are verified against ground truth, which are implemented but only partially verified, and which are unverified design documents.
 
 **Key rule for agents**: Before implementing a generation's mechanics, check this file. If the spec is UNVERIFIED, cross-check all formulas and mechanic claims against Showdown source or Bulbapedia before coding.
@@ -10,7 +12,7 @@ This file is the trust map for all spec documents. It tells you which specs are 
 
 | Status | Meaning |
 |--------|---------|
-| **VERIFIED** | Audited against Showdown source code and Bulbapedia. Known errors have been fixed or flagged. Safe to implement from. |
+| **VERIFIED** | Audited against primary source authority (pret for Gen 1-3, pret decomps where available for Gen 4, Showdown + Bulbapedia for Gen 5-9). Feeds the "Spec Verified" criterion in the compliance suite. Known errors have been fixed or flagged. Safe to implement from. |
 | **IMPLEMENTED** | Code exists and works correctly. Spec may have minor gaps or documentation drift, but implementation is the source of truth. |
 | **UNVERIFIED** | Original design document written before implementation. Contains known or suspected errors. Must be audited before implementing. |
 
