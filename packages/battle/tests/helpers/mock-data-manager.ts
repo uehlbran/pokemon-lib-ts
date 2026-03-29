@@ -61,10 +61,9 @@ function createIdentityTypeChart(): TypeChart {
 
 function getMockSpecies(): PokemonSpeciesData[] {
   return [
-    {
-      ...GEN1_DATA_MANAGER.getSpecies(MOCK_SPECIES_IDS.charizard),
-      abilities: { ...GEN3_DATA_MANAGER.getSpecies(MOCK_SPECIES_IDS.charizard).abilities },
-    },
+    // Use Gen 3 Charizard for base stats: Gen 1 uses the unified Special (spc=85 per pret/pokered),
+    // but BaseRuleset tests Gen 3+ mechanics where Charizard's spAttack is 109.
+    GEN3_DATA_MANAGER.getSpecies(MOCK_SPECIES_IDS.charizard),
     {
       ...GEN1_DATA_MANAGER.getSpecies(MOCK_SPECIES_IDS.blastoise),
       abilities: { ...GEN3_DATA_MANAGER.getSpecies(MOCK_SPECIES_IDS.blastoise).abilities },
