@@ -111,8 +111,10 @@ function buildZMovePowerChecks(
   let checked = 0;
 
   for (const move of localMoves) {
-    // Only damaging moves have Z-Move power conversion
-    if (move.category === "status" || move.power === null || move.power === 0) {
+    // Status moves have no Z-Move power conversion (they get bonus effects instead).
+    // Variable-power moves (power: null) ARE included — getZMovePower handles them via
+    // the Z_MOVE_POWER_OVERRIDES table or returns 100 for unspecified variable-power moves.
+    if (move.category === "status") {
       continue;
     }
 
@@ -124,14 +126,14 @@ function buildZMovePowerChecks(
     }
 
     // @pkmn/data stores Z-Move power as zMove.basePower on the source move.
-    // Skip moves without a Z-Move power entry.
+    // Skip moves without a Z-Move power entry (i.e., no Z-Move conversion exists).
     const oracleZPower = oracleMove.zMove?.basePower;
     if (oracleZPower === undefined || oracleZPower === 0) {
       continue;
     }
 
     // Use our actual getZMovePower function, feeding it a MoveData-compatible object.
-    // getZMovePower only accesses: category, power, effect.type — safe to shim.
+    // getZMovePower accesses: id (for overrides), category, power, effect.min/max.
     const moveDataShim = {
       id: move.id,
       category: move.category,
@@ -143,7 +145,7 @@ function buildZMovePowerChecks(
     oracleChecks.push({
       id: `gen${generation.gen}:${GIMMICKS_SUITE_NAME}:z-move-power:${moveId}`,
       suite: GIMMICKS_SUITE_NAME,
-      description: `Gen ${generation.gen} Z-Move power for ${move.id} (${move.power} BP) matches @pkmn/data`,
+      description: `Gen ${generation.gen} Z-Move power for ${move.id} (${move.power ?? "variable"} BP) matches @pkmn/data`,
       ourValue: ourZPower,
       oracleValue: oracleZPower,
     });

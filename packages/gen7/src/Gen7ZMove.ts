@@ -43,6 +43,7 @@ import { getSpeciesZMoves, getZCrystalType, isSpeciesZCrystal, isZCrystal } from
  * Verified via @pkmn/data oracle (compare-gimmicks.ts).
  */
 const Z_MOVE_POWER_OVERRIDES: Readonly<Record<string, number>> = {
+  // ── Fixed-BP moves with Showdown-adjusted Z power ─────────────────────────
   "core-enforcer": 140, // formula gives 180 (100 BP); Showdown override: 140
   "double-hit": 140, // formula gives 100 (35 BP, fixed 2-hit); Showdown override: 140
   "flying-press": 170, // formula gives 180 (100 BP); Showdown override: 170
@@ -50,13 +51,38 @@ const Z_MOVE_POWER_OVERRIDES: Readonly<Record<string, number>> = {
   hex: 160, // formula gives 120 (65 BP); Showdown override: 160 (reflects doubled power vs status)
   "lands-wrath": 185, // formula gives 175 (90 BP); Showdown override: 185
   "mega-drain": 120, // formula gives 100 (40 BP); Showdown override: 120
-  "multi-attack": 185, // formula gives 190 (120 BP in Showdown); Showdown override: 185
-  "power-trip": 160, // formula gives 100 (20 BP base, variable power); Showdown override: 160
-  "stored-power": 160, // formula gives 100 (20 BP base, variable power); Showdown override: 160
+  "multi-attack": 185, // formula gives 185 (120 BP in Gen 7); Showdown override: 185
   "thousand-arrows": 180, // formula gives 175 (90 BP); Showdown override: 180
   "triple-kick": 120, // formula gives 100 (10 BP, fixed 3-hit); Showdown override: 120
   "v-create": 220, // formula gives 200 (180 BP); Showdown override: 220
-  "weather-ball": 160, // formula gives 100 (50 BP base, variable power/type); Showdown override: 160
+  // ── Variable-BP moves (power: null) — formula gives 100; Showdown overrides ─
+  // Source: Showdown data/moves.ts — per-move zMove.basePower fields
+  // Source: @pkmn/data oracle (compare-gimmicks.ts buildZMovePowerChecks)
+  "crush-grip": 190, // variable power (HP-scaled); Showdown override: 190
+  "electro-ball": 160, // variable power (speed-ratio); Showdown override: 160
+  endeavor: 160, // variable power (HP-delta); Showdown override: 160
+  "final-gambit": 180, // variable power (user HP); Showdown override: 180
+  fissure: 180, // OHKO; Showdown override: 180
+  flail: 160, // variable power (low HP); Showdown override: 160
+  frustration: 160, // variable power (low friendship); Showdown override: 160
+  "grass-knot": 160, // variable power (target weight); Showdown override: 160
+  guillotine: 180, // OHKO; Showdown override: 180
+  "gyro-ball": 160, // variable power (speed ratio); Showdown override: 160
+  "heat-crash": 160, // variable power (weight ratio); Showdown override: 160
+  "heavy-slam": 160, // variable power (weight ratio); Showdown override: 160
+  "horn-drill": 180, // OHKO; Showdown override: 180
+  "low-kick": 160, // variable power (target weight); Showdown override: 160
+  magnitude: 140, // variable power (random magnitude); Showdown override: 140
+  "natural-gift": 160, // variable power (berry type); Showdown override: 160
+  punishment: 160, // variable power (target boosts); Showdown override: 160
+  "power-trip": 160, // variable power (user boosts); Showdown override: 160
+  return: 160, // variable power (high friendship); Showdown override: 160
+  reversal: 160, // variable power (low HP); Showdown override: 160
+  "sheer-cold": 180, // OHKO; Showdown override: 180
+  "stored-power": 160, // variable power (user boosts); Showdown override: 160
+  "trump-card": 160, // variable power (remaining PP); Showdown override: 160
+  "weather-ball": 160, // variable power/type (weather); Showdown override: 160
+  "wring-out": 190, // variable power (HP-scaled); Showdown override: 190
 };
 
 /**
