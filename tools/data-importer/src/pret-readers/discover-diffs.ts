@@ -15,6 +15,7 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
+import * as url from "node:url";
 import type { DiffRecord } from "./pret-diff";
 import { diffMoves, diffPokemon, diffTypeChart, isPretAvailable, loadPretData } from "./pret-diff";
 
@@ -34,7 +35,12 @@ const gensToScan: readonly number[] = requestedGen !== null ? [requestedGen] : S
 // Main
 // ---------------------------------------------------------------------------
 
-const repoRoot = process.cwd();
+// Resolve repo root relative to this file so the script works regardless of
+// the working directory it is invoked from.
+// Script location: tools/data-importer/src/pret-readers/discover-diffs.ts
+// Go up 4 levels: pret-readers/ → src/ → data-importer/ → tools/ → repo root
+const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(__dirname, "..", "..", "..", "..");
 
 interface ReportEntry {
   gen: number;
@@ -43,6 +49,7 @@ interface ReportEntry {
   pokemonCount: number;
   typeChartCount: number;
   mismatches: DiffRecord[];
+  error?: string;
 }
 
 const report: ReportEntry[] = [];
@@ -73,7 +80,17 @@ for (const gen of gensToScan) {
   try {
     pretData = loadPretData(repoRoot, gen);
   } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
     console.error(`  [ERROR] Failed to load pret data for Gen ${gen}:`, err);
+    report.push({
+      gen,
+      pretAvailable: true,
+      moveCount: 0,
+      pokemonCount: 0,
+      typeChartCount: 0,
+      mismatches: [],
+      error: message,
+    });
     continue;
   }
 
@@ -114,6 +131,8 @@ console.log(`Total mismatches: ${totalMismatches}`);
 for (const entry of report) {
   if (!entry.pretAvailable) {
     console.log(`  Gen ${entry.gen}: [pret not available]`);
+  } else if (entry.error) {
+    console.log(`  Gen ${entry.gen}: [ERROR] ${entry.error}`);
   } else {
     const m = entry.mismatches;
     const moveMismatches = m.filter((d) => d.kind === "move").length;
