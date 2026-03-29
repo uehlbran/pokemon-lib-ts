@@ -486,7 +486,7 @@
     "copyable": true
   },
   {
-    "id": "dragon's-maw",
+    "id": "dragons-maw",
     "displayName": "Dragon's Maw",
     "description": "This Pokemon's offensive stat is multiplied by 1.5 while using a Dragon-type attack.",
     "triggers": ["passive-modifier"],
@@ -1287,7 +1287,7 @@
     "copyable": true
   },
   {
-    "id": "mind's-eye",
+    "id": "minds-eye",
     "displayName": "Mind's Eye",
     "description": "Fighting, Normal moves hit Ghost. Accuracy can't be lowered, ignores evasiveness.",
     "triggers": ["passive-modifier"],

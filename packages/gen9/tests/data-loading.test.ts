@@ -198,6 +198,27 @@ describe("Gen 9 DataManager -- data loading", () => {
     expect(ability.generation).toBe(9);
   });
 
+  it("given gen9 abilities, when looking up Dragon's Maw, then ID is dragons-maw and matches Regidrago's ability slot", () => {
+    // Source: Bulbapedia -- Dragon's Maw introduced in Gen 8 (Regidrago signature ability)
+    // Available in Gen 9 (Regidrago obtainable in Scarlet/Violet via DLC)
+    // Canonical ID: "dragons-maw" (no apostrophe) — matches data importer toKebab() stripping apostrophes
+    // Evidence: packages/gen8/data/abilities.json uses "dragons-maw"; packages/gen8/data/pokemon.json Regidrago uses "dragons-maw"
+    const ability = dataManager.getAbility(abilityIds.dragonsMaw);
+    expect(ability.id).toBe("dragons-maw"); // regression anchor: no apostrophe in ID
+    expect(ability.generation).toBe(8);
+  });
+
+  it("given gen9 Regidrago, when loading species, then primary ability ID matches the Dragon's Maw ability record", () => {
+    // Source: Bulbapedia -- Regidrago (#895) has Dragon's Maw as its only normal ability
+    // Bug #1146: gen9 abilities.json had "dragon's-maw" (with apostrophe) but pokemon.json has "dragons-maw" (no apostrophe)
+    // The canonical ID is "dragons-maw" (no apostrophe) — matches data importer toKebab() and Gen 8 data
+    const regidrago = dataManager.getSpecies(speciesIds.regidrago);
+    const abilityId = regidrago.abilities.normal[0];
+    const ability = dataManager.getAbility(abilityId);
+    expect(ability.id).toBe(abilityId);
+    expect(ability.id).toBe("dragons-maw");
+  });
+
   // ---------------------------------------------------------------------------
   // Gen 9 items
   // ---------------------------------------------------------------------------
