@@ -445,7 +445,6 @@ describe("Gen 2 Rollout Effect", () => {
     });
 
     // Assert
-    expect(result.forcedMoveSet).toBeDefined();
     expect(result.forcedMoveSet?.moveId).toBe(MOVES.rollout);
     expect(result.selfVolatileInflicted).toBe(ROLLOUT_STATUS);
     // With the corrected counter: handler stores nextCount=1 for Turn 2 damage calc to read

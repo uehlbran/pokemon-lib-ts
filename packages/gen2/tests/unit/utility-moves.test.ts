@@ -250,7 +250,6 @@ describe("Gen 2 Utility Moves", () => {
 
       // Assert
       expect(result.volatileInflicted).toBe(ENCORE_VOLATILE);
-      expect(result.volatileData).toBeDefined();
       expect(result.volatileData?.turnsLeft).toBe(4);
       expect(result.volatileData?.data?.moveIndex).toBe(0);
     });
@@ -372,7 +371,6 @@ describe("Gen 2 Utility Moves", () => {
 
       // Assert
       expect(result.volatileInflicted).toBe(DISABLE_VOLATILE);
-      expect(result.volatileData).toBeDefined();
       expect(result.volatileData?.turnsLeft).toBe(5);
       expect(result.volatileData?.data?.moveId).toBe(TACKLE);
     });

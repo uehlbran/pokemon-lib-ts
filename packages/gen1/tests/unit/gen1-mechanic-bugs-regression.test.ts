@@ -1013,12 +1013,10 @@ describe("#473 — Explosion faint-on-miss: BattleEngine integration test", () =
 
     // The event log must contain a move-miss event for side 0
     const events = engine.getEventLog();
-    const missEvent = events.find((e) => e.type === "move-miss" && e.side === 0);
-    expect(missEvent).toBeDefined();
+    expect(events).toContainEqual(expect.objectContaining({ type: "move-miss", side: 0 }));
 
     // The event log must contain a faint event for side 0 (attacker fainted)
-    const faintEvent = events.find((e) => e.type === "faint" && e.side === 0);
-    expect(faintEvent).toBeDefined();
+    expect(events).toContainEqual(expect.objectContaining({ type: "faint", side: 0 }));
   });
 });
 

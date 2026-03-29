@@ -852,8 +852,7 @@ describe("Gen 8 Moody — accuracy/evasion excluded from stat pool", () => {
     const raiseEffect = result.effects.find(
       (e) => e.effectType === BATTLE_ABILITY_EFFECT_TYPES.statChange && (e as any).stages === 2,
     );
-    expect(raiseEffect).toBeDefined();
-    const raisedStat = (raiseEffect as any).stat;
+    const raisedStat = (raiseEffect as any)?.stat;
     expect(ELIGIBLE_STATS).toContain(raisedStat);
     // Accuracy and evasion must NOT be raised by Gen 8 Moody
     expect(raisedStat).not.toBe(CORE_STAT_IDS.accuracy);
@@ -873,8 +872,7 @@ describe("Gen 8 Moody — accuracy/evasion excluded from stat pool", () => {
     const lowerEffect = result.effects.find(
       (e) => e.effectType === BATTLE_ABILITY_EFFECT_TYPES.statChange && (e as any).stages === -1,
     );
-    expect(lowerEffect).toBeDefined();
-    const loweredStat = (lowerEffect as any).stat;
+    const loweredStat = (lowerEffect as any)?.stat;
     expect(ELIGIBLE_STATS).toContain(loweredStat);
     // Accuracy and evasion must NOT be lowered by Gen 8 Moody either
     expect(loweredStat).not.toBe(CORE_STAT_IDS.accuracy);
@@ -896,9 +894,7 @@ describe("Gen 8 Moody — accuracy/evasion excluded from stat pool", () => {
     const lowerEffect = result.effects.find(
       (e) => e.effectType === BATTLE_ABILITY_EFFECT_TYPES.statChange && (e as any).stages === -1,
     );
-    expect(raiseEffect).toBeDefined();
-    expect(lowerEffect).toBeDefined();
-    expect((raiseEffect as any).stat).not.toBe((lowerEffect as any).stat);
+    expect((raiseEffect as any)?.stat).not.toBe((lowerEffect as any)?.stat);
   });
 
   it("given Moody in Gen 8, when a stat is already at +6, then that stat is excluded from the raise pool", () => {

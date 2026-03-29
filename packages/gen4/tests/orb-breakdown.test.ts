@@ -170,8 +170,7 @@ describe("Gen 4 damage calc -- Orb/Light Ball breakdown.itemMultiplier (#306)", 
 
     const result = calculateGen4Damage(ctx, typeChart);
 
-    expect(result.breakdown).toBeDefined();
-    expect(result.breakdown!.itemMultiplier).toBeCloseTo(4915 / 4096, 5);
+    expect(result.breakdown?.itemMultiplier).toBeCloseTo(4915 / 4096, 5);
   });
 
   it("given Palkia holding Lustrous Orb using a Water-type move, when damage is calculated, then breakdown.itemMultiplier reflects the 1.2x boost", () => {
@@ -188,8 +187,7 @@ describe("Gen 4 damage calc -- Orb/Light Ball breakdown.itemMultiplier (#306)", 
 
     const result = calculateGen4Damage(ctx, typeChart);
 
-    expect(result.breakdown).toBeDefined();
-    expect(result.breakdown!.itemMultiplier).toBeCloseTo(4915 / 4096, 5);
+    expect(result.breakdown?.itemMultiplier).toBeCloseTo(4915 / 4096, 5);
   });
 
   it("given Giratina holding Griseous Orb using a Ghost-type move, when damage is calculated, then breakdown.itemMultiplier reflects the 1.2x boost", () => {
@@ -206,8 +204,7 @@ describe("Gen 4 damage calc -- Orb/Light Ball breakdown.itemMultiplier (#306)", 
 
     const result = calculateGen4Damage(ctx, typeChart);
 
-    expect(result.breakdown).toBeDefined();
-    expect(result.breakdown!.itemMultiplier).toBeCloseTo(4915 / 4096, 5);
+    expect(result.breakdown?.itemMultiplier).toBeCloseTo(4915 / 4096, 5);
   });
 
   it("given Pikachu holding Light Ball using a physical move, when damage is calculated, then breakdown.itemMultiplier reflects the 2x boost", () => {
@@ -224,8 +221,7 @@ describe("Gen 4 damage calc -- Orb/Light Ball breakdown.itemMultiplier (#306)", 
 
     const result = calculateGen4Damage(ctx, typeChart);
 
-    expect(result.breakdown).toBeDefined();
-    expect(result.breakdown!.itemMultiplier).toBe(2);
+    expect(result.breakdown?.itemMultiplier).toBe(2);
   });
 
   it("given Dialga holding Adamant Orb using a Fire-type move (non-matching type), when damage is calculated, then breakdown.itemMultiplier is 1 (no boost)", () => {
@@ -242,8 +238,7 @@ describe("Gen 4 damage calc -- Orb/Light Ball breakdown.itemMultiplier (#306)", 
 
     const result = calculateGen4Damage(ctx, typeChart);
 
-    expect(result.breakdown).toBeDefined();
-    expect(result.breakdown!.itemMultiplier).toBe(1);
+    expect(result.breakdown?.itemMultiplier).toBe(1);
   });
 
   it("given Dialga with Klutz holding Adamant Orb using a Dragon-type move, when damage is calculated, then breakdown.itemMultiplier is 1 (Klutz suppresses item)", () => {
@@ -261,7 +256,6 @@ describe("Gen 4 damage calc -- Orb/Light Ball breakdown.itemMultiplier (#306)", 
 
     const result = calculateGen4Damage(ctx, typeChart);
 
-    expect(result.breakdown).toBeDefined();
-    expect(result.breakdown!.itemMultiplier).toBe(1);
+    expect(result.breakdown?.itemMultiplier).toBe(1);
   });
 });

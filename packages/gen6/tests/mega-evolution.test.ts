@@ -173,56 +173,50 @@ describe("MEGA_STONE_DATA -- mega stone lookup table", () => {
   it("given charizardite-x, when looking up in MEGA_STONE_DATA, then returns Charizard Mega X data", () => {
     // Source: Bulbapedia "Charizardite X" — Fire/Dragon type, Tough Claws ability, 130 Attack
     const data = MEGA_STONE_DATA[ITEMS.charizarditeX];
-    expect(data).toBeDefined();
-    expect(data.types).toEqual([TYPES.fire, TYPES.dragon]);
-    expect(data.ability).toBe(GEN6_ABILITY_IDS.toughClaws);
-    expect(data.baseStats.attack).toBe(130);
+    expect(data?.types).toEqual([TYPES.fire, TYPES.dragon]);
+    expect(data?.ability).toBe(GEN6_ABILITY_IDS.toughClaws);
+    expect(data?.baseStats.attack).toBe(130);
   });
 
   it("given charizardite-y, when looking up in MEGA_STONE_DATA, then returns Charizard Mega Y data", () => {
     // Source: Bulbapedia "Charizardite Y" — Fire/Flying type, Drought ability, 159 Sp. Attack
     const data = MEGA_STONE_DATA[ITEMS.charizarditeY];
-    expect(data).toBeDefined();
-    expect(data.types).toEqual([TYPES.fire, TYPES.flying]);
-    expect(data.ability).toBe(GEN6_ABILITY_IDS.drought);
-    expect(data.baseStats.spAttack).toBe(159);
+    expect(data?.types).toEqual([TYPES.fire, TYPES.flying]);
+    expect(data?.ability).toBe(GEN6_ABILITY_IDS.drought);
+    expect(data?.baseStats.spAttack).toBe(159);
   });
 
   it("given venusaurite, when looking up in MEGA_STONE_DATA, then returns Mega Venusaur data", () => {
     // Source: Bulbapedia "Venusaurite" — Grass/Poison, Thick Fat, 123 Defense
     const data = MEGA_STONE_DATA.venusaurite;
-    expect(data).toBeDefined();
-    expect(data.types).toEqual([TYPES.grass, TYPES.poison]);
-    expect(data.ability).toBe(GEN6_ABILITY_IDS.thickFat);
-    expect(data.baseStats.defense).toBe(123);
+    expect(data?.types).toEqual([TYPES.grass, TYPES.poison]);
+    expect(data?.ability).toBe(GEN6_ABILITY_IDS.thickFat);
+    expect(data?.baseStats.defense).toBe(123);
   });
 
   it("given mewtwonite-x, when looking up in MEGA_STONE_DATA, then returns Mega Mewtwo X data", () => {
     // Source: Bulbapedia "Mewtwonite X" — Psychic/Fighting, Steadfast, 190 Attack
     const data = MEGA_STONE_DATA[ITEMS.mewtwoniteX];
-    expect(data).toBeDefined();
-    expect(data.types).toEqual([TYPES.psychic, TYPES.fighting]);
-    expect(data.ability).toBe(ABILITIES.steadfast);
-    expect(data.baseStats.attack).toBe(190);
+    expect(data?.types).toEqual([TYPES.psychic, TYPES.fighting]);
+    expect(data?.ability).toBe(ABILITIES.steadfast);
+    expect(data?.baseStats.attack).toBe(190);
   });
 
   it("given mewtwonite-y, when looking up in MEGA_STONE_DATA, then returns Mega Mewtwo Y data", () => {
     // Source: Bulbapedia "Mewtwonite Y" — Psychic, Insomnia, 194 Sp. Attack
     const data = MEGA_STONE_DATA[ITEMS.mewtwoniteY];
-    expect(data).toBeDefined();
-    expect(data.types).toEqual([TYPES.psychic]);
-    expect(data.ability).toBe(ABILITIES.insomnia);
-    expect(data.baseStats.spAttack).toBe(194);
+    expect(data?.types).toEqual([TYPES.psychic]);
+    expect(data?.ability).toBe(ABILITIES.insomnia);
+    expect(data?.baseStats.spAttack).toBe(194);
   });
 
   it("given aggronite, when looking up in MEGA_STONE_DATA, then returns Mega Aggron data with pure Steel type", () => {
     // Source: Bulbapedia "Aggronite" — Steel (loses Rock), Filter ability, 230 Defense
     // Note: Mega Aggron is notable for being a pure Steel type (loses its Rock type)
     const data = MEGA_STONE_DATA.aggronite;
-    expect(data).toBeDefined();
-    expect(data.types).toEqual([TYPES.steel]);
-    expect(data.baseStats.defense).toBe(230);
-    expect(data.ability).toBe(GEN6_ABILITY_IDS.filter);
+    expect(data?.types).toEqual([TYPES.steel]);
+    expect(data?.baseStats.defense).toBe(230);
+    expect(data?.ability).toBe(GEN6_ABILITY_IDS.filter);
   });
 });
 

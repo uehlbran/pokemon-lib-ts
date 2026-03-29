@@ -6,13 +6,13 @@ describe("barrel exports", () => {
     const mod = await import("../../src/index");
 
     // Assert — supported public exports remain available
-    expect(mod.BattleEngine).toBeDefined();
-    expect(mod.BaseRuleset).toBeDefined();
-    expect(mod.GenerationRegistry).toBeDefined();
-    expect(mod.generations).toBeDefined();
-    expect(mod.RandomAI).toBeDefined();
-    expect(mod.createPokemonSnapshot).toBeDefined();
-    expect(mod.getPokemonName).toBeDefined();
+    expect(typeof mod.BattleEngine).toBe("function");
+    expect(typeof mod.BaseRuleset).toBe("function");
+    expect(typeof mod.GenerationRegistry).toBe("function");
+    expect(typeof mod.generations).toBe("object");
+    expect(typeof mod.RandomAI).toBe("function");
+    expect(typeof mod.createPokemonSnapshot).toBe("function");
+    expect(typeof mod.getPokemonName).toBe("function");
 
     // Assert — internal/test helpers stay off the consumer-facing root API
     expect(Object.hasOwn(mod, "createOnFieldPokemon")).toBe(false);

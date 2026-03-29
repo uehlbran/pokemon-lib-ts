@@ -304,10 +304,9 @@ describe("BattleEngine — damage path regression (#531, #538, #539)", () => {
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       const defender = engine.getState().sides[1].active[0];
-      expect(defender).toBeDefined();
+      expect(defender?.pokemon.currentHp).toBe(1);
       const defenderMaxHp = defender!.pokemon.calculatedStats?.hp ?? defender!.pokemon.currentHp;
       const expectedDamage = defenderMaxHp - 1;
-      expect(defender!.pokemon.currentHp).toBe(1);
 
       const damageEvent = events.find((event) => event.type === "damage" && event.side === 1);
       expect(damageEvent).toMatchObject({
@@ -386,7 +385,6 @@ describe("BattleEngine — damage path regression (#531, #538, #539)", () => {
       engine.start();
 
       const defender = engine.getState().sides[1].active[0];
-      expect(defender).toBeDefined();
       const startingHp = defender!.pokemon.currentHp;
 
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -456,7 +454,7 @@ describe("BattleEngine — damage path regression (#531, #538, #539)", () => {
       engine.start();
 
       const defender = engine.getState().sides[1].active[0];
-      expect(defender).toBeDefined();
+      expect(defender).not.toBeNull();
       defender!.substituteHp = 50;
       defender!.volatileStatuses.set(VOLATILES.substitute, { turnsLeft: -1 });
       const startingHp = defender!.pokemon.currentHp;
@@ -540,7 +538,6 @@ describe("BattleEngine — damage path regression (#531, #538, #539)", () => {
       engine.start();
 
       const defender = engine.getState().sides[1].active[0];
-      expect(defender).toBeDefined();
       const startingHp = defender!.pokemon.currentHp;
 
       engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -712,14 +709,12 @@ describe("BattleEngine — damage path regression (#531, #538, #539)", () => {
       engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
       // Verify the move missed
-      const missEvent = events.find((e) => e.type === "move-miss" && e.side === 0);
-      expect(missEvent).toBeDefined();
+      expect(events.some((e) => e.type === "move-miss" && e.side === 0)).toBe(true);
 
       // Verify the choice-locked volatile is set despite the miss
       const state = engine.getState();
       const actor = state.sides[0].active[0];
-      expect(actor).toBeDefined();
-      expect(actor!.volatileStatuses.has(VOLATILES.choiceLocked)).toBe(true);
+      expect(actor?.volatileStatuses.has(VOLATILES.choiceLocked)).toBe(true);
 
       const choiceData = actor!.volatileStatuses.get(VOLATILES.choiceLocked)?.data;
       expect(choiceData).toEqual({ moveId: MOVES.tackle });
@@ -758,9 +753,8 @@ describe("BattleEngine — damage path regression (#531, #538, #539)", () => {
 
       const state = engine.getState();
       const actor = state.sides[0].active[0];
-      expect(actor).toBeDefined();
-      expect(actor!.volatileStatuses.has(VOLATILES.choiceLocked)).toBe(true);
-      expect(actor!.volatileStatuses.get(VOLATILES.choiceLocked)?.data).toEqual({
+      expect(actor?.volatileStatuses.has(VOLATILES.choiceLocked)).toBe(true);
+      expect(actor?.volatileStatuses.get(VOLATILES.choiceLocked)?.data).toEqual({
         moveId: MOVES.tackle,
       });
     });

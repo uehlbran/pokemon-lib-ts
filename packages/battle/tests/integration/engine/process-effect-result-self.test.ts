@@ -117,7 +117,6 @@ describe("processEffectResult — self-targeted effects", () => {
 
         // Assert — attacker (side 0, Charizard) gets sleep status
         const statusInflict = events.find((e) => e.type === "status-inflict" && e.side === 0);
-        expect(statusInflict).toBeDefined();
         expect(statusInflict?.type === "status-inflict" && statusInflict.status).toBe(
           CORE_STATUS_IDS.sleep,
         );
@@ -128,7 +127,6 @@ describe("processEffectResult — self-targeted effects", () => {
 
         // Assert — sleep-counter volatile is set with turnsLeft=2 (NOT rolled from ruleset)
         const sleepCounter = attackerActive?.volatileStatuses.get(CORE_VOLATILE_IDS.sleepCounter);
-        expect(sleepCounter).toBeDefined();
         expect(sleepCounter?.turnsLeft).toBe(2);
         // Verify startTime is stored for Gen 5 sleep counter reset
         // Source: Showdown data/mods/gen5/conditions.ts -- slp.onSwitchIn reads effectState.startTime
@@ -209,11 +207,13 @@ describe("processEffectResult — self-targeted effects", () => {
         expect(attackerActive?.volatileStatuses.has(CORE_VOLATILE_IDS.mist)).toBe(true);
 
         // Assert — volatile-start event emitted for side 0 with volatile=CORE_VOLATILE_IDS.mist
-        const volatileStart = events.find(
-          (e) =>
-            e.type === "volatile-start" && e.side === 0 && e.volatile === CORE_VOLATILE_IDS.mist,
+        expect(events).toContainEqual(
+          expect.objectContaining({
+            type: "volatile-start",
+            side: 0,
+            volatile: CORE_VOLATILE_IDS.mist,
+          }),
         );
-        expect(volatileStart).toBeDefined();
       },
     );
 
@@ -418,7 +418,6 @@ describe("processEffectResult — self-targeted effects", () => {
         const attackReset = events.find(
           (e) => e.type === "stat-change" && e.side === 0 && e.stat === CORE_STAT_IDS.attack,
         );
-        expect(attackReset).toBeDefined();
         expect(attackReset?.type === "stat-change" && attackReset.stages).toBe(-3);
         expect(attackReset?.type === "stat-change" && attackReset.currentStage).toBe(0);
       },
@@ -507,7 +506,6 @@ describe("processEffectResult — self-targeted effects", () => {
         const defenseReset = events.find(
           (e) => e.type === "stat-change" && e.side === 1 && e.stat === CORE_STAT_IDS.defense,
         );
-        expect(defenseReset).toBeDefined();
         expect(defenseReset?.type === "stat-change" && defenseReset.stages).toBe(-3);
         expect(defenseReset?.type === "stat-change" && defenseReset.currentStage).toBe(0);
       },
@@ -545,15 +543,13 @@ describe("processEffectResult — self-targeted effects", () => {
         expect(attackerActive?.statStages.attack).toBe(0);
         expect(attackerActive?.pokemon.status).toBeNull();
 
-        const statusCure = events.find(
-          (e) => e.type === "status-cure" && e.side === 0 && e.status === CORE_STATUS_IDS.burn,
+        expect(events).toContainEqual(
+          expect.objectContaining({ type: "status-cure", side: 0, status: CORE_STATUS_IDS.burn }),
         );
-        expect(statusCure).toBeDefined();
 
         const attackReset = events.find(
           (e) => e.type === "stat-change" && e.side === 0 && e.stat === CORE_STAT_IDS.attack,
         );
-        expect(attackReset).toBeDefined();
         expect(attackReset?.type === "stat-change" && attackReset.stages).toBe(-2);
         expect(attackReset?.type === "stat-change" && attackReset.currentStage).toBe(0);
       },
@@ -599,10 +595,9 @@ describe("processEffectResult — self-targeted effects", () => {
         expect(attackerActive?.statStages.attack).toBe(2);
 
         // Assert — status-cure event emitted for side 0
-        const statusCure = events.find(
-          (e) => e.type === "status-cure" && e.side === 0 && e.status === CORE_STATUS_IDS.burn,
+        expect(events).toContainEqual(
+          expect.objectContaining({ type: "status-cure", side: 0, status: CORE_STATUS_IDS.burn }),
         );
-        expect(statusCure).toBeDefined();
       },
     );
 

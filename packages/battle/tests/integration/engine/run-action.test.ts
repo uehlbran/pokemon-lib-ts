@@ -114,9 +114,8 @@ describe("RunAction flee mechanic", () => {
       const fleeEvent = events.find((e) => e.type === "flee-attempt") as
         | FleeAttemptEvent
         | undefined;
-      expect(fleeEvent).toBeDefined();
-      expect(fleeEvent!.success).toBe(true);
-      expect(fleeEvent!.side).toBe(0);
+      expect(fleeEvent?.success).toBe(true);
+      expect(fleeEvent?.side).toBe(0);
     });
 
     it("given a wild battle and flee succeeds, when RunAction is submitted, then battle-end event is emitted with winner null", () => {
@@ -133,9 +132,8 @@ describe("RunAction flee mechanic", () => {
       // Assert
       // Source: BattleEndEvent interface -- winner is null when battle ends without a victor (flee/draw)
       const endEvent = events.find((e) => e.type === "battle-end");
-      expect(endEvent).toBeDefined();
-      expect(endEvent!.type).toBe("battle-end");
-      expect((endEvent as { winner: 0 | 1 | null }).winner).toBeNull();
+      expect(endEvent?.type).toBe("battle-end");
+      expect((endEvent as { winner: 0 | 1 | null } | undefined)?.winner).toBeNull();
     });
 
     it("given a wild battle and flee succeeds, when RunAction is submitted, then 'Got away safely!' message is emitted", () => {
@@ -190,8 +188,7 @@ describe("RunAction flee mechanic", () => {
       const fleeEvent = events.find((e) => e.type === "flee-attempt") as
         | FleeAttemptEvent
         | undefined;
-      expect(fleeEvent).toBeDefined();
-      expect(fleeEvent!.success).toBe(false);
+      expect(fleeEvent?.success).toBe(false);
     });
 
     it("given a wild battle and flee fails, when RunAction is submitted, then 'Can't escape!' message is emitted and battle continues", () => {
@@ -207,10 +204,7 @@ describe("RunAction flee mechanic", () => {
 
       // Assert
       // Source: In-game text displayed when player fails to flee a wild battle
-      const messageEvent = events.find(
-        (e) => e.type === "message" && (e as { text: string }).text === "Can't escape!",
-      );
-      expect(messageEvent).toBeDefined();
+      expect(events).toContainEqual({ type: "message", text: "Can't escape!" });
       // Battle should not be ended
       expect(engine.isEnded()).toBe(false);
     });
@@ -233,12 +227,7 @@ describe("RunAction flee mechanic", () => {
       expect(fleeEvent).toBeUndefined();
 
       // Should emit a message about trainer battles
-      const trainerMessage = events.find(
-        (e) =>
-          e.type === "message" &&
-          (e as { text: string }).text === "Can't run from a trainer battle!",
-      );
-      expect(trainerMessage).toBeDefined();
+      expect(events).toContainEqual({ type: "message", text: "Can't run from a trainer battle!" });
       expect(engine.isEnded()).toBe(false);
     });
   });

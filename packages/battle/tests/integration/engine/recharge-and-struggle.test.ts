@@ -145,8 +145,7 @@ describe("recharge enforcement (#104)", () => {
       );
       expect(hasRechargeMessage).toBe(false);
 
-      const moveStart = events.find((e) => e.type === "move-start" && e.side === 0);
-      expect(moveStart).toBeDefined();
+      expect(events.some((e) => e.type === "move-start" && e.side === 0)).toBe(true);
     });
 
     it("when the recharging Pokemon is faster than the opponent, then the recharge turn is consumed before the opponent's move starts", () => {

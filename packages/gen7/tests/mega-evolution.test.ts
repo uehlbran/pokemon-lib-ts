@@ -189,51 +189,46 @@ describe("MEGA_STONE_DATA -- Gen 7 mega stone lookup table", () => {
   it("given venusaurite, when looking up in MEGA_STONE_DATA, then returns Mega Venusaur data", () => {
     // Source: Bulbapedia "Venusaurite" -- Grass/Poison, Thick Fat, 123 Defense
     const data = MEGA_STONE_DATA[VENUSAURITE];
-    expect(data).toBeDefined();
-    expect(data.form).toBe(VENUSAUR_MEGA_FORM);
-    expect(data.types).toEqual([TYPES.grass, TYPES.poison]);
-    expect(data.ability).toBe(ABILITIES.thickFat);
-    expect(data.baseStats.defense).toBe(123);
+    expect(data?.form).toBe(VENUSAUR_MEGA_FORM);
+    expect(data?.types).toEqual([TYPES.grass, TYPES.poison]);
+    expect(data?.ability).toBe(ABILITIES.thickFat);
+    expect(data?.baseStats.defense).toBe(123);
   });
 
   it("given charizardite-x, when looking up in MEGA_STONE_DATA, then returns Charizard Mega X data", () => {
     // Source: Bulbapedia "Charizardite X" -- Fire/Dragon type, Tough Claws ability, 130 Attack
     const data = MEGA_STONE_DATA[CHARIZARDITE_X];
-    expect(data).toBeDefined();
-    expect(data.form).toBe(CHARIZARD_MEGA_X_FORM);
-    expect(data.types).toEqual([TYPES.fire, TYPES.dragon]);
-    expect(data.ability).toBe(ABILITIES.toughClaws);
-    expect(data.baseStats.attack).toBe(130);
+    expect(data?.form).toBe(CHARIZARD_MEGA_X_FORM);
+    expect(data?.types).toEqual([TYPES.fire, TYPES.dragon]);
+    expect(data?.ability).toBe(ABILITIES.toughClaws);
+    expect(data?.baseStats.attack).toBe(130);
   });
 
   it("given charizardite-y, when looking up in MEGA_STONE_DATA, then returns Charizard Mega Y data", () => {
     // Source: Bulbapedia "Charizardite Y" -- Fire/Flying type, Drought ability, 159 Sp. Attack
     const data = MEGA_STONE_DATA[CHARIZARDITE_Y];
-    expect(data).toBeDefined();
-    expect(data.form).toBe(CHARIZARD_MEGA_Y_FORM);
-    expect(data.types).toEqual([TYPES.fire, TYPES.flying]);
-    expect(data.ability).toBe(ABILITIES.drought);
-    expect(data.baseStats.spAttack).toBe(159);
+    expect(data?.form).toBe(CHARIZARD_MEGA_Y_FORM);
+    expect(data?.types).toEqual([TYPES.fire, TYPES.flying]);
+    expect(data?.ability).toBe(ABILITIES.drought);
+    expect(data?.baseStats.spAttack).toBe(159);
   });
 
   it("given blastoisinite, when looking up in MEGA_STONE_DATA, then returns Mega Blastoise data", () => {
     // Source: Bulbapedia "Blastoisinite" -- Water, Mega Launcher ability, 135 Sp. Attack
     const data = MEGA_STONE_DATA[BLASTOISINITE];
-    expect(data).toBeDefined();
-    expect(data.form).toBe(BLASTOISE_MEGA_FORM);
-    expect(data.types).toEqual([TYPES.water]);
-    expect(data.ability).toBe(ABILITIES.megaLauncher);
-    expect(data.baseStats.spAttack).toBe(135);
+    expect(data?.form).toBe(BLASTOISE_MEGA_FORM);
+    expect(data?.types).toEqual([TYPES.water]);
+    expect(data?.ability).toBe(ABILITIES.megaLauncher);
+    expect(data?.baseStats.spAttack).toBe(135);
   });
 
   it("given lucarionite, when looking up in MEGA_STONE_DATA, then returns Mega Lucario data", () => {
     // Source: Bulbapedia "Lucarionite" -- Fighting/Steel, Adaptability ability, 145 Attack
     const data = MEGA_STONE_DATA[LUCARIONITE];
-    expect(data).toBeDefined();
-    expect(data.form).toBe(LUCARIO_MEGA_FORM);
-    expect(data.types).toEqual([TYPES.fighting, TYPES.steel]);
-    expect(data.ability).toBe(ABILITIES.adaptability);
-    expect(data.baseStats.attack).toBe(145);
+    expect(data?.form).toBe(LUCARIO_MEGA_FORM);
+    expect(data?.types).toEqual([TYPES.fighting, TYPES.steel]);
+    expect(data?.ability).toBe(ABILITIES.adaptability);
+    expect(data?.baseStats.attack).toBe(145);
   });
 });
 

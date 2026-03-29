@@ -1105,12 +1105,11 @@ describe("Gen 6 damage breakdown", () => {
     });
 
     const result = calculateGen6Damage(ctx, typeChart);
-    expect(result.breakdown).toBeDefined();
-    expect(result.breakdown!.baseDamage).toBeGreaterThan(0);
-    expect(result.breakdown!.critMultiplier).toBe(GEN6_CRIT_MULTIPLIER);
-    expect(result.breakdown!.stabMultiplier).toBe(CORE_MECHANIC_MULTIPLIERS.stab);
-    expect(result.breakdown!.typeMultiplier).toBe(2);
-    expect(result.breakdown!.finalDamage).toBe(result.damage);
+    expect(result.breakdown?.baseDamage).toBeGreaterThan(0);
+    expect(result.breakdown?.critMultiplier).toBe(GEN6_CRIT_MULTIPLIER);
+    expect(result.breakdown?.stabMultiplier).toBe(CORE_MECHANIC_MULTIPLIERS.stab);
+    expect(result.breakdown?.typeMultiplier).toBe(2);
+    expect(result.breakdown?.finalDamage).toBe(result.damage);
   });
 });
 

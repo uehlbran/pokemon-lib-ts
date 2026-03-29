@@ -95,7 +95,7 @@ describe("Bug #890 - Gen 8 Ice Face pre-damage blocking", () => {
     engine.start();
 
     const defender = engine.state.sides[1].active[0];
-    expect(defender).toBeDefined();
+    expect(defender).not.toBeNull();
     const startingHp = defender.pokemon.currentHp;
 
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });

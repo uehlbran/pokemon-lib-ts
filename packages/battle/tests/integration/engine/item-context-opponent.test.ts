@@ -121,8 +121,7 @@ describe("Bug #519 — ItemContext.opponent field", () => {
     // context.pokemon should be Blastoise (defender/holder), context.opponent should be Charizard (attacker)
     const firstCtx = damageTakenCtx[0]!;
     expect(firstCtx.context.pokemon.pokemon.uid).toBe("blastoise-1");
-    expect(firstCtx.context.opponent).toBeDefined();
-    expect(firstCtx.context.opponent!.pokemon.uid).toBe("charizard-1");
+    expect(firstCtx.context.opponent?.pokemon.uid).toBe("charizard-1");
   });
 
   it("given on-hit item trigger, when fired, then ItemContext.opponent is the defender", () => {
@@ -143,8 +142,7 @@ describe("Bug #519 — ItemContext.opponent field", () => {
     // context.pokemon should be Charizard (attacker/holder), context.opponent should be Blastoise (defender)
     const firstCtx = onHitCtx[0]!;
     expect(firstCtx.context.pokemon.pokemon.uid).toBe("charizard-1");
-    expect(firstCtx.context.opponent).toBeDefined();
-    expect(firstCtx.context.opponent!.pokemon.uid).toBe("blastoise-1");
+    expect(firstCtx.context.opponent?.pokemon.uid).toBe("blastoise-1");
   });
 
   it("given a contact move hitting a contact-item holder, when on-contact item trigger fires, then ItemContext.opponent is the attacker", () => {
@@ -167,7 +165,6 @@ describe("Bug #519 — ItemContext.opponent field", () => {
     // context.pokemon should be Blastoise (defender/holder), context.opponent should be Charizard (attacker)
     const firstCtx = onContactCtx[0]!;
     expect(firstCtx.context.pokemon.pokemon.uid).toBe("blastoise-1");
-    expect(firstCtx.context.opponent).toBeDefined();
-    expect(firstCtx.context.opponent!.pokemon.uid).toBe("charizard-1");
+    expect(firstCtx.context.opponent?.pokemon.uid).toBe("charizard-1");
   });
 });

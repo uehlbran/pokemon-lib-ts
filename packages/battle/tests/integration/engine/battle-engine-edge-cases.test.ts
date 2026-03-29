@@ -219,8 +219,7 @@ describe("BattleEngine — edge cases", () => {
       expect(engine.isEnded()).toBe(true);
       const faintEvents = events.filter((e) => e.type === "faint");
       expect(faintEvents.length).toBeGreaterThanOrEqual(1);
-      const endEvent = events.find((e) => e.type === "battle-end");
-      expect(endEvent).toBeDefined();
+      expect(events).toContainEqual(expect.objectContaining({ type: "battle-end" }));
     });
   });
 

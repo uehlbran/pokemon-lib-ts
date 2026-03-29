@@ -615,11 +615,9 @@ describe("Gen7AbilitiesStat coverage gaps", () => {
       expect(result.effects).toHaveLength(2);
       const raise = result.effects.find((e: any) => e.stages > 0);
       const lower = result.effects.find((e: any) => e.stages < 0);
-      expect(raise).toBeDefined();
-      expect(lower).toBeDefined();
       // Source: Showdown -- Moody: +2 for raised stat, -1 for lowered stat
-      expect((raise as any).stages).toBe(2);
-      expect((lower as any).stages).toBe(-1);
+      expect((raise as any)?.stages).toBe(2);
+      expect((lower as any)?.stages).toBe(-1);
     });
   });
 

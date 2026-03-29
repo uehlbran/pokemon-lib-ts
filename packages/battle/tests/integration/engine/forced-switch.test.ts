@@ -118,16 +118,14 @@ describe("Forced switch (phazing) action inheritance", () => {
 
     // Check that side 1's active is now Pikachu (the replacement)
     const side1Active = engine.state.sides[1].active[0];
-    expect(side1Active).toBeDefined();
-    expect(side1Active!.pokemon.uid).toBe("pikachu-bench");
+    expect(side1Active?.pokemon.uid).toBe("pikachu-bench");
 
     // Check that Charizard (side 0) was NOT damaged by any move from side 1.
     // MockRuleset.calculateStats recalculates from species base stats:
     // Charizard base HP=78, level 50 → floor(((2*78+31)*50)/100) + 50 + 10 = 153
     // Source: MockRuleset.calculateStats formula
     const side0Active = engine.state.sides[0].active[0];
-    expect(side0Active).toBeDefined();
-    expect(side0Active!.pokemon.currentHp).toBe(153); // Full HP — never attacked
+    expect(side0Active?.pokemon.currentHp).toBe(153); // Full HP — never attacked
   });
 
   it("given a side was phased out, when the phased side had a queued move, then that move is skipped (triangulation with different damage)", () => {
@@ -154,13 +152,11 @@ describe("Forced switch (phazing) action inheritance", () => {
 
     // Verify the replacement is on the field
     const side1Active = engine.state.sides[1].active[0];
-    expect(side1Active).toBeDefined();
-    expect(side1Active!.pokemon.uid).toBe("pikachu-bench");
+    expect(side1Active?.pokemon.uid).toBe("pikachu-bench");
 
     // Charizard should be at full HP (153) — side 1's move was skipped
     const side0Active = engine.state.sides[0].active[0];
-    expect(side0Active).toBeDefined();
-    expect(side0Active!.pokemon.currentHp).toBe(153);
+    expect(side0Active?.pokemon.currentHp).toBe(153);
   });
 
   it("given a phased side had queued Struggle, when the faster opponent forces a switch first, then the replacement does not inherit the queued Struggle", () => {
@@ -177,12 +173,10 @@ describe("Forced switch (phazing) action inheritance", () => {
 
     // Assert
     const side1Active = engine.state.sides[1].active[0];
-    expect(side1Active).toBeDefined();
-    expect(side1Active!.pokemon.uid).toBe("pikachu-bench");
+    expect(side1Active?.pokemon.uid).toBe("pikachu-bench");
 
     const side0Active = engine.state.sides[0].active[0];
-    expect(side0Active).toBeDefined();
-    expect(side0Active!.pokemon.currentHp).toBe(153);
+    expect(side0Active?.pokemon.currentHp).toBe(153);
 
     expect(
       events.some(
@@ -218,12 +212,10 @@ describe("Forced switch (phazing) action inheritance", () => {
 
     // Assert
     const side1Active = engine.state.sides[1].active[0];
-    expect(side1Active).toBeDefined();
-    expect(side1Active!.pokemon.uid).toBe("pikachu-bench");
+    expect(side1Active?.pokemon.uid).toBe("pikachu-bench");
 
     const side0Active = engine.state.sides[0].active[0];
-    expect(side0Active).toBeDefined();
-    expect(side0Active!.pokemon.currentHp).toBe(153);
+    expect(side0Active?.pokemon.currentHp).toBe(153);
 
     expect(
       events.some(

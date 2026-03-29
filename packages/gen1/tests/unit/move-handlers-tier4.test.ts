@@ -767,7 +767,7 @@ describe("Gen 1 Bide handler", () => {
     // turnsLeft should have decremented from 2 to 1
     const bideVol = attacker.volatileStatuses.get(GEN1_MOVE_IDS.bide);
     expect(bideVol!.turnsLeft).toBe(1);
-    expect(result.forcedMoveSet).toBeDefined();
+    expect(result.forcedMoveSet?.moveId).toBe(GEN1_MOVE_IDS.bide);
     expect(result.messages).toContain("The user is storing energy!");
   });
 
@@ -895,7 +895,7 @@ describe("Gen 1 Thrash handler", () => {
 
     // Assert
     expect(attacker.volatileStatuses.get("thrash-lock")!.turnsLeft).toBe(1);
-    expect(result.forcedMoveSet).toBeDefined();
+    expect(result.forcedMoveSet?.moveId).toBe(GEN1_MOVE_IDS.thrash);
   });
 
   it("given Thrash lock is on last turn (turnsLeft = 1), when Thrash is used, then thrash-lock is removed and user is confused", () => {

@@ -293,7 +293,8 @@ describe("Bug #397 — Normalize does not affect Struggle", () => {
     // so it still does 0 against Ghost via type chart. The fix ensures the code
     // path correctly excludes Struggle from Normalize's type override.
     // We verify the code path works by confirming the condition is correctly checked.
-    expect(result2.effectiveness).toBeDefined();
+    // Struggle keeps Normal type against Ghost => type chart gives 0 (Ghost immune to Normal).
+    expect(result2.effectiveness).toBe(0);
   });
 
   it("given Normalize holder using a non-Struggle move, when calculating damage, then move type becomes Normal", () => {
@@ -715,9 +716,8 @@ describe("Bug #388 — Jaboca Berry uses attacker's maxHp for retaliation damage
 
     expect(result.activated).toBe(true);
     const dmgEffect = result.effects!.find((e) => e.type === "self-damage");
-    expect(dmgEffect).toBeDefined();
     // Uses OPPONENT's maxHp (400), not holder's (200)
-    expect(dmgEffect!.value).toBe(50);
+    expect(dmgEffect?.value).toBe(50);
   });
 
   it("given holder with maxHp=300 hit by physical move from attacker with maxHp=100, when Jaboca Berry triggers, then damage = floor(100/8) = 12", () => {
@@ -748,8 +748,7 @@ describe("Bug #388 — Jaboca Berry uses attacker's maxHp for retaliation damage
 
     expect(result.activated).toBe(true);
     const dmgEffect = result.effects!.find((e) => e.type === "self-damage");
-    expect(dmgEffect).toBeDefined();
-    expect(dmgEffect!.value).toBe(12);
+    expect(dmgEffect?.value).toBe(12);
   });
 });
 

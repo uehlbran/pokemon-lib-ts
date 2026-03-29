@@ -1499,7 +1499,6 @@ describe("Rowap Berry", () => {
 
     expect(result.activated).toBe(true);
     const selfDamageEffect = result.effects!.find((e) => e.type === "self-damage");
-    expect(selfDamageEffect).toBeDefined();
-    expect(selfDamageEffect!.value).toBe(1);
+    expect(selfDamageEffect?.value).toBe(1);
   });
 });

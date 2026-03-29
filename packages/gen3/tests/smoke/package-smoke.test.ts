@@ -39,7 +39,6 @@ describe("Gen 3 Smoke Tests", () => {
     const dm = createGen3DataManager();
     const earthquake = dm.getMove(GEN3_MOVE_IDS.earthquake);
 
-    expect(earthquake).toBeDefined();
     expect(earthquake.type).toBe(CORE_TYPE_IDS.ground);
     expect(earthquake.power).toBe(100);
     expect(earthquake.category).toBe(CORE_MOVE_CATEGORIES.physical);

@@ -170,8 +170,8 @@ describe("Gen 5 type chart -- property tests", () => {
     for (const atkType of GEN5_TYPES) {
       for (const defType of GEN5_TYPES) {
         const value = GEN5_TYPE_CHART[atkType]?.[defType];
-        expect(value).toBeDefined();
-        expect(validValues.has(value!)).toBe(true);
+        expect(value).not.toBeUndefined();
+        expect(validValues.has(value as number)).toBe(true);
         count++;
       }
     }

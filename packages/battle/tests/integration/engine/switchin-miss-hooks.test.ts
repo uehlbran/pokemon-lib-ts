@@ -139,7 +139,7 @@ describe("Bug #483: onSwitchIn hook wiring", () => {
     expect(onSwitchInSpy).toHaveBeenCalledTimes(1);
     const [pokemon, state] = onSwitchInSpy.mock.calls[0];
     expect(pokemon.pokemon.uid).toBe("pikachu-1");
-    expect(state).toBeDefined();
+    expect(state).toHaveProperty("sides");
   });
 
   it("given initial battle start, when both leads are sent out, then ruleset.onSwitchIn() is called for each lead", () => {
@@ -181,8 +181,7 @@ describe("Bug #495: onMoveMiss called for semi-invulnerable target miss", () => 
     // onMoveMiss should have been called for the Tackle that missed against flying target
     expect(onMoveMinSpy).toHaveBeenCalled();
     const call = onMoveMinSpy.mock.calls.find((c) => c[0].pokemon.uid === "charizard-1");
-    expect(call).toBeDefined();
-    expect(call![1].id).toBe(MOVES.tackle);
+    expect(call?.[1].id).toBe(MOVES.tackle);
   });
 
   it("given a second scenario where a different move misses a semi-invulnerable target, when the move executes, then onMoveMiss() is also called", () => {
@@ -204,8 +203,7 @@ describe("Bug #495: onMoveMiss called for semi-invulnerable target miss", () => 
 
     // onMoveMiss should be called for Thunderbolt miss
     const call = onMoveMinSpy.mock.calls.find((c) => c[1].id === MOVES.thunderbolt);
-    expect(call).toBeDefined();
-    expect(call![0].pokemon.uid).toBe("charizard-1");
+    expect(call?.[0].pokemon.uid).toBe("charizard-1");
   });
 });
 

@@ -248,8 +248,6 @@ describe("Bug #94 — Amnesia/Growth unified special stat", () => {
     const spDefenseChange = result.statChanges.find(
       (c) => c.target === "attacker" && c.stat === "spDefense",
     );
-    expect(spAttackChange).toBeDefined();
-    expect(spDefenseChange).toBeDefined();
     expect(spAttackChange?.stages).toBe(2);
     expect(spDefenseChange?.stages).toBe(2);
   });
@@ -905,7 +903,6 @@ describe(`Bug #105 — ${GEN1_MOVE_IDS.sharpen} move exists in move data`, () =>
     const sharpen = dm.getMove(GEN1_MOVE_IDS.sharpen);
 
     // Assert
-    expect(sharpen).toBeDefined();
     expect(sharpen.id).toBe(GEN1_MOVE_IDS.sharpen);
     expect(sharpen.displayName).toBe("Sharpen");
     expect(sharpen.category).toBe(CORE_MOVE_CATEGORIES.status);
@@ -929,7 +926,6 @@ describe(`Bug #105 — ${GEN1_MOVE_IDS.sharpen} move exists in move data`, () =>
     const attackChange = result.statChanges.find(
       (c) => c.stat === CORE_STAT_IDS.attack && c.target === "attacker",
     );
-    expect(attackChange).toBeDefined();
     expect(attackChange?.stages).toBe(1);
     // Only attack is changed (not a special move)
     expect(result.statChanges).toHaveLength(1);

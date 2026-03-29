@@ -644,8 +644,7 @@ describe("Gen8AbilitiesSwitch Gulp Missile on-contact dispatch", () => {
     const chipEffect = result.effects.find(
       (e) => e.effectType === BATTLE_ABILITY_EFFECT_TYPES.chipDamage,
     );
-    expect(chipEffect).toBeDefined();
-    expect((chipEffect as any).value).toBe(50);
+    expect((chipEffect as any)?.value).toBe(50);
 
     // Should have defense drop
     const statEffect = result.effects.find(
@@ -653,8 +652,7 @@ describe("Gen8AbilitiesSwitch Gulp Missile on-contact dispatch", () => {
         e.effectType === BATTLE_ABILITY_EFFECT_TYPES.statChange &&
         (e as any).stat === CORE_STAT_IDS.defense,
     );
-    expect(statEffect).toBeDefined();
-    expect((statEffect as any).stages).toBe(-1);
+    expect((statEffect as any)?.stages).toBe(-1);
   });
 
   it("given Cramorant (845) with gulp-missile and gulp-missile-gorging volatile, when hit on contact and opponent has no status, then returns chip damage and paralysis", () => {
@@ -679,13 +677,11 @@ describe("Gen8AbilitiesSwitch Gulp Missile on-contact dispatch", () => {
 
     // Should have chip-damage effect: floor(160 / 4) = 40
     const chipEffect = result.effects.find((e) => e.effectType === "chip-damage");
-    expect(chipEffect).toBeDefined();
-    expect((chipEffect as any).value).toBe(40);
+    expect((chipEffect as any)?.value).toBe(40);
 
     // Should have paralysis
     const statusEffect = result.effects.find((e) => e.effectType === "status-inflict");
-    expect(statusEffect).toBeDefined();
-    expect((statusEffect as any).status).toBe(STATUS.paralysis);
+    expect((statusEffect as any)?.status).toBe(STATUS.paralysis);
   });
 
   it("given Cramorant with gulp-missile-gorging volatile but opponent already has a status, when hit, then returns chip damage but no paralysis", () => {
@@ -709,7 +705,7 @@ describe("Gen8AbilitiesSwitch Gulp Missile on-contact dispatch", () => {
 
     // Chip damage still applies
     const chipEffect = result.effects.find((e) => e.effectType === "chip-damage");
-    expect(chipEffect).toBeDefined();
+    expect(chipEffect).not.toBeUndefined();
 
     // No paralysis because opponent already has burn
     const statusEffect = result.effects.find((e) => e.effectType === "status-inflict");

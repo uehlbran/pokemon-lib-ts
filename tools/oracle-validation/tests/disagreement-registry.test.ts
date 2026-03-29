@@ -21,7 +21,7 @@ describe("disagreement registry", () => {
 
   function getGeneration(gen: number) {
     const generation = generationByNumber.get(gen);
-    expect(generation).toBeDefined();
+    expect(generation?.gen).toBe(gen);
     return generation!;
   }
 

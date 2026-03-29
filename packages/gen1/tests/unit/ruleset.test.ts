@@ -66,7 +66,6 @@ describe("Gen1Ruleset", () => {
     // Arrange
     const ruleset = new Gen1Ruleset();
     // Act / Assert
-    expect(ruleset.name).toBeDefined();
     expect(typeof ruleset.name).toBe("string");
     expect(ruleset.name.length).toBeGreaterThan(0);
   });
@@ -157,7 +156,6 @@ describe("Gen1Ruleset", () => {
     // Act
     const chart = ruleset.getTypeChart();
     // Assert
-    expect(chart).toBeDefined();
     expect(Object.keys(chart)).toEqual([...GEN1_TYPES]);
   });
 

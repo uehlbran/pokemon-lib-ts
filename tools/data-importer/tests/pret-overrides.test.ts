@@ -136,7 +136,6 @@ describe("applyPokemonOverrides", () => {
 describe("gen2Overrides list", () => {
   it("quick-attack override sets priority to 2", () => {
     const o = gen2Overrides.find((x) => x.target === "move" && x.moveId === "quick-attack");
-    expect(o).toBeDefined();
     expect(o?.value).toBe(2);
   });
 
@@ -182,7 +181,6 @@ describe("gen3Overrides list", () => {
   it("endure override sets priority to 3", () => {
     // Source: pret/pokeemerald src/data/battle_moves.h — endure: .priority = 3
     const o = gen3Overrides.find((x) => x.target === "move" && x.moveId === "endure");
-    expect(o).toBeDefined();
     expect(o?.value).toBe(3);
   });
 });
@@ -191,7 +189,6 @@ describe("gen4Overrides list", () => {
   it("endure override sets priority to 3", () => {
     // Source: pret/pokeplatinum res/battle/moves/endure/data.json — priority: 3
     const o = gen4Overrides.find((x) => x.target === "move" && x.moveId === "endure");
-    expect(o).toBeDefined();
     expect(o?.value).toBe(3);
   });
 });

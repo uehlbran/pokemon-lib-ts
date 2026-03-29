@@ -1152,7 +1152,6 @@ describe("Gen 2 Full Battle Integration", () => {
     expect(result.activated).toBe(true);
     expect(result.effects.length).toBeGreaterThan(0);
     const healEffect = result.effects.find((e) => e.type === "heal");
-    expect(healEffect).toBeDefined();
     expect(healEffect?.value).toBe(Math.max(1, Math.floor(maxHp / 16)));
     expect(result.messages.length).toBeGreaterThan(0);
   });
@@ -1289,7 +1288,6 @@ describe("Gen 2 Full Battle Integration", () => {
     // Assert
     const defenderTeam = engine.getTeam(1);
     const magikarp = defenderTeam[0];
-    expect(magikarp).toBeDefined();
     expect(magikarp?.currentHp).toBe(0);
   });
 

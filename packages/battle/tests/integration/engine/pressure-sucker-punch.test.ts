@@ -147,7 +147,7 @@ describe("Bug #309 — Pressure + self-target moves", () => {
     const active0 = engine.state.sides[0].active[0];
     expect(active0).not.toBeNull();
     const swordsDanceSlot = active0!.pokemon.moves[1];
-    expect(swordsDanceSlot).toBeDefined();
+    expect(swordsDanceSlot).not.toBeNull();
     const ppBefore = swordsDanceSlot!.currentPP;
 
     // Act — side 0 uses Swords Dance (self-targeting)
@@ -177,7 +177,7 @@ describe("Bug #309 — Pressure + self-target moves", () => {
     const active0 = engine.state.sides[0].active[0];
     expect(active0).not.toBeNull();
     const tackleSlot = active0!.pokemon.moves[0];
-    expect(tackleSlot).toBeDefined();
+    expect(tackleSlot).not.toBeNull();
     const ppBefore = tackleSlot!.currentPP;
 
     // Act — side 0 uses Tackle (opponent-targeting)
@@ -241,7 +241,7 @@ describe("Bug #512 — Pressure + foe-field/entire-field moves", () => {
     const active0 = engine.state.sides[0].active[0];
     expect(active0).not.toBeNull();
     const stealthRockSlot = active0!.pokemon.moves[0];
-    expect(stealthRockSlot).toBeDefined();
+    expect(stealthRockSlot).not.toBeNull();
     const ppBefore = stealthRockSlot!.currentPP;
 
     // Act — side 0 uses Stealth Rock (foe-field targeting)
@@ -291,7 +291,7 @@ describe("Bug #512 — Pressure + foe-field/entire-field moves", () => {
     const active0 = engine.state.sides[0].active[0];
     expect(active0).not.toBeNull();
     const gravitySlot = active0!.pokemon.moves[0];
-    expect(gravitySlot).toBeDefined();
+    expect(gravitySlot).not.toBeNull();
     const ppBefore = gravitySlot!.currentPP;
 
     // Act — side 0 uses Gravity (entire-field targeting)
