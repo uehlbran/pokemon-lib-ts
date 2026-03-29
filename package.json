@@ -39,9 +39,18 @@
     "replay:simulate:gen2": "tsx tools/replay-parser/src/index.ts simulate --gen 2 --battles 100",
     "replay:report": "tsx tools/replay-parser/src/index.ts validate-all tools/replay-parser/replays/gen1/ --json",
     "oracle:data": "tsx tools/oracle-validation/src/runner.ts --suite data",
+    "oracle:damage": "tsx tools/oracle-validation/src/runner.ts --suite damage",
+    "oracle:mechanics": "tsx tools/oracle-validation/src/runner.ts --suite mechanics",
+    "oracle:terrain": "tsx tools/oracle-validation/src/runner.ts --suite terrain",
+    "oracle:gimmicks": "tsx tools/oracle-validation/src/runner.ts --suite gimmicks",
+    "oracle:replay": "tsx tools/oracle-validation/src/runner.ts --suite replay",
+    "oracle:trace": "tsx tools/oracle-validation/src/runner.ts --suite damageTrace",
     "oracle:stats": "tsx tools/oracle-validation/src/runner.ts --suite stats",
     "oracle:groundtruth": "tsx tools/oracle-validation/src/runner.ts --suite groundTruth",
     "oracle:fast": "tsx tools/oracle-validation/src/runner.ts --suite fast",
+    "smoke": "tsx tools/oracle-validation/src/runner.ts --suite smoke",
+    "compliance": "tsx tools/oracle-validation/src/runner.ts --suite all",
+    "test:oracle": "vitest run --config tools/oracle-validation/vitest.config.ts",
     "validate:pret": "tsx tools/data-importer/src/pret-overrides/validate-committed-data.ts"
   },
   "devDependencies": {

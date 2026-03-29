@@ -15,6 +15,8 @@ on:
       - "tools/data-importer/src/pret-overrides/**"
       - "packages/*/src/**"
       - "packages/*/data/**"
+  schedule:
+    - cron: "0 4 * * *" # 4am UTC nightly
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
@@ -34,13 +36,94 @@ jobs:
       - run: npm run build
       - name: Run oracle fast-path
         run: npm run oracle:fast
+      - name: Post fast compliance summary
+        if: github.event_name == 'pull_request'
+        run: |
+          node -e "
+            const fs = require('fs');
+            const path = require('path');
+            const resultsPath = 'tools/oracle-validation/results/fast-path.json';
+            if (!fs.existsSync(resultsPath)) process.exit(0);
+            const output = JSON.parse(fs.readFileSync(resultsPath, 'utf8'));
+            const gens = output.generations ?? [];
+            let summary = '## Fast Compliance Check (data + stats + ground truth)\n\n';
+            summary += '| Gen | Data | Stats | GroundTruth | Damage | Mechanics |\n';
+            summary += '|-----|------|-------|-------------|--------|----------|\n';
+            for (const g of gens) {
+              const s = g.suites;
+              const icon = (suite) => {
+                if (!s[suite]) return '⬜';
+                if (s[suite].status === 'pass') return '✅';
+                if (s[suite].status === 'skip') return '⬜';
+                return '❌';
+              };
+              summary += '| Gen ' + g.gen + ' | ' + icon('data') + ' | ' + icon('stats') + ' | ' + icon('groundTruth') + ' | ' + icon('damage') + ' | ' + icon('mechanics') + ' |\n';
+            }
+            fs.writeFileSync('/tmp/compliance-comment.md', summary);
+          "
+          gh pr comment ${{ github.event.pull_request.number }} --body-file /tmp/compliance-comment.md
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Upload results artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: oracle-results
+          name: oracle-results-fast
           path: tools/oracle-validation/results/fast-path.json
           retention-days: 7
+
+  oracle-full:
+    name: oracle (full-path)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    if: |
+      github.event_name == 'schedule' ||
+      (github.event_name == 'pull_request' && contains(toJson(github.event.pull_request.labels.*.name), 'oracle:full'))
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Run full compliance suite
+        run: npm run compliance
+      - name: Post full compliance summary
+        if: github.event_name == 'pull_request'
+        run: |
+          node -e "
+            const fs = require('fs');
+            const path = require('path');
+            const resultsPath = 'tools/oracle-validation/results/fast-path.json';
+            if (!fs.existsSync(resultsPath)) process.exit(0);
+            const output = JSON.parse(fs.readFileSync(resultsPath, 'utf8'));
+            const gens = output.generations ?? [];
+            let summary = '## Full Compliance Check (all suites)\n\n';
+            summary += '| Gen | Data | Damage | Mechanics | Terrain | Gimmicks | Replay | Trace | Smoke |\n';
+            summary += '|-----|------|--------|-----------|---------|----------|--------|-------|-------|\n';
+            for (const g of gens) {
+              const s = g.suites;
+              const icon = (suite) => {
+                if (!s[suite]) return '⬜';
+                if (s[suite].status === 'pass') return '✅';
+                if (s[suite].status === 'skip') return '⬜';
+                return '❌';
+              };
+              summary += '| Gen ' + g.gen + ' | ' + icon('data') + ' | ' + icon('damage') + ' | ' + icon('mechanics') + ' | ' + icon('terrain') + ' | ' + icon('gimmicks') + ' | ' + icon('replay') + ' | ' + icon('damageTrace') + ' | ' + icon('smoke') + ' |\n';
+            }
+            fs.writeFileSync('/tmp/compliance-full-comment.md', summary);
+          "
+          gh pr comment ${{ github.event.pull_request.number }} --body-file /tmp/compliance-full-comment.md
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload full results artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: oracle-results-full
+          path: tools/oracle-validation/results/fast-path.json
+          retention-days: 30
 
   pret-validate:
     name: pret committed-data validation

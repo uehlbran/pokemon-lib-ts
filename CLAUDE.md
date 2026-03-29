@@ -150,6 +150,22 @@ Default effort: `high`. Use `/effort medium` for simple config/docs/data tasks.
 - AI reviews (CodeRabbit, Qodo) are advisory only. Validate reported bugs against current code before acting.
 - File out-of-scope bugs as GitHub issues (see `rules/bug-filing.md`)
 
+## Cartridge Compliance
+
+Run `npm run oracle:fast` for a quick check (data + stats + ground truth, ~2 min) or `npm run compliance` for the full suite (~15 min). Results are in `tools/oracle-validation/results/`.
+
+**Source Authority Hierarchy:**
+- Gen 1-2: pret disassemblies (pokered, pokecrystal) — cartridge definitive
+- Gen 3: pret C decomps (pokeemerald, pokefirered) — cartridge definitive
+- Gen 4: pret WIP decomps (pokeplatinum, pokeheartgold) + Showdown — high confidence
+- Gen 5-9: Showdown source + Bulbapedia — medium confidence. Showdown intentionally deviates from cartridge in some areas; prefer Bulbapedia for documented cartridge behavior.
+
+**Oracles are sanity checks, not authorities.** `@pkmn/data`, `@smogon/calc`, and `@pkmn/sim` catch regressions and flag discrepancies. When they disagree with us, consult the hierarchy above.
+
+**Check ERRATA before implementing anything.** `specs/ERRATA.md` documents 30 categories of errors found during implementation across all generations. Run through the checklist before implementing any gen mechanic. Common traps: paralysis speed changed in Gen 7 not Gen 5; terrain boost 1.5× in Gen 7 not 1.3×; Fairy type introduced Gen 6 not Gen 5; Dynamax HP is 1.5×-2.0× not 1.10×-1.20×.
+
+A generation is COMPLIANT when ALL applicable suites pass: data match, damage match, mechanics match, terrain match (Gen 6+), gimmick match (Gen 6+), replay validation, damage trace, smoke tests, and ground truth.
+
 ## Agent Work Patterns
 
 - **Parallelize** independent work as concurrent subagents. Never do sequentially what can be done in parallel.

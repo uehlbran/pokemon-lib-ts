@@ -28,7 +28,8 @@ type SupportedSuite =
   | "damageTrace"
   | "smoke"
   | "fast"
-  | "nightly";
+  | "nightly"
+  | "all";
 const SUPPORTED_SUITES: ReadonlySet<SupportedSuite> = new Set([
   "data",
   "stats",
@@ -42,6 +43,7 @@ const SUPPORTED_SUITES: ReadonlySet<SupportedSuite> = new Set([
   "smoke",
   "fast",
   "nightly",
+  "all",
 ]);
 
 /**
@@ -87,8 +89,8 @@ function parseArgs(argv: string[]): { suites: SupportedSuite[]; gen?: number } {
  * Expand composite suite aliases into concrete suite runs.
  */
 function expandSuites(suites: SupportedSuite[]): SupportedSuite[] {
-  if (suites.includes("nightly")) {
-    // Full suite — all fast suites plus long-running replay/trace/smoke
+  // `all` and `nightly` both expand to the complete suite set
+  if (suites.includes("all") || suites.includes("nightly")) {
     return [
       "data",
       "stats",
