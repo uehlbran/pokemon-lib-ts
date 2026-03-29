@@ -348,7 +348,7 @@ export function runMechanicsSuite(
 
   // ── Documentation: Field Effects (spec 1.7d) ──────────────────────────────
   notes.push(
-    "Spec 1.7d (field effects): Rain doubles Water, halves Fire; Sun doubles Fire, halves Water; " +
+    "Spec 1.7d (field effects): Rain boosts Water 1.5×, halves Fire; Sun boosts Fire 1.5×, halves Water; " +
       "Sand deals 1/16 damage per turn to non-Rock/Ground/Steel; Hail deals 1/16 to non-Ice. " +
       "Sources: Showdown sim/battle-actions.ts onWeather handlers",
   );
@@ -356,7 +356,7 @@ export function runMechanicsSuite(
   // ── Documentation: Item Effects (spec 1.7e) ────────────────────────────────
   notes.push(
     "Spec 1.7e (item effects): Choice Band/Specs lock move after first use; Life Orb adds 30% boost, " +
-      "deals 10% recoil (Sheer Force negates recoil); berries trigger at 50% HP (25% with Gluttony); " +
+      "deals 10% recoil (Sheer Force negates recoil); pinch berries trigger at 25% HP (50% with Gluttony); " +
       "Knock Off deals 1.5x vs item-holder (Gen 6+). " +
       "Source: Showdown sim/battle-actions.ts onAfterMove, onBasePower",
   );

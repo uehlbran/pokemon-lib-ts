@@ -44,9 +44,17 @@ describe("Gimmicks Oracle Suite", () => {
         expect(result.status).toBe("pass");
         expect(result.suitePassed).toBe(true);
         expect(result.notes.length).toBeGreaterThan(0);
-        // Live oracle suite: Gen 7 validates Z-Move power; Gen 8 validates Dynamax HP formula.
-        // Gen 6 and Gen 9 produce documentation notes only (no live comparisons for Mega/Tera).
-        expect(result.oracleChecks.length).toBeGreaterThanOrEqual(0);
+        // Gen 7: validates Z-Move power for all damaging moves (hundreds of checks).
+        // Gen 8: validates getDynamaxMaxHp() at levels 0/5/10 (3 checks).
+        // Gen 6 and Gen 9: documentation notes only (no live comparisons for Mega/Tera).
+        if (gen.gen === 7 || gen.gen === 8) {
+          expect(
+            result.oracleChecks.length,
+            `Gen ${gen.gen}: expected live oracle checks but got 0`,
+          ).toBeGreaterThan(0);
+        } else {
+          expect(result.oracleChecks).toHaveLength(0);
+        }
       });
     }
   }
