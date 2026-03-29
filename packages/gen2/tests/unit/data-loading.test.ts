@@ -158,6 +158,28 @@ describe("Gen 2 Data Loading", () => {
       expect(() => dm.getSpecies(999)).toThrow();
     });
 
+    it("given gen2 move data, when Roar priority is read, then it should be -1", () => {
+      // Source: Showdown references/pokemon-showdown/data/mods/gen2/moves.ts — roar/whirlwind priority: -1
+      // Source: gen2-ground-truth.md Priority Moves table
+      // Arrange
+      const dm = createGen2DataManager();
+      // Act
+      const move = dm.getMove(GEN2_MOVE_IDS.roar);
+      // Assert
+      expect(move.priority).toBe(-1);
+    });
+
+    it("given gen2 move data, when Whirlwind priority is read, then it should be -1", () => {
+      // Source: Showdown references/pokemon-showdown/data/mods/gen2/moves.ts — roar/whirlwind priority: -1
+      // Source: gen2-ground-truth.md Priority Moves table
+      // Arrange
+      const dm = createGen2DataManager();
+      // Act
+      const move = dm.getMove(GEN2_MOVE_IDS.whirlwind);
+      // Assert
+      expect(move.priority).toBe(-1);
+    });
+
     it("given Pikachu in Gen 2 data, when loaded by species id, then its split Special stats differ as expected", () => {
       // Arrange
       const dm = createGen2DataManager();

@@ -221,32 +221,6 @@
     "addedDate": "2026-03-28"
   },
   {
-    "id": "gen2:mechanics:move-priority:roar",
-    "gen": 2,
-    "suite": "mechanics",
-    "description": "Roar/Whirlwind in Gen 2 have a special go-last mechanism (EFFECT_FORCE_SWITCH, priority 0 in effects_priorities.asm). Showdown and @pkmn/data model this as -1. Our data incorrectly carries the Gen 3+ value of -6. This is a data bug — correct Gen 2 value should be -1.",
-    "ourValue": -6,
-    "oracleValue": -1,
-    "resolution": "showdown-deviation",
-    "source": "pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_FORCE_SWITCH priority 0 (special go-last); Showdown data/mods/gen2/moves.ts — roar priority -1",
-    "sourceUrl": "https://github.com/pret/pokecrystal/blob/master/data/moves/effects_priorities.asm",
-    "oracleVersion": "@pkmn/data@0.10.7",
-    "addedDate": "2026-03-28"
-  },
-  {
-    "id": "gen2:mechanics:move-priority:whirlwind",
-    "gen": 2,
-    "suite": "mechanics",
-    "description": "Whirlwind in Gen 2 has a special go-last mechanism (EFFECT_FORCE_SWITCH, priority 0 in effects_priorities.asm). Showdown and @pkmn/data model this as -1. Our data incorrectly carries the Gen 3+ value of -6. This is a data bug — correct Gen 2 value should be -1.",
-    "ourValue": -6,
-    "oracleValue": -1,
-    "resolution": "showdown-deviation",
-    "source": "pret/pokecrystal data/moves/effects_priorities.asm — EFFECT_FORCE_SWITCH priority 0 (special go-last); Showdown data/mods/gen2/moves.ts — whirlwind priority -1",
-    "sourceUrl": "https://github.com/pret/pokecrystal/blob/master/data/moves/effects_priorities.asm",
-    "oracleVersion": "@pkmn/data@0.10.7",
-    "addedDate": "2026-03-28"
-  },
-  {
     "id": "gen2:data:type-chart:electric-to-steel:effectiveness",
     "gen": 2,
     "suite": "data",
