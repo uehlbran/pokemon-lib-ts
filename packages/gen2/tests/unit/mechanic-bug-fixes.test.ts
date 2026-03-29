@@ -4,7 +4,7 @@
  * Issues fixed:
  * - #214: Metal Powder unconditional (missing transform check)
  * - #251: Counter reflects wrong types (should only reflect Normal/Fighting)
- * - #252: Whirlwind/Roar wrong priority (-1 instead of -6)
+ * - #252: Whirlwind/Roar wrong priority (was -6, correct Gen 2 value is -1)
  * - #253: Hyper Beam recharge not skipped on miss (only on KO)
  * - #325: Attract and Nightmare volatile not cleared on switch-out
  * - #328: Baton Pass missing perish song counter, substitute, and curse transfer
@@ -478,21 +478,23 @@ describe("#251 — Counter reflects ALL physical-type damage in Gen 2", () => {
 // #252: Whirlwind/Roar priority
 // =========================================================================
 
-describe("#252 — Whirlwind/Roar should have priority -6", () => {
-  it("given Gen 2 moves.json, when loading Whirlwind, then priority is -6", () => {
-    // Source: pret/pokecrystal engine/battle/core.asm — Whirlwind/Roar always go last
-    // Source: Bulbapedia — Whirlwind has -6 priority in Gen 2+
+describe("#252 — Whirlwind/Roar should have priority -1 in Gen 2 (not the Gen 3+ -6 value)", () => {
+  it("given Gen 2 moves.json, when loading Whirlwind, then priority is -1", () => {
+    // JUSTIFICATION: Original assertions tested the wrong -6 value (Gen 3+ Showdown import).
+    // Correct Gen 2 value is -1 per Showdown data/mods/gen2/moves.ts and gen2-ground-truth.md.
+    // Source: references/pokemon-showdown/data/mods/gen2/moves.ts — whirlwind: { priority: -1 }
     const dm = createGen2DataManager();
     const move = dm.getMove(MOVE_IDS.whirlwind);
-    expect(move.priority).toBe(-6);
+    expect(move.priority).toBe(-1);
   });
 
-  it("given Gen 2 moves.json, when loading Roar, then priority is -6", () => {
-    // Source: pret/pokecrystal engine/battle/core.asm — Whirlwind/Roar always go last
-    // Source: Bulbapedia — Roar has -6 priority in Gen 2+
+  it("given Gen 2 moves.json, when loading Roar, then priority is -1", () => {
+    // JUSTIFICATION: Original assertions tested the wrong -6 value (Gen 3+ Showdown import).
+    // Correct Gen 2 value is -1 per Showdown data/mods/gen2/moves.ts and gen2-ground-truth.md.
+    // Source: references/pokemon-showdown/data/mods/gen2/moves.ts — roar: { priority: -1 }
     const dm = createGen2DataManager();
     const move = dm.getMove(MOVE_IDS.roar);
-    expect(move.priority).toBe(-6);
+    expect(move.priority).toBe(-1);
   });
 });
 

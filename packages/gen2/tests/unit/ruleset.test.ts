@@ -3000,22 +3000,22 @@ describe("Gen2Ruleset", () => {
       expect(priority).toBe(1);
     });
 
-    it("given Gen 2 ruleset, when getting Roar move priority, then returns -6", () => {
-      // Source: pret/pokecrystal engine/battle/core.asm — Whirlwind/Roar always go last
-      // Priority -6 ensures they go after all other moves including Counter/Mirror Coat (-1)
-      // Reference: Bulbapedia — Roar has priority -6 in Gen 2+
+    it("given Gen 2 ruleset, when getting Roar move priority, then returns -1", () => {
+      // JUSTIFICATION: Original assertions tested the wrong -6 value (Gen 3+ Showdown import).
+      // Correct Gen 2 value is -1 per Showdown data/mods/gen2/moves.ts and gen2-ground-truth.md.
+      // Source: references/pokemon-showdown/data/mods/gen2/moves.ts — roar: { priority: -1 }
       const dm = createGen2DataManager();
       const move = dm.getMove(GEN2_MOVE_IDS.roar);
-      expect(move?.priority).toBe(-6);
+      expect(move?.priority).toBe(-1);
     });
 
-    it("given Gen 2 ruleset, when getting Whirlwind move priority, then returns -6", () => {
-      // Source: pret/pokecrystal engine/battle/core.asm — Whirlwind/Roar always go last
-      // Priority -6 ensures they go after all other moves including Counter/Mirror Coat (-1)
-      // Reference: Bulbapedia — Whirlwind has priority -6 in Gen 2+
+    it("given Gen 2 ruleset, when getting Whirlwind move priority, then returns -1", () => {
+      // JUSTIFICATION: Original assertions tested the wrong -6 value (Gen 3+ Showdown import).
+      // Correct Gen 2 value is -1 per Showdown data/mods/gen2/moves.ts and gen2-ground-truth.md.
+      // Source: references/pokemon-showdown/data/mods/gen2/moves.ts — whirlwind: { priority: -1 }
       const dm = createGen2DataManager();
       const move = dm.getMove(GEN2_MOVE_IDS.whirlwind);
-      expect(move?.priority).toBe(-6);
+      expect(move?.priority).toBe(-1);
     });
   });
 });
