@@ -6,8 +6,6 @@ export default defineConfig({
     alias: workspaceTestAliases(),
   },
   test: {
-    globals: true,
-    environment: "node",
     include: ["tests/**/*.test.ts"],
     coverage: {
       provider: "v8",
