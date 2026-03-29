@@ -18,7 +18,7 @@ import {
   BattleEngine,
   RandomAI,
 } from "@pokemon-lib-ts/battle";
-import type { DataManager, Generation } from "@pokemon-lib-ts/core";
+import type { AbilitySlot, DataManager, Generation, NatureId } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_SLOTS,
   CORE_ITEM_IDS,
@@ -44,7 +44,7 @@ import type { ImplementedGeneration } from "./gen-discovery.js";
 import type { SuiteResult } from "./result-schema.js";
 
 const SMOKE_BATTLES_PER_GEN = 200;
-const TEAM_SIZE = 3;
+const TEAM_SIZE = 6;
 const MAX_TURNS = 200;
 const BASE_SEED = 0xbabe_cafe;
 
@@ -84,7 +84,7 @@ function createRuleset(gen: number): GenerationRuleset {
   return (factories[gen] ?? (() => new Gen1Ruleset()))();
 }
 
-function generateMinimalTeam(
+export function generateMinimalTeam(
   gen: number,
   dataManager: DataManager,
   rng: SeededRandom,
@@ -94,6 +94,12 @@ function generateMinimalTeam(
   const shuffled = rng.shuffle([...allSpecies]);
   const team = [];
   let nextUid = 0;
+
+  // Pre-build item pool and nature list once per team
+  // Items: Gen 2+ has held items in the DataManager (62 in Gen 2, growing in later gens)
+  // Natures: Gen 3+ only (Gen 1-2 have no nature mechanic)
+  const allItems = gen >= 2 ? dataManager.getAllItems() : [];
+  const allNatures = gen >= 3 ? dataManager.getAllNatures() : [];
 
   for (const species of shuffled) {
     if (team.length >= TEAM_SIZE) break;
@@ -105,7 +111,9 @@ function generateMinimalTeam(
     const uniqueIds = [...new Set(learnableMoveIds)];
     if (uniqueIds.length === 0) continue;
 
-    const moves = uniqueIds.slice(0, 4).flatMap((id) => {
+    // Shuffle the move pool and pick up to 4
+    const shuffledMoveIds = rng.shuffle([...uniqueIds]);
+    const moves = shuffledMoveIds.slice(0, 4).flatMap((id) => {
       try {
         const md = dataManager.getMove(id);
         return [{ moveId: id, currentPP: md.pp, maxPP: md.pp, ppUps: 0 }];
@@ -134,17 +142,57 @@ function generateMinimalTeam(
           });
     const evs = gen <= 2 ? createStatExp() : createEvs();
 
-    const abilitySlot = CORE_ABILITY_SLOTS.normal1;
+    // Randomly select an ability slot from available options
     let ability = "";
+    let abilitySlot: AbilitySlot = CORE_ABILITY_SLOTS.normal1;
     if (gen >= 3) {
-      const candidate = species.abilities.normal[0] ?? "";
-      if (!candidate) continue;
+      const candidates: [string, AbilitySlot][] = [];
+      if (species.abilities.normal[0])
+        candidates.push([species.abilities.normal[0], CORE_ABILITY_SLOTS.normal1]);
+      if (species.abilities.normal[1])
+        candidates.push([species.abilities.normal[1], CORE_ABILITY_SLOTS.normal2]);
+      if (species.abilities.hidden)
+        candidates.push([species.abilities.hidden, CORE_ABILITY_SLOTS.hidden]);
+
+      if (candidates.length === 0) continue;
+
+      // Pick a random slot
+      const pick = rng.pick(candidates);
+      const [candidateId, candidateSlot] = pick;
       try {
-        dataManager.getAbility(candidate);
-        ability = candidate;
+        dataManager.getAbility(candidateId);
+        ability = candidateId;
+        abilitySlot = candidateSlot;
       } catch {
-        continue;
+        // Fall back to first candidate (if the random pick happened to be candidates[0]
+        // and it failed, this re-tries the same entry — both will fail together, which is
+        // correct since a bad ability reference means the species should be skipped).
+        const first = candidates[0];
+        if (!first) continue;
+        try {
+          dataManager.getAbility(first[0]);
+          ability = first[0];
+          abilitySlot = first[1];
+        } catch {
+          continue;
+        }
       }
+    }
+
+    // Randomly pick a held item (Gen 2+)
+    let heldItem: string | null = null;
+    if (gen >= 2 && allItems.length > 0) {
+      heldItem = rng.pick(allItems).id;
+    }
+
+    // Randomly pick a nature (Gen 3+), or use neutral for Gen 1-2
+    let nature: NatureId;
+    if (gen <= 2) {
+      nature = CORE_NATURE_IDS.serious;
+    } else if (allNatures.length > 0) {
+      nature = rng.pick(allNatures).id;
+    } else {
+      nature = CORE_NATURE_IDS.hardy;
     }
 
     team.push({
@@ -153,14 +201,14 @@ function generateMinimalTeam(
       nickname: null,
       level: 50,
       experience: 0,
-      nature: gen <= 2 ? CORE_NATURE_IDS.serious : CORE_NATURE_IDS.hardy,
+      nature,
       ivs,
       evs,
       currentHp: 1,
       moves,
       ability,
       abilitySlot,
-      heldItem: null,
+      heldItem,
       status: null,
       friendship: 70,
       gender: "male" as const,
