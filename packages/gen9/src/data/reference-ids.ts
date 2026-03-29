@@ -1000,7 +1000,7 @@ export const GEN9_ABILITY_IDS = {
   desolateLand: "desolate-land",
   disguise: "disguise",
   download: "download",
-  dragonSMaw: "dragon's-maw",
+  dragonsMaw: "dragons-maw",
   drizzle: "drizzle",
   drought: "drought",
   drySkin: "dry-skin",

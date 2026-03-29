@@ -486,7 +486,7 @@
     "copyable": true
   },
   {
-    "id": "dragon's-maw",
+    "id": "dragons-maw",
     "displayName": "Dragon's Maw",
     "description": "This Pokemon's offensive stat is multiplied by 1.5 while using a Dragon-type attack.",
     "triggers": ["passive-modifier"],
