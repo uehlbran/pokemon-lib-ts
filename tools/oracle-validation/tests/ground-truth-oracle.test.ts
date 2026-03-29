@@ -25,7 +25,7 @@ describe("runGroundTruthSuite", () => {
     expect(result.notes).toContain("Authority: pret/pokered");
   });
 
-  it("given Gen 2, when running the first ground-truth suite, then the suite is explicitly skipped", () => {
+  it("given Gen 2, when running the ground-truth suite, then all authority-backed cases pass", () => {
     const gen2 = discoverImplementedGenerations(repoRoot).find(
       (generation) => generation.gen === 2,
     );
@@ -33,18 +33,13 @@ describe("runGroundTruthSuite", () => {
 
     const result = runGroundTruthSuite(gen2!, repoRoot);
 
-    expect(result).toEqual({
-      status: "skip",
-      suitePassed: false,
+    expect(result).toMatchObject({
+      status: "pass",
+      suitePassed: true,
       failed: 0,
-      skipped: 1,
       failures: [],
-      notes: [],
-      matchedKnownDisagreements: [],
-      staleDisagreements: [],
-      oracleChecks: [],
-      skipReason: "Ground-truth dataset only implemented for Gen 1 in the initial oracle slice",
     });
+    expect(result.notes).toContain("Authority: pret/pokecrystal");
   });
 });
 
