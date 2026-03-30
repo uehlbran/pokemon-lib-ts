@@ -19,6 +19,7 @@ import {
   CORE_ITEM_IDS,
   CORE_ITEM_TRIGGER_IDS,
   type CORE_MOVE_CATEGORIES,
+  CORE_MOVE_EFFECT_TYPES,
   CORE_SCREEN_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
@@ -829,8 +830,12 @@ describe("#348 — King's Rock flinch restriction", () => {
       effect: {
         type: "multi",
         effects: [
-          { type: "damage" } as const,
-          { type: "volatile-status", status: volatileIds.flinch, chance: 30 } as const,
+          { type: CORE_MOVE_EFFECT_TYPES.damage } as const,
+          {
+            type: CORE_MOVE_EFFECT_TYPES.volatileStatus,
+            status: volatileIds.flinch,
+            chance: 30,
+          } as const,
         ],
       } as MoveEffect,
     });
