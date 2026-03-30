@@ -66,6 +66,7 @@ import {
   getStatStageMultiplier,
   getTypeEffectiveness,
   pokeRound,
+  TYPE_EFFECTIVENESS_MULTIPLIERS,
 } from "@pokemon-lib-ts/core";
 import { GEN9_ABILITY_IDS, GEN9_MOVE_IDS } from "./data/reference-ids.js";
 import {
@@ -1304,7 +1305,7 @@ export function calculateGen9Damage(
   // Source: Showdown data/abilities.ts -- Scrappy
   if (
     attackerAbility === CORE_ABILITY_IDS.scrappy &&
-    effectiveness === 0 &&
+    effectiveness === TYPE_EFFECTIVENESS_MULTIPLIERS.immune &&
     (effectiveMoveType === CORE_TYPE_IDS.normal || effectiveMoveType === CORE_TYPE_IDS.fighting) &&
     defender.types.includes(CORE_TYPE_IDS.ghost)
   ) {
@@ -1316,7 +1317,7 @@ export function calculateGen9Damage(
   }
 
   // If effectiveness === 0: type immunity -- return 0 damage
-  if (effectiveness === 0) {
+  if (effectiveness === TYPE_EFFECTIVENESS_MULTIPLIERS.immune) {
     return {
       damage: 0,
       effectiveness: 0,
@@ -1341,7 +1342,11 @@ export function calculateGen9Damage(
 
   // Wonder Guard: only super-effective moves hit
   // Source: Showdown data/abilities.ts -- Wonder Guard
-  if (!moldBreaker && defenderAbility === "wonder-guard" && effectiveness < 2) {
+  if (
+    !moldBreaker &&
+    defenderAbility === "wonder-guard" &&
+    effectiveness < TYPE_EFFECTIVENESS_MULTIPLIERS.superEffective
+  ) {
     return {
       damage: 0,
       effectiveness,

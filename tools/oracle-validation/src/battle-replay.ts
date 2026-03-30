@@ -17,7 +17,12 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { DataManager, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
-import { CORE_TYPE_IDS, GEN_NUMBERS, getTypeEffectiveness } from "@pokemon-lib-ts/core";
+import {
+  CORE_TYPE_IDS,
+  GEN_NUMBERS,
+  getTypeEffectiveness,
+  TYPE_EFFECTIVENESS_MULTIPLIERS,
+} from "@pokemon-lib-ts/core";
 import { createGen1DataManager } from "@pokemon-lib-ts/gen1";
 import { createGen2DataManager } from "@pokemon-lib-ts/gen2";
 import { createGen3DataManager } from "@pokemon-lib-ts/gen3";
@@ -282,12 +287,18 @@ function validateReplayStructure(replay: ParsedReplay): ReplayValidationResult {
           typeChart as TypeChart,
         );
 
-        if (effectivenessType === PARSED_EVENT_TYPES.supereffective && multiplier < 2) {
+        if (
+          effectivenessType === PARSED_EVENT_TYPES.supereffective &&
+          multiplier < TYPE_EFFECTIVENESS_MULTIPLIERS.superEffective
+        ) {
           typeNotes.push(
             `Turn ${turn.turnNumber}: "${moveEvent.moveName}" super-effective ` +
               `vs ${targetPokemon.species} (${targetTypes.join("/")}), chart gives ×${multiplier} — may be ability/forme/tera`,
           );
-        } else if (effectivenessType === PARSED_EVENT_TYPES.resisted && multiplier > 0.5) {
+        } else if (
+          effectivenessType === PARSED_EVENT_TYPES.resisted &&
+          multiplier > TYPE_EFFECTIVENESS_MULTIPLIERS.halfDamage
+        ) {
           typeNotes.push(
             `Turn ${turn.turnNumber}: "${moveEvent.moveName}" resisted ` +
               `vs ${targetPokemon.species} (${targetTypes.join("/")}), chart gives ×${multiplier} — may be ability/forme/tera`,

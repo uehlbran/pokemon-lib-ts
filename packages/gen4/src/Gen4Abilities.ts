@@ -16,6 +16,7 @@ import {
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
+  TYPE_EFFECTIVENESS_MULTIPLIERS,
 } from "@pokemon-lib-ts/core";
 import { GEN4_ABILITY_IDS, GEN4_ITEM_IDS, GEN4_MOVE_IDS } from "./data/reference-ids";
 import { canInflictGen4Status, isVolatileBlockedByAbility } from "./Gen4MoveEffects";
@@ -346,7 +347,7 @@ function handleSwitchIn(
             for (const selfType of selfTypes) {
               effectiveness *= typeChart[move.type]?.[selfType] ?? 1;
             }
-            if (effectiveness > 1) {
+            if (effectiveness > TYPE_EFFECTIVENESS_MULTIPLIERS.neutral) {
               hasThreateningMove = true;
               break;
             }

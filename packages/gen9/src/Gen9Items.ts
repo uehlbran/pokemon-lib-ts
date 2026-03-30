@@ -20,6 +20,7 @@ import {
   CORE_VOLATILE_IDS,
   CORE_WEATHER_IDS,
   getTypeEffectiveness,
+  TYPE_EFFECTIVENESS_MULTIPLIERS,
 } from "@pokemon-lib-ts/core";
 import { GEN9_ABILITY_IDS, GEN9_ITEM_IDS, GEN9_MOVE_IDS } from "./data/reference-ids";
 import { GEN9_TYPE_CHART } from "./Gen9TypeChart.js";
