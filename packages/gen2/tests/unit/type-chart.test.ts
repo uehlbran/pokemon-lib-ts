@@ -46,6 +46,7 @@ describe("Gen 2 Type Chart", () => {
   it("given Gen 2 type chart, when checking Ghost vs Psychic, then is super effective (2x - Gen 1 bug fixed)", () => {
     // Arrange / Act
     const multiplier = getEffectiveness(chart, CORE_TYPE_IDS.ghost, CORE_TYPE_IDS.psychic);
+    // Source: pokecrystal data/types/type_matchups.asm — Ghost→Psychic = 2×; bug fix from Gen 1 (was 0)
     // Assert
     expect(multiplier).toBe(2);
   });
@@ -55,6 +56,7 @@ describe("Gen 2 Type Chart", () => {
   it("given Gen 2 type chart, when checking Dark vs Psychic, then is super effective (2x)", () => {
     // Arrange / Act
     const multiplier = getEffectiveness(chart, CORE_TYPE_IDS.dark, CORE_TYPE_IDS.psychic);
+    // Source: pokecrystal data/types/type_matchups.asm
     // Assert
     expect(multiplier).toBe(2);
   });
@@ -62,6 +64,7 @@ describe("Gen 2 Type Chart", () => {
   it("given Gen 2 type chart, when checking Psychic vs Dark, then is immune (0x)", () => {
     // Arrange / Act
     const multiplier = getEffectiveness(chart, CORE_TYPE_IDS.psychic, CORE_TYPE_IDS.dark);
+    // Source: pokecrystal data/types/type_matchups.asm
     // Assert
     expect(multiplier).toBe(0);
   });
@@ -71,6 +74,7 @@ describe("Gen 2 Type Chart", () => {
   it("given Gen 2 type chart, when checking Steel resistance to Ghost, then is 0.5x", () => {
     // Arrange / Act
     const multiplier = getEffectiveness(chart, CORE_TYPE_IDS.ghost, CORE_TYPE_IDS.steel);
+    // Source: pokecrystal data/types/type_matchups.asm
     // Assert
     expect(multiplier).toBe(0.5);
   });
@@ -78,6 +82,7 @@ describe("Gen 2 Type Chart", () => {
   it("given Gen 2 type chart, when checking Steel resistance to Dark, then is 0.5x", () => {
     // Arrange / Act
     const multiplier = getEffectiveness(chart, CORE_TYPE_IDS.dark, CORE_TYPE_IDS.steel);
+    // Source: pokecrystal data/types/type_matchups.asm
     // Assert
     expect(multiplier).toBe(0.5);
   });
@@ -87,6 +92,7 @@ describe("Gen 2 Type Chart", () => {
   it("given Gen 2 type chart, when checking Poison vs Bug, then is neutral (1x - changed from Gen 1)", () => {
     // Arrange / Act
     const multiplier = getEffectiveness(chart, CORE_TYPE_IDS.poison, CORE_TYPE_IDS.bug);
+    // Source: pokecrystal data/types/type_matchups.asm
     // Assert
     expect(multiplier).toBe(1);
   });
@@ -94,6 +100,7 @@ describe("Gen 2 Type Chart", () => {
   it("given Gen 2 type chart, when checking Bug vs Poison, then is not very effective (0.5x - changed from Gen 1)", () => {
     // Arrange / Act
     const multiplier = getEffectiveness(chart, CORE_TYPE_IDS.bug, CORE_TYPE_IDS.poison);
+    // Source: pokecrystal data/types/type_matchups.asm
     // Assert
     expect(multiplier).toBe(0.5);
   });
@@ -103,6 +110,7 @@ describe("Gen 2 Type Chart", () => {
   it("given Gen 2 type chart, when checking Normal vs Ghost, then is immune (0x)", () => {
     // Arrange / Act
     const multiplier = getEffectiveness(chart, CORE_TYPE_IDS.normal, CORE_TYPE_IDS.ghost);
+    // Source: pokecrystal data/types/type_matchups.asm
     // Assert
     expect(multiplier).toBe(0);
   });
@@ -110,6 +118,7 @@ describe("Gen 2 Type Chart", () => {
   it("given Gen 2 type chart, when checking Fighting vs Normal, then is super effective (2x)", () => {
     // Arrange / Act
     const multiplier = getEffectiveness(chart, CORE_TYPE_IDS.fighting, CORE_TYPE_IDS.normal);
+    // Source: pokecrystal data/types/type_matchups.asm
     // Assert
     expect(multiplier).toBe(2);
   });
@@ -137,6 +146,7 @@ describe("Gen 2 Type Chart", () => {
       const chart = GEN2_TYPE_CHART;
       // Act
       const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.normal, CORE_TYPE_IDS.steel);
+      // Source: pokecrystal data/types/type_matchups.asm
       // Assert
       expect(effectiveness).toBe(0.5);
     });
@@ -146,6 +156,7 @@ describe("Gen 2 Type Chart", () => {
       const chart = GEN2_TYPE_CHART;
       // Act
       const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.fire, CORE_TYPE_IDS.steel);
+      // Source: pokecrystal data/types/type_matchups.asm
       // Assert
       expect(effectiveness).toBe(2);
     });
@@ -177,6 +188,7 @@ describe("Gen 2 Type Chart", () => {
       const chart = GEN2_TYPE_CHART;
       // Act
       const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.grass, CORE_TYPE_IDS.steel);
+      // Source: pokecrystal data/types/type_matchups.asm
       // Assert
       expect(effectiveness).toBe(0.5);
     });
@@ -186,6 +198,7 @@ describe("Gen 2 Type Chart", () => {
       const chart = GEN2_TYPE_CHART;
       // Act
       const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.ice, CORE_TYPE_IDS.steel);
+      // Source: pokecrystal data/types/type_matchups.asm
       // Assert
       expect(effectiveness).toBe(0.5);
     });
@@ -195,6 +208,7 @@ describe("Gen 2 Type Chart", () => {
       const chart = GEN2_TYPE_CHART;
       // Act
       const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.fighting, CORE_TYPE_IDS.steel);
+      // Source: pokecrystal data/types/type_matchups.asm
       // Assert
       expect(effectiveness).toBe(2);
     });
@@ -204,6 +218,7 @@ describe("Gen 2 Type Chart", () => {
       const chart = GEN2_TYPE_CHART;
       // Act
       const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.poison, CORE_TYPE_IDS.steel);
+      // Source: pokecrystal data/types/type_matchups.asm
       // Assert
       expect(effectiveness).toBe(0);
     });
@@ -213,6 +228,7 @@ describe("Gen 2 Type Chart", () => {
       const chart = GEN2_TYPE_CHART;
       // Act
       const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.ground, CORE_TYPE_IDS.steel);
+      // Source: pokecrystal data/types/type_matchups.asm
       // Assert
       expect(effectiveness).toBe(2);
     });
@@ -222,6 +238,7 @@ describe("Gen 2 Type Chart", () => {
       const chart = GEN2_TYPE_CHART;
       // Act
       const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.flying, CORE_TYPE_IDS.steel);
+      // Source: pokecrystal data/types/type_matchups.asm
       // Assert
       expect(effectiveness).toBe(0.5);
     });
@@ -231,6 +248,7 @@ describe("Gen 2 Type Chart", () => {
       const chart = GEN2_TYPE_CHART;
       // Act
       const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.psychic, CORE_TYPE_IDS.steel);
+      // Source: pokecrystal data/types/type_matchups.asm
       // Assert
       expect(effectiveness).toBe(0.5);
     });
@@ -240,6 +258,7 @@ describe("Gen 2 Type Chart", () => {
       const chart = GEN2_TYPE_CHART;
       // Act
       const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.bug, CORE_TYPE_IDS.steel);
+      // Source: pokecrystal data/types/type_matchups.asm
       // Assert
       expect(effectiveness).toBe(0.5);
     });
@@ -249,6 +268,7 @@ describe("Gen 2 Type Chart", () => {
       const chart = GEN2_TYPE_CHART;
       // Act
       const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.rock, CORE_TYPE_IDS.steel);
+      // Source: pokecrystal data/types/type_matchups.asm
       // Assert
       expect(effectiveness).toBe(0.5);
     });
@@ -258,6 +278,7 @@ describe("Gen 2 Type Chart", () => {
       const chart = GEN2_TYPE_CHART;
       // Act
       const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.ghost, CORE_TYPE_IDS.steel);
+      // Source: pokecrystal data/types/type_matchups.asm
       // Assert
       expect(effectiveness).toBe(0.5);
     });
@@ -267,6 +288,7 @@ describe("Gen 2 Type Chart", () => {
       const chart = GEN2_TYPE_CHART;
       // Act
       const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.dragon, CORE_TYPE_IDS.steel);
+      // Source: pokecrystal data/types/type_matchups.asm
       // Assert
       expect(effectiveness).toBe(0.5);
     });
@@ -276,6 +298,7 @@ describe("Gen 2 Type Chart", () => {
       const chart = GEN2_TYPE_CHART;
       // Act
       const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.dark, CORE_TYPE_IDS.steel);
+      // Source: pokecrystal data/types/type_matchups.asm
       // Assert
       expect(effectiveness).toBe(0.5);
     });
@@ -285,6 +308,7 @@ describe("Gen 2 Type Chart", () => {
       const chart = GEN2_TYPE_CHART;
       // Act
       const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.steel, CORE_TYPE_IDS.steel);
+      // Source: pokecrystal data/types/type_matchups.asm
       // Assert
       expect(effectiveness).toBe(0.5);
     });
@@ -352,6 +376,7 @@ describe("Gen 2 Type Chart", () => {
       const chart = GEN2_TYPE_CHART;
       // Act
       const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.fighting, CORE_TYPE_IDS.dark);
+      // Source: pokecrystal data/types/type_matchups.asm
       // Assert
       expect(effectiveness).toBe(2);
     });
@@ -388,6 +413,7 @@ describe("Gen 2 Type Chart", () => {
       const chart = GEN2_TYPE_CHART;
       // Act
       const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.psychic, CORE_TYPE_IDS.dark);
+      // Source: pokecrystal data/types/type_matchups.asm
       // Assert
       expect(effectiveness).toBe(0);
     });
@@ -397,6 +423,7 @@ describe("Gen 2 Type Chart", () => {
       const chart = GEN2_TYPE_CHART;
       // Act
       const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.bug, CORE_TYPE_IDS.dark);
+      // Source: pokecrystal data/types/type_matchups.asm
       // Assert
       expect(effectiveness).toBe(2);
     });
@@ -415,6 +442,7 @@ describe("Gen 2 Type Chart", () => {
       const chart = GEN2_TYPE_CHART;
       // Act
       const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.ghost, CORE_TYPE_IDS.dark);
+      // Source: pokecrystal data/types/type_matchups.asm
       // Assert
       expect(effectiveness).toBe(0.5);
     });
@@ -433,6 +461,7 @@ describe("Gen 2 Type Chart", () => {
       const chart = GEN2_TYPE_CHART;
       // Act
       const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.dark, CORE_TYPE_IDS.dark);
+      // Source: pokecrystal data/types/type_matchups.asm
       // Assert
       expect(effectiveness).toBe(0.5);
     });
@@ -455,6 +484,7 @@ describe("Gen 2 Type Chart", () => {
       const chart = GEN2_TYPE_CHART;
       // Act
       const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.ghost, CORE_TYPE_IDS.psychic);
+      // Source: pokecrystal data/types/type_matchups.asm — Ghost→Psychic = 2×; bug fix from Gen 1 (was 0)
       // Assert
       expect(effectiveness).toBe(2);
     });
@@ -464,6 +494,7 @@ describe("Gen 2 Type Chart", () => {
       const chart = GEN2_TYPE_CHART;
       // Act
       const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.bug, CORE_TYPE_IDS.poison);
+      // Source: pokecrystal data/types/type_matchups.asm
       // Assert
       expect(effectiveness).toBe(0.5);
     });
@@ -473,6 +504,7 @@ describe("Gen 2 Type Chart", () => {
       const chart = GEN2_TYPE_CHART;
       // Act
       const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.poison, CORE_TYPE_IDS.bug);
+      // Source: pokecrystal data/types/type_matchups.asm
       // Assert
       expect(effectiveness).toBe(1);
     });
@@ -482,6 +514,7 @@ describe("Gen 2 Type Chart", () => {
       const chart = GEN2_TYPE_CHART;
       // Act
       const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.ice, CORE_TYPE_IDS.fire);
+      // Source: pokecrystal data/types/type_matchups.asm
       // Assert
       expect(effectiveness).toBe(0.5);
     });
@@ -495,6 +528,7 @@ describe("Gen 2 Type Chart", () => {
       const chart = GEN2_TYPE_CHART;
       // Act
       const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.normal, CORE_TYPE_IDS.ghost);
+      // Source: pokecrystal data/types/type_matchups.asm
       // Assert
       expect(effectiveness).toBe(0);
     });
@@ -504,6 +538,7 @@ describe("Gen 2 Type Chart", () => {
       const chart = GEN2_TYPE_CHART;
       // Act
       const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.ghost, CORE_TYPE_IDS.normal);
+      // Source: pokecrystal data/types/type_matchups.asm
       // Assert
       expect(effectiveness).toBe(0);
     });
@@ -513,6 +548,7 @@ describe("Gen 2 Type Chart", () => {
       const chart = GEN2_TYPE_CHART;
       // Act
       const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.fighting, CORE_TYPE_IDS.ghost);
+      // Source: pokecrystal data/types/type_matchups.asm
       // Assert
       expect(effectiveness).toBe(0);
     });
@@ -522,6 +558,7 @@ describe("Gen 2 Type Chart", () => {
       const chart = GEN2_TYPE_CHART;
       // Act
       const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.electric, CORE_TYPE_IDS.ground);
+      // Source: pokecrystal data/types/type_matchups.asm
       // Assert
       expect(effectiveness).toBe(0);
     });
@@ -531,6 +568,7 @@ describe("Gen 2 Type Chart", () => {
       const chart = GEN2_TYPE_CHART;
       // Act
       const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.ground, CORE_TYPE_IDS.flying);
+      // Source: pokecrystal data/types/type_matchups.asm
       // Assert
       expect(effectiveness).toBe(0);
     });
@@ -540,6 +578,7 @@ describe("Gen 2 Type Chart", () => {
       const chart = GEN2_TYPE_CHART;
       // Act
       const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.poison, CORE_TYPE_IDS.steel);
+      // Source: pokecrystal data/types/type_matchups.asm
       // Assert
       expect(effectiveness).toBe(0);
     });
@@ -549,6 +588,7 @@ describe("Gen 2 Type Chart", () => {
       const chart = GEN2_TYPE_CHART;
       // Act
       const effectiveness = getEffectiveness(chart, CORE_TYPE_IDS.psychic, CORE_TYPE_IDS.dark);
+      // Source: pokecrystal data/types/type_matchups.asm
       // Assert
       expect(effectiveness).toBe(0);
     });
