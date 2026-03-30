@@ -20,6 +20,7 @@ import {
   type MoveEffectResult,
 } from "@pokemon-lib-ts/battle";
 import type { SeededRandom } from "@pokemon-lib-ts/core";
+import { CORE_VOLATILE_IDS } from "@pokemon-lib-ts/core";
 
 // ---------------------------------------------------------------------------
 // Default empty result
@@ -168,7 +169,7 @@ function handleQuickGuard(
 
   return {
     ...base,
-    selfVolatileInflicted: "quick-guard",
+    selfVolatileInflicted: CORE_VOLATILE_IDS.quickGuard,
     selfVolatileData: { turnsLeft: 1 },
     messages: ["Quick Guard protected the team!"],
   };
@@ -208,7 +209,7 @@ function handleWideGuard(
 
   return {
     ...base,
-    selfVolatileInflicted: "wide-guard",
+    selfVolatileInflicted: CORE_VOLATILE_IDS.wideGuard,
     selfVolatileData: { turnsLeft: 1 },
     messages: ["Wide Guard protected the team!"],
   };
