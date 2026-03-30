@@ -964,7 +964,7 @@ export abstract class BaseRuleset implements GenerationRuleset {
 
   // Source: default for Gen 3-6; Gen 7+ overrides to 2-5 turn range
   processConfusionTurn(active: ActivePokemon, _state: BattleState): boolean {
-    const conf = active.volatileStatuses.get("confusion");
+    const conf = active.volatileStatuses.get(CORE_VOLATILE_IDS.confusion);
     if (!conf) return false;
     conf.turnsLeft--;
     return conf.turnsLeft > 0;
@@ -972,7 +972,7 @@ export abstract class BaseRuleset implements GenerationRuleset {
 
   // Source: default for Gen 3+
   processBoundTurn(active: ActivePokemon, _state: BattleState): boolean {
-    const bound = active.volatileStatuses.get("bound");
+    const bound = active.volatileStatuses.get(CORE_VOLATILE_IDS.bound);
     if (!bound) return false;
     bound.turnsLeft--;
     return bound.turnsLeft > 0;

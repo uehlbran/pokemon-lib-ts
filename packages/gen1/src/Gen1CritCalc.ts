@@ -1,5 +1,6 @@
 import type { ActivePokemon } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonSpeciesData, SeededRandom } from "@pokemon-lib-ts/core";
+import { CORE_VOLATILE_IDS } from "@pokemon-lib-ts/core";
 
 /**
  * Moves with a high critical hit ratio in Gen 1.
@@ -82,7 +83,7 @@ export function rollGen1Critical(
   attackerSpecies: PokemonSpeciesData,
   rng: SeededRandom,
 ): boolean {
-  const hasFocusEnergy = attacker.volatileStatuses.has("focus-energy");
+  const hasFocusEnergy = attacker.volatileStatuses.has(CORE_VOLATILE_IDS.focusEnergy);
   const highCrit = isGen1HighCritMove(move);
   const critRate = getGen1CritRate(attackerSpecies.baseStats.speed, hasFocusEnergy, highCrit);
 

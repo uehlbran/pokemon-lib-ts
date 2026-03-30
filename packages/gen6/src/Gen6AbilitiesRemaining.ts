@@ -147,7 +147,7 @@ function handleHarvest(ctx: AbilityContext): AbilityResult {
 
   if (pokemon.pokemon.heldItem) return NO_EFFECT;
 
-  const harvestData = pokemon.volatileStatuses.get("harvest-berry");
+  const harvestData = pokemon.volatileStatuses.get(CORE_VOLATILE_IDS.harvestBerry);
   if (!harvestData?.data?.berryId) return NO_EFFECT;
 
   const berryId = harvestData.data.berryId as string;

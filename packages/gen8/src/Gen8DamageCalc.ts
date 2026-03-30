@@ -479,7 +479,7 @@ function getAttackStat(
     isPhysical &&
     !isBodyPress &&
     ability === "slow-start" &&
-    attacker.volatileStatuses.has("slow-start")
+    attacker.volatileStatuses.has(CORE_VOLATILE_IDS.slowStart)
   ) {
     rawStat = Math.floor(rawStat / 2);
   }
@@ -1460,7 +1460,7 @@ export function calculateGen8Damage(
     ) {
       attacker.volatileStatuses.set(CORE_VOLATILE_IDS.unburden, { turnsLeft: -1 });
     }
-    attacker.volatileStatuses.set("gem-used" as VolatileStatus, { turnsLeft: 1 });
+    attacker.volatileStatuses.set(CORE_VOLATILE_IDS.gemUsed, { turnsLeft: 1 });
   }
 
   const breakdown: DamageBreakdown = {

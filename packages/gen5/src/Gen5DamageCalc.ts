@@ -257,7 +257,7 @@ function getAttackStat(
   // Flash Fire: 1.5x attack stat for Fire-type moves when Flash Fire is active
   // Source: Showdown data/abilities.ts — flash-fire: onModifyAtk/onModifySpA chainModify(1.5)
   // This is a stat modifier (not base power), per Showdown's implementation
-  if (moveType === "fire" && attacker.volatileStatuses.has("flash-fire")) {
+  if (moveType === "fire" && attacker.volatileStatuses.has(CORE_VOLATILE_IDS.flashFire)) {
     rawStat = Math.floor((rawStat * 150) / 100);
   }
 
@@ -275,7 +275,11 @@ function getAttackStat(
 
   // Slow Start: halve Attack for the first 5 turns
   // Source: Showdown data/abilities.ts -- Slow Start
-  if (isPhysical && ability === "slow-start" && attacker.volatileStatuses.has("slow-start")) {
+  if (
+    isPhysical &&
+    ability === "slow-start" &&
+    attacker.volatileStatuses.has(CORE_VOLATILE_IDS.slowStart)
+  ) {
     rawStat = Math.floor(rawStat / 2);
   }
 
@@ -1081,7 +1085,7 @@ export function calculateGen5Damage(
     // held an item that was consumed this move. Showdown uses source.volatiles['gem']
     // for exactly this guard. turnsLeft: 1 ensures the engine clears it at end-of-turn.
     // Source: Showdown data/moves.ts -- thief/covet: if (source.item || source.volatiles['gem']) return;
-    attacker.volatileStatuses.set("gem-used" as import("@pokemon-lib-ts/core").VolatileStatus, {
+    attacker.volatileStatuses.set(CORE_VOLATILE_IDS.gemUsed, {
       turnsLeft: 1,
     });
   }

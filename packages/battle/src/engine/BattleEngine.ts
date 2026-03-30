@@ -31,7 +31,11 @@ import {
   BATTLE_ITEM_EFFECT_TYPES,
   BATTLE_ITEM_EFFECT_VALUES,
 } from "../constants/effect-protocol";
-import { BATTLE_EVENT_TYPES, BATTLE_SOURCE_IDS } from "../constants/reference-ids";
+import {
+  BATTLE_EVENT_TYPES,
+  BATTLE_PHASE_IDS,
+  BATTLE_SOURCE_IDS,
+} from "../constants/reference-ids";
 import type {
   AvailableMove,
   BattleConfig,
@@ -152,10 +156,10 @@ interface PreDamageResolutionParams {
  */
 export class BattleEngine implements BattleEventEmitter {
   private static readonly STABLE_CHECKPOINT_PHASES: ReadonlySet<BattlePhase> = new Set([
-    "battle-start",
-    "action-select",
-    "switch-prompt",
-    "battle-end",
+    BATTLE_PHASE_IDS.battleStart,
+    BATTLE_PHASE_IDS.actionSelect,
+    BATTLE_PHASE_IDS.switchPrompt,
+    BATTLE_PHASE_IDS.battleEnd,
   ]);
 
   // ─── State mutation model ───────────────────────────────────────────────────
@@ -681,7 +685,7 @@ export class BattleEngine implements BattleEventEmitter {
     sidesNeedingSwitch: Set<0 | 1>;
     pendingSelfSwitches: Map<0 | 1, PendingSelfSwitchState>;
   } {
-    if (state.phase !== "switch-prompt") {
+    if (state.phase !== BATTLE_PHASE_IDS.switchPrompt) {
       return {
         pendingSwitches: new Map(),
         sidesNeedingSwitch: new Set(),
@@ -743,7 +747,7 @@ export class BattleEngine implements BattleEventEmitter {
     this.dataManager = dataManager;
 
     this.state = {
-      phase: "battle-start",
+      phase: BATTLE_PHASE_IDS.battleStart,
       generation: config.generation,
       format: config.format,
       turnNumber: 0,
@@ -861,7 +865,7 @@ export class BattleEngine implements BattleEventEmitter {
    * @throws If the battle is not in `battle-start` phase (i.e., already started).
    */
   start(): void {
-    if (this.state.phase !== "battle-start") {
+    if (this.state.phase !== BATTLE_PHASE_IDS.battleStart) {
       throw new Error(`Cannot start battle in phase ${this.state.phase}`);
     }
 
@@ -914,7 +918,7 @@ export class BattleEngine implements BattleEventEmitter {
     // at battle start so they are considered participants immediately.
     this.recordParticipation();
 
-    this.transitionTo("action-select");
+    this.transitionTo(BATTLE_PHASE_IDS.actionSelect);
   }
 
   /**
@@ -931,7 +935,7 @@ export class BattleEngine implements BattleEventEmitter {
    * @throws If the battle has already ended.
    */
   submitAction(side: 0 | 1, action: BattleAction): void {
-    if (this.state.phase !== "action-select") {
+    if (this.state.phase !== BATTLE_PHASE_IDS.actionSelect) {
       throw new Error(`Cannot submit action in phase ${this.state.phase}`);
     }
 
@@ -1006,7 +1010,7 @@ export class BattleEngine implements BattleEventEmitter {
    * @throws If the given side does not need to switch.
    */
   submitSwitch(side: 0 | 1, teamSlot: number): void {
-    if (this.state.phase !== "switch-prompt") {
+    if (this.state.phase !== BATTLE_PHASE_IDS.switchPrompt) {
       throw new Error(`Cannot submit switch in phase ${this.state.phase}`);
     }
 
@@ -1078,11 +1082,11 @@ export class BattleEngine implements BattleEventEmitter {
 
       // Check again for battle end after switches
       if (this.checkBattleEnd()) {
-        this.transitionTo("battle-end");
+        this.transitionTo(BATTLE_PHASE_IDS.battleEnd);
         return;
       }
 
-      this.transitionTo("action-select");
+      this.transitionTo(BATTLE_PHASE_IDS.actionSelect);
     }
   }
 
@@ -1604,7 +1608,7 @@ export class BattleEngine implements BattleEventEmitter {
   }
 
   private static relinkRestoredActivePokemon(state: BattleState): void {
-    const expectedActiveSlotsPerSide = state.phase === "battle-start" ? 0 : 1;
+    const expectedActiveSlotsPerSide = state.phase === BATTLE_PHASE_IDS.battleStart ? 0 : 1;
 
     for (const side of state.sides) {
       if (!Array.isArray(side.active)) {
@@ -1870,12 +1874,12 @@ export class BattleEngine implements BattleEventEmitter {
     const turnStartIndex = this.eventLog.length;
 
     // --- turn-start ---
-    this.transitionTo("turn-start");
+    this.transitionTo(BATTLE_PHASE_IDS.turnStart);
     this.state.turnNumber++;
     this.emit({ type: BATTLE_EVENT_TYPES.turnStart, turnNumber: this.state.turnNumber });
 
     // --- turn-resolve ---
-    this.transitionTo("turn-resolve");
+    this.transitionTo(BATTLE_PHASE_IDS.turnResolve);
 
     this.prepareGoFirstItemActivations(actions);
 
@@ -1914,7 +1918,7 @@ export class BattleEngine implements BattleEventEmitter {
         this.executeMove(action, actor, 2);
         this.checkMidTurnFaints({ attackerSide: action.side });
         if (this.checkBattleEnd()) {
-          this.transitionTo("battle-end");
+          this.transitionTo(BATTLE_PHASE_IDS.battleEnd);
           this.recordTurnHistory(this.state.turnNumber, submittedActions, turnStartIndex);
           return;
         }
@@ -1985,7 +1989,7 @@ export class BattleEngine implements BattleEventEmitter {
     }
 
     // --- turn-end ---
-    this.transitionTo("turn-end");
+    this.transitionTo(BATTLE_PHASE_IDS.turnEnd);
     this.processEndOfTurn();
 
     if (this.state.ended) {
@@ -1994,16 +1998,16 @@ export class BattleEngine implements BattleEventEmitter {
     }
 
     // --- faint-check ---
-    this.transitionTo("faint-check");
+    this.transitionTo(BATTLE_PHASE_IDS.faintCheck);
     if (this.checkBattleEnd()) {
-      this.transitionTo("battle-end");
+      this.transitionTo(BATTLE_PHASE_IDS.battleEnd);
       this.recordTurnHistory(this.state.turnNumber, submittedActions, turnStartIndex);
       return;
     }
 
     // If any pokemon need replacement, prompt for switch
     if (this.needsSwitchPrompt()) {
-      this.transitionTo("switch-prompt");
+      this.transitionTo(BATTLE_PHASE_IDS.switchPrompt);
       this.recordTurnHistory(this.state.turnNumber, submittedActions, turnStartIndex);
       return;
     }
@@ -2027,7 +2031,7 @@ export class BattleEngine implements BattleEventEmitter {
     }
 
     // Next turn
-    this.transitionTo("action-select");
+    this.transitionTo(BATTLE_PHASE_IDS.actionSelect);
   }
 
   private executeMove(action: MoveAction, actor: ActivePokemon, powerMultiplier = 1): void {
@@ -2422,7 +2426,7 @@ export class BattleEngine implements BattleEventEmitter {
 
     // Quick Guard check (Gen 5+): blocks moves with natural priority > 0 (except Feint)
     // Source: Showdown Gen 5 quickguard condition — blocks if dex.moves.get(id).priority > 0 && not feint
-    if (defender.volatileStatuses.has("quick-guard") && moveData.flags.protect) {
+    if (defender.volatileStatuses.has(CORE_VOLATILE_IDS.quickGuard) && moveData.flags.protect) {
       const naturalPriority: number = moveData.priority ?? 0;
       if (moveData.id !== "feint" && naturalPriority > 0) {
         this.emit({
@@ -2437,7 +2441,7 @@ export class BattleEngine implements BattleEventEmitter {
 
     // Wide Guard check (Gen 5+): blocks spread moves (all-adjacent, all-adjacent-foes).
     // Source: Showdown wideguard condition — blocks if move.target is allAdjacent or allAdjacentFoes
-    if (defender.volatileStatuses.has("wide-guard") && moveData.flags.protect) {
+    if (defender.volatileStatuses.has(CORE_VOLATILE_IDS.wideGuard) && moveData.flags.protect) {
       const moveTarget = moveData.target ?? "";
       if (moveTarget === "all-adjacent" || moveTarget === "all-adjacent-foes") {
         this.emit({
@@ -3766,7 +3770,7 @@ export class BattleEngine implements BattleEventEmitter {
       // consistent for synchronous listeners — mirrors the checkBattleEnd() pattern.
       this.state.ended = true;
       this.state.winner = 0;
-      this.transitionTo("battle-end");
+      this.transitionTo(BATTLE_PHASE_IDS.battleEnd);
       // Side 0 (player) wins by catching
       this.emit({ type: BATTLE_EVENT_TYPES.battleEnd, winner: 0 });
     } else {
@@ -4293,7 +4297,7 @@ export class BattleEngine implements BattleEventEmitter {
       this.emit({ type: BATTLE_EVENT_TYPES.message, text: "Got away safely!" });
       this.state.ended = true;
       this.state.winner = null;
-      this.transitionTo("battle-end");
+      this.transitionTo(BATTLE_PHASE_IDS.battleEnd);
       this.emit({ type: BATTLE_EVENT_TYPES.battleEnd, winner: null });
       return;
     }
@@ -5673,7 +5677,7 @@ export class BattleEngine implements BattleEventEmitter {
           // Berry IDs always end with "-berry" per Showdown convention.
           const consumedItemId = effect.value as string;
           if (consumedItemId?.endsWith("-berry")) {
-            pokemon.volatileStatuses.set("harvest-berry", {
+            pokemon.volatileStatuses.set(CORE_VOLATILE_IDS.harvestBerry, {
               turnsLeft: -1,
               data: { berryId: consumedItemId },
             });

@@ -649,10 +649,10 @@ export class Gen8Ruleset extends BaseRuleset {
       isIceFaceActive(
         defender.pokemon.speciesId,
         defender.ability,
-        defender.volatileStatuses.has("ice-face-broken"),
+        defender.volatileStatuses.has(CORE_VOLATILE_IDS.iceFaceBroken),
       )
     ) {
-      defender.volatileStatuses.set("ice-face-broken", { turnsLeft: -1 });
+      defender.volatileStatuses.set(CORE_VOLATILE_IDS.iceFaceBroken, { turnsLeft: -1 });
       return {
         damage: 0,
         survived: true,
@@ -666,11 +666,11 @@ export class Gen8Ruleset extends BaseRuleset {
     // Source: Showdown data/abilities.ts -- disguise onDamage, Gen 8: Math.ceil(maxhp / 8)
     if (
       defender.ability === "disguise" &&
-      !defender.volatileStatuses.has("disguise-broken") &&
+      !defender.volatileStatuses.has(CORE_VOLATILE_IDS.disguiseBroken) &&
       move.category !== CORE_MOVE_CATEGORIES.status
     ) {
       // Mark Disguise as broken
-      defender.volatileStatuses.set("disguise-broken", { turnsLeft: -1 });
+      defender.volatileStatuses.set(CORE_VOLATILE_IDS.disguiseBroken, { turnsLeft: -1 });
       // Guard against NaN/0 maxHp from malformed state — floor at 1 damage
       const chipDamage = maxHp > 0 ? Math.ceil(maxHp / 8) : 1;
       return {
@@ -806,7 +806,7 @@ export class Gen8Ruleset extends BaseRuleset {
     target: ActivePokemon,
     state: BattleState,
   ): boolean {
-    if (volatile === "confusion") {
+    if (volatile === CORE_VOLATILE_IDS.confusion) {
       return checkMistyTerrainConfusionImmunity(target, state);
     }
     return false;

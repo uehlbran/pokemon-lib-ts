@@ -350,7 +350,7 @@ export class Gen1Ruleset implements GenerationRuleset {
     // Source: pokered RageEffect — Gen 1 Rage miss loop.
     // If the attacker is locked into Rage and has missed once (rage-miss-lock),
     // all subsequent Rage uses auto-miss (replicating the cartridge infinite loop).
-    if (attacker.volatileStatuses.has("rage-miss-lock") && move.id === "rage") {
+    if (attacker.volatileStatuses.has(CORE_VOLATILE_IDS.rageMissLock) && move.id === "rage") {
       return false;
     }
 
@@ -1304,7 +1304,7 @@ export class Gen1Ruleset implements GenerationRuleset {
         // Source: gen1-ground-truth.md §8 — burn shares the N/16 counter with poison and Leech Seed.
         // When the toxic-counter volatile exists (set by Toxic), burn uses and increments that
         // shared counter. Without it, burn deals the standard 1/16 max HP per turn.
-        const burnState = pokemon.volatileStatuses.get("toxic-counter");
+        const burnState = pokemon.volatileStatuses.get(CORE_VOLATILE_IDS.toxicCounter);
         if (burnState) {
           const counter = (burnState.data?.counter as number) ?? 1;
           const damage = Math.max(1, Math.floor((maxHp * counter) / 16));
@@ -1322,7 +1322,7 @@ export class Gen1Ruleset implements GenerationRuleset {
         // Source: gen1-ground-truth.md §8 — poison shares the N/16 counter with burn and Leech Seed.
         // When the toxic-counter volatile exists (set by Toxic), poison uses and increments that
         // shared counter. Without it, poison deals the standard 1/16 max HP per turn.
-        const poisonState = pokemon.volatileStatuses.get("toxic-counter");
+        const poisonState = pokemon.volatileStatuses.get(CORE_VOLATILE_IDS.toxicCounter);
         if (poisonState) {
           const counter = (poisonState.data?.counter as number) ?? 1;
           const damage = Math.max(1, Math.floor((maxHp * counter) / 16));
@@ -1340,7 +1340,7 @@ export class Gen1Ruleset implements GenerationRuleset {
         // Badly poisoned (Toxic): damage escalates each turn
         // N/16 max HP, where N starts at 1 and increments each turn
         // The toxic counter is stored under the "toxic-counter" volatile key
-        const toxicState = pokemon.volatileStatuses.get("toxic-counter");
+        const toxicState = pokemon.volatileStatuses.get(CORE_VOLATILE_IDS.toxicCounter);
         const counter = (toxicState?.data?.counter as number) ?? 1;
         const damage = Math.max(1, Math.floor((maxHp * counter) / 16));
         // Increment counter for next turn (ruleset owns this state)
@@ -1673,7 +1673,7 @@ export class Gen1Ruleset implements GenerationRuleset {
     // When Rage misses while the user has the rage volatile, set a miss-lock
     // that causes all subsequent Rage uses to auto-miss (cartridge infinite loop).
     if (actor.volatileStatuses.has(CORE_VOLATILE_IDS.rage)) {
-      actor.volatileStatuses.set("rage-miss-lock", { turnsLeft: -1 });
+      actor.volatileStatuses.set(CORE_VOLATILE_IDS.rageMissLock, { turnsLeft: -1 });
     }
   }
 
@@ -1686,7 +1686,7 @@ export class Gen1Ruleset implements GenerationRuleset {
     _state: BattleState,
   ): void {
     // Source: pret/pokered RageEffect — if defender is using Rage, boost Attack +1 on each hit
-    const rageVolatile = defender.volatileStatuses.get("rage");
+    const rageVolatile = defender.volatileStatuses.get(CORE_VOLATILE_IDS.rage);
     if (rageVolatile) {
       const newStage = Math.min(6, defender.statStages.attack + 1);
       defender.statStages.attack = newStage;
@@ -1954,7 +1954,7 @@ export class Gen1Ruleset implements GenerationRuleset {
     // When the toxic-counter volatile exists (set by Toxic), Leech Seed uses and increments
     // that shared counter. Without it, Leech Seed drains the standard 1/16 max HP.
     const maxHp = this.requireMaxHp(pokemon);
-    const seedState = pokemon.volatileStatuses.get("toxic-counter");
+    const seedState = pokemon.volatileStatuses.get(CORE_VOLATILE_IDS.toxicCounter);
     if (seedState) {
       const counter = (seedState.data?.counter as number) ?? 1;
       const drain = Math.max(1, Math.floor((maxHp * counter) / 16));
