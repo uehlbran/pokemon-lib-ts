@@ -1,5 +1,5 @@
 import type { AbilityContext, ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
-import type { PokemonType, TerrainType } from "@pokemon-lib-ts/core";
+import type { PokemonType, PrimaryStatus, TerrainType } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
@@ -78,7 +78,7 @@ function createSyntheticActivePokemon(overrides: {
       ability: overrides.ability ?? ABILITIES.none,
       abilitySlot: CORE_ABILITY_SLOTS.normal1,
       heldItem: overrides.heldItem ?? null,
-      status: (overrides.status ?? null) as any,
+      status: (overrides.status ?? null) as PrimaryStatus | null,
       friendship: 0,
       gender: CORE_GENDERS.male,
       isShiny: false,
@@ -927,7 +927,7 @@ describe("Suppressed Surge ability", () => {
       nickname: "Tapu Koko",
     });
     // Simulate suppressed ability via suppressedAbility field
-    (pokemon as any).suppressedAbility = ABILITIES.electricSurge;
+    (pokemon as Record<string, unknown>).suppressedAbility = ABILITIES.electricSurge;
     const state = createSyntheticBattleState();
     const context = createAbilityContext({ pokemon, state });
 

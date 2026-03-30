@@ -14,6 +14,7 @@ import {
   type MoveData,
   type MoveEffect,
   type PokemonType,
+  type PrimaryStatus,
   SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
@@ -94,9 +95,9 @@ function createOnFieldPokemon(overrides: {
       ability: overrides.ability ?? abilityIds.none,
       abilitySlot: CORE_ABILITY_SLOTS.normal1,
       heldItem: overrides.heldItem ?? null,
-      status: (overrides.status ?? null) as any,
+      status: (overrides.status ?? null) as PrimaryStatus | null,
       friendship: 0,
-      gender: CORE_GENDERS.male as any,
+      gender: CORE_GENDERS.male,
       isShiny: false,
       metLocation: "",
       metLevel: 1,

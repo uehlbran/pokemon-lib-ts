@@ -89,7 +89,7 @@ function createSyntheticOnFieldPokemon(overrides: {
       heldItem: overrides.heldItem ?? null,
       status: null,
       friendship: 0,
-      gender: CORE_GENDERS.male as any,
+      gender: CORE_GENDERS.male,
       isShiny: false,
       metLocation: "",
       metLevel: 1,

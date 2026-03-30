@@ -88,6 +88,7 @@ describe("calculateHp", () => {
     // = floor((2 + 31 + 63) * 50 / 100) + 60
     // = floor(96 * 50 / 100) + 60
     // = 48 + 60 = 108
+    // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — HP formula for base 1 HP species
     expect(calculateHp(1, 31, 252, 50)).toBe(108);
   });
 
@@ -101,6 +102,7 @@ describe("calculateHp", () => {
     // floor((2 * base + IV + floor(EV/4)) * level / 100) + level + 10
     // Charizard (base HP=78), 0 IV, 0 EV, L1:
     // floor((156 + 0 + 0) * 1 / 100) + 1 + 10 = floor(1.56) + 11 = 1 + 11 = 12
+    // Source: pret/pokeemerald src/pokemon.c — HP formula minimum inputs (0 IV, 0 EV, L1)
     expect(calculateHp(78, 0, 0, 1)).toBe(12);
   });
 
@@ -109,6 +111,7 @@ describe("calculateHp", () => {
     // floor((2 * base + IV + floor(EV/4)) * level / 100) + level + 10
     // Blissey (base HP=255), 31 IV, 0 EV, L50:
     // floor((510 + 31 + 0) * 50 / 100) + 50 + 10 = floor(27050/100) + 60 = 270 + 60 = 330
+    // Source: pret/pokeemerald src/pokemon.c — HP formula for Blissey (base 255) L50
     expect(calculateHp(255, 31, 0, 50)).toBe(330);
   });
 
@@ -117,6 +120,7 @@ describe("calculateHp", () => {
     // floor((2 * base + IV + floor(EV/4)) * level / 100) + level + 10
     // Blissey (base HP=255), 31 IV, 0 EV, L100:
     // floor((510 + 31 + 0) * 100 / 100) + 100 + 10 = floor(54100/100) + 110 = 541 + 110 = 651
+    // Source: pret/pokeemerald src/pokemon.c — HP formula for Blissey (base 255) L100
     expect(calculateHp(255, 31, 0, 100)).toBe(651);
   });
 });
@@ -127,6 +131,7 @@ describe("calculateStat", () => {
   it("should calculate L50 Charizard Attack with Timid (-Atk)", () => {
     // base 84, IV 31, EV 0, nature 0.9
     // floor((floor(((168+31)*50)/100)+5)*0.9) = floor(104*0.9) = floor(93.6) = 93
+    // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — non-HP stat formula with hindered nature
     expect(calculateStat(84, 31, 0, 50, 0.9)).toBe(93);
   });
 
@@ -147,11 +152,13 @@ describe("calculateStat", () => {
 
   it("should calculate L50 Charizard Speed with Timid (+Spe) and 252 EVs", () => {
     // floor((floor(((200+31+63)*50)/100)+5)*1.1) = floor(152*1.1) = floor(167.2) = 167
+    // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — non-HP stat formula with boosted nature
     expect(calculateStat(100, 31, 252, 50, 1.1)).toBe(167);
   });
 
   it("should calculate L100 Charizard Attack with Timid (-Atk)", () => {
     // floor((floor(((168+31)*100)/100)+5)*0.9) = floor(204*0.9) = floor(183.6) = 183
+    // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — non-HP stat formula with hindered nature at L100
     expect(calculateStat(84, 31, 0, 100, 0.9)).toBe(183);
   });
 
@@ -172,6 +179,7 @@ describe("calculateStat", () => {
 
   it("should calculate L100 Charizard Speed with Timid (+Spe) and 252 EVs", () => {
     // floor((floor(((200+31+63)*100)/100)+5)*1.1) = floor(299*1.1) = floor(328.9) = 328
+    // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — non-HP stat formula with boosted nature at L100
     expect(calculateStat(100, 31, 252, 100, 1.1)).toBe(328);
   });
 
@@ -179,6 +187,7 @@ describe("calculateStat", () => {
     // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats
     // Jolly: +Spe, -SpA. So attack is neutral (1.0).
     // Pikachu base Atk: 55, IV 31, EV 0
+    // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — neutral nature leaves attack unmodified
     expect(calculateStat(55, 31, 0, 50, 1.0)).toBe(75);
   });
 
@@ -204,16 +213,22 @@ describe("getNatureModifier", () => {
   it("should return 1.0 for neutral stats", () => {
     // Source: hard-coded nature multipliers in the stat calculator
     expect(getNatureModifier(TIMID, CORE_STAT_IDS.defense)).toBe(1.0);
+    // Source: hard-coded nature multipliers — Timid only boosts Speed and hinders Attack; all other stats neutral
     expect(getNatureModifier(TIMID, CORE_STAT_IDS.spAttack)).toBe(1.0);
+    // Source: hard-coded nature multipliers — Timid only boosts Speed and hinders Attack; all other stats neutral
     expect(getNatureModifier(TIMID, CORE_STAT_IDS.spDefense)).toBe(1.0);
   });
 
   it("should return 1.0 for all stats with a neutral nature", () => {
     // Source: hard-coded nature multipliers in the stat calculator
     expect(getNatureModifier(HARDY, CORE_STAT_IDS.attack)).toBe(1.0);
+    // Source: hard-coded nature multipliers — Hardy is a neutral nature; all stats are 1.0x
     expect(getNatureModifier(HARDY, CORE_STAT_IDS.defense)).toBe(1.0);
+    // Source: hard-coded nature multipliers — Hardy is a neutral nature; all stats are 1.0x
     expect(getNatureModifier(HARDY, CORE_STAT_IDS.spAttack)).toBe(1.0);
+    // Source: hard-coded nature multipliers — Hardy is a neutral nature; all stats are 1.0x
     expect(getNatureModifier(HARDY, CORE_STAT_IDS.spDefense)).toBe(1.0);
+    // Source: hard-coded nature multipliers — Hardy is a neutral nature; all stats are 1.0x
     expect(getNatureModifier(HARDY, CORE_STAT_IDS.speed)).toBe(1.0);
   });
 });
@@ -237,11 +252,17 @@ describe("calculateAllStats", () => {
 
     const stats = calculateAllStats(pokemon, charizardSpecies, TIMID);
 
+    // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — all stats L50 Timid Charizard
     expect(stats.hp).toBe(153);
+    // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — Attack with Timid (-Atk, 0.9x)
     expect(stats.attack).toBe(93); // Timid: -Atk (0.9)
+    // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — Defense neutral
     expect(stats.defense).toBe(98);
+    // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — SpAtk 252 EVs neutral
     expect(stats.spAttack).toBe(161);
+    // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — SpDef 4 EVs neutral
     expect(stats.spDefense).toBe(106);
+    // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — Speed with Timid (+Spe, 1.1x)
     expect(stats.speed).toBe(167); // Timid: +Spe (1.1)
   });
 
@@ -256,11 +277,17 @@ describe("calculateAllStats", () => {
 
     const stats = calculateAllStats(pokemon, charizardSpecies, TIMID);
 
+    // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — all stats L100 Timid Charizard
     expect(stats.hp).toBe(297);
+    // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — Attack with Timid (-Atk, 0.9x) L100
     expect(stats.attack).toBe(183); // Timid: -Atk (0.9)
+    // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — Defense neutral L100
     expect(stats.defense).toBe(192);
+    // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — SpAtk 252 EVs neutral L100
     expect(stats.spAttack).toBe(317);
+    // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — SpDef 4 EVs neutral L100
     expect(stats.spDefense).toBe(207);
+    // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — Speed with Timid (+Spe, 1.1x) L100
     expect(stats.speed).toBe(328); // Timid: +Spe (1.1)
   });
 
@@ -277,11 +304,17 @@ describe("calculateAllStats", () => {
 
     const stats = calculateAllStats(pokemon, pikachuSpecies, JOLLY);
 
+    // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — all stats L50 Jolly Pikachu
     expect(stats.hp).toBe(142);
+    // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — Pikachu Attack neutral L50
     expect(stats.attack).toBe(75);
+    // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — Pikachu Defense neutral L50
     expect(stats.defense).toBe(60);
+    // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — Pikachu SpAtk with Jolly (-SpA, 0.9x)
     expect(stats.spAttack).toBe(63); // Jolly: -SpA (0.9)
+    // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — Pikachu SpDef neutral L50
     expect(stats.spDefense).toBe(70);
+    // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — Pikachu Speed with Jolly (+Spe, 1.1x)
     expect(stats.speed).toBe(156);
   });
 
@@ -298,6 +331,7 @@ describe("calculateAllStats", () => {
 
     const stats = calculateAllStats(pokemon, shedinjaSpecies, HARDY);
 
+    // Source: core stat rules special-case Shedinja HP to 1 (Bulbapedia "Shedinja" — Wonder Guard HP exception)
     expect(stats.hp).toBe(1);
   });
 
@@ -324,6 +358,7 @@ describe("calculateAllStats", () => {
 
     const stats = calculateAllStats(pokemon, customSpecies, HARDY);
 
+    // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — HP formula for non-Shedinja species
     expect(stats.hp).toBe(108);
   });
 });

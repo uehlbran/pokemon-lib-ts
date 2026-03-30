@@ -284,7 +284,7 @@ function createAbilityContext(opts: {
     pokemon,
     opponent: opts.opponent,
     state,
-    rng: state.rng as any,
+    rng: state.rng,
     trigger: opts.trigger,
     move: opts.move,
   };
