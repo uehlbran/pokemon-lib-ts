@@ -8,6 +8,7 @@
 
 import type {
   AbilityContext,
+  AbilityEffect,
   ActivePokemon,
   BattleState,
   ItemContext,
@@ -16,8 +17,12 @@ import { BATTLE_ITEM_EFFECT_TYPES } from "@pokemon-lib-ts/battle";
 import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import type {
   MoveData,
+  MultiHitEffect,
+  OhkoEffect,
   PokemonType,
   PrimaryStatus,
+  RecoilEffect,
+  StatusChanceEffect,
   TerrainType,
   WeatherType,
 } from "@pokemon-lib-ts/core";
@@ -325,7 +330,7 @@ function createAbilityContext(overrides: {
     rng: new SeededRandom(42),
     trigger: overrides.trigger,
     move: overrides.move,
-    statChange: overrides.statChange as any,
+    statChange: overrides.statChange,
   };
 }
 
@@ -613,11 +618,17 @@ describe("Gen7AbilitiesStat coverage gaps", () => {
       expect(result.activated).toBe(true);
       // Should have 2 effects: one +2 and one -1
       expect(result.effects).toHaveLength(2);
-      const raise = result.effects.find((e: any) => e.stages > 0);
-      const lower = result.effects.find((e: any) => e.stages < 0);
+      const raise = result.effects.find(
+        (e): e is Extract<AbilityEffect, { effectType: "stat-change" }> =>
+          (e as Extract<AbilityEffect, { effectType: "stat-change" }>).stages > 0,
+      );
+      const lower = result.effects.find(
+        (e): e is Extract<AbilityEffect, { effectType: "stat-change" }> =>
+          (e as Extract<AbilityEffect, { effectType: "stat-change" }>).stages < 0,
+      );
       // Source: Showdown -- Moody: +2 for raised stat, -1 for lowered stat
-      expect((raise as any)?.stages).toBe(2);
-      expect((lower as any)?.stages).toBe(-1);
+      expect(raise?.stages).toBe(2);
+      expect(lower?.stages).toBe(-1);
     });
   });
 
@@ -880,7 +891,7 @@ describe("Gen7AbilitiesDamage coverage gaps", () => {
         move: createSyntheticMove({
           id: MOVE_IDS.doubleEdge,
           type: TYPE_IDS.normal,
-          effect: { type: "recoil", percent: 33 } as any,
+          effect: { type: "recoil", amount: 33 } satisfies RecoilEffect,
         }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
@@ -1286,7 +1297,9 @@ describe("Gen7AbilitiesDamage coverage gaps", () => {
       const ctx = createAbilityContext({
         ability: ABILITY_IDS.sturdy,
         trigger: TRIGGER_IDS.onDamageCalc,
-        move: createSyntheticMove({ effect: { type: MOVE_EFFECT_TYPES.ohko } as any }),
+        move: createSyntheticMove({
+          effect: { type: MOVE_EFFECT_TYPES.ohko } satisfies OhkoEffect,
+        }),
       });
       const result = handleGen7DamageImmunityAbility(ctx);
       expect(result.activated).toBe(true);
@@ -1307,7 +1320,9 @@ describe("Gen7AbilitiesDamage coverage gaps", () => {
       const ctx = createAbilityContext({
         ability: ABILITY_IDS.none,
         trigger: TRIGGER_IDS.onDamageCalc,
-        move: createSyntheticMove({ effect: { type: MOVE_EFFECT_TYPES.ohko } as any }),
+        move: createSyntheticMove({
+          effect: { type: MOVE_EFFECT_TYPES.ohko } satisfies OhkoEffect,
+        }),
       });
       const result = handleGen7DamageImmunityAbility(ctx);
       expect(result.activated).toBe(false);
@@ -1350,7 +1365,7 @@ describe("Gen7AbilitiesDamage coverage gaps", () => {
         trigger: TRIGGER_IDS.onDamageCalc,
         move: createSyntheticMove({
           power: 80,
-          effect: { type: "multi-hit", minHits: 2, maxHits: 5 } as any,
+          effect: { type: "multi-hit", min: 2, max: 5 } satisfies MultiHitEffect,
         }),
       });
       const result = handleGen7DamageCalcAbility(ctx);
@@ -1540,8 +1555,7 @@ describe("Gen7Items coverage gaps", () => {
         state: createBattleState(),
       });
       // Need sides with active for getOpponentMaxHp
-      const state = ctx.state as any;
-      state.sides = [
+      (ctx.state as Record<string, unknown>).sides = [
         { index: 0, active: [ctx.pokemon] },
         { index: 1, active: [opponent] },
       ];
@@ -1576,8 +1590,7 @@ describe("Gen7Items coverage gaps", () => {
         opponent,
         state: createBattleState(),
       });
-      const state = ctx.state as any;
-      state.sides = [
+      (ctx.state as Record<string, unknown>).sides = [
         { index: 0, active: [ctx.pokemon] },
         { index: 1, active: [opponent] },
       ];
@@ -1878,8 +1891,7 @@ describe("Gen7Items coverage gaps", () => {
         opponent,
         state: createBattleState(),
       });
-      const state = ctx.state as any;
-      state.sides = [
+      (ctx.state as Record<string, unknown>).sides = [
         { index: 0, active: [ctx.pokemon] },
         { index: 1, active: [opponent] },
       ];
@@ -1925,7 +1937,11 @@ describe("Gen7Items coverage gaps", () => {
           id: MOVE_IDS.flamethrower,
           type: TYPE_IDS.fire,
           category: MOVE_CATEGORIES.special,
-          effect: { type: "status-chance", status: STATUS_IDS.burn, chance: 10 } as any,
+          effect: {
+            type: "status-chance",
+            status: STATUS_IDS.burn,
+            chance: 10,
+          } satisfies StatusChanceEffect,
         }),
       });
       const result = applyGen7HeldItem(ITEM_TRIGGERS.onHit, ctx);
@@ -2225,7 +2241,7 @@ describe("Gen7AbilitiesSwitch coverage gaps", () => {
         ability: ABILITY_IDS.none,
         trigger: TRIGGER_IDS.onDamageCalc,
       });
-      const result = handleGen7SwitchAbility(TRIGGER_IDS.onDamageCalc as any, ctx);
+      const result = handleGen7SwitchAbility(TRIGGER_IDS.onDamageCalc, ctx);
       expect(result.activated).toBe(false);
     });
   });

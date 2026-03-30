@@ -8,7 +8,12 @@
  * Source: Pokémon Showdown data/pokedex.ts + data/moves.ts for stat and move values
  */
 
-import type { ActivePokemon, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
+import type {
+  ActivePokemon,
+  BattleSide,
+  BattleState,
+  UltraBurstEvent,
+} from "@pokemon-lib-ts/battle";
 import { BATTLE_GIMMICK_IDS } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
 import {
@@ -92,7 +97,7 @@ function createNecrozmaOnField(overrides: {
       heldItem: overrides.heldItem ?? ULTRANECROZIUM_Z,
       status: null,
       friendship: 0,
-      gender: CORE_GENDERS.unknown as any,
+      gender: CORE_GENDERS.genderless,
       isShiny: false,
       metLocation: "",
       metLevel: 1,
@@ -226,7 +231,7 @@ function createSyntheticOnFieldPokemon(overrides: {
       heldItem: overrides.heldItem ?? null,
       status: null,
       friendship: 0,
-      gender: CORE_GENDERS.female as any,
+      gender: CORE_GENDERS.female,
       isShiny: false,
       metLocation: "",
       metLevel: 1,
@@ -511,8 +516,8 @@ describe("Gen7UltraBurst -- activate()", () => {
 
     expect(events).toHaveLength(1);
     expect(events[0].type).toBe("ultra-burst");
-    expect((events[0] as any).side).toBe(0);
-    expect((events[0] as any).pokemon).toBe("test-necrozma");
+    expect((events[0] as UltraBurstEvent).side).toBe(0);
+    expect((events[0] as UltraBurstEvent).pokemon).toBe("test-necrozma");
   });
 
   it("given Ultra Burst activates, when checking Z-Move usage, then Z-Move is NOT marked as used", () => {
@@ -668,7 +673,7 @@ describe("Gen7DamageCalc -- Neuroforce ability", () => {
       attacker,
       defender,
       move,
-      state: { weather: null, terrain: null, sides: [] } as any,
+      state: { weather: null, terrain: null, sides: [] } as unknown as BattleState,
       isCrit: false,
       rng: new SeededRandom(42),
     };
@@ -685,7 +690,7 @@ describe("Gen7DamageCalc -- Neuroforce ability", () => {
       attacker: attackerNoNeuroforce,
       defender,
       move,
-      state: { weather: null, terrain: null, sides: [] } as any,
+      state: { weather: null, terrain: null, sides: [] } as unknown as BattleState,
       isCrit: false,
       rng: new SeededRandom(42),
     };
@@ -724,7 +729,7 @@ describe("Gen7DamageCalc -- Neuroforce ability", () => {
       attacker,
       defender,
       move,
-      state: { weather: null, terrain: null, sides: [] } as any,
+      state: { weather: null, terrain: null, sides: [] } as unknown as BattleState,
       isCrit: false,
       rng: new SeededRandom(42),
     };
@@ -741,7 +746,7 @@ describe("Gen7DamageCalc -- Neuroforce ability", () => {
       attacker: attackerNoNeuroforce,
       defender,
       move,
-      state: { weather: null, terrain: null, sides: [] } as any,
+      state: { weather: null, terrain: null, sides: [] } as unknown as BattleState,
       isCrit: false,
       rng: new SeededRandom(42),
     };
@@ -756,7 +761,7 @@ describe("Gen7Ruleset -- getBattleGimmick", () => {
   it("given getBattleGimmick('ultraburst'), then returns a Gen7UltraBurst instance", () => {
     // Verifies the ruleset properly exposes Ultra Burst to the engine
     const ruleset = new Gen7Ruleset(DATA_MANAGER);
-    const gimmick = ruleset.getBattleGimmick(BATTLE_GIMMICK_IDS.ultraBurst as any);
+    const gimmick = ruleset.getBattleGimmick(BATTLE_GIMMICK_IDS.ultraBurst);
 
     expect(gimmick).not.toBeNull();
     expect(gimmick).toBeInstanceOf(Gen7UltraBurst);
@@ -765,7 +770,7 @@ describe("Gen7Ruleset -- getBattleGimmick", () => {
   it("given getBattleGimmick('zmove'), then still returns a Z-Move instance (coexistence)", () => {
     // Z-Moves and Ultra Burst coexist in Gen 7
     const ruleset = new Gen7Ruleset(DATA_MANAGER);
-    const gimmick = ruleset.getBattleGimmick(BATTLE_GIMMICK_IDS.zMove as any);
+    const gimmick = ruleset.getBattleGimmick(BATTLE_GIMMICK_IDS.zMove);
 
     expect(gimmick).not.toBeNull();
   });

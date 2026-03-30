@@ -10,6 +10,7 @@ import type {
   ActivePokemon,
   BattleConfig,
   BattleEvent,
+  BattleSide,
   BattleState,
 } from "@pokemon-lib-ts/battle";
 import { BATTLE_GIMMICK_IDS, BattleEngine } from "@pokemon-lib-ts/battle";
@@ -37,6 +38,7 @@ import {
   type MoveData,
   type PokemonInstance,
   type PokemonType,
+  type PrimaryStatus,
   SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
@@ -132,7 +134,6 @@ function createSyntheticPokemonInstance(overrides: {
     gender: overrides.gender ?? GENDERS.male,
     friendship: createFriendship(overrides.friendship ?? species.baseFriendship),
     heldItem: overrides.heldItem ?? null,
-    status: (overrides.status ?? null) as any,
     nickname: overrides.nickname ?? null,
     moves: moveIds,
     metLocation: "test",
@@ -144,6 +145,7 @@ function createSyntheticPokemonInstance(overrides: {
     const move = getCanonicalMove(moveId);
     return createMoveSlot(moveId, move.pp);
   });
+  pokemon.status = (overrides.status ?? null) as PrimaryStatus | null;
   pokemon.currentHp = overrides.currentHp ?? hp;
   pokemon.ability = overrides.ability ?? ABILITIES.none;
   pokemon.calculatedStats = { hp, attack, defense, spAttack, spDefense, speed };
@@ -847,7 +849,7 @@ describe("Integration: Aurora Veil + Hail damage reduction", () => {
       screens: [{ type: AURORA_VEIL, turnsLeft: 5 }],
       hazards: {},
       tailwind: { active: false, turnsLeft: 0 },
-    } as any;
+    } as unknown as BattleSide;
 
     const stateWithoutVeil = createSyntheticBattleState({
       weather: { type: WEATHER.hail, turnsLeft: 5 },
@@ -858,7 +860,7 @@ describe("Integration: Aurora Veil + Hail damage reduction", () => {
       screens: [],
       hazards: {},
       tailwind: { active: false, turnsLeft: 0 },
-    } as any;
+    } as unknown as BattleSide;
 
     const resultWithVeil = calculateGen7Damage(
       {
