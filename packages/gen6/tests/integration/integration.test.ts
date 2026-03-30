@@ -19,6 +19,7 @@ import type {
 import type {
   MoveData,
   PokemonInstance,
+  PokemonSpeciesData,
   PokemonType,
   PrimaryStatus,
   VolatileStatus,
@@ -881,7 +882,7 @@ describe("Gen 6 Integration: EXP formula", () => {
     const ruleset = new Gen6Ruleset();
     const exp = ruleset.calculateExpGain({
       defeatedLevel: 30,
-      defeatedSpecies: { baseExp: 100 } as any,
+      defeatedSpecies: { baseExp: 100 } as unknown as PokemonSpeciesData,
       participantLevel: 50,
       participantCount: 1,
       isTrainerBattle: false,

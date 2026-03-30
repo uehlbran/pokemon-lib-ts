@@ -1,8 +1,9 @@
-import type { ActivePokemon, BattleState, ItemContext } from "@pokemon-lib-ts/battle";
+import type { ActivePokemon, BattleSide, BattleState, ItemContext } from "@pokemon-lib-ts/battle";
 import {
   CORE_ABILITY_IDS,
   CORE_ITEM_TRIGGER_IDS,
   type PokemonType,
+  type PrimaryStatus,
   type SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
@@ -88,9 +89,9 @@ function createOnFieldPokemon(overrides: {
       ability: overrides.ability ?? POKEMON.ability,
       abilitySlot: POKEMON.abilitySlot,
       heldItem: overrides.heldItem ?? null,
-      status: (overrides.status ?? null) as any,
+      status: (overrides.status ?? null) as PrimaryStatus | null,
       friendship: 0,
-      gender: POKEMON.gender as any,
+      gender: POKEMON.gender,
       isShiny: false,
       metLocation: "",
       metLevel: 1,
@@ -146,8 +147,8 @@ function createSyntheticBattleState(
   return {
     format: { generation: 8, battleType: BATTLE.singles },
     sides: [
-      { active: [], bench: [], entryHazards: {} } as any,
-      { active: [], bench: [], entryHazards: {} } as any,
+      { active: [], bench: [], entryHazards: {} } as unknown as BattleSide,
+      { active: [], bench: [], entryHazards: {} } as unknown as BattleSide,
     ],
     weather: overrides.weather ?? null,
     terrain: null,
@@ -166,7 +167,7 @@ function makeRng(): SeededRandom {
     nextInt: (min: number, _max: number) => min,
     seed: 12345,
     getState: () => 12345,
-  } as any;
+  } as unknown as SeededRandom;
 }
 
 function makeContext(overrides: {
@@ -922,8 +923,8 @@ describe("applyGen8HeldItem", () => {
         hp: HP.rockyHelmetDamage,
         currentHp: HP.rockyHelmetDamage,
       });
-      state.sides[0].active = [pokemon] as any;
-      state.sides[1].active = [opponent] as any;
+      state.sides[0].active = [pokemon];
+      state.sides[1].active = [opponent];
       const ctx = makeContext({
         pokemon,
         state,

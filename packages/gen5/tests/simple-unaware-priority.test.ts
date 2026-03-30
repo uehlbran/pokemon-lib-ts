@@ -13,7 +13,7 @@
 import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
 import { getEffectiveStatStage } from "@pokemon-lib-ts/battle";
 import { createDefaultStatStages } from "@pokemon-lib-ts/battle/utils";
-import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
+import type { MoveData, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
@@ -87,7 +87,7 @@ function createOnFieldPokemon(overrides: {
       ability: overrides.ability ?? CORE_ABILITY_IDS.none,
       abilitySlot: CORE_ABILITY_SLOTS.normal1,
       heldItem: overrides.heldItem ?? null,
-      status: (overrides.status ?? null) as any,
+      status: (overrides.status ?? null) as PrimaryStatus | null,
       friendship: createFriendship(0),
       gender: overrides.gender ?? CORE_GENDERS.male,
       isShiny: false,

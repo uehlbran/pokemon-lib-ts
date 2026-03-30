@@ -18,6 +18,7 @@ import {
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   NEUTRAL_NATURES,
+  type SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -779,7 +780,7 @@ describe("Bug #396 — Custap Berry activates at 50% HP with Gluttony", () => {
     ] as BattleAction[];
 
     const rng = createMockRng(50);
-    const sorted = ruleset.resolveTurnOrder(actions, state, rng as any);
+    const sorted = ruleset.resolveTurnOrder(actions, state, rng as unknown as SeededRandom);
 
     // Custap Berry holder should go first
     expect(sorted[0].side).toBe(0);
@@ -806,7 +807,7 @@ describe("Bug #396 — Custap Berry activates at 50% HP with Gluttony", () => {
     ] as BattleAction[];
 
     const rng = createMockRng(50);
-    ruleset.resolveTurnOrder(actions, state, rng as any);
+    ruleset.resolveTurnOrder(actions, state, rng as unknown as SeededRandom);
 
     // Berry should NOT be consumed (not activated)
     expect(attacker.pokemon.heldItem).toBe(ITEMS.custapBerry);
@@ -838,7 +839,7 @@ describe("Bug #400 — Custap Berry is consumed after activation", () => {
     ] as BattleAction[];
 
     const rng = createMockRng(50);
-    ruleset.resolveTurnOrder(actions, state, rng as any);
+    ruleset.resolveTurnOrder(actions, state, rng as unknown as SeededRandom);
 
     // Berry consumed
     expect(attacker.pokemon.heldItem).toBeNull();
@@ -864,7 +865,7 @@ describe("Bug #400 — Custap Berry is consumed after activation", () => {
     ] as BattleAction[];
 
     const rng = createMockRng(50);
-    ruleset.resolveTurnOrder(actions, state, rng as any);
+    ruleset.resolveTurnOrder(actions, state, rng as unknown as SeededRandom);
 
     // Berry NOT consumed because Klutz blocks it
     expect(attacker.pokemon.heldItem).toBe(ITEMS.custapBerry);

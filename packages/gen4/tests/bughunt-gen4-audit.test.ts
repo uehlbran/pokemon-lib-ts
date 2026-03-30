@@ -1,4 +1,5 @@
 import type {
+  AbilityContext,
   ActivePokemon,
   DamageContext,
   ItemContext,
@@ -27,6 +28,7 @@ import {
   createEvs,
   createFriendship,
   createIvs,
+  type SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -338,8 +340,8 @@ describe("Gen4Ruleset rollMultiHitCount — Skill Link (NEW in Gen 4)", () => {
     const rng2 = createMockRng(100);
 
     // Two calls with different RNG states must both return 5
-    const result1 = ruleset.rollMultiHitCount(attacker, rng1 as any);
-    const result2 = ruleset.rollMultiHitCount(attacker, rng2 as any);
+    const result1 = ruleset.rollMultiHitCount(attacker, rng1 as unknown as SeededRandom);
+    const result2 = ruleset.rollMultiHitCount(attacker, rng2 as unknown as SeededRandom);
 
     expect(result1).toBe(5);
     expect(result2).toBe(5);
@@ -351,7 +353,7 @@ describe("Gen4Ruleset rollMultiHitCount — Skill Link (NEW in Gen 4)", () => {
     // This triangulates that Skill Link's forced-5 path is distinct from the standard path
     const attacker = createActivePokemon({ ability: GEN4_ABILITY_IDS.blaze });
     const rng = createMockRng(0);
-    const result = ruleset.rollMultiHitCount(attacker, rng as any);
+    const result = ruleset.rollMultiHitCount(attacker, rng as unknown as SeededRandom);
     expect([2, 3, 4, 5]).toContain(result);
   });
 });
@@ -397,7 +399,14 @@ describe("Gen4DamageCalc Technician — power threshold checked after type-boost
     const state = createNullState();
 
     const resultWithCharcoal = calculateGen4Damage(
-      { attacker, defender, move, isCrit: false, rng: rng as any, state } as DamageContext,
+      {
+        attacker,
+        defender,
+        move,
+        isCrit: false,
+        rng: rng as unknown as SeededRandom,
+        state,
+      } as DamageContext,
       GEN4_TYPE_CHART,
     );
 
@@ -413,7 +422,7 @@ describe("Gen4DamageCalc Technician — power threshold checked after type-boost
         defender,
         move,
         isCrit: false,
-        rng: rng as any,
+        rng: rng as unknown as SeededRandom,
         state,
       } as DamageContext,
       GEN4_TYPE_CHART,
@@ -448,7 +457,14 @@ describe("Gen4DamageCalc Technician — power threshold checked after type-boost
     const state = createNullState();
 
     const result = calculateGen4Damage(
-      { attacker, defender, move, isCrit: false, rng: rng as any, state } as DamageContext,
+      {
+        attacker,
+        defender,
+        move,
+        isCrit: false,
+        rng: rng as unknown as SeededRandom,
+        state,
+      } as DamageContext,
       GEN4_TYPE_CHART,
     );
 
@@ -549,7 +565,7 @@ describe("Gen4DamageCalc Reckless — does not boost Struggle", () => {
         defender,
         move: struggleMove,
         isCrit: false,
-        rng: rng as any,
+        rng: rng as unknown as SeededRandom,
         state,
       } as DamageContext,
       GEN4_TYPE_CHART,
@@ -560,7 +576,7 @@ describe("Gen4DamageCalc Reckless — does not boost Struggle", () => {
         defender,
         move: struggleMove,
         isCrit: false,
-        rng: rng as any,
+        rng: rng as unknown as SeededRandom,
         state,
       } as DamageContext,
       GEN4_TYPE_CHART,
@@ -593,7 +609,7 @@ describe("Gen4DamageCalc Reckless — does not boost Struggle", () => {
         defender,
         move: doubleEdge,
         isCrit: false,
-        rng: rng as any,
+        rng: rng as unknown as SeededRandom,
         state,
       } as DamageContext,
       GEN4_TYPE_CHART,
@@ -623,7 +639,7 @@ describe("Gen4Abilities Download — raises correct attacking stat", () => {
       opponent: foe,
       state: createNullState(),
       rng: createMockRng(),
-    } as any;
+    } as unknown as AbilityContext;
 
     const result = applyGen4Ability(ABILITY_TRIGGERS.onSwitchIn, context);
 
@@ -649,7 +665,7 @@ describe("Gen4Abilities Download — raises correct attacking stat", () => {
       opponent: foe,
       state: createNullState(),
       rng: createMockRng(),
-    } as any;
+    } as unknown as AbilityContext;
 
     const result = applyGen4Ability(ABILITY_TRIGGERS.onSwitchIn, context);
 
@@ -697,7 +713,14 @@ describe("Gen4DamageCalc Metronome item — no cap per Showdown Gen 4 (issue #55
     const state = createNullState();
 
     const resultCount6 = calculateGen4Damage(
-      { attacker, defender, move, isCrit: false, rng: rng as any, state } as DamageContext,
+      {
+        attacker,
+        defender,
+        move,
+        isCrit: false,
+        rng: rng as unknown as SeededRandom,
+        state,
+      } as DamageContext,
       GEN4_TYPE_CHART,
     );
 
@@ -720,7 +743,7 @@ describe("Gen4DamageCalc Metronome item — no cap per Showdown Gen 4 (issue #55
         defender,
         move,
         isCrit: false,
-        rng: rng as any,
+        rng: rng as unknown as SeededRandom,
         state,
       } as DamageContext,
       GEN4_TYPE_CHART,
@@ -756,7 +779,14 @@ describe("Gen4DamageCalc Metronome item — no cap per Showdown Gen 4 (issue #55
     const state = createNullState();
 
     const result = calculateGen4Damage(
-      { attacker, defender, move, isCrit: false, rng: rng as any, state } as DamageContext,
+      {
+        attacker,
+        defender,
+        move,
+        isCrit: false,
+        rng: rng as unknown as SeededRandom,
+        state,
+      } as DamageContext,
       GEN4_TYPE_CHART,
     );
 
@@ -1188,7 +1218,14 @@ describe("Gen4DamageCalc — BUG-3: sequential type effectiveness with intermedi
     const state = createNullState();
 
     const result = calculateGen4Damage(
-      { attacker, defender, move, isCrit: false, rng: rng as any, state } as DamageContext,
+      {
+        attacker,
+        defender,
+        move,
+        isCrit: false,
+        rng: rng as unknown as SeededRandom,
+        state,
+      } as DamageContext,
       GEN4_TYPE_CHART,
     );
 
@@ -1221,7 +1258,14 @@ describe("Gen4DamageCalc — BUG-3: sequential type effectiveness with intermedi
     const state = createNullState();
 
     const result = calculateGen4Damage(
-      { attacker, defender, move, isCrit: false, rng: rng as any, state } as DamageContext,
+      {
+        attacker,
+        defender,
+        move,
+        isCrit: false,
+        rng: rng as unknown as SeededRandom,
+        state,
+      } as DamageContext,
       GEN4_TYPE_CHART,
     );
 
@@ -1276,7 +1320,7 @@ describe("Gen4DamageCalc — BUG-6: Marvel Scale integer arithmetic matching pok
         defender: defenderNoStatus,
         move,
         isCrit: false,
-        rng: rng as any,
+        rng: rng as unknown as SeededRandom,
         state,
       } as DamageContext,
       GEN4_TYPE_CHART,
@@ -1287,7 +1331,7 @@ describe("Gen4DamageCalc — BUG-6: Marvel Scale integer arithmetic matching pok
         defender: defenderStatused,
         move,
         isCrit: false,
-        rng: rng as any,
+        rng: rng as unknown as SeededRandom,
         state,
       } as DamageContext,
       GEN4_TYPE_CHART,
@@ -1318,7 +1362,7 @@ describe("Gen4DamageCalc — BUG-6: Marvel Scale integer arithmetic matching pok
         defender: defenderNoAbility,
         move,
         isCrit: false,
-        rng: rng as any,
+        rng: rng as unknown as SeededRandom,
         state,
       } as DamageContext,
       GEN4_TYPE_CHART,

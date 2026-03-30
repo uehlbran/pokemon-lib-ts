@@ -7,6 +7,7 @@ import type {
 } from "@pokemon-lib-ts/battle";
 import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import {
+  type AbilityTrigger,
   CORE_ABILITY_SLOTS,
   CORE_ABILITY_TRIGGER_IDS,
   CORE_GENDERS,
@@ -250,8 +251,8 @@ function createSwitchAbilityContext(opts: {
     pokemon,
     opponent: opts.opponent,
     state,
-    rng: state.rng as any,
-    trigger: opts.trigger as any,
+    rng: state.rng,
+    trigger: opts.trigger as AbilityTrigger,
     move: opts.move,
   };
 }
@@ -313,9 +314,9 @@ function createStatAbilityContext(overrides: {
       turnsOnField: overrides.turnsOnField,
     }),
     opponent: createOnFieldPokemon({}),
-    state: createDamageBattleState() as any,
+    state: createDamageBattleState(),
     rng: new SeededRandom(overrides.seed ?? 42),
-    trigger: overrides.trigger as any,
+    trigger: overrides.trigger as AbilityTrigger,
     move: overrides.move,
   };
 }

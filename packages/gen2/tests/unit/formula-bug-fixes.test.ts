@@ -14,7 +14,7 @@
  *   #326 — OHKO moves missing level-based accuracy formula
  */
 
-import type { ActivePokemon, DamageContext } from "@pokemon-lib-ts/battle";
+import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
 import type {
   MoveData,
   PokemonInstance,
@@ -343,7 +343,7 @@ describe("Issue #314 regression: stat stages use integer ratio table, not float 
       trickRoom: null,
       turn: 1,
       format: { id: "singles", slots: 1 },
-    } as any;
+    } as unknown as BattleState;
 
     const damage = ruleset.calculateStruggleDamage(attacker, defender, state);
 
@@ -369,7 +369,7 @@ describe("Issue #314 regression: stat stages use integer ratio table, not float 
       defense: 100,
       statStages: { attack: -5, defense: 0 },
     });
-    const state = {} as any;
+    const state = {} as unknown as BattleState;
     const rng = new SeededRandom(42);
 
     const damage = ruleset.calculateConfusionDamage(pokemon, state, rng);
@@ -434,14 +434,14 @@ describe("Issue #316 regression: Reflect doubles defense stat, Light Screen doub
           screens: [{ type: CORE_SCREEN_IDS.reflect, turnsLeft: 5 }],
         },
       ],
-    } as any;
+    } as unknown as BattleState;
 
     const ctx: DamageContext = {
       attacker,
       defender,
       move,
       state: stateWithReflect,
-      rng: rng as any,
+      rng: rng as unknown as SeededRandom,
       isCrit: false,
     };
 
@@ -490,14 +490,14 @@ describe("Issue #316 regression: Reflect doubles defense stat, Light Screen doub
           screens: [{ type: CORE_SCREEN_IDS.lightScreen, turnsLeft: 5 }],
         },
       ],
-    } as any;
+    } as unknown as BattleState;
 
     const ctx: DamageContext = {
       attacker,
       defender,
       move,
       state: stateWithLS,
-      rng: rng as any,
+      rng: rng as unknown as SeededRandom,
       isCrit: false,
     };
 
@@ -539,7 +539,13 @@ describe("Issue #320 regression: accuracy uses integer ratio table, not float fr
       const rng = new SeededRandom(i * 7919);
       const attacker = createSyntheticOnFieldPokemon({ statStages: { accuracy: -5 } });
       const defender = createSyntheticOnFieldPokemon({ statStages: { evasion: 0 } });
-      return ruleset.doesMoveHit({ attacker, defender, move, rng, state: {} as any });
+      return ruleset.doesMoveHit({
+        attacker,
+        defender,
+        move,
+        rng,
+        state: {} as unknown as BattleState,
+      });
     });
 
     const rate = hits / trials;
@@ -566,7 +572,13 @@ describe("Issue #320 regression: accuracy uses integer ratio table, not float fr
       const rng = new SeededRandom(i * 3571);
       const attacker = createSyntheticOnFieldPokemon({ statStages: { accuracy: 2 } });
       const defender = createSyntheticOnFieldPokemon({ statStages: { evasion: 0 } });
-      return ruleset.doesMoveHit({ attacker, defender, move, rng, state: {} as any });
+      return ruleset.doesMoveHit({
+        attacker,
+        defender,
+        move,
+        rng,
+        state: {} as unknown as BattleState,
+      });
     });
 
     const rate = hits / trials;
@@ -597,7 +609,13 @@ describe("Issue #326 regression: OHKO moves use level-based accuracy", () => {
       const rng = new SeededRandom(i);
       const attacker = createSyntheticOnFieldPokemon({ level: 30 });
       const defender = createSyntheticOnFieldPokemon({ level: 50 });
-      return ruleset.doesMoveHit({ attacker, defender, move, rng, state: {} as any });
+      return ruleset.doesMoveHit({
+        attacker,
+        defender,
+        move,
+        rng,
+        state: {} as unknown as BattleState,
+      });
     });
 
     // Must always fail
@@ -620,7 +638,13 @@ describe("Issue #326 regression: OHKO moves use level-based accuracy", () => {
       const rng = new SeededRandom(i);
       const attacker = createSyntheticOnFieldPokemon({ level: 50 });
       const defender = createSyntheticOnFieldPokemon({ level: 50 });
-      return ruleset.doesMoveHit({ attacker, defender, move, rng, state: {} as any });
+      return ruleset.doesMoveHit({
+        attacker,
+        defender,
+        move,
+        rng,
+        state: {} as unknown as BattleState,
+      });
     });
 
     const rate = hits / trials;
@@ -647,7 +671,9 @@ describe("Issue #326 regression: OHKO moves use level-based accuracy", () => {
       const rng = new SeededRandom(i);
       const attacker = createSyntheticOnFieldPokemon({ level: 70 });
       const defender = createSyntheticOnFieldPokemon({ level: 50 });
-      if (ruleset.doesMoveHit({ attacker, defender, move, rng, state: {} as any })) {
+      if (
+        ruleset.doesMoveHit({ attacker, defender, move, rng, state: {} as unknown as BattleState })
+      ) {
         hits++;
       }
     }
@@ -692,8 +718,8 @@ describe("Regression tests for bugs #315, #317, #318, #319, #324 fixes", () => {
       attacker,
       defender,
       move,
-      state: { weather: null } as any,
-      rng: rng as any,
+      state: { weather: null } as unknown as BattleState,
+      rng: rng as unknown as SeededRandom,
       isCrit: false,
     };
 
@@ -737,8 +763,8 @@ describe("Regression tests for bugs #315, #317, #318, #319, #324 fixes", () => {
       attacker,
       defender,
       move,
-      state: { weather: null } as any,
-      rng: rng as any,
+      state: { weather: null } as unknown as BattleState,
+      rng: rng as unknown as SeededRandom,
       isCrit: true,
     };
 
@@ -827,14 +853,14 @@ describe("Regression tests for bugs #315, #317, #318, #319, #324 fixes", () => {
         { active: [attacker], screens: [] },
         { active: [defender], screens: [] },
       ],
-    } as any;
+    } as unknown as BattleState;
 
     const ctx: DamageContext = {
       attacker,
       defender,
       move,
       state: stateRain,
-      rng: rng as any,
+      rng: rng as unknown as SeededRandom,
       isCrit: false,
     };
 

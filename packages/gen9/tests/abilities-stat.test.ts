@@ -1,4 +1,9 @@
-import type { AbilityContext, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
+import type {
+  AbilityContext,
+  ActivePokemon,
+  BattleSide,
+  BattleState,
+} from "@pokemon-lib-ts/battle";
 import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import type { PokemonInstance, PokemonType, SeededRandom } from "@pokemon-lib-ts/core";
 import {
@@ -219,14 +224,14 @@ function createAbilityContext(overrides: {
   terrain?: BattleState["terrain"];
 }): AbilityContext {
   return {
-    pokemon: overrides.pokemon as any,
-    opponent: overrides.opponent as any,
+    pokemon: overrides.pokemon as unknown as ActivePokemon,
+    opponent: overrides.opponent as unknown as ActivePokemon,
     state: createBattleState({
       weather: overrides.weather,
       terrain: overrides.terrain,
     }),
     rng: makeRng(),
-    trigger: overrides.trigger as any,
+    trigger: overrides.trigger,
   };
 }
 
@@ -247,7 +252,7 @@ describe("getHighestBaseStat", () => {
         speed: 100,
       },
     });
-    expect(getHighestBaseStat(pokemon as any)).toBe(CORE_STAT_IDS.attack);
+    expect(getHighestBaseStat(pokemon as unknown as ActivePokemon)).toBe(CORE_STAT_IDS.attack);
   });
 
   it("given a Pokemon with highest Speed, when finding highest stat, then returns speed", () => {
@@ -262,7 +267,7 @@ describe("getHighestBaseStat", () => {
         speed: 130,
       },
     });
-    expect(getHighestBaseStat(pokemon as any)).toBe(CORE_STAT_IDS.speed);
+    expect(getHighestBaseStat(pokemon as unknown as ActivePokemon)).toBe(CORE_STAT_IDS.speed);
   });
 
   it("given a Pokemon with highest SpAttack, when finding highest stat, then returns spAttack", () => {
@@ -277,7 +282,7 @@ describe("getHighestBaseStat", () => {
         speed: 100,
       },
     });
-    expect(getHighestBaseStat(pokemon as any)).toBe(CORE_STAT_IDS.spAttack);
+    expect(getHighestBaseStat(pokemon as unknown as ActivePokemon)).toBe(CORE_STAT_IDS.spAttack);
   });
 
   it("given a Pokemon with tied Attack and Defense, when finding highest stat, then returns attack (first in order)", () => {
@@ -292,7 +297,7 @@ describe("getHighestBaseStat", () => {
         speed: 80,
       },
     });
-    expect(getHighestBaseStat(pokemon as any)).toBe(CORE_STAT_IDS.attack);
+    expect(getHighestBaseStat(pokemon as unknown as ActivePokemon)).toBe(CORE_STAT_IDS.attack);
   });
 
   it("given a Pokemon with all equal stats, when finding highest stat, then returns attack (first in order)", () => {
@@ -307,7 +312,7 @@ describe("getHighestBaseStat", () => {
         speed: 100,
       },
     });
-    expect(getHighestBaseStat(pokemon as any)).toBe(CORE_STAT_IDS.attack);
+    expect(getHighestBaseStat(pokemon as unknown as ActivePokemon)).toBe(CORE_STAT_IDS.attack);
   });
 
   it("given a Pokemon with highest Defense, when finding highest stat, then returns defense", () => {
@@ -321,7 +326,7 @@ describe("getHighestBaseStat", () => {
         speed: 80,
       },
     });
-    expect(getHighestBaseStat(pokemon as any)).toBe(CORE_STAT_IDS.defense);
+    expect(getHighestBaseStat(pokemon as unknown as ActivePokemon)).toBe(CORE_STAT_IDS.defense);
   });
 
   it("given a Pokemon with highest SpDefense, when finding highest stat, then returns spDefense", () => {
@@ -335,7 +340,7 @@ describe("getHighestBaseStat", () => {
         speed: 80,
       },
     });
-    expect(getHighestBaseStat(pokemon as any)).toBe(CORE_STAT_IDS.spDefense);
+    expect(getHighestBaseStat(pokemon as unknown as ActivePokemon)).toBe(CORE_STAT_IDS.spDefense);
   });
 });
 
@@ -448,11 +453,13 @@ describe("shouldProtosynthesisActivate", () => {
 
   it("given already active protosynthesis volatile, when checking activation, then does not activate again", () => {
     // Source: Showdown data/abilities.ts:3427-3440 -- doesn't stack
-    const volatiles = new Map([[VOLATILES.protosynthesis, { turnsLeft: -1 }]]);
+    const volatiles = new Map<string, { turnsLeft: number }>([
+      [VOLATILES.protosynthesis, { turnsLeft: -1 }],
+    ]);
     const ctx = createAbilityContext({
       pokemon: createOnFieldPokemon({
         ability: ABILITIES.protosynthesis,
-        volatiles: volatiles as any,
+        volatiles,
       }),
       trigger: TRIGGERS.onSwitchIn,
       weather: { type: WEATHERS.sun, turnsLeft: 5, source: CORE_ABILITIES.drought },
@@ -629,11 +636,13 @@ describe("shouldQuarkDriveActivate", () => {
 
   it("given already active quarkdrive volatile, when checking activation, then does not activate again", () => {
     // Source: Showdown data/abilities.ts:3564-3580 -- doesn't stack
-    const volatiles = new Map([[VOLATILES.quarkDrive, { turnsLeft: -1 }]]);
+    const volatiles = new Map<string, { turnsLeft: number }>([
+      [VOLATILES.quarkDrive, { turnsLeft: -1 }],
+    ]);
     const ctx = createAbilityContext({
       pokemon: createOnFieldPokemon({
         ability: ABILITIES.quarkDrive,
-        volatiles: volatiles as any,
+        volatiles,
       }),
       trigger: TRIGGERS.onSwitchIn,
       terrain: { type: TERRAINS.electric, turnsLeft: 5, source: ABILITIES.electricSurge },

@@ -22,7 +22,7 @@
 
 import type { ActivePokemon, BattleSide, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
 import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
-import type { MoveData, PokemonType, PrimaryStatus, VolatileStatus } from "@pokemon-lib-ts/core";
+import type { MoveData, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
@@ -722,10 +722,9 @@ describe("Gen 9 integration tests", () => {
         types: waterMonotype,
         hp: 200,
         currentHp: 200,
-        volatiles: new Map([[SALT_CURE_VOLATILE, { turnsLeft: -1 }]]) as Map<
-          VolatileStatus,
-          { turnsLeft: number }
-        > as any,
+        volatiles: new Map<string, { turnsLeft: number }>([
+          [SALT_CURE_VOLATILE, { turnsLeft: -1 }],
+        ]),
       });
 
       const damage = ruleset.processSaltCureDamage(active);
@@ -743,10 +742,9 @@ describe("Gen 9 integration tests", () => {
         types: normalMonotype,
         hp: 200,
         currentHp: 200,
-        volatiles: new Map([[SALT_CURE_VOLATILE, { turnsLeft: -1 }]]) as Map<
-          VolatileStatus,
-          { turnsLeft: number }
-        > as any,
+        volatiles: new Map<string, { turnsLeft: number }>([
+          [SALT_CURE_VOLATILE, { turnsLeft: -1 }],
+        ]),
       });
 
       const damage = ruleset.processSaltCureDamage(active);

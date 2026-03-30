@@ -26,6 +26,7 @@ import {
   CORE_ITEM_TRIGGER_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
+  type PrimaryStatus,
   SeededRandom,
 } from "@pokemon-lib-ts/core";
 import {
@@ -87,7 +88,7 @@ function createSyntheticBattlePokemon(overrides: {
       ability: overrides.ability ?? CORE_ABILITY_IDS.none,
       abilitySlot: CORE_ABILITY_SLOTS.normal1,
       heldItem: overrides.heldItem ?? null,
-      status: (overrides.status ?? null) as any,
+      status: (overrides.status ?? null) as PrimaryStatus | null,
       friendship: 0,
       gender: CORE_GENDERS.male,
       isShiny: false,

@@ -22,7 +22,7 @@
  * Source: Bulbapedia -- https://bulbapedia.bulbagarden.net/wiki/Damage
  */
 import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
-import type { Gender, MoveData, PokemonType } from "@pokemon-lib-ts/core";
+import type { Gender, MoveData, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
@@ -129,9 +129,9 @@ function createOnFieldPokemon(overrides: {
       ability: overrides.ability ?? ABILITIES.none,
       abilitySlot: CORE_ABILITY_SLOTS.normal1,
       heldItem: overrides.heldItem ?? null,
-      status: (overrides.status ?? null) as any,
+      status: (overrides.status ?? null) as PrimaryStatus | null,
       friendship: createFriendship(0),
-      gender: (overrides.gender ?? CORE_GENDERS.male) as any,
+      gender: overrides.gender ?? CORE_GENDERS.male,
       isShiny: false,
       metLocation: "",
       metLevel: 1,

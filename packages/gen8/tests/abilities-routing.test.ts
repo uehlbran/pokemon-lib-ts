@@ -205,9 +205,9 @@ function createAbilityContext(overrides: {
     opponent: overrides.opponent ?? createOnFieldPokemon({}),
     state: createBattleState(),
     rng: new SeededRandom(overrides.seed ?? 42),
-    trigger: overrides.trigger as any,
+    trigger: overrides.trigger,
     move: overrides.move,
-    statChange: overrides.statChange as any,
+    statChange: overrides.statChange as unknown as AbilityContext["statChange"],
   };
 }
 

@@ -1,4 +1,9 @@
-import type { AbilityContext, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
+import type {
+  AbilityContext,
+  ActivePokemon,
+  BattleSide,
+  BattleState,
+} from "@pokemon-lib-ts/battle";
 import {
   type AbilityTrigger,
   CORE_ABILITY_IDS,
@@ -245,8 +250,8 @@ function createAbilityContext(overrides: {
   state?: BattleState;
 }): AbilityContext {
   return {
-    pokemon: overrides.pokemon as any,
-    opponent: overrides.opponent as any,
+    pokemon: overrides.pokemon as unknown as ActivePokemon,
+    opponent: overrides.opponent as unknown as ActivePokemon,
     state: overrides.state ?? createBattleState(),
     rng: createMockRng(overrides.rng),
     trigger: overrides.trigger,

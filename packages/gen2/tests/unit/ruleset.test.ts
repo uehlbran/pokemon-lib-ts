@@ -2731,7 +2731,7 @@ describe("Gen2Ruleset", () => {
       const ruleset = new Gen2Ruleset();
       const attacker = createOnFieldPokemonFixture();
       const defender = createOnFieldPokemonFixture();
-      const move = { accuracy: 100, id: tackle } as any;
+      const move = { accuracy: 100, id: tackle } as unknown as MoveData;
       const state = createBattleStateFixture(
         createBattleSideFixture(0, attacker),
         createBattleSideFixture(1, defender),
@@ -2750,7 +2750,7 @@ describe("Gen2Ruleset", () => {
       const attacker = createOnFieldPokemonFixture();
       attacker.statStages.accuracy = 6;
       const defender = createOnFieldPokemonFixture();
-      const move = { accuracy: 70, id: GEN2_MOVE_IDS.thunder } as any;
+      const move = { accuracy: 70, id: GEN2_MOVE_IDS.thunder } as unknown as MoveData;
       const state = createBattleStateFixture(
         createBattleSideFixture(0, attacker),
         createBattleSideFixture(1, defender),
@@ -2780,7 +2780,7 @@ describe("Gen2Ruleset", () => {
         id: GEN2_MOVE_IDS.flamethrower,
         type: fire,
         effect: { type: "status-chance", status: burn, chance: 100 },
-      } as any;
+      } as unknown as MoveData;
       const result = ruleset.executeMoveEffect({
         attacker,
         defender,

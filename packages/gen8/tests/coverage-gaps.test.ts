@@ -9,6 +9,7 @@
 import type {
   AbilityContext,
   ActivePokemon,
+  BattleSide,
   BattleState,
   DamageContext,
   ItemContext,
@@ -270,8 +271,8 @@ function createItemBattleState(
   return {
     format: { generation: 8, battleType: "singles" },
     sides: [
-      { active: [], bench: [], entryHazards: {} } as any,
-      { active: [], bench: [], entryHazards: {} } as any,
+      { active: [], bench: [], entryHazards: {} } as unknown as BattleSide,
+      { active: [], bench: [], entryHazards: {} } as unknown as BattleSide,
     ],
     weather: overrides.weather ?? null,
     terrain: null,
@@ -1475,7 +1476,7 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
       });
       const result = handleGen8DamageImmunityAbility(ctx);
       expect(result.activated).toBe(true);
-      expect((result as any).movePrevented).toBe(true);
+      expect((result as { movePrevented?: boolean }).movePrevented).toBe(true);
     });
   });
 
@@ -2020,14 +2021,14 @@ describe(`Gen8AbilitiesDamage cove${CORE_VOLATILE_IDS.rage} gaps`, () => {
 
     it(`given stat-change targeting self (not fromSecondary), when checking, then ${GEN7_MOVE_IDS.return}s false`, () => {
       // Source: Gen8AbilitiesDamage.ts -- self stat-change: requires fromSecondary=true
-      const effect: MoveEffect = {
+      const effect = {
         type: "stat-change",
         target: "self",
         stat: "attack",
         stages: 1,
         chance: 100,
         fromSecondary: false,
-      } as any;
+      } as unknown as MoveEffect;
       expect(isSheerForceEligibleMove(effect, CORE_MOVE_IDS.swordsDance)).toBe(false);
     });
   });

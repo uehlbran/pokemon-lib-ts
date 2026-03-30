@@ -8,7 +8,7 @@
  * Source: Bulbapedia — "Cloud Nine / Air Lock: the effects of weather are negated"
  */
 import type { ActivePokemon, BattleSide, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
+import type { MoveData, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_SLOTS,
   CORE_GENDERS,
@@ -78,7 +78,7 @@ function createSyntheticActive(overrides: {
       ability: overrides.ability ?? ABILITIES.blaze,
       abilitySlot: CORE_ABILITY_SLOTS.normal1,
       heldItem: overrides.heldItem ?? null,
-      status: (overrides.status ?? null) as any,
+      status: (overrides.status ?? null) as PrimaryStatus | null,
       friendship: 0,
       gender: CORE_GENDERS.male,
       isShiny: false,

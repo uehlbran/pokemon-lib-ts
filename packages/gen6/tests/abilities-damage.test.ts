@@ -1,6 +1,6 @@
 import type { AbilityContext, ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
 import { BATTLE_ABILITY_EFFECT_TYPES } from "@pokemon-lib-ts/battle";
-import type { MoveData, MoveEffect, PokemonType } from "@pokemon-lib-ts/core";
+import type { MoveData, MoveEffect, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
@@ -101,7 +101,7 @@ function createOnFieldPokemonFixture(
 
   pokemon.currentHp = overrides.currentHp ?? hp;
   pokemon.ability = overrides.ability ?? CORE_ABILITY_IDS.none;
-  pokemon.status = (overrides.status ?? null) as any;
+  pokemon.status = (overrides.status ?? null) as PrimaryStatus | null;
   pokemon.heldItem = overrides.heldItem ?? null;
   pokemon.calculatedStats = { hp, attack, defense, spAttack, spDefense, speed };
 

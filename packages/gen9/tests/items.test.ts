@@ -1,5 +1,5 @@
-import type { ActivePokemon, BattleState, ItemContext } from "@pokemon-lib-ts/battle";
-import type { PokemonType, SeededRandom } from "@pokemon-lib-ts/core";
+import type { ActivePokemon, BattleSide, BattleState, ItemContext } from "@pokemon-lib-ts/battle";
+import type { PokemonType, PrimaryStatus, SeededRandom } from "@pokemon-lib-ts/core";
 import { createEvs, createIvs } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -144,9 +144,9 @@ function createOnFieldPokemon(overrides: {
       ability: overrides.ability ?? TEST_DEFAULTS.ability,
       abilitySlot: TEST_DEFAULTS.abilitySlot,
       heldItem: overrides.heldItem ?? null,
-      status: (overrides.status ?? null) as any,
+      status: (overrides.status ?? null) as PrimaryStatus | null,
       friendship: 0,
-      gender: TEST_DEFAULTS.gender as any,
+      gender: TEST_DEFAULTS.gender,
       isShiny: false,
       metLocation: "",
       metLevel: 1,
@@ -199,8 +199,8 @@ function createBattleState(
   return {
     format: { generation: 9, battleType: TEST_DEFAULTS.battleType },
     sides: [
-      { active: [], bench: [], entryHazards: {} } as any,
-      { active: [], bench: [], entryHazards: {} } as any,
+      { active: [], bench: [], entryHazards: {} } as unknown as BattleSide,
+      { active: [], bench: [], entryHazards: {} } as unknown as BattleSide,
     ],
     weather: overrides.weather ?? null,
     terrain: null,
@@ -219,7 +219,7 @@ function createDeterministicRng(overrides?: { chance?: (p: number) => boolean })
     nextInt: (min: number, _max: number) => min,
     seed: 12345,
     getState: () => 12345,
-  } as any;
+  } as unknown as SeededRandom;
 }
 
 function createItemContext(overrides: {
