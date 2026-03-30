@@ -3,6 +3,7 @@ import type {
   BattleConfig,
   BattleState,
   MoveEffectContext,
+  VolatileStartEvent,
 } from "@pokemon-lib-ts/battle";
 import { BattleEngine } from "@pokemon-lib-ts/battle";
 import { createDefaultStatStages } from "@pokemon-lib-ts/battle/utils";
@@ -839,7 +840,7 @@ describe("Gen 1 Bide handler", () => {
 
     // Assert
     const bideVol = defender.volatileStatuses.get(GEN1_MOVE_IDS.bide);
-    expect((bideVol!.data as any).accumulatedDamage).toBe(50);
+    expect((bideVol!.data as Record<string, unknown>).accumulatedDamage).toBe(50);
   });
 });
 
@@ -1042,7 +1043,7 @@ describe("Gen 1 onDamageReceived", () => {
     // Assert
     expect(defender.statStages.attack).toBe(1);
     const bideVol = defender.volatileStatuses.get(GEN1_MOVE_IDS.bide);
-    expect((bideVol!.data as any).accumulatedDamage).toBe(35);
+    expect((bideVol!.data as Record<string, unknown>).accumulatedDamage).toBe(35);
   });
 
   it("given a Pokemon without rage or bide, when onDamageReceived is called, then no state changes occur", () => {
@@ -1202,7 +1203,9 @@ describe("Gen 1 engine integration — multi-turn moves", () => {
     // Check the event log for confusion application
     const events = engine.getEventLog();
     const confusionEvents = events.filter(
-      (e) => e.type === "volatile-start" && (e as any).volatile === GEN1_MOVE_IDS.confusion,
+      (e) =>
+        e.type === "volatile-start" &&
+        (e as VolatileStartEvent).volatile === GEN1_MOVE_IDS.confusion,
     );
     // Source: pret/pokered ThrashEffect — confusion is applied when thrash ends
     // The confusion volatile-start event should exist somewhere in the log

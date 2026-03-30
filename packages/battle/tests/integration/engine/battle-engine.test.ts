@@ -691,7 +691,7 @@ describe("BattleEngine", () => {
     it("given Baton Pass into Sticky Web, when the replacement is chosen, then inherited boosts are merged before switch-in effects", () => {
       const ruleset = new MockRuleset();
       let speedSeenByStickyWeb: number | null = null;
-      ruleset.getAvailableHazards = () => [stickyWeb] as any;
+      ruleset.getAvailableHazards = () => [stickyWeb];
       ruleset.applyEntryHazards = (
         pokemon: ActivePokemon,
         _side: BattleSide,
@@ -710,7 +710,7 @@ describe("BattleEngine", () => {
       ruleset.setMoveEffectResult({ switchOut: true, batonPass: true });
       engine.start();
 
-      engine.state.sides[0].hazards.push({ type: stickyWeb as any, layers: 1 });
+      engine.state.sides[0].hazards.push({ type: stickyWeb, layers: 1 });
 
       const attacker = engine.state.sides[0].active[0]!;
       attacker.statStages.speed = 1;

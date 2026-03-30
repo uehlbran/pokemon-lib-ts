@@ -429,7 +429,7 @@ describe("Gen 3 passive immunity abilities", () => {
     it("given defender has Flash Fire with existing boost, when hit by Fire, then no new volatile", () => {
       const defender = createMockPokemon({ types: [TYPES.fire], ability: ABILITIES.flashFire });
       // Set the flash-fire volatile
-      (defender as any).volatileStatuses.set(VOLATILES.flashFire, { turnsLeft: -1 });
+      defender.volatileStatuses.set(VOLATILES.flashFire, { turnsLeft: -1 });
       const attacker = createMockPokemon({ types: [TYPES.fire] });
       const state = createMinimalBattleState(attacker, defender);
       const rng = createMockRng([]);
@@ -661,7 +661,7 @@ describe("Gen 3 on-turn-end abilities", () => {
       });
       const opponent = createMockPokemon({ speciesId: SPECIES.snorlax });
       const state = createMinimalBattleState(pokemon, opponent);
-      (state as any).weather = { type: WEATHER.rain, turnsLeft: 5, source: ABILITIES.drizzle };
+      state.weather = { type: WEATHER.rain, turnsLeft: 5, source: ABILITIES.drizzle };
       const rng = createMockRng([]);
 
       const context: AbilityContext = {

@@ -224,7 +224,13 @@ describe("BattleEngine — simple bug fixes", () => {
       engine.start();
 
       // Access the private method via casting — test-only pattern
-      const engineAny = engine as any;
+      const enginePrivate = engine as unknown as {
+        getSideIndex(pokemon: {
+          pokemon: { uid: string; currentHp: number };
+          volatileStatuses: Map<never, never>;
+          boosts: Record<never, never>;
+        }): number;
+      };
 
       // Create a fake ActivePokemon that is not registered on any side
       const fakePokemon = {
@@ -234,7 +240,7 @@ describe("BattleEngine — simple bug fixes", () => {
       };
 
       // Act & Assert
-      expect(() => engineAny.getSideIndex(fakePokemon)).toThrow(
+      expect(() => enginePrivate.getSideIndex(fakePokemon)).toThrow(
         "BattleEngine: ActivePokemon not found in any side",
       );
     });

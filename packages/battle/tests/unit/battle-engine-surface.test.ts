@@ -2,6 +2,7 @@ import {
   CORE_ABILITY_IDS,
   CORE_MOVE_IDS,
   type DataManager,
+  type NatureId,
   type PokemonInstance,
   type PokemonSpeciesData,
 } from "@pokemon-lib-ts/core";
@@ -414,7 +415,10 @@ describe("BattleEngine surface", () => {
         {
           generation: 1,
           format: "singles",
-          teams: [[createTestPokemon(GEN1_SPECIES_IDS.charizard, 50)]] as any,
+          teams: [[createTestPokemon(GEN1_SPECIES_IDS.charizard, 50)]] as unknown as [
+            PokemonInstance[],
+            PokemonInstance[],
+          ],
           seed: 12345,
         },
         new MockRuleset(),
@@ -441,7 +445,7 @@ describe("BattleEngine surface", () => {
             [createTestPokemon(GEN1_SPECIES_IDS.charizard, 50)],
             [createTestPokemon(GEN1_SPECIES_IDS.blastoise, 50)],
             [createTestPokemon(GEN1_SPECIES_IDS.pikachu, 50)],
-          ] as any,
+          ] as unknown as [PokemonInstance[], PokemonInstance[]],
           seed: 12345,
         },
         new MockRuleset(),
@@ -469,7 +473,7 @@ describe("BattleEngine surface", () => {
             [
               createTestPokemon(GEN1_SPECIES_IDS.charizard, 50, {
                 uid: "charizard-1",
-                nature: "super-brave" as any,
+                nature: "super-brave" as unknown as NatureId,
               }),
             ],
             [createTestPokemon(GEN1_SPECIES_IDS.blastoise, 50)],

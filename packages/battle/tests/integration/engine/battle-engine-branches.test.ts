@@ -520,12 +520,17 @@ describe("BattleEngine — branch coverage", () => {
       });
 
       // Simulate the turn state the engine would have when resolving Sucker Punch.
-      (engine as any).currentTurnActions = [
+      type EnginePrivate = {
+        currentTurnActions: { type: string; side: number; moveIndex: number }[];
+        getDefenderSelectedMove(side: number): unknown;
+      };
+      const enginePrivate = engine as unknown as EnginePrivate;
+      enginePrivate.currentTurnActions = [
         { type: "move", side: 0, moveIndex: 0 },
         { type: "move", side: 1, moveIndex: 0 },
       ];
 
-      const defenderSelectedMove = (engine as any).getDefenderSelectedMove(1);
+      const defenderSelectedMove = enginePrivate.getDefenderSelectedMove(1);
 
       expect(defenderSelectedMove).toBeNull();
       const warning = events.find((e) => e.type === "engine-warning");
