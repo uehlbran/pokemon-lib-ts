@@ -479,7 +479,7 @@ function getAttackStat(
     isPhysical &&
     !isBodyPress &&
     ability === "slow-start" &&
-    attacker.volatileStatuses.has("slow-start")
+    attacker.volatileStatuses.has(CORE_VOLATILE_IDS.slowStart)
   ) {
     rawStat = Math.floor(rawStat / 2);
   }

@@ -741,7 +741,7 @@ export class Gen4Ruleset extends BaseRuleset {
     // Tracked via the "slow-start" volatile status.
     // Source: Bulbapedia — Slow Start: "Halves Attack and Speed for 5 turns upon entering battle."
     // Source: Showdown data/abilities.ts — Slow Start onModifySpe
-    if (active.ability === "slow-start" && active.volatileStatuses.has("slow-start")) {
+    if (active.ability === "slow-start" && active.volatileStatuses.has(CORE_VOLATILE_IDS.slowStart)) {
       effective = Math.floor(effective / 2);
     }
 
@@ -1184,7 +1184,7 @@ export class Gen4Ruleset extends BaseRuleset {
    */
   override canSwitch(pokemon: ActivePokemon, state: BattleState): boolean {
     // "trapped" volatile (Mean Look, Spider Web, Block)
-    if (pokemon.volatileStatuses.has("trapped")) return false;
+    if (pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.trapped)) return false;
 
     // Find which side the pokemon is on and get the opponent
     const pokemonSide = state.sides[0].active[0] === pokemon ? 0 : 1;

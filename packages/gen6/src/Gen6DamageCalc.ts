@@ -302,7 +302,7 @@ function getAttackStat(
 
   // Slow Start: halve Attack for the first 5 turns
   // Source: Showdown data/abilities.ts -- Slow Start
-  if (isPhysical && ability === "slow-start" && attacker.volatileStatuses.has("slow-start")) {
+  if (isPhysical && ability === "slow-start" && attacker.volatileStatuses.has(CORE_VOLATILE_IDS.slowStart)) {
     rawStat = Math.floor(rawStat / 2);
   }
 
@@ -318,7 +318,7 @@ function getAttackStat(
 
   // Flash Fire volatile: 1.5x Atk and SpAtk for Fire-type moves
   // Source: Showdown data/abilities.ts -- flashfire condition onModifyAtk/onModifySpA: chainModify(1.5)
-  if (moveType === "fire" && attacker.volatileStatuses.has("flash-fire")) {
+  if (moveType === "fire" && attacker.volatileStatuses.has(CORE_VOLATILE_IDS.flashFire)) {
     rawStat = Math.floor((rawStat * 150) / 100);
   }
 

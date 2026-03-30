@@ -515,7 +515,7 @@ export class Gen5Ruleset extends BaseRuleset {
     }
 
     // Slow Start: halve Speed for the first 5 turns after entering battle.
-    if (active.ability === "slow-start" && active.volatileStatuses.has("slow-start")) {
+    if (active.ability === "slow-start" && active.volatileStatuses.has(CORE_VOLATILE_IDS.slowStart)) {
       effective = Math.floor(effective / 2);
     }
 

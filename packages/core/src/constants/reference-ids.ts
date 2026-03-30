@@ -583,6 +583,9 @@ export const CORE_VOLATILE_IDS = {
   unburden: "unburden",
   underwater: "underwater",
   zenMode: "zen-mode",
+  quickGuard: "quick-guard",
+  rageMissLock: "rage-miss-lock",
+  wideGuard: "wide-guard",
 } as const;
 
 export const CORE_WEATHER_IDS = {

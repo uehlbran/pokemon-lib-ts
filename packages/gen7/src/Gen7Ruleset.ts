@@ -612,7 +612,10 @@ export class Gen7Ruleset extends BaseRuleset {
 
     // Slow Start: halve Speed for the first 5 turns after entering battle.
     // Source: Bulbapedia -- Slow Start halves Speed for 5 turns
-    if (active.ability === "slow-start" && active.volatileStatuses.has("slow-start")) {
+    if (
+      active.ability === "slow-start" &&
+      active.volatileStatuses.has(CORE_VOLATILE_IDS.slowStart)
+    ) {
       effective = Math.floor(effective / 2);
     }
 
@@ -1053,7 +1056,7 @@ export class Gen7Ruleset extends BaseRuleset {
     target: ActivePokemon,
     state: BattleState,
   ): boolean {
-    if (volatile === "confusion") {
+    if (volatile === CORE_VOLATILE_IDS.confusion) {
       return checkMistyTerrainConfusionImmunity(target, state);
     }
     return false;
