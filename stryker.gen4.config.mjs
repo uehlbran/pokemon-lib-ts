@@ -2,16 +2,16 @@
 export default {
   packageManager: "npm",
   reporters: ["clear-text", "json"],
-  jsonReporter: { fileName: "reports/mutation/mutation.json" },
+  jsonReporter: { fileName: "reports/mutation/mutation-gen4.json" },
   testRunner: "vitest",
   checkers: ["typescript"],
   tsconfigFile: "tsconfig.json",
   timeoutMS: 60000,
   concurrency: 2,
   tempDirName: ".stryker-tmp",
-  mutate: ["packages/core/src/logic/damage-utils.ts", "packages/core/src/logic/stat-calc.ts"],
+  mutate: ["packages/gen4/src/Gen4MoveEffectsBehavior.ts"],
   vitest: {
-    dir: "packages/core",
+    dir: "packages/gen4",
   },
   ignoreStatic: true,
 };

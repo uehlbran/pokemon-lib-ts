@@ -53,8 +53,8 @@
     "test:oracle": "vitest run --config tools/oracle-validation/vitest.config.ts",
     "validate:pret": "tsx tools/data-importer/src/pret-overrides/validate-committed-data.ts",
     "test:mutant": "stryker run",
-    "test:mutant:core": "stryker run --mutate 'packages/core/src/logic/*.ts'",
-    "test:mutant:gen4": "stryker run --mutate 'packages/gen4/src/Gen4MoveEffectsBehavior.ts'"
+    "test:mutant:core": "stryker run",
+    "test:mutant:gen4": "stryker run --configFile stryker.gen4.config.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.0",
