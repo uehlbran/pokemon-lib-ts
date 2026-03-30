@@ -184,7 +184,7 @@ describe("BattleEngine — type immunity: no DamageEvent with amount=0 (#1161)",
   it("given a type-immune move (effectiveness=0), when the move executes, then the defender's HP is unchanged", () => {
     // Arrange
     const ruleset = new ImmunityRuleset();
-    const { engine, events } = createEngine(ruleset);
+    const { engine } = createEngine(ruleset);
     // Get HP after engine.start() recalculates stats — startHp is the true initial HP
     const defenderBeforeTurn = engine.getState().sides[1]?.active[0];
     const startHp = defenderBeforeTurn?.pokemon.currentHp ?? 0;

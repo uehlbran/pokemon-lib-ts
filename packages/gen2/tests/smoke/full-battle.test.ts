@@ -855,22 +855,41 @@ describe("Gen 2 Full Battle Integration", () => {
 
     // Act
     engine.start();
+    // Capture Umbreon's HP after stat calculation but before the turn resolves
+    const umbreonHpBefore = engine.getState().sides[1]?.active[0]?.pokemon.currentHp ?? -1;
+    expect(umbreonHpBefore).toBeGreaterThan(0); // sanity check
+
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 }); // Psychic
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 3 }); // Quick Attack
 
-    // Assert
+    // Assert: engine emits "It doesn't affect..." and suppresses effectiveness/damage events.
+    // Source: pokecrystal engine/battle/core.asm CheckTypeMatchup — 0× immunity exits battle_calc entirely;
+    //   no damage is subtracted. Engine guard (PR #1168) enforces the same contract for Gen 2.
     const events = engine.getEventLog();
     const { effectivenessEvents, damageEvents } = collectEffectivenessProbe(events);
-    expect(effectivenessEvents).toContainEqual({
-      type: "effectiveness",
-      multiplier: getTypeEffectiveness(psychic, [dark], dataManager.getTypeChart()),
-    });
-    expect(damageEvents).toContainEqual(
-      expect.objectContaining({
-        pokemon: GEN2_SPECIES_NAMES.umbreon,
-        source: GEN2_MOVE_IDS.psychic,
-      }),
-    );
+    const messageEvents = events.filter((e) => e.type === "message");
+
+    // No effectiveness event emitted for immunity (engine returns before emitting it)
+    expect(effectivenessEvents.some((e) => "multiplier" in e && e.multiplier === 0)).toBe(false);
+
+    // No damage event emitted for Umbreon from Psychic
+    expect(
+      damageEvents.some(
+        (e) =>
+          "pokemon" in e &&
+          e.pokemon === GEN2_SPECIES_NAMES.umbreon &&
+          "source" in e &&
+          e.source === GEN2_MOVE_IDS.psychic,
+      ),
+    ).toBe(false);
+
+    // "It doesn't affect" message is emitted
+    expect(messageEvents.some((e) => "text" in e && e.text.includes("doesn't affect"))).toBe(true);
+
+    // Umbreon's HP is unchanged (immune move deals zero HP change)
+    // Source: pokecrystal engine/battle/core.asm CheckTypeMatchup — no HP subtraction on immunity
+    const umbreonHpAfter = engine.getState().sides[1]?.active[0]?.pokemon.currentHp ?? -1;
+    expect(umbreonHpAfter).toBe(umbreonHpBefore);
   });
 
   it("given Gen 2, when a Ghost move hits a Psychic type, then it is super effective (2x — Gen 1 bug fixed)", () => {
