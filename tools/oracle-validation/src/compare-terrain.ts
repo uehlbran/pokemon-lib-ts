@@ -18,6 +18,7 @@
  *             NOT all damage types.
  */
 
+import { GEN_NUMBERS } from "@pokemon-lib-ts/core";
 import { getTerrainDamageModifier as getGen6TerrainDamageModifier } from "../../../packages/gen6/src/Gen6Terrain.js";
 import {
   TERRAIN_DEFAULT_TURNS as GEN7_TERRAIN_DEFAULT_TURNS,
@@ -99,19 +100,19 @@ interface TerrainDurationValues {
 }
 
 function getDurationValues(gen: number): TerrainDurationValues {
-  if (gen === 6) {
+  if (gen === GEN_NUMBERS.gen6) {
     // Gen 6: Terrain Extender not introduced until Gen 7.
     // Duration is 5 turns; no item extends it.
     // Source: Bulbapedia "Terrain" — Terrain Extender introduced in Gen 7
     return { defaultTurns: 5, extendedTurns: null };
   }
-  if (gen === 7) {
+  if (gen === GEN_NUMBERS.gen7) {
     return {
       defaultTurns: GEN7_TERRAIN_DEFAULT_TURNS,
       extendedTurns: GEN7_TERRAIN_EXTENDED_TURNS,
     };
   }
-  if (gen === 8) {
+  if (gen === GEN_NUMBERS.gen8) {
     return {
       defaultTurns: GEN8_TERRAIN_DEFAULT_TURNS,
       extendedTurns: GEN8_TERRAIN_EXTENDED_TURNS,
@@ -139,7 +140,7 @@ export function runTerrainSuite(
 ): SuiteResult {
   const gen = generation.gen;
 
-  if (gen <= 5) {
+  if (gen <= GEN_NUMBERS.gen5) {
     return makeSkip();
   }
 
@@ -174,7 +175,7 @@ export function runTerrainSuite(
 
   // ── Gen 6: damage modifier checks (getTerrainDamageModifier is exported) ──
 
-  if (gen === 6) {
+  if (gen === GEN_NUMBERS.gen6) {
     // Electric Terrain: 1.5× for Electric moves vs grounded attacker
     // Source: Showdown data/conditions.ts — electricterrain.onBasePower chainModify(1.5)
     const electricMod = getGen6TerrainDamageModifier(
@@ -222,7 +223,7 @@ export function runTerrainSuite(
   // Note: getTerrainDamageModifier is a private function in Gen 7-9 DamageCalc modules.
   // The boost value is documented here and validated indirectly through compare-damage.ts.
 
-  if (gen === 7) {
+  if (gen === GEN_NUMBERS.gen7) {
     notes.push(
       "Gen 7: Electric Terrain boost 1.5× (6144/4096) — same as Gen 6. " +
         "Source: Showdown data/conditions.ts electricterrain.onBasePower",
@@ -241,7 +242,7 @@ export function runTerrainSuite(
     );
   }
 
-  if (gen >= 8) {
+  if (gen >= GEN_NUMBERS.gen8) {
     notes.push(
       `Gen ${gen}: Electric/Grassy/Psychic Terrain boost 1.3× (5325/4096) — nerfed from 1.5× in Gen 7 (ERRATA #17). ` +
         "Source: Showdown data/mods/gen8/scripts.ts terrain boost",
@@ -268,7 +269,7 @@ export function runTerrainSuite(
       "Source: Showdown data/conditions.ts grassyterrain.onResidual",
   );
 
-  if (gen >= 7) {
+  if (gen >= GEN_NUMBERS.gen7) {
     notes.push(
       `Gen ${gen}: Psychic Terrain — prevents priority moves targeting grounded Pokemon. ` +
         "Source: Showdown data/conditions.ts psychicterrain.onTryHit",

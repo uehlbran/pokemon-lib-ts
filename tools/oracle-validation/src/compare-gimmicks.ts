@@ -33,6 +33,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { Generations } from "@pkmn/data";
 import { Dex } from "@pkmn/dex";
+import { GEN_NUMBERS } from "@pokemon-lib-ts/core";
 import { getZMovePower } from "../../../packages/gen7/src/Gen7ZMove.js";
 // Import our actual Gen 7/8 gimmick functions to test against oracle.
 // Source-level imports (not public API) — same pattern as compare-damage.ts.
@@ -215,7 +216,7 @@ export function runGimmicksSuite(
 ): SuiteResult {
   const gen = generation.gen;
 
-  if (gen <= 5) {
+  if (gen <= GEN_NUMBERS.gen5) {
     return makeSkip();
   }
 
@@ -224,14 +225,14 @@ export function runGimmicksSuite(
 
   // ── Gen 6: Mega Evolution ─────────────────────────────────────────────────
 
-  if (gen === 6 || gen === 7) {
+  if (gen === GEN_NUMBERS.gen6 || gen === GEN_NUMBERS.gen7) {
     notes.push(
       `Gen ${gen}: Mega Evolution — Mega Stone triggers mid-battle transformation. ` +
         "Stat changes apply on the Mega turn and persist through switches (ERRATA #18 — NOT reverted on switch-out). " +
         "Source: Showdown sim/battle-actions.ts onAfterMove Mega Evolution handler",
     );
     notes.push(
-      gen === 6
+      gen === GEN_NUMBERS.gen6
         ? "Gen 6: Speed on Mega turn: Pokemon acts at pre-Mega Speed (priority determined before transformation). " +
             "Source: Showdown sim/battle-actions.ts Gen 6 — speed recalc deferred"
         : "Gen 7: Speed on Mega turn: Pokemon acts at post-Mega Speed (changed from Gen 6 behavior). " +
@@ -242,7 +243,7 @@ export function runGimmicksSuite(
 
   // ── Gen 7: Z-Moves ────────────────────────────────────────────────────────
 
-  if (gen === 7) {
+  if (gen === GEN_NUMBERS.gen7) {
     buildZMovePowerChecks(generation, oracleChecks, notes);
 
     notes.push(
@@ -258,7 +259,7 @@ export function runGimmicksSuite(
 
   // ── Gen 8: Dynamax ────────────────────────────────────────────────────────
 
-  if (gen === 8) {
+  if (gen === GEN_NUMBERS.gen8) {
     buildDynamaxHPChecks(generation, oracleChecks, notes);
 
     notes.push(
@@ -283,7 +284,7 @@ export function runGimmicksSuite(
 
   // ── Gen 9: Terastallization ───────────────────────────────────────────────
 
-  if (gen === 9) {
+  if (gen === GEN_NUMBERS.gen9) {
     notes.push(
       "Gen 9: Terastallization — changes Pokemon's type to its Tera type for the battle. " +
         "Base types retain 1.5× STAB even after Tera (ERRATA #30). " +

@@ -5,6 +5,7 @@ import {
   CORE_ITEM_IDS,
   CORE_MOVE_IDS,
   CORE_NATURE_IDS,
+  GEN_NUMBERS,
 } from "../../../packages/core/src/constants/index.js";
 import type { PokemonInstance } from "../../../packages/core/src/entities/pokemon.js";
 import { createFriendship } from "../../../packages/core/src/logic/friendship-inputs.js";
@@ -165,7 +166,7 @@ function runGen3PlusStatCheck(gen: number): string[] {
 export function runStatsSuite(generation: ImplementedGeneration): SuiteResult {
   const failures: string[] = [];
 
-  if (generation.gen === 1) {
+  if (generation.gen === GEN_NUMBERS.gen1) {
     const dataManager = createGen1DataManager();
     const species = dataManager.getSpeciesByName("charizard");
     const tackle = dataManager.getMove(CORE_MOVE_IDS.tackle);
@@ -177,7 +178,7 @@ export function runStatsSuite(generation: ImplementedGeneration): SuiteResult {
     }
   }
 
-  if (generation.gen === 2) {
+  if (generation.gen === GEN_NUMBERS.gen2) {
     const dataManager = createGen2DataManager();
     const species = dataManager.getSpeciesByName("charizard");
     const tackle = dataManager.getMove(CORE_MOVE_IDS.tackle);
@@ -188,7 +189,7 @@ export function runStatsSuite(generation: ImplementedGeneration): SuiteResult {
     }
   }
 
-  if (generation.gen >= 3) {
+  if (generation.gen >= GEN_NUMBERS.gen3) {
     failures.push(...runGen3PlusStatCheck(generation.gen));
   }
 

@@ -33,6 +33,7 @@ import {
   CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_NATURE_IDS,
+  GEN_NUMBERS,
 } from "../../../packages/core/src/constants/index.js";
 import type { MoveData } from "../../../packages/core/src/entities/move.js";
 import type { NatureData } from "../../../packages/core/src/entities/nature.js";
@@ -236,9 +237,9 @@ function buildActivePokemon(
 ): ActivePokemon {
   // Calculate and attach stats
   let calculatedStats: PokemonInstance["calculatedStats"];
-  if (gen <= 2) {
+  if (gen <= GEN_NUMBERS.gen2) {
     // Gen 1-2: DV-based stat calc (no natures)
-    const statCalc = gen === 1 ? calculateGen1Stats : calculateGen2Stats;
+    const statCalc = gen === GEN_NUMBERS.gen1 ? calculateGen1Stats : calculateGen2Stats;
     calculatedStats = statCalc(pokemon, speciesData);
   } else {
     // Gen 3+: IV/EV-based stat calc with natures
@@ -496,7 +497,7 @@ export function runDamageSuite(
 
   const dataManager = factory();
   const typeChart = dataManager.getTypeChart();
-  const nature = gen >= 3 ? dataManager.getNature(CORE_NATURE_IDS.hardy) : null;
+  const nature = gen >= GEN_NUMBERS.gen3 ? dataManager.getNature(CORE_NATURE_IDS.hardy) : null;
   const battleState = createBattleState({ generation: gen as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 });
 
   const oracleGen = PKMN_GENERATIONS.get(gen);
@@ -593,14 +594,14 @@ export function runDamageSuite(
         }
 
         const attackerPokemon =
-          gen <= 2
+          gen <= GEN_NUMBERS.gen2
             ? createGen12PokemonInstance(speciesData.id, localMoveData.id, localMoveData.pp)
             : createGen3PlusPokemonInstance(speciesData.id, localMoveData.id, localMoveData.pp);
 
         const attackerActive = buildActivePokemon(gen, attackerPokemon, speciesData, nature);
         // Ensure defender HP is set from calculatedStats
         const defenderPokemonRefreshed =
-          gen <= 2
+          gen <= GEN_NUMBERS.gen2
             ? createGen12PokemonInstance(defenderSpeciesData.id, "tackle", 35)
             : createGen3PlusPokemonInstance(defenderSpeciesData.id, "tackle", 35);
         const freshDefenderActive = buildActivePokemon(
@@ -629,12 +630,12 @@ export function runDamageSuite(
         // ── Build @smogon/calc objects ───────────────────────────────────
         const smogonGenNum = gen as GenerationNum;
         const smogonAttacker =
-          gen <= 2
+          gen <= GEN_NUMBERS.gen2
             ? buildSmogonPokemonGen12(smogonGenNum, speciesName)
             : buildSmogonPokemonGen3Plus(smogonGenNum, speciesName);
 
         const smogonDefender =
-          gen <= 2
+          gen <= GEN_NUMBERS.gen2
             ? buildSmogonPokemonGen12(smogonGenNum, GENERIC_DEFENDER_NAME)
             : buildSmogonPokemonGen3Plus(smogonGenNum, GENERIC_DEFENDER_NAME);
 

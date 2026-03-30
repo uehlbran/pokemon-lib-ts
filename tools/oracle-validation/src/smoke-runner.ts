@@ -34,6 +34,7 @@ import {
   createEvs,
   createIvs,
   createStatExp,
+  GEN_NUMBERS,
   MAX_DV,
   MAX_IV,
   SeededRandom,
@@ -105,8 +106,8 @@ export function generateMinimalTeam(
   // Pre-build item pool and nature list once per team
   // Items: Gen 2+ has held items in the DataManager (62 in Gen 2, growing in later gens)
   // Natures: Gen 3+ only (Gen 1-2 have no nature mechanic)
-  const allItems = gen >= 2 ? dataManager.getAllItems() : [];
-  const allNatures = gen >= 3 ? dataManager.getAllNatures() : [];
+  const allItems = gen >= GEN_NUMBERS.gen2 ? dataManager.getAllItems() : [];
+  const allNatures = gen >= GEN_NUMBERS.gen3 ? dataManager.getAllNatures() : [];
 
   for (const species of shuffled) {
     if (team.length >= TEAM_SIZE) break;
@@ -131,7 +132,7 @@ export function generateMinimalTeam(
     if (moves.length === 0) continue;
 
     const ivs =
-      gen <= 2
+      gen <= GEN_NUMBERS.gen2
         ? createDvs({
             attack: MAX_DV,
             defense: MAX_DV,
@@ -147,12 +148,12 @@ export function generateMinimalTeam(
             spDefense: MAX_IV,
             speed: MAX_IV,
           });
-    const evs = gen <= 2 ? createStatExp() : createEvs();
+    const evs = gen <= GEN_NUMBERS.gen2 ? createStatExp() : createEvs();
 
     // Randomly select an ability slot from available options
     let ability = "";
     let abilitySlot: AbilitySlot = CORE_ABILITY_SLOTS.normal1;
-    if (gen >= 3) {
+    if (gen >= GEN_NUMBERS.gen3) {
       const candidates: [string, AbilitySlot][] = [];
       if (species.abilities.normal[0])
         candidates.push([species.abilities.normal[0], CORE_ABILITY_SLOTS.normal1]);
@@ -188,13 +189,13 @@ export function generateMinimalTeam(
 
     // Randomly pick a held item (Gen 2+)
     let heldItem: string | null = null;
-    if (gen >= 2 && allItems.length > 0) {
+    if (gen >= GEN_NUMBERS.gen2 && allItems.length > 0) {
       heldItem = rng.pick(allItems).id;
     }
 
     // Randomly pick a nature (Gen 3+), or use neutral for Gen 1-2
     let nature: NatureId;
-    if (gen <= 2) {
+    if (gen <= GEN_NUMBERS.gen2) {
       nature = CORE_NATURE_IDS.serious;
     } else if (allNatures.length > 0) {
       nature = rng.pick(allNatures).id;
