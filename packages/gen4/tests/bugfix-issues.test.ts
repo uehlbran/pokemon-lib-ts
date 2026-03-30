@@ -311,7 +311,7 @@ describe("#359 Magic Guard prevents full paralysis", () => {
     });
     const rng = createMockRng({ chanceReturn: true }); // would trigger paralysis normally
 
-    const isFullyParalyzed = ruleset.checkFullParalysis(mon, rng as any);
+    const isFullyParalyzed = ruleset.checkFullParalysis(mon, rng as unknown as SeededRandom);
 
     expect(isFullyParalyzed).toBe(false);
   });
@@ -327,7 +327,7 @@ describe("#359 Magic Guard prevents full paralysis", () => {
     });
     const rng = createMockRng({ chanceReturn: true });
 
-    const isFullyParalyzed = ruleset.checkFullParalysis(mon, rng as any);
+    const isFullyParalyzed = ruleset.checkFullParalysis(mon, rng as unknown as SeededRandom);
 
     expect(isFullyParalyzed).toBe(true);
   });
@@ -347,7 +347,7 @@ describe("#370 Entry hazards respect Gravity and Iron Ball grounding", () => {
     const side = createBattleSideWithHazards(mon, [{ type: CORE_HAZARD_IDS.spikes, layers: 1 }]);
     const state = createBattleState({ gravityActive: true });
 
-    const result = ruleset.applyEntryHazards(mon, side as any, state);
+    const result = ruleset.applyEntryHazards(mon, side, state);
 
     // 1 layer Spikes = 1/8 max HP = floor(200/8) = 25
     // Source: Bulbapedia -- Spikes damage: 1 layer = 1/8 max HP
@@ -368,7 +368,7 @@ describe("#370 Entry hazards respect Gravity and Iron Ball grounding", () => {
     ]);
     const state = createBattleState({ gravityActive: true });
 
-    const result = ruleset.applyEntryHazards(mon, side as any, state);
+    const result = ruleset.applyEntryHazards(mon, side, state);
 
     expect(result.statusInflicted).toBe(CORE_STATUS_IDS.poison);
   });
@@ -386,7 +386,7 @@ describe("#370 Entry hazards respect Gravity and Iron Ball grounding", () => {
     const side = createBattleSideWithHazards(mon, [{ type: CORE_HAZARD_IDS.spikes, layers: 1 }]);
     const state = createBattleState();
 
-    const result = ruleset.applyEntryHazards(mon, side as any, state);
+    const result = ruleset.applyEntryHazards(mon, side, state);
 
     // 1 layer Spikes = 1/8 max HP = floor(200/8) = 25
     expect(result.damage).toBe(25);
@@ -400,7 +400,7 @@ describe("#370 Entry hazards respect Gravity and Iron Ball grounding", () => {
     const side = createBattleSideWithHazards(mon, [{ type: CORE_HAZARD_IDS.spikes, layers: 1 }]);
     const state = createBattleState();
 
-    const result = ruleset.applyEntryHazards(mon, side as any, state);
+    const result = ruleset.applyEntryHazards(mon, side, state);
 
     expect(result.damage).toBe(0);
   });
@@ -436,7 +436,7 @@ describe("#376 Unaware takes priority over Simple in damage calc", () => {
       defender,
       move,
       state: createBattleState(),
-      rng: rng as any,
+      rng: rng as unknown as SeededRandom,
       isCrit: false,
     });
 
@@ -450,7 +450,7 @@ describe("#376 Unaware takes priority over Simple in damage calc", () => {
       defender: defenderNoUnaware,
       move,
       state: createBattleState(),
-      rng: rng2 as any,
+      rng: rng2 as unknown as SeededRandom,
       isCrit: false,
     });
 
@@ -468,7 +468,7 @@ describe("#376 Unaware takes priority over Simple in damage calc", () => {
       }),
       move,
       state: createBattleState(),
-      rng: rng3 as any,
+      rng: rng3 as unknown as SeededRandom,
       isCrit: false,
     });
 
@@ -506,7 +506,7 @@ describe("#376 Unaware takes priority over Simple in damage calc", () => {
       defender,
       move,
       state: createBattleState(),
-      rng: rng1 as any,
+      rng: rng1 as unknown as SeededRandom,
       isCrit: false,
     });
 
@@ -516,7 +516,7 @@ describe("#376 Unaware takes priority over Simple in damage calc", () => {
       defender,
       move,
       state: createBattleState(),
-      rng: rng2 as any,
+      rng: rng2 as unknown as SeededRandom,
       isCrit: false,
     });
 
@@ -606,7 +606,7 @@ describe("#453 Tangled Feet applies 0.5x accuracy multiplier", () => {
       defender,
       move,
       state: createBattleState(),
-      rng: rng as any,
+      rng: rng as unknown as SeededRandom,
     };
     const result = ruleset.doesMoveHit(context);
     expect(result).toBe(true); // roll 50 <= calc 50 = hit
@@ -631,7 +631,7 @@ describe("#453 Tangled Feet applies 0.5x accuracy multiplier", () => {
       defender,
       move,
       state: createBattleState(),
-      rng: rng as any,
+      rng: rng as unknown as SeededRandom,
     };
     const result = ruleset.doesMoveHit(context);
     expect(result).toBe(false); // roll 51 > calc 50 = miss

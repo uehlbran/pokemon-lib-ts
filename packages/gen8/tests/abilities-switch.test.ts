@@ -24,6 +24,7 @@ import {
   createEvs,
   createIvs,
   createPokemonInstance,
+  type SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { GEN7_MOVE_IDS } from "@pokemon-lib-ts/gen7";
 import { describe, expect, it } from "vitest";
@@ -264,7 +265,7 @@ function createAbilityContext(opts: {
 }): AbilityContext {
   const state = createBattleState();
   if (opts.rng) {
-    (state as any).rng = { ...state.rng, ...opts.rng };
+    (state as unknown as Record<string, unknown>).rng = { ...state.rng, ...opts.rng };
   }
   const pokemon = createOnFieldPokemon({
     ability: opts.ability,
@@ -284,10 +285,10 @@ function createAbilityContext(opts: {
     pokemon,
     opponent: opts.opponent,
     state,
-    rng: (opts.rng ?? state.rng) as any,
+    rng: (opts.rng ?? state.rng) as unknown as SeededRandom,
     trigger: opts.trigger,
     move: opts.move,
-    statChange: opts.statChange as any,
+    statChange: opts.statChange as unknown as AbilityContext["statChange"],
   };
 }
 

@@ -371,7 +371,7 @@ describe("Storm Drain — Gen 4: redirect-only in doubles, no singles immunity",
         defender,
         move,
         state,
-        rng: { next: () => 0.5, int: () => 100, chance: () => false } as any,
+        rng: { next: () => 0.5, int: () => 100, chance: () => false } as unknown as SeededRandom,
         isCrit: false,
       } as DamageContext,
       GEN4_TYPE_CHART,
@@ -445,7 +445,7 @@ describe("Klutz — held item has no effect", () => {
       next: () => 0.5,
       int: (_min: number, _max: number) => 100,
       chance: () => false,
-    } as any;
+    } as unknown as SeededRandom;
 
     const resultKlutz = calculateGen4Damage(
       { attacker, defender, move, state, rng, isCrit: false } as DamageContext,
@@ -473,7 +473,7 @@ describe("Klutz — held item has no effect", () => {
     const result = applyGen4HeldItem(itemTriggerIds.endOfTurn, {
       pokemon,
       state,
-      rng: { next: () => 0, int: () => 0, chance: () => false } as any,
+      rng: { next: () => 0, int: () => 0, chance: () => false } as unknown as SeededRandom,
     });
 
     expect(result.activated).toBe(false);
@@ -492,7 +492,7 @@ describe("Klutz — held item has no effect", () => {
     const result = applyGen4HeldItem(itemTriggerIds.endOfTurn, {
       pokemon,
       state,
-      rng: { next: () => 0, int: () => 0, chance: () => false } as any,
+      rng: { next: () => 0, int: () => 0, chance: () => false } as unknown as SeededRandom,
     });
 
     expect(result.activated).toBe(true);
@@ -522,7 +522,7 @@ describe("Klutz — held item has no effect", () => {
       next: () => 0.5,
       int: (_min: number, _max: number) => 100,
       chance: () => false,
-    } as any;
+    } as unknown as SeededRandom;
 
     const resultKlutz = calculateGen4Damage(
       { attacker, defender, move, state, rng, isCrit: false } as DamageContext,
@@ -554,8 +554,8 @@ describe("Suction Cups — prevent forced switching", () => {
     });
     const move = createCanonicalMove(moveIds.whirlwind);
     const state = createBattleState();
-    state.sides[0].active = [attacker as any];
-    state.sides[1].active = [defender as any];
+    state.sides[0].active = [attacker as ActivePokemon];
+    state.sides[1].active = [defender as ActivePokemon];
 
     const result = executeGen4MoveEffect({
       attacker,
@@ -563,7 +563,7 @@ describe("Suction Cups — prevent forced switching", () => {
       move,
       damage: 0,
       state,
-      rng: { next: () => 0.5, int: () => 50, chance: () => false } as any,
+      rng: { next: () => 0.5, int: () => 50, chance: () => false } as unknown as SeededRandom,
     } as MoveEffectContext);
 
     // Switch should NOT happen
@@ -577,8 +577,8 @@ describe("Suction Cups — prevent forced switching", () => {
     const defender = createOnFieldPokemon({ ability: abilityIds.sturdy, types: ROCK_TYPES });
     const move = createCanonicalMove(moveIds.whirlwind);
     const state = createBattleState();
-    state.sides[0].active = [attacker as any];
-    state.sides[1].active = [defender as any];
+    state.sides[0].active = [attacker as ActivePokemon];
+    state.sides[1].active = [defender as ActivePokemon];
 
     const result = executeGen4MoveEffect({
       attacker,
@@ -586,7 +586,7 @@ describe("Suction Cups — prevent forced switching", () => {
       move,
       damage: 0,
       state,
-      rng: { next: () => 0.5, int: () => 50, chance: () => false } as any,
+      rng: { next: () => 0.5, int: () => 50, chance: () => false } as unknown as SeededRandom,
     } as MoveEffectContext);
 
     // Switch should happen
@@ -603,8 +603,8 @@ describe("Suction Cups — prevent forced switching", () => {
     });
     const move = createCanonicalMove(moveIds.roar);
     const state = createBattleState();
-    state.sides[0].active = [attacker as any];
-    state.sides[1].active = [defender as any];
+    state.sides[0].active = [attacker as ActivePokemon];
+    state.sides[1].active = [defender as ActivePokemon];
 
     const result = executeGen4MoveEffect({
       attacker,
@@ -612,7 +612,7 @@ describe("Suction Cups — prevent forced switching", () => {
       move,
       damage: 0,
       state,
-      rng: { next: () => 0.5, int: () => 50, chance: () => false } as any,
+      rng: { next: () => 0.5, int: () => 50, chance: () => false } as unknown as SeededRandom,
     } as MoveEffectContext);
 
     expect(result.switchOut).toBe(false);

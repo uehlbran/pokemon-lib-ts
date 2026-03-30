@@ -14,7 +14,13 @@
  * Source authority: Showdown data/items.ts (Gen 5–9 primary), Bulbapedia item pages.
  */
 
-import type { ActivePokemon, BattleState, ItemContext, ItemResult } from "@pokemon-lib-ts/battle";
+import type {
+  ActivePokemon,
+  BattleSide,
+  BattleState,
+  ItemContext,
+  ItemResult,
+} from "@pokemon-lib-ts/battle";
 import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import {
   CORE_ABILITY_IDS,
@@ -129,8 +135,8 @@ function createBattleState(): BattleState {
   return {
     format: { generation: 8, battleType: battleValues.singles },
     sides: [
-      { active: [], bench: [], entryHazards: {} } as any,
-      { active: [], bench: [], entryHazards: {} } as any,
+      { active: [], bench: [], entryHazards: {} } as unknown as BattleSide,
+      { active: [], bench: [], entryHazards: {} } as unknown as BattleSide,
     ],
     weather: null,
     terrain: null,
