@@ -741,7 +741,10 @@ export class Gen4Ruleset extends BaseRuleset {
     // Tracked via the "slow-start" volatile status.
     // Source: Bulbapedia — Slow Start: "Halves Attack and Speed for 5 turns upon entering battle."
     // Source: Showdown data/abilities.ts — Slow Start onModifySpe
-    if (active.ability === "slow-start" && active.volatileStatuses.has(CORE_VOLATILE_IDS.slowStart)) {
+    if (
+      active.ability === "slow-start" &&
+      active.volatileStatuses.has(CORE_VOLATILE_IDS.slowStart)
+    ) {
       effective = Math.floor(effective / 2);
     }
 
