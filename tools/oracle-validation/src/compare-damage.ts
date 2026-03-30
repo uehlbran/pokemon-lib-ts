@@ -49,6 +49,7 @@ import {
   createEvs,
   createIvs,
   createStatExp,
+  MAX_IV,
 } from "../../../packages/core/src/logic/stat-inputs.js";
 
 import { createGen1DataManager } from "../../../packages/gen1/src/data/index.js";
@@ -424,7 +425,7 @@ function buildSmogonPokemonGen3Plus(gen: GenerationNum, speciesName: string): Sm
   return new SmogonPokemon(gen, speciesName, {
     level: ORACLE_LEVEL,
     nature: "Hardy",
-    ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
+    ivs: { hp: MAX_IV, atk: MAX_IV, def: MAX_IV, spa: MAX_IV, spd: MAX_IV, spe: MAX_IV },
     evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
   });
 }

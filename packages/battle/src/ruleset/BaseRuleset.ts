@@ -20,6 +20,7 @@ import {
   CORE_ABILITY_TRIGGER_IDS,
   CORE_END_OF_TURN_EFFECT_IDS,
   CORE_ITEM_IDS,
+  CORE_NATURE_IDS,
   CORE_SPECIES_IDS,
   CORE_STAT_IDS,
   CORE_STATUS_IDS,
@@ -91,7 +92,7 @@ export abstract class BaseRuleset implements GenerationRuleset {
 
   /** Hardy nature (— no stat changes). Used as fallback for unknown nature ids. */
   private static readonly HARDY_NATURE: NatureData = {
-    id: "hardy",
+    id: CORE_NATURE_IDS.hardy,
     displayName: "Hardy",
     increased: null,
     decreased: null,

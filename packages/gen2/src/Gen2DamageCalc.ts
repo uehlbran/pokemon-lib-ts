@@ -11,6 +11,7 @@ import {
   createFriendship,
   getGen12StatStageRatio,
   getStabModifier,
+  MAX_DV,
   TYPE_EFFECTIVENESS_MULTIPLIERS,
 } from "@pokemon-lib-ts/core";
 
@@ -64,11 +65,11 @@ export function calculateGen2HiddenPower(attacker: ActivePokemon): {
 } {
   const ivs = attacker.pokemon.ivs;
   // In Gen 2, IVs are stored as 0-15 DVs; spAttack holds the unified Special DV
-  const atkDv = ivs.attack ?? 15;
-  const defDv = ivs.defense ?? 15;
-  const speDv = ivs.speed ?? 15;
+  const atkDv = ivs.attack ?? MAX_DV;
+  const defDv = ivs.defense ?? MAX_DV;
+  const speDv = ivs.speed ?? MAX_DV;
   // In Gen 2 the special DV applies to both SpAtk and SpDef; we read spAttack as the canonical source
-  const spcDv = ivs.spAttack ?? 15;
+  const spcDv = ivs.spAttack ?? MAX_DV;
 
   // Type calculation: uses low 2 bits of Atk DV and Def DV
   // Source: pret/pokecrystal engine/battle/hidden_power.asm:67-77

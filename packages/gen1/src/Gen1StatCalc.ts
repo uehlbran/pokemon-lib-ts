@@ -1,6 +1,6 @@
 import type { ActivePokemon } from "@pokemon-lib-ts/battle";
 import type { PokemonInstance, PokemonSpeciesData, StatBlock } from "@pokemon-lib-ts/core";
-import { calculateStatExpContribution } from "@pokemon-lib-ts/core";
+import { calculateStatExpContribution, MAX_DV } from "@pokemon-lib-ts/core";
 
 // Source: pret/pokered engine/battle/core.asm — badge stat boost table
 // Boulder Badge → Attack, Thunder Badge → Defense, Soul Badge → Speed, Volcano Badge → Special
@@ -73,7 +73,7 @@ export function applyBadgeBoostGlitch(pokemon: ActivePokemon, badgeBoosts: Gen1B
  * floor(((Base + DV) * 2 + statExpContrib) * Level / 100) + 5
  */
 function calculateGen1Stat(base: number, dv: number, statExp: number, level: number): number {
-  const clampedDv = Math.max(0, Math.min(15, Math.floor(dv))); // DVs are 4-bit values: 0–15
+  const clampedDv = Math.max(0, Math.min(MAX_DV, Math.floor(dv))); // DVs are 4-bit values: 0–15
   const statExpContrib = calculateStatExpContribution(statExp);
   return Math.floor((((base + clampedDv) * 2 + statExpContrib) * level) / 100) + 5;
 }
@@ -84,7 +84,7 @@ function calculateGen1Stat(base: number, dv: number, statExp: number, level: num
  * floor(((Base + DV) * 2 + statExpContrib) * Level / 100) + Level + 10
  */
 function calculateGen1Hp(base: number, dv: number, statExp: number, level: number): number {
-  const clampedDv = Math.max(0, Math.min(15, Math.floor(dv))); // DVs are 4-bit values: 0–15
+  const clampedDv = Math.max(0, Math.min(MAX_DV, Math.floor(dv))); // DVs are 4-bit values: 0–15
   const statExpContrib = calculateStatExpContribution(statExp);
   return Math.floor((((base + clampedDv) * 2 + statExpContrib) * level) / 100) + level + 10;
 }
@@ -106,10 +106,10 @@ export function calculateGen1Stats(
   // Source: pret/pokered home/move_mon.asm lines 109-133
   // HP DV is derived from the LSBs of the other 4 DVs, not stored independently.
   // HP_DV = ((Atk & 1) << 3) | ((Def & 1) << 2) | ((Spe & 1) << 1) | (Spc & 1)
-  const atkDv = Math.max(0, Math.min(15, Math.floor(pokemon.ivs.attack)));
-  const defDv = Math.max(0, Math.min(15, Math.floor(pokemon.ivs.defense)));
-  const speDv = Math.max(0, Math.min(15, Math.floor(pokemon.ivs.speed)));
-  const spcDv = Math.max(0, Math.min(15, Math.floor(pokemon.ivs.spAttack)));
+  const atkDv = Math.max(0, Math.min(MAX_DV, Math.floor(pokemon.ivs.attack)));
+  const defDv = Math.max(0, Math.min(MAX_DV, Math.floor(pokemon.ivs.defense)));
+  const speDv = Math.max(0, Math.min(MAX_DV, Math.floor(pokemon.ivs.speed)));
+  const spcDv = Math.max(0, Math.min(MAX_DV, Math.floor(pokemon.ivs.spAttack)));
   const hpDv = ((atkDv & 1) << 3) | ((defDv & 1) << 2) | ((speDv & 1) << 1) | (spcDv & 1);
 
   // Gen 1 has a unified Special stat; spDefense inputs are intentionally ignored

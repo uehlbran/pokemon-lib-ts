@@ -30,6 +30,7 @@ import type {
 import { BATTLE_EVENT_TYPES } from "@pokemon-lib-ts/battle";
 import {
   ALL_NATURES,
+  CORE_NATURE_IDS,
   CORE_STAT_IDS,
   CORE_TYPE_IDS,
   calculateStat,
@@ -191,7 +192,7 @@ export class Gen7UltraBurst implements BattleGimmick {
 
       const foundNature = ALL_NATURES.find((n) => n.id === natureId);
       const natureData: NatureData = foundNature ?? {
-        id: "hardy",
+        id: CORE_NATURE_IDS.hardy,
         displayName: "Hardy",
         increased: null,
         decreased: null,
