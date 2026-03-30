@@ -1460,7 +1460,7 @@ export function calculateGen8Damage(
     ) {
       attacker.volatileStatuses.set(CORE_VOLATILE_IDS.unburden, { turnsLeft: -1 });
     }
-    attacker.volatileStatuses.set("gem-used" as VolatileStatus, { turnsLeft: 1 });
+    attacker.volatileStatuses.set(CORE_VOLATILE_IDS.gemUsed, { turnsLeft: 1 });
   }
 
   const breakdown: DamageBreakdown = {

@@ -5677,7 +5677,7 @@ export class BattleEngine implements BattleEventEmitter {
           // Berry IDs always end with "-berry" per Showdown convention.
           const consumedItemId = effect.value as string;
           if (consumedItemId?.endsWith("-berry")) {
-            pokemon.volatileStatuses.set("harvest-berry", {
+            pokemon.volatileStatuses.set(CORE_VOLATILE_IDS.harvestBerry, {
               turnsLeft: -1,
               data: { berryId: consumedItemId },
             });

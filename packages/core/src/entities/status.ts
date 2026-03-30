@@ -77,6 +77,7 @@ const GEN4_VOLATILE_STATUS_ADDITIONS = [
 ] as const;
 
 const GEN5_VOLATILE_STATUS_ADDITIONS = [
+  "gem-used",
   "quick-guard",
   "wide-guard",
   "illusion",

@@ -275,7 +275,11 @@ function getAttackStat(
 
   // Slow Start: halve Attack for the first 5 turns
   // Source: Showdown data/abilities.ts -- Slow Start
-  if (isPhysical && ability === "slow-start" && attacker.volatileStatuses.has(CORE_VOLATILE_IDS.slowStart)) {
+  if (
+    isPhysical &&
+    ability === "slow-start" &&
+    attacker.volatileStatuses.has(CORE_VOLATILE_IDS.slowStart)
+  ) {
     rawStat = Math.floor(rawStat / 2);
   }
 
@@ -1081,7 +1085,7 @@ export function calculateGen5Damage(
     // held an item that was consumed this move. Showdown uses source.volatiles['gem']
     // for exactly this guard. turnsLeft: 1 ensures the engine clears it at end-of-turn.
     // Source: Showdown data/moves.ts -- thief/covet: if (source.item || source.volatiles['gem']) return;
-    attacker.volatileStatuses.set("gem-used" as import("@pokemon-lib-ts/core").VolatileStatus, {
+    attacker.volatileStatuses.set(CORE_VOLATILE_IDS.gemUsed, {
       turnsLeft: 1,
     });
   }
