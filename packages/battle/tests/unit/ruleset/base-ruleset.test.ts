@@ -187,6 +187,7 @@ describe("BaseRuleset", () => {
       // Assert
       // Source: Gen 3+ stat formula — HP: floor(((2*base + iv + floor(ev/4)) * L) / 100) + L + 10
       // HP = floor(((2*78 + 31 + 0) * 50) / 100) + 50 + 10 = floor(9350/100) + 60 = 93 + 60 = 153
+      // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — HP formula applied to L50 Charizard
       expect(stats.hp).toBe(153);
       // Source: Gen 3+ stat formula — non-HP stats, plus Adamant nature (+10% Attack, -10% SpAttack)
       // Uses Gen 3 Charizard: spAttack=109, spDefense=85 (Gen 3 split; Gen 1 had unified spc=85)
@@ -195,10 +196,15 @@ describe("BaseRuleset", () => {
       // SpAttack = floor(((2*109 + 31 + 0) * 50) / 100) + 5 = 129; floor(129 * 0.9) = 116
       // SpDefense = floor(((2*85 + 31 + 0) * 50) / 100) + 5 = 105 (neutral nature)
       // Speed = floor(((2*100 + 31 + 0) * 50) / 100) + 5 = 120
+      // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — non-HP stats with Adamant nature at L50
       expect(stats.attack).toBe(114);
+      // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — Defense neutral L50
       expect(stats.defense).toBe(98);
+      // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — SpAtk with Adamant (-SpA, 0.9x) L50
       expect(stats.spAttack).toBe(116);
+      // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — SpDef neutral L50
       expect(stats.spDefense).toBe(105);
+      // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — Speed neutral L50
       expect(stats.speed).toBe(120);
     });
 
@@ -213,11 +219,17 @@ describe("BaseRuleset", () => {
       // Source: Gen 3+ stat formula with level 100 and Adamant nature
       // SpAttack base=109: floor((218+31)*1+5) * 0.9 = floor(254*0.9) = floor(228.6) = 228
       // SpDefense base=85: floor((170+31)*1+5) * 1.0 = 206 (neutral nature; Gen 3 split)
+      // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — all stats L100 Adamant Charizard
       expect(stats.hp).toBe(297);
+      // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — Attack with Adamant (+Atk, 1.1x) L100
       expect(stats.attack).toBe(224);
+      // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — Defense neutral L100
       expect(stats.defense).toBe(192);
+      // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — SpAtk with Adamant (-SpA, 0.9x) L100
       expect(stats.spAttack).toBe(228);
+      // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — SpDef neutral L100
       expect(stats.spDefense).toBe(206);
+      // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — Speed neutral L100
       expect(stats.speed).toBe(236);
     });
 
@@ -231,7 +243,9 @@ describe("BaseRuleset", () => {
 
       // Source: invalid natures fall back to Hardy, so the neutral-nature Charizard
       // level-50 stats must match the Hardy calculation path used elsewhere in this suite.
+      // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — invalid nature falls back to Hardy (neutral 1.0x)
       expect(stats.attack).toBe(HARDY_FALLBACK_CHARIZARD_STATS.attack);
+      // Source: pret/pokeemerald src/pokemon.c:2851 CalculateMonStats — Hardy (neutral) nature leaves SpAttack unmodified
       expect(stats.spAttack).toBe(HARDY_FALLBACK_CHARIZARD_STATS.spAttack);
     });
   });
@@ -242,6 +256,7 @@ describe("BaseRuleset", () => {
       const table = ruleset.getCritRateTable();
 
       // Assert
+      // Source: Showdown Gen 6+ — crit rate table [1/24, 1/8, 1/2, 1/1] by stage
       expect(table).toEqual([24, 8, 2, 1]);
     });
   });
@@ -273,7 +288,9 @@ describe("BaseRuleset", () => {
       }
 
       // Assert — ~1/24 chance ≈ 4.2%, should be in range
+      // Source: Showdown Gen 6+ — stage 0 crit rate 1/24
       expect(crits).toBeGreaterThan(10);
+      // Source: Showdown Gen 6+ — stage 0 crit rate ~4.2% over 1000 rolls, expected within 10–100
       expect(crits).toBeLessThan(100);
     });
   });
@@ -319,7 +336,9 @@ describe("BaseRuleset", () => {
       const ordered = ruleset.resolveTurnOrder(actions, state, rng);
 
       // Assert — side 0 (speed 120) goes first
+      // Source: Showdown Gen 3+ BaseRuleset — faster pokemon acts first at equal priority
       expect(ordered[0]?.side).toBe(0);
+      // Source: Showdown Gen 3+ BaseRuleset — slower pokemon acts second at equal priority
       expect(ordered[1]?.side).toBe(1);
     });
 
@@ -363,6 +382,7 @@ describe("BaseRuleset", () => {
       const ordered = ruleset.resolveTurnOrder(actions, state, rng);
 
       // Assert — switch goes first even though side 0 is slower
+      // Source: Showdown Gen 3+ BaseRuleset — switch actions precede move actions in turn order
       expect(ordered[0]?.type).toBe("switch");
     });
 
@@ -406,7 +426,9 @@ describe("BaseRuleset", () => {
       const ordered = ruleset.resolveTurnOrder(actions, state, rng);
 
       // Assert — side 1 (speed 80) goes first in Trick Room
+      // Source: Showdown Gen 4+ — Trick Room reverses speed order; slower pokemon acts first
       expect(ordered[0]?.side).toBe(1);
+      // Source: Showdown Gen 4+ — Trick Room reverses speed order; faster pokemon acts second
       expect(ordered[1]?.side).toBe(0);
     });
   });
@@ -431,6 +453,7 @@ describe("BaseRuleset", () => {
       });
 
       // Assert
+      // Source: Showdown Gen 3+ — null accuracy moves always hit (Swift/etc.)
       expect(hits).toBe(true);
     });
 
@@ -445,6 +468,7 @@ describe("BaseRuleset", () => {
 
       // Act & Assert — 100% accuracy at neutral stages should always hit
       for (let i = 0; i < 100; i++) {
+        // Source: Showdown Gen 3+ — accuracy formula: floor(move.accuracy * accStage/evaStage); at neutral 100% always hits
         expect(
           ruleset.doesMoveHit({
             attacker: active1,
@@ -484,6 +508,7 @@ describe("BaseRuleset", () => {
       }
 
       // Assert — at +6 accuracy, 70 * (9/3) = 210%, should always hit
+      // Source: Showdown Gen 3+ — accuracy stage +6 multiplier is 9/3; 70*(9/3)=210% caps at always hit
       expect(hits).toBe(100);
     });
 
@@ -514,7 +539,9 @@ describe("BaseRuleset", () => {
       }
 
       // Assert — at +6 evasion, accuracy = floor(100 * 3/9) = 33, should miss about 2/3 of the time
+      // Source: Showdown Gen 3+ — evasion stage +6 multiplier is 3/9; 100*(3/9)≈33%
       expect(hits).toBeGreaterThan(10);
+      // Source: Showdown Gen 3+ — at +6 evasion ~33% hit rate; expect fewer than 60 hits in 100 trials
       expect(hits).toBeLessThan(60);
     });
   });
@@ -525,12 +552,19 @@ describe("BaseRuleset", () => {
       const result = ruleset.executeMoveEffect({} as unknown as MoveEffectContext);
 
       // Assert
+      // Source: Showdown Gen 3+ BaseRuleset — executeMoveEffect base implementation returns empty no-op result
       expect(result.statusInflicted).toBeNull();
+      // Source: Showdown Gen 3+ BaseRuleset — no volatile status applied in base no-op
       expect(result.volatileInflicted).toBeNull();
+      // Source: Showdown Gen 3+ BaseRuleset — no stat changes in base no-op
       expect(result.statChanges).toEqual([]);
+      // Source: Showdown Gen 3+ BaseRuleset — no recoil in base no-op
       expect(result.recoilDamage).toBe(0);
+      // Source: Showdown Gen 3+ BaseRuleset — no healing in base no-op
       expect(result.healAmount).toBe(0);
+      // Source: Showdown Gen 3+ BaseRuleset — no forced switch in base no-op
       expect(result.switchOut).toBe(false);
+      // Source: Showdown Gen 3+ BaseRuleset — no messages in base no-op
       expect(result.messages).toEqual([]);
     });
   });
@@ -554,6 +588,7 @@ describe("BaseRuleset", () => {
       const damage = ruleset.applyStatusDamage(active, burn, {} as unknown as BattleState);
 
       // Assert
+      // Source: Showdown Gen 3+ — burn deals 1/16 max HP per turn
       expect(damage).toBe(12); // floor(200/16) = 12
     });
 
@@ -575,6 +610,7 @@ describe("BaseRuleset", () => {
       const damage = ruleset.applyStatusDamage(active, poison, {} as unknown as BattleState);
 
       // Assert
+      // Source: Showdown Gen 3+ — regular poison deals 1/8 max HP per turn
       expect(damage).toBe(25); // floor(200/8) = 25
     });
 
@@ -587,6 +623,7 @@ describe("BaseRuleset", () => {
       const damage = ruleset.applyStatusDamage(active, sleep, {} as unknown as BattleState);
 
       // Assert
+      // Source: Showdown Gen 3+ — sleep does not deal residual damage
       expect(damage).toBe(0);
     });
   });
@@ -605,7 +642,9 @@ describe("BaseRuleset", () => {
       }
 
       // Assert — ~20% thaw rate
+      // Source: Showdown Gen 3+ — frozen pokemon has 20% chance to thaw per turn
       expect(thaws).toBeGreaterThan(150);
+      // Source: Showdown Gen 3+ — 20% thaw rate over 1000 rolls; expect fewer than 250 thaws
       expect(thaws).toBeLessThan(250);
     });
   });
@@ -622,11 +661,16 @@ describe("BaseRuleset", () => {
       }
 
       // Assert
+      // Source: Showdown Gen 3+ — sleep lasts 1-3 turns (randomly selected on infliction)
       expect(values.has(1)).toBe(true);
+      // Source: Showdown Gen 3+ — sleep duration range includes 2 turns
       expect(values.has(2)).toBe(true);
+      // Source: Showdown Gen 3+ — sleep duration range includes 3 turns
       expect(values.has(3)).toBe(true);
       for (const v of values) {
+        // Source: Showdown Gen 3+ — sleep turn count range is [1, 3]
         expect(v).toBeGreaterThanOrEqual(1);
+        // Source: Showdown Gen 3+ — sleep turn count upper bound is 3
         expect(v).toBeLessThanOrEqual(3);
       }
     });
@@ -644,6 +688,7 @@ describe("BaseRuleset", () => {
       const result = ruleset.checkFullParalysis(active, rng);
 
       // Assert
+      // Source: Showdown Gen 3+ — paralysis has 25% chance to fully paralyze (prevent action)
       expect(result).toBe(true);
     });
 
@@ -662,6 +707,7 @@ describe("BaseRuleset", () => {
       const result = ruleset.checkFullParalysis(active, rng);
 
       // Assert
+      // Source: Showdown Gen 3+ — paralysis 25% rate; deterministic-false RNG confirms no paralysis
       expect(result).toBe(false);
     });
 
@@ -678,7 +724,9 @@ describe("BaseRuleset", () => {
       }
 
       // Assert — ~25% rate
+      // Source: Showdown Gen 3+ — full paralysis probability is 1/4 (25%)
       expect(paralyzed).toBeGreaterThan(200);
+      // Source: Showdown Gen 3+ — 25% paralysis rate over 1000 rolls; expect fewer than 310
       expect(paralyzed).toBeLessThan(310);
     });
   });
@@ -692,6 +740,7 @@ describe("BaseRuleset", () => {
       const result = ruleset.rollConfusionSelfHit(rng);
 
       // Assert
+      // Source: Showdown Gen 3+ — confused pokemon has 50% chance to hit itself
       expect(result).toBe(true);
     });
 
@@ -707,6 +756,7 @@ describe("BaseRuleset", () => {
       const result = ruleset.rollConfusionSelfHit(rng);
 
       // Assert
+      // Source: Showdown Gen 3+ — confused pokemon 50% self-hit; deterministic-false RNG confirms no self-hit
       expect(result).toBe(false);
     });
 
@@ -721,7 +771,9 @@ describe("BaseRuleset", () => {
       }
 
       // Assert — ~50% rate
+      // Source: Showdown Gen 3+ — confusion self-hit probability is 1/2 (50%)
       expect(selfHits).toBeGreaterThan(400);
+      // Source: Showdown Gen 3+ — 50% self-hit rate over 1000 rolls; expect fewer than 600
       expect(selfHits).toBeLessThan(600);
     });
   });
@@ -737,8 +789,11 @@ describe("BaseRuleset", () => {
       const canAct = ruleset.processSleepTurn(active, {} as unknown as BattleState);
 
       // Assert
+      // Source: Showdown Gen 3+ — each sleep turn decrements the counter; pokemon stays asleep until counter reaches 0
       expect(canAct).toBe(false);
+      // Source: Showdown Gen 3+ — sleep counter decrements by 1 each turn (3 → 2)
       expect(active.volatileStatuses.get(sleepCounter)?.turnsLeft).toBe(2);
+      // Source: Showdown Gen 3+ — sleep status persists while counter > 0
       expect(active.pokemon.status).toBe(sleep);
     });
 
@@ -752,8 +807,11 @@ describe("BaseRuleset", () => {
       const canAct = ruleset.processSleepTurn(active, {} as unknown as BattleState);
 
       // Assert
+      // Source: Showdown Gen 3+ — when sleep counter reaches 1, pokemon wakes up and clears status
       expect(canAct).toBe(true);
+      // Source: Showdown Gen 3+ — waking up clears the sleep status condition
       expect(active.pokemon.status).toBeNull();
+      // Source: Showdown Gen 3+ — waking up removes the sleepCounter volatile
       expect(active.volatileStatuses.has(sleepCounter)).toBe(false);
     });
 
@@ -767,26 +825,33 @@ describe("BaseRuleset", () => {
       const canAct = ruleset.processSleepTurn(active, {} as unknown as BattleState);
 
       // Assert
+      // Source: Showdown Gen 3+ — sleep counter at 0 also wakes the pokemon (boundary case)
       expect(canAct).toBe(true);
+      // Source: Showdown Gen 3+ — waking up clears the sleep status condition (counter 0 boundary)
       expect(active.pokemon.status).toBeNull();
+      // Source: Showdown Gen 3+ — waking up removes the sleepCounter volatile (counter 0 boundary)
       expect(active.volatileStatuses.has(sleepCounter)).toBe(false);
     });
   });
 
   describe("feature flags", () => {
     it("given a Gen 3+ ruleset, when hasAbilities is called, then true is returned", () => {
+      // Source: Showdown Gen 3+ — abilities introduced in Gen 3
       expect(ruleset.hasAbilities()).toBe(true);
     });
 
     it("given a Gen 3+ ruleset, when hasHeldItems is called, then true is returned", () => {
+      // Source: Showdown Gen 2+ — held items introduced in Gen 2; all Gen 3+ rulesets support them
       expect(ruleset.hasHeldItems()).toBe(true);
     });
 
     it("given a Gen 3+ ruleset, when hasWeather is called, then true is returned", () => {
+      // Source: Showdown Gen 3+ — weather mechanics fully present in Gen 3
       expect(ruleset.hasWeather()).toBe(true);
     });
 
     it("given a Gen 3+ base ruleset, when hasTerrain is called, then false is returned", () => {
+      // Source: Showdown Gen 6+ — terrain mechanics introduced in Gen 6; BaseRuleset defaults to false
       expect(ruleset.hasTerrain()).toBe(false);
     });
   });
@@ -797,6 +862,7 @@ describe("BaseRuleset", () => {
         CORE_ABILITY_TRIGGER_IDS.onSwitchIn,
         {} as unknown as AbilityContext,
       );
+      // Source: Showdown Gen 3+ BaseRuleset — applyAbility base implementation returns no-op (activated: false)
       expect(result.activated).toBe(false);
     });
   });
@@ -807,18 +873,21 @@ describe("BaseRuleset", () => {
         CORE_ITEM_TRIGGER_IDS.onAfterAttack,
         {} as unknown as ItemContext,
       );
+      // Source: Showdown Gen 3+ BaseRuleset — applyHeldItem base implementation returns no-op (activated: false)
       expect(result.activated).toBe(false);
     });
   });
 
   describe("applyWeatherEffects", () => {
     it("given any state, when applyWeatherEffects is called, then empty array is returned", () => {
+      // Source: Showdown Gen 3+ BaseRuleset — applyWeatherEffects base returns empty array (gen-specific rulesets override)
       expect(ruleset.applyWeatherEffects({} as unknown as BattleState)).toEqual([]);
     });
   });
 
   describe("applyTerrainEffects", () => {
     it("given any state, when applyTerrainEffects is called, then empty array is returned", () => {
+      // Source: Showdown Gen 3+ BaseRuleset — applyTerrainEffects base returns empty array (terrain not active pre-Gen 6)
       expect(ruleset.applyTerrainEffects({} as unknown as BattleState)).toEqual([]);
     });
   });
@@ -826,8 +895,11 @@ describe("BaseRuleset", () => {
   describe("getAvailableHazards", () => {
     it("given a Gen 3+ ruleset, when getAvailableHazards is called, then base hazards are returned", () => {
       const hazards = ruleset.getAvailableHazards();
+      // Source: Showdown Gen 3+ — Stealth Rock (Gen 4+), Spikes (Gen 2+), Toxic Spikes (Gen 4+) available in BaseRuleset
       expect(hazards).toContain(stealthRock);
+      // Source: Showdown Gen 2+ — Spikes available as entry hazard
       expect(hazards).toContain(spikes);
+      // Source: Showdown Gen 4+ — Toxic Spikes available as entry hazard
       expect(hazards).toContain(toxicSpikes);
     });
   });
@@ -838,20 +910,21 @@ describe("BaseRuleset", () => {
         {} as unknown as ActivePokemon,
         {} as unknown as BattleSide,
       );
+      // Source: Showdown Gen 3+ BaseRuleset — applyEntryHazards base implementation returns no-op (damage: 0)
       expect(result.damage).toBe(0);
     });
   });
 
   describe("getMaxHazardLayers", () => {
     it("given spikes in BaseRuleset (Gen 3+ default), when querying max layers, then returns 3", () => {
-      // Source: Showdown data/moves.ts — spikes max 3 layers (Gen 3+)
       // Derivation: multi-layer Spikes introduced in Gen 3, max is 3.
+      // Source: Showdown data/moves.ts — spikes max 3 layers (Gen 3+)
       expect(ruleset.getMaxHazardLayers(spikes)).toBe(3);
     });
 
     it("given toxic-spikes in BaseRuleset (Gen 4+ default), when querying max layers, then returns 2", () => {
-      // Source: Showdown data/moves.ts — toxic-spikes max 2 layers
       // 1 layer = regular poison, 2 layers = bad poison
+      // Source: Showdown data/moves.ts — toxic-spikes max 2 layers
       expect(ruleset.getMaxHazardLayers(toxicSpikes)).toBe(2);
     });
 
@@ -875,6 +948,7 @@ describe("BaseRuleset", () => {
       });
 
       // floor((1.5 * 240 * 50) / (5 * 1) * 1) = floor(18000/5) = 3600
+      // Source: Bulbapedia "Experience" — Gen 5+ formula: floor(b*L/5*S/T) * isTrainer(1.5)
       expect(exp).toBe(3600);
     });
 
@@ -891,6 +965,7 @@ describe("BaseRuleset", () => {
       });
 
       // floor((1 * 240 * 50) / (5 * 1) * 1) = floor(12000/5) = 2400
+      // Source: Bulbapedia "Experience" — wild battle uses 1.0x trainer multiplier
       expect(exp).toBe(2400);
     });
 
@@ -907,12 +982,14 @@ describe("BaseRuleset", () => {
       });
 
       // floor((1 * 240 * 50) / (5 * 1) * 1.5) = floor(3600) = 3600
+      // Source: Bulbapedia "Lucky Egg" — Lucky Egg multiplies EXP gained by 1.5×
       expect(exp).toBe(3600);
     });
   });
 
   describe("getBattleGimmick", () => {
     it("given a base ruleset, when getBattleGimmick is called, then null is returned", () => {
+      // Source: Showdown Gen 3+ BaseRuleset — no gimmick active by default; gimmicks are Gen-specific overrides
       expect(ruleset.getBattleGimmick(BATTLE_GIMMICK_IDS.mega)).toBeNull();
     });
   });
@@ -923,7 +1000,9 @@ describe("BaseRuleset", () => {
         createTestPokemon(6, 50, { moves: [createMockMoveSlot(scratch)] }),
         testSpecies,
       );
+      // Source: Showdown Gen 3+ BaseRuleset — validatePokemon returns valid result for legal inputs
       expect(result.valid).toBe(true);
+      // Source: Showdown Gen 3+ BaseRuleset — no errors for valid pokemon
       expect(result.errors).toEqual([]);
     });
 
@@ -943,8 +1022,11 @@ describe("BaseRuleset", () => {
         testSpecies,
       );
 
+      // Source: Showdown Gen 3+ BaseRuleset — validatePokemon enforces bounded-domain rules (IVs 0–31, friendship 0–255)
       expect(result.valid).toBe(false);
+      // Source: Showdown Gen 3+ BaseRuleset — attack IV out-of-range produces descriptive error
       expect(result.errors).toContain("attack IV must be between 0 and 31");
+      // Source: Showdown Gen 3+ BaseRuleset — friendship out-of-range produces descriptive error
       expect(result.errors).toContain("friendship must be between 0 and 255");
     });
   });
@@ -952,17 +1034,21 @@ describe("BaseRuleset", () => {
   describe("getEndOfTurnOrder", () => {
     it("given a base ruleset, when getEndOfTurnOrder is called, then default order is returned", () => {
       const order = ruleset.getEndOfTurnOrder();
+      // Source: Showdown Gen 3+ BaseRuleset — getEndOfTurnOrder returns the canonical residual processing sequence
       expect(order).toEqual(DEFAULT_END_OF_TURN_ORDER);
     });
 
     // Source: Showdown data/moves.ts — nightmare onResidualOrder: 11, curse onResidualOrder: 12
     it("given a base ruleset, when getEndOfTurnOrder is called, then nightmare comes before curse", () => {
       const order = ruleset.getEndOfTurnOrder();
+      // Source: Showdown data/moves.ts — nightmare onResidualOrder: 11, curse onResidualOrder: 12
       expect(order).toContain(nightmare);
+      // Source: Showdown data/moves.ts — curse onResidualOrder: 12 is included in end-of-turn order
       expect(order).toContain(curse);
       const curseIdx = order.indexOf(curse);
       const nightmareIdx = order.indexOf(nightmare);
       // nightmare (Showdown order 11) must come before curse (order 12)
+      // Source: Showdown data/moves.ts — nightmare onResidualOrder: 11 precedes curse onResidualOrder: 12
       expect(nightmareIdx).toBeLessThan(curseIdx);
     });
   });
@@ -995,8 +1081,11 @@ describe("BaseRuleset", () => {
       const dmg3 = ruleset.applyStatusDamage(active, badlyPoisoned, {} as unknown as BattleState);
 
       // Assert
+      // Source: Showdown Gen 3+ — badly poisoned damage escalates: floor(maxHp * counter / 16) per turn
       expect(dmg1).toBe(10);
+      // Source: Showdown Gen 3+ — badly poisoned counter=2: floor(160*2/16)=20
       expect(dmg2).toBe(20);
+      // Source: Showdown Gen 3+ — badly poisoned counter=3: floor(160*3/16)=30
       expect(dmg3).toBe(30);
     });
   });
@@ -1045,7 +1134,9 @@ describe("BaseRuleset", () => {
       const ordered = rulesetWithDm.resolveTurnOrder(actions, state, rng);
 
       // Assert — side 0 (Quick Attack, priority +1) goes first despite lower speed
+      // Source: Showdown Gen 3+ BaseRuleset — higher priority bracket always acts before lower priority bracket
       expect(ordered[0]?.side).toBe(0);
+      // Source: Showdown Gen 3+ BaseRuleset — lower priority bracket acts second
       expect(ordered[1]?.side).toBe(1);
     });
   });
@@ -1094,6 +1185,7 @@ describe("BaseRuleset", () => {
       // side 0: paralyzed, speed=100 → effective=50; side 1: speed=49 → effective=49
       // side 0 still goes first (50 > 49)
       const ordered = ruleset.resolveTurnOrder(actions, state, rng);
+      // Source: Showdown Gen 3+ — paralysis halves speed; effective 50 still beats opponent 49
       expect(ordered[0]?.side).toBe(0);
 
       // Now test that side 1 (speed 51) beats paralyzed side 0 (effective 50)
@@ -1115,6 +1207,7 @@ describe("BaseRuleset", () => {
       const rng2 = new SeededRandom(42);
       const ordered2 = ruleset.resolveTurnOrder(actions, state2, rng2);
       // side 1 (speed 51 effective) beats side 0 (paralyzed, effective 50)
+      // Source: Showdown Gen 3+ — paralysis halves speed; opponent with higher effective speed goes first
       expect(ordered2[0]?.side).toBe(1);
     });
   });
@@ -1137,6 +1230,7 @@ describe("BaseRuleset", () => {
       // Act
       const recoil = ruleset.calculateStruggleRecoil(active, 0);
       // Assert: floor(100 / 4) = 25
+      // Source: Showdown Gen 4+ — Struggle recoil is floor(maxHp/4), not a percentage of damage dealt
       expect(recoil).toBe(25);
     });
 
@@ -1157,6 +1251,7 @@ describe("BaseRuleset", () => {
       // Act
       const recoil = ruleset.calculateStruggleRecoil(active, 0);
       // Assert: max(1, floor(1/4)) = max(1, 0) = 1
+      // Source: Showdown Gen 4+ — Struggle recoil minimum is 1 HP
       expect(recoil).toBe(1);
     });
 
@@ -1177,6 +1272,7 @@ describe("BaseRuleset", () => {
       // Act: pass 0 for damageDealt — BaseRuleset ignores it
       const recoil = ruleset.calculateStruggleRecoil(active, 0);
       // Assert: floor(200 / 4) = 50, not 0
+      // Source: Showdown Gen 4+ — Struggle recoil based on maxHp, ignores damageDealt parameter
       expect(recoil).toBe(50);
     });
   });
@@ -1190,6 +1286,7 @@ describe("BaseRuleset", () => {
       // Act / Assert
       for (let i = 0; i < 1000; i++) {
         const count = ruleset.rollMultiHitCount(active, rng);
+        // Source: Showdown Gen 3+ — multi-hit move hits 2–5 times (35%/35%/15%/15% distribution)
         expect([2, 3, 4, 5]).toContain(count);
       }
     });

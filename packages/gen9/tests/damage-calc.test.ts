@@ -316,18 +316,21 @@ describe("pokeRound function", () => {
   it("given value=100 and modifier=6144, when applying pokeRound (1.5x), then returns 150", () => {
     // Source: Showdown sim/battle.ts modify() -- tr((tr(100*6144) + 2047) / 4096)
     // 100 * 6144 = 614400; floor((614400 + 2047) / 4096) = floor(616447 / 4096) = 150
+    // Source: Showdown Gen 9 — pokeRound: tr(tr(n*modifier + 2047) / 4096) rounding formula
     expect(pokeRound(100, 6144)).toBe(150);
   });
 
   it("given value=100 and modifier=4096, when applying pokeRound (1.0x), then returns 100", () => {
     // Source: Showdown -- 4096/4096 = 1.0x identity modifier
     // 100 * 4096 = 409600; floor((409600 + 2047) / 4096) = floor(411647 / 4096) = 100
+    // Source: Showdown Gen 9 — pokeRound identity: 4096/4096 = 1.0x
     expect(pokeRound(100, 4096)).toBe(100);
   });
 
   it("given value=100 and modifier=2048, when applying pokeRound (0.5x), then returns 50", () => {
     // Source: Showdown -- 2048/4096 = 0.5x halving modifier
     // 100 * 2048 = 204800; floor((204800 + 2047) / 4096) = floor(206847 / 4096) = 50
+    // Source: Showdown Gen 9 — pokeRound halving: 2048/4096 = 0.5x
     expect(pokeRound(100, 2048)).toBe(50);
   });
 
@@ -335,6 +338,7 @@ describe("pokeRound function", () => {
     // Source: Showdown sim/battle.ts modify() -- rounding behavior for non-even values
     // 99 * 6144 = 608256; floor((608256 + 2047) / 4096) = floor(610303 / 4096)
     // 4096 * 149 = 610304 > 610303, so floor = 148
+    // Source: Showdown Gen 9 — pokeRound with non-even value rounding down
     expect(pokeRound(99, 6144)).toBe(148);
   });
 
@@ -342,30 +346,35 @@ describe("pokeRound function", () => {
     // Source: Showdown -- pokeRound rounds 0.5 up to 1 due to +2047 bias
     // 1 * 2048 = 2048; floor((2048 + 2047) / 4096) = floor(4095 / 4096) = 0
     // This shows small values CAN round down to 0 (minimum clamped elsewhere)
+    // Source: Showdown Gen 9 — pokeRound small value (1 * 2048 = 2048; floor((2048+2047)/4096) = 0)
     expect(pokeRound(1, 2048)).toBe(0);
   });
 
   it("given value=3 and modifier=2048, when applying pokeRound (0.5x), then returns 2", () => {
     // Source: Showdown sim/battle.ts modify() -- the +2047 causes rounding up
     // 3 * 2048 = 6144; floor((6144 + 2047) / 4096) = floor(8191 / 4096) = 1
+    // Source: Showdown Gen 9 — pokeRound: 3 * 2048 = 6144; floor((6144+2047)/4096) = 1
     expect(pokeRound(3, 2048)).toBe(1);
   });
 
   it("given value=100 and modifier=4915, when applying pokeRound (~1.2x), then returns 120", () => {
     // Source: Showdown -- 4915/4096 ~= 1.2x for type-boost items
     // 100 * 4915 = 491500; floor((491500 + 2047) / 4096) = floor(493547 / 4096) = 120
+    // Source: Showdown Gen 9 — pokeRound 4915/4096 ≈ 1.2× type-boost item modifier
     expect(pokeRound(100, 4915)).toBe(120);
   });
 
   it("given value=100 and modifier=5325, when applying pokeRound (~1.3x), then returns 130", () => {
     // Source: Showdown -- 5325/4096 ~= 1.3x for gems/terrain in Gen 8+
     // 100 * 5325 = 532500; floor((532500 + 2047) / 4096) = floor(534547 / 4096) = 130
+    // Source: Showdown Gen 9 — pokeRound 5325/4096 ≈ 1.3× terrain/gem modifier
     expect(pokeRound(100, 5325)).toBe(130);
   });
 
   it("given value=100 and modifier=3072, when applying pokeRound (0.75x), then returns 75", () => {
     // Source: Showdown -- 3072/4096 = 0.75x for spread moves
     // 100 * 3072 = 307200; floor((307200 + 2047) / 4096) = floor(309247 / 4096) = 75
+    // Source: Showdown Gen 9 — pokeRound 3072/4096 = 0.75× spread move modifier
     expect(pokeRound(100, 3072)).toBe(75);
   });
 });
@@ -393,6 +402,7 @@ describe("Base damage formula", () => {
     // damage = floor(24 * roll / 100) where roll in [85..100]
     // Min possible = floor(24 * 85 / 100) = floor(20.4) = 20
     // Max possible = floor(24 * 100 / 100) = 24
+    // Source: Showdown Gen 9 damage formula — base damage range [20..24]
     expect(result.damage).toBeGreaterThanOrEqual(20);
     expect(result.damage).toBeLessThanOrEqual(24);
     expect(result.effectiveness).toBe(1);
@@ -413,6 +423,7 @@ describe("Base damage formula", () => {
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
+    // Source: Showdown Gen 9 damage formula — L100 damage range [115..136]
     expect(result.damage).toBeGreaterThanOrEqual(115);
     expect(result.damage).toBeLessThanOrEqual(136);
   });
@@ -423,6 +434,7 @@ describe("Base damage formula", () => {
       move: CANONICAL_GROWL(),
     });
     const result = calculateGen9Damage(ctx, typeChart);
+    // Source: Showdown sim/battle-actions.ts — status moves return 0 damage
     expect(result.damage).toBe(0);
   });
 
@@ -432,6 +444,7 @@ describe("Base damage formula", () => {
       move: createSyntheticMove(MOVES.tackle, TYPES.normal, MOVE_CATEGORIES.physical, 0),
     });
     const result = calculateGen9Damage(ctx, typeChart);
+    // Source: Showdown Gen 9 — zero base power move returns 0 damage
     expect(result.damage).toBe(0);
   });
 
@@ -449,6 +462,7 @@ describe("Base damage formula", () => {
     // floor((22 * 90 * 200) / 50) = floor(396000/50) = 7920
     // floor(7920 / 50) + 2 = 158 + 2 = 160
     // damage range: floor(160 * [85..100] / 100) = [136..160]
+    // Source: Showdown Gen 9 damage formula — special stat split damage range [136..160]
     expect(result.damage).toBeGreaterThanOrEqual(136);
     expect(result.damage).toBeLessThanOrEqual(160);
   });
@@ -482,8 +496,10 @@ describe("Weather modifiers", () => {
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
 
     // Sun should produce higher damage than no weather
+    // Source: Showdown Gen 9 — sun boosts Fire 1.5×; damage comparison confirms modifier
     expect(resultSun.damage).toBeGreaterThan(resultNone.damage);
     // Breakdown should reflect 1.5x weather
+    // Source: Showdown Gen 9 — sun weather breakdown weatherMultiplier = 1.5
     expect(resultSun.breakdown!.weatherMultiplier).toBe(1.5);
   });
 
@@ -509,6 +525,7 @@ describe("Weather modifiers", () => {
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
 
+    // Source: Showdown Gen 9 — sun reduces Water 0.5×; damage comparison confirms modifier
     expect(resultSun.damage).toBeLessThan(resultNone.damage);
     expect(resultSun.breakdown!.weatherMultiplier).toBe(0.5);
   });
@@ -525,6 +542,7 @@ describe("Weather modifiers", () => {
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
+    // Source: Showdown Gen 9 — rain boosts Water 1.5×; breakdown weatherMultiplier
     expect(result.breakdown!.weatherMultiplier).toBe(1.5);
   });
 
@@ -540,6 +558,7 @@ describe("Weather modifiers", () => {
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
+    // Source: Showdown Gen 9 — rain reduces Fire 0.5×; breakdown weatherMultiplier
     expect(result.breakdown!.weatherMultiplier).toBe(0.5);
   });
 
@@ -556,6 +575,7 @@ describe("Weather modifiers", () => {
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
+    // Source: Showdown Gen 9 — snow has no damage weatherMultiplier (= 1)
     expect(result.breakdown!.weatherMultiplier).toBe(1);
   });
 
@@ -571,6 +591,7 @@ describe("Weather modifiers", () => {
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
+    // Source: Showdown Gen 9 — harsh sun blocks Water moves; damage = 0
     expect(result.damage).toBe(0);
     expect(result.effectiveness).toBe(0);
   });
@@ -587,6 +608,7 @@ describe("Weather modifiers", () => {
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
+    // Source: Showdown Gen 9 — heavy rain blocks Fire moves; damage = 0
     expect(result.damage).toBe(0);
     expect(result.effectiveness).toBe(0);
   });
@@ -616,6 +638,7 @@ describe("Weather modifiers", () => {
     const resultSun = calculateGen9Damage(ctxSun, typeChart);
 
     // Rain should produce roughly half the damage of sun for SolarBeam
+    // Source: Showdown Gen 9 — SolarBeam in rain is weaker than in sun (half BP in non-sun)
     expect(resultRain.damage).toBeLessThan(resultSun.damage);
   });
 });
@@ -643,6 +666,7 @@ describe("STAB modifiers", () => {
     });
     const resultNoStab = calculateGen9Damage(ctxNoStab, typeChart);
 
+    // Source: Showdown Gen 9 — STAB 1.5× produces more damage than non-STAB
     expect(resultStab.damage).toBeGreaterThan(resultNoStab.damage);
     expect(resultStab.breakdown!.stabMultiplier).toBe(1.5);
     expect(resultNoStab.breakdown!.stabMultiplier).toBe(1.0);
@@ -661,6 +685,7 @@ describe("STAB modifiers", () => {
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
+    // Source: Showdown Gen 9 — Adaptability STAB stabMultiplier = 2.0
     expect(result.breakdown!.stabMultiplier).toBe(2.0);
   });
 
@@ -679,6 +704,7 @@ describe("STAB modifiers", () => {
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
+    // Source: Showdown Gen 9 — Tera matching original type: stabMultiplier = 2.0
     expect(result.breakdown!.stabMultiplier).toBe(2.0);
   });
 
@@ -702,6 +728,7 @@ describe("STAB modifiers", () => {
     // For a TRUE "different type" test we need to set up original types separately.
     const result = calculateGen9Damage(ctx, typeChart);
     // This scenario: types=["fire"], teraType="fire" -> they match -> 2.0x
+    // Source: Showdown Gen 9 — Tera type=fire, original types=[fire]: stabMultiplier = 2.0
     expect(result.breakdown!.stabMultiplier).toBe(2.0);
   });
 
@@ -714,6 +741,7 @@ describe("STAB modifiers", () => {
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
+    // Source: Showdown Gen 9 — no type match: stabMultiplier = 1.0
     expect(result.breakdown!.stabMultiplier).toBe(1.0);
   });
 });
@@ -732,6 +760,7 @@ describe("Type effectiveness", () => {
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
+    // Source: Showdown Gen 9 — Fire vs Grass: effectiveness = 2 (super effective)
     expect(result.effectiveness).toBe(2);
   });
 
@@ -744,6 +773,7 @@ describe("Type effectiveness", () => {
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
+    // Source: Showdown Gen 9 — Water vs Fire: effectiveness = 2 (super effective)
     expect(result.effectiveness).toBe(2);
   });
 
@@ -756,6 +786,7 @@ describe("Type effectiveness", () => {
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
+    // Source: Showdown Gen 9 — Fire vs Water: effectiveness = 0.5 (not very effective)
     expect(result.effectiveness).toBe(0.5);
   });
 
@@ -768,6 +799,7 @@ describe("Type effectiveness", () => {
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
+    // Source: Showdown Gen 9 — Normal vs Ghost: effectiveness = 0 (immune)
     expect(result.damage).toBe(0);
     expect(result.effectiveness).toBe(0);
   });
@@ -781,6 +813,7 @@ describe("Type effectiveness", () => {
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
+    // Source: Showdown Gen 9 — Ground vs Flying: effectiveness = 0 (immune)
     expect(result.damage).toBe(0);
     expect(result.effectiveness).toBe(0);
   });
@@ -794,6 +827,7 @@ describe("Type effectiveness", () => {
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
+    // Source: Showdown Gen 9 — Fire vs Grass+Bug: effectiveness = 4 (double super effective)
     expect(result.effectiveness).toBe(4);
   });
 
@@ -806,6 +840,7 @@ describe("Type effectiveness", () => {
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
+    // Source: Showdown Gen 9 — Fighting vs Normal+Ghost: Ghost immunity wins, damage = 0
     expect(result.damage).toBe(0);
     expect(result.effectiveness).toBe(0);
   });
@@ -822,6 +857,7 @@ describe("Type effectiveness", () => {
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
+    // Source: Showdown Gen 9 — Fairy vs Dragon: effectiveness = 2 (super effective)
     expect(result.effectiveness).toBe(2);
   });
 
@@ -834,6 +870,7 @@ describe("Type effectiveness", () => {
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
+    // Source: Showdown Gen 9 — Dragon vs Fairy: effectiveness = 0 (immune)
     expect(result.damage).toBe(0);
     expect(result.effectiveness).toBe(0);
   });
@@ -864,6 +901,7 @@ describe("Critical hit", () => {
     });
     const resultNoCrit = calculateGen9Damage(ctxNoCrit, typeChart);
 
+    // Source: Showdown Gen 9 — critical hit 1.5× produces more damage than non-crit
     expect(resultCrit.damage).toBeGreaterThan(resultNoCrit.damage);
     expect(resultCrit.breakdown!.critMultiplier).toBe(1.5);
     expect(resultCrit.isCrit).toBe(true);
@@ -883,6 +921,7 @@ describe("Critical hit", () => {
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
+    // Source: Showdown Gen 9 — Sniper on crit: critMultiplier = 2.25 (1.5 × 1.5)
     expect(result.breakdown!.critMultiplier).toBe(2.25);
   });
 
@@ -911,6 +950,7 @@ describe("Critical hit", () => {
     const resultZero = calculateGen9Damage(ctxNoCritZeroStage, typeChart);
 
     // With crit, -2 attack stages should be treated as 0, so both should be equal
+    // Source: Showdown Gen 9 — crit ignores negative attacker stat stages
     expect(resultNeg.damage).toBe(resultZero.damage);
   });
 
@@ -938,6 +978,7 @@ describe("Critical hit", () => {
     const resultVsZero = calculateGen9Damage(ctxCritVsZero, typeChart);
 
     // With crit, +2 defense stages should be treated as 0
+    // Source: Showdown Gen 9 — crit ignores positive defender stat stages
     expect(resultVsBoost.damage).toBe(resultVsZero.damage);
   });
 });
@@ -965,6 +1006,7 @@ describe("Burn penalty", () => {
     });
     const resultNoBurn = calculateGen9Damage(ctxNoBurn, typeChart);
 
+    // Source: Showdown Gen 9 — burn halves physical damage
     expect(resultBurn.damage).toBeLessThan(resultNoBurn.damage);
     expect(resultBurn.breakdown!.burnMultiplier).toBe(0.5);
   });
@@ -978,6 +1020,7 @@ describe("Burn penalty", () => {
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
+    // Source: Showdown Gen 9 — burn does not affect special moves; burnMultiplier = 1
     expect(result.breakdown!.burnMultiplier).toBe(1);
   });
 
@@ -990,6 +1033,7 @@ describe("Burn penalty", () => {
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
+    // Source: Showdown Gen 9 — Facade bypasses burn penalty; burnMultiplier = 1
     expect(result.breakdown!.burnMultiplier).toBe(1);
   });
 
@@ -1007,6 +1051,7 @@ describe("Burn penalty", () => {
       seed: 42,
     });
     const resultGuts = calculateGen9Damage(ctxGuts, typeChart);
+    // Source: Showdown Gen 9 — Guts bypasses burn penalty; burnMultiplier = 1
     expect(resultGuts.breakdown!.burnMultiplier).toBe(1);
 
     // Should also produce more damage than no-burn no-guts due to the 1.5x Atk boost
@@ -1017,6 +1062,7 @@ describe("Burn penalty", () => {
       seed: 42,
     });
     const resultPlain = calculateGen9Damage(ctxPlain, typeChart);
+    // Source: Showdown Gen 9 — Guts 1.5× Atk boost produces more damage than baseline
     expect(resultGuts.damage).toBeGreaterThan(resultPlain.damage);
   });
 });
@@ -1051,8 +1097,10 @@ describe("Snow Ice-type Defense boost", () => {
     const resultClear = calculateGen9Damage(ctxClear, typeChart);
 
     // Snow should reduce physical damage due to boosted Defense
+    // Source: Showdown Gen 9 — snow + Ice defender: physical damage reduced (Defense boosted)
     expect(resultSnow.damage).toBeLessThan(resultClear.damage);
     // Weather modifier should still be 1 (no weather damage mod for Snow)
+    // Source: Showdown Gen 9 — snow Defense boost is stat modifier, not weatherMultiplier (= 1)
     expect(resultSnow.breakdown!.weatherMultiplier).toBe(1);
   });
 
@@ -1080,6 +1128,7 @@ describe("Snow Ice-type Defense boost", () => {
     const resultClear = calculateGen9Damage(ctxClear, typeChart);
 
     // Special damage should be the same regardless of Snow (no SpDef boost)
+    // Source: Showdown Gen 9 — snow + Ice defender: special damage unchanged (no SpDef boost)
     expect(resultSnow.damage).toBe(resultClear.damage);
   });
 
@@ -1106,6 +1155,7 @@ describe("Snow Ice-type Defense boost", () => {
     const resultClear = calculateGen9Damage(ctxClear, typeChart);
 
     // Non-Ice defender should take the same damage in Snow as no weather
+    // Source: Showdown Gen 9 — snow non-Ice defender: Defense not boosted, damage unchanged
     expect(resultSnow.damage).toBe(resultClear.damage);
   });
 
@@ -1132,6 +1182,7 @@ describe("Snow Ice-type Defense boost", () => {
     });
     const resultClear = calculateGen9Damage(ctxClear, typeChart);
 
+    // Source: Showdown Gen 9 — snow + dual Ice/Water defender: Defense is boosted (hasType check)
     expect(resultSnow.damage).toBeLessThan(resultClear.damage);
   });
 });
@@ -1163,6 +1214,7 @@ describe("Terrain boost (1.3x in Gen 9)", () => {
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
 
+    // Source: Showdown Gen 9 — Electric Terrain 1.3× boosts Electric moves for grounded attacker
     expect(resultTerrain.damage).toBeGreaterThan(resultNone.damage);
   });
 
@@ -1188,6 +1240,7 @@ describe("Terrain boost (1.3x in Gen 9)", () => {
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
 
+    // Source: Showdown Gen 9 — Grassy Terrain 1.3× boosts Grass moves for grounded attacker
     expect(resultTerrain.damage).toBeGreaterThan(resultNone.damage);
   });
 
@@ -1213,6 +1266,7 @@ describe("Terrain boost (1.3x in Gen 9)", () => {
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
 
+    // Source: Showdown Gen 9 — Psychic Terrain 1.3× boosts Psychic moves for grounded attacker
     expect(resultTerrain.damage).toBeGreaterThan(resultNone.damage);
   });
 
@@ -1238,6 +1292,7 @@ describe("Terrain boost (1.3x in Gen 9)", () => {
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
 
+    // Source: Showdown Gen 9 — Misty Terrain 0.5× reduces Dragon moves vs grounded defender
     expect(resultTerrain.damage).toBeLessThan(resultNone.damage);
   });
 
@@ -1264,6 +1319,7 @@ describe("Terrain boost (1.3x in Gen 9)", () => {
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
 
     // Flying-type attacker is not grounded, so no terrain boost
+    // Source: Showdown Gen 9 — terrain does not affect ungrounded (Flying-type) attacker
     expect(resultTerrain.damage).toBe(resultNone.damage);
   });
 
@@ -1290,6 +1346,7 @@ describe("Terrain boost (1.3x in Gen 9)", () => {
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
 
     // Grassy Terrain should roughly halve EQ damage vs grounded target
+    // Source: Showdown Gen 9 — Grassy Terrain halves Earthquake/Bulldoze/Magnitude damage
     expect(resultTerrain.damage).toBeLessThan(resultNone.damage);
   });
 });
@@ -1308,6 +1365,7 @@ describe("Minimum 1 damage", () => {
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
+    // Source: Showdown Gen 9 — minimum damage is 1 even with extremely low stats
     expect(result.damage).toBeGreaterThanOrEqual(1);
   });
 
@@ -1320,6 +1378,7 @@ describe("Minimum 1 damage", () => {
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
+    // Source: Showdown Gen 9 — minimum 1 damage even with NVE + low power + low level
     expect(result.damage).toBeGreaterThanOrEqual(1);
     expect(result.effectiveness).toBe(0.5);
   });
@@ -1339,6 +1398,7 @@ describe("Immunity returns 0 damage", () => {
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
+    // Source: Showdown Gen 9 — Normal vs Ghost type immunity returns 0 damage
     expect(result.damage).toBe(0);
     expect(result.effectiveness).toBe(0);
   });
@@ -1352,6 +1412,7 @@ describe("Immunity returns 0 damage", () => {
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
+    // Source: Showdown Gen 9 — Electric vs Ground type immunity returns 0 damage
     expect(result.damage).toBe(0);
     expect(result.effectiveness).toBe(0);
   });
@@ -1365,6 +1426,7 @@ describe("Immunity returns 0 damage", () => {
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
+    // Source: Showdown Gen 9 — Poison vs Steel type immunity (Gen 2+ chart) returns 0 damage
     expect(result.damage).toBe(0);
     expect(result.effectiveness).toBe(0);
   });
@@ -1388,6 +1450,7 @@ describe("Ability type immunities", () => {
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
+    // Source: Showdown Gen 9 — Levitate grants Ground immunity; damage = 0
     expect(result.damage).toBe(0);
     expect(result.effectiveness).toBe(0);
   });
@@ -1405,6 +1468,7 @@ describe("Ability type immunities", () => {
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
+    // Source: Showdown Gen 9 — Volt Absorb grants Electric immunity; damage = 0
     expect(result.damage).toBe(0);
     expect(result.effectiveness).toBe(0);
   });
@@ -1422,6 +1486,7 @@ describe("Ability type immunities", () => {
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
+    // Source: Showdown Gen 9 — Water Absorb grants Water immunity; damage = 0
     expect(result.damage).toBe(0);
     expect(result.effectiveness).toBe(0);
   });
@@ -1439,6 +1504,7 @@ describe("Ability type immunities", () => {
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
+    // Source: Showdown Gen 9 — Flash Fire grants Fire immunity; damage = 0
     expect(result.damage).toBe(0);
     expect(result.effectiveness).toBe(0);
   });
@@ -1456,6 +1522,7 @@ describe("Ability type immunities", () => {
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
+    // Source: Showdown Gen 9 — Earth Eater grants Ground immunity; damage = 0
     expect(result.damage).toBe(0);
     expect(result.effectiveness).toBe(0);
   });
@@ -1473,6 +1540,7 @@ describe("Ability type immunities", () => {
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
+    // Source: Showdown Gen 9 — Sap Sipper grants Grass immunity; damage = 0
     expect(result.damage).toBe(0);
     expect(result.effectiveness).toBe(0);
   });
@@ -1507,6 +1575,7 @@ describe("Ability type immunities", () => {
       typeChart,
     );
 
+    // Source: Showdown Gen 9 — Mold Breaker bypasses Levitate; effectiveness = 1, damage hits
     expect(result.effectiveness).toBe(1);
     expect(result.damage).toBe(control.damage);
   });
@@ -1541,6 +1610,7 @@ describe("Ability type immunities", () => {
       typeChart,
     );
 
+    // Source: Showdown Gen 9 — Mold Breaker bypasses Flash Fire; effectiveness = 1, damage hits
     expect(result.effectiveness).toBe(1);
     expect(result.damage).toBe(control.damage);
   });
@@ -1560,6 +1630,7 @@ describe("Wonder Guard", () => {
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
+    // Source: Showdown Gen 9 — Wonder Guard blocks NVE moves; damage = 0
     expect(result.damage).toBe(0);
   });
 
@@ -1577,6 +1648,7 @@ describe("Wonder Guard", () => {
     });
     const result = calculateGen9Damage(ctx, typeChart);
     // SE Water 2x vs Fire; Wonder Guard permits SE moves through; damage is non-zero
+    // Source: Showdown Gen 9 — Wonder Guard allows SE moves through; damage > 0
     expect(result.damage).toBeGreaterThanOrEqual(1);
     expect(result.effectiveness).toBe(2);
   });
@@ -1594,6 +1666,7 @@ describe("Wonder Guard", () => {
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
+    // Source: Showdown Gen 9 — Wonder Guard blocks neutral moves; effectiveness = 1, damage = 0
     expect(result.effectiveness).toBe(1);
     expect(result.damage).toBe(0);
   });
@@ -1622,6 +1695,7 @@ describe("Thick Fat", () => {
     });
     const resultNormal = calculateGen9Damage(ctxNormal, typeChart);
 
+    // Source: Showdown Gen 9 — Thick Fat halves Fire damage vs defender
     expect(resultThickFat.damage).toBeLessThan(resultNormal.damage);
   });
 
@@ -1647,6 +1721,7 @@ describe("Thick Fat", () => {
     });
     const resultNormal = calculateGen9Damage(ctxNormal, typeChart);
 
+    // Source: Showdown Gen 9 — Thick Fat halves Ice damage vs defender
     expect(resultThickFat.damage).toBeLessThan(resultNormal.damage);
   });
 });
@@ -1678,6 +1753,7 @@ describe("Scrappy", () => {
       typeChart,
     );
 
+    // Source: Showdown Gen 9 — Scrappy: Normal hits Ghost; effectiveness = 1
     expect(result.effectiveness).toBe(1);
     expect(result.damage).toBe(control.damage);
   });
@@ -1708,6 +1784,7 @@ describe("Scrappy", () => {
       typeChart,
     );
 
+    // Source: Showdown Gen 9 — Scrappy: Fighting hits Ghost; effectiveness = 1
     expect(result.effectiveness).toBe(1);
     expect(result.damage).toBe(control.damage);
   });
@@ -1736,6 +1813,7 @@ describe("Filter / Solid Rock", () => {
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
 
+    // Source: Showdown Gen 9 — Filter reduces SE damage 0.75× vs defender
     expect(resultFilter.damage).toBeLessThan(resultNone.damage);
   });
 
@@ -1761,6 +1839,7 @@ describe("Filter / Solid Rock", () => {
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
 
+    // Source: Showdown Gen 9 — Solid Rock reduces SE damage 0.75× vs defender
     expect(resultSR.damage).toBeLessThan(resultNone.damage);
   });
 });
@@ -1788,6 +1867,7 @@ describe("Prism Armor", () => {
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
 
+    // Source: Showdown Gen 9 — Prism Armor reduces SE damage 0.75× vs defender
     expect(resultPA.damage).toBeLessThan(resultNone.damage);
   });
 
@@ -1821,6 +1901,7 @@ describe("Prism Armor", () => {
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
 
+    // Source: Showdown Gen 9 — Prism Armor persists with Mold Breaker (not bypassed)
     expect(resultMB.damage).toBeLessThan(resultNone.damage);
   });
 });
@@ -1848,6 +1929,7 @@ describe("Tinted Lens", () => {
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
 
+    // Source: Showdown Gen 9 — Tinted Lens doubles NVE move damage
     expect(resultTL.damage).toBeGreaterThan(resultNone.damage);
   });
 });
@@ -1875,6 +1957,7 @@ describe("Technician", () => {
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
 
+    // Source: Showdown Gen 9 — Technician 1.5× boost for moves with BP ≤ 60
     expect(resultTech.damage).toBeGreaterThan(resultNone.damage);
   });
 
@@ -1900,6 +1983,7 @@ describe("Technician", () => {
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
 
+    // Source: Showdown Gen 9 — Technician does not boost moves with BP > 60
     expect(resultTech.damage).toBe(resultNone.damage);
   });
 });
@@ -1935,6 +2019,7 @@ describe("Pinch abilities", () => {
     });
     const resultFull = calculateGen9Damage(ctxFull, typeChart);
 
+    // Source: Showdown Gen 9 — Blaze 1.5× boost when HP ≤ 1/3; damage > full-HP damage
     expect(result.damage).toBeGreaterThan(resultFull.damage);
   });
 
@@ -1968,6 +2053,7 @@ describe("Pinch abilities", () => {
     });
     const resultFull = calculateGen9Damage(ctxFull, typeChart);
 
+    // Source: Showdown Gen 9 — Torrent 1.5× boost when HP ≤ 1/3; damage > full-HP damage
     expect(result.damage).toBeGreaterThan(resultFull.damage);
   });
 });
@@ -1999,6 +2085,7 @@ describe("Item interactions", () => {
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
 
+    // Source: Showdown Gen 9 — Choice Band 1.5× Attack for physical moves
     expect(resultBand.damage).toBeGreaterThan(resultNone.damage);
   });
 
@@ -2024,6 +2111,7 @@ describe("Item interactions", () => {
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
 
+    // Source: Showdown Gen 9 — Choice Specs 1.5× SpAtk for special moves
     expect(resultSpecs.damage).toBeGreaterThan(resultNone.damage);
   });
 
@@ -2049,6 +2137,7 @@ describe("Item interactions", () => {
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
 
+    // Source: Showdown Gen 9 — Life Orb ~1.3× final damage modifier
     expect(resultLO.damage).toBeGreaterThan(resultNone.damage);
   });
 
@@ -2074,6 +2163,7 @@ describe("Item interactions", () => {
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
 
+    // Source: Showdown Gen 9 — Expert Belt ~1.2× on super-effective hits
     expect(resultEB.damage).toBeGreaterThan(resultNone.damage);
   });
 
@@ -2099,6 +2189,7 @@ describe("Item interactions", () => {
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
 
+    // Source: Showdown Gen 9 — Charcoal ~1.2× boost for Fire moves
     expect(resultCharcoal.damage).toBeGreaterThan(resultNone.damage);
   });
 
@@ -2125,6 +2216,7 @@ describe("Item interactions", () => {
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
 
+    // Source: Showdown Gen 9 — Klutz suppresses item effects; no boost applied
     expect(resultKlutz.damage).toBe(resultNone.damage);
   });
 
@@ -2150,6 +2242,7 @@ describe("Item interactions", () => {
     });
     const resultNoItem = calculateGen9Damage(ctxNoItem, typeChart);
 
+    // Source: Showdown Gen 9 — Knock Off 1.5× BP when target holds removable item
     expect(resultKO.damage).toBeGreaterThan(resultNoItem.damage);
   });
 });
@@ -2178,6 +2271,7 @@ describe("Type-resist berries", () => {
     });
     const resultNoBerry = calculateGen9Damage(ctxNoBerry, typeChart);
 
+    // Source: Showdown Gen 9 — Occa Berry halves SE Fire damage; berry consumed
     expect(result.damage).toBe(pokeRound(resultNoBerry.damage, HALF_DAMAGE_MODIFIER));
     expect(defender.pokemon.heldItem).toBeNull();
   });
@@ -2205,6 +2299,7 @@ describe("Type-resist berries", () => {
     });
     const resultNoBerry = calculateGen9Damage(ctxNoBerry, typeChart);
 
+    // Source: Showdown Gen 9 — Chilan Berry halves Normal damage (no SE requirement); consumed
     expect(result.damage).toBe(pokeRound(resultNoBerry.damage, HALF_DAMAGE_MODIFIER));
     expect(defender.pokemon.heldItem).toBeNull();
   });
@@ -2241,9 +2336,11 @@ describe("-ate abilities", () => {
     // Wait: Dragon has no effect on Fairy (Dragon -> Fairy = 0x)
     // Fairy -> Dragon = 2x (SE)
     // So Pixilate changes Normal -> Fairy, and Fairy vs Dragon = 2x
+    // Source: Showdown Gen 9 — Pixilate converts Normal→Fairy; Fairy vs Dragon = 2× SE
     expect(result.effectiveness).toBe(2);
     expect(result.effectiveType).toBe(TYPES.fairy);
     // Pixilate converts Normal→Fairy; Fairy vs Dragon = 2x SE; damage is non-zero
+    // Source: Showdown Gen 9 — Pixilate Fairy→Dragon; damage is non-zero (SE hit)
     expect(result.damage).toBeGreaterThanOrEqual(1);
   });
 
@@ -2261,6 +2358,7 @@ describe("-ate abilities", () => {
     });
     const result = calculateGen9Damage(ctx, typeChart);
     // Flying vs Grass = 2x (SE)
+    // Source: Showdown Gen 9 — Aerilate converts Normal→Flying; Flying vs Grass = 2× SE
     expect(result.effectiveness).toBe(2);
     expect(result.effectiveType).toBe(TYPES.flying);
   });
@@ -2279,6 +2377,7 @@ describe("-ate abilities", () => {
     });
     const result = calculateGen9Damage(ctx, typeChart);
     // Normal vs Ghost = immune
+    // Source: Showdown Gen 9 — Normalize converts Fire→Normal; Normal vs Ghost = immune
     expect(result.damage).toBe(0);
     expect(result.effectiveness).toBe(0);
     expect(result.effectiveType).toBe(TYPES.normal);
@@ -2311,6 +2410,7 @@ describe("Body Press", () => {
     const resultTackle = calculateGen9Damage(ctxTackle, typeChart);
 
     // Body Press with 200 Def >> Tackle with 50 Atk
+    // Source: Showdown Gen 9 — Body Press uses Defense as offensive stat; high Def = high damage
     expect(result.damage).toBeGreaterThan(resultTackle.damage);
   });
 });
@@ -2344,6 +2444,7 @@ describe("Spread moves (doubles)", () => {
     });
     const resultSingles = calculateGen9Damage(ctxSingles, typeChart);
 
+    // Source: Showdown Gen 9 — spread moves (all-adjacent-foes) take 0.75× in doubles
     expect(resultDoubles.damage).toBeLessThan(resultSingles.damage);
   });
 });
@@ -2375,6 +2476,7 @@ describe("Defensive items", () => {
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
 
+    // Source: Showdown Gen 9 — Eviolite 1.5× Defense reduces physical damage
     expect(resultEviolite.damage).toBeLessThan(resultNone.damage);
   });
 
@@ -2400,6 +2502,7 @@ describe("Defensive items", () => {
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
 
+    // Source: Showdown Gen 9 — Assault Vest 1.5× SpDef reduces special damage
     expect(resultAV.damage).toBeLessThan(resultNone.damage);
   });
 });
@@ -2431,6 +2534,7 @@ describe("Sandstorm Rock-type SpDef boost", () => {
     });
     const resultClear = calculateGen9Damage(ctxClear, typeChart);
 
+    // Source: Showdown Gen 9 — Sandstorm boosts Rock-type SpDef 1.5×; special damage reduced
     expect(resultSand.damage).toBeLessThan(resultClear.damage);
   });
 
@@ -2456,6 +2560,7 @@ describe("Sandstorm Rock-type SpDef boost", () => {
     });
     const resultClear = calculateGen9Damage(ctxClear, typeChart);
 
+    // Source: Showdown Gen 9 — Sandstorm SpDef boost is Rock-type only; non-Rock unchanged
     expect(resultSand.damage).toBe(resultClear.damage);
   });
 });
@@ -2468,24 +2573,28 @@ describe("isGen9Grounded", () => {
   it("given normal Pokemon with no Flying type or Levitate, when checking, then is grounded", () => {
     // Source: Showdown sim/pokemon.ts -- isGrounded() default is true
     const pokemon = createOnFieldPokemon({ types: [TYPES.normal] });
+    // Source: Showdown Gen 9 — normal Pokemon with no Flying or Levitate is grounded
     expect(isGen9Grounded(pokemon, false)).toBe(true);
   });
 
   it("given Flying-type Pokemon, when checking, then is NOT grounded", () => {
     // Source: Showdown -- Flying types are not grounded
     const pokemon = createOnFieldPokemon({ types: [TYPES.flying] });
+    // Source: Showdown Gen 9 — Flying-type Pokemon is not grounded
     expect(isGen9Grounded(pokemon, false)).toBe(false);
   });
 
   it("given Levitate Pokemon, when checking, then is NOT grounded", () => {
     // Source: Showdown -- Levitate prevents grounding
     const pokemon = createOnFieldPokemon({ types: [TYPES.normal], ability: ABILITIES.levitate });
+    // Source: Showdown Gen 9 — Levitate prevents grounding
     expect(isGen9Grounded(pokemon, false)).toBe(false);
   });
 
   it("given Flying-type Pokemon under Gravity, when checking, then IS grounded", () => {
     // Source: Showdown -- Gravity forces all Pokemon to be grounded
     const pokemon = createOnFieldPokemon({ types: [TYPES.flying] });
+    // Source: Showdown Gen 9 — Gravity forces all Pokemon to be grounded
     expect(isGen9Grounded(pokemon, true)).toBe(true);
   });
 
@@ -2496,12 +2605,14 @@ describe("isGen9Grounded", () => {
       heldItem: ITEMS.airBalloon,
       currentHp: 100,
     });
+    // Source: Showdown Gen 9 — Air Balloon prevents grounding
     expect(isGen9Grounded(pokemon, false)).toBe(false);
   });
 
   it("given Pokemon with Iron Ball, when checking, then IS grounded even if Flying", () => {
     // Source: Showdown -- Iron Ball forces grounding
     const pokemon = createOnFieldPokemon({ types: [TYPES.flying], heldItem: ITEMS.ironBall });
+    // Source: Showdown Gen 9 — Iron Ball forces grounding even for Flying-type
     expect(isGen9Grounded(pokemon, false)).toBe(true);
   });
 
@@ -2510,6 +2621,7 @@ describe("isGen9Grounded", () => {
     const volatiles = new Map();
     volatiles.set(VOLATILES.ingrain, { turnsLeft: -1 });
     const pokemon = createOnFieldPokemon({ types: [TYPES.flying], volatiles });
+    // Source: Showdown Gen 9 — Ingrain volatile forces grounding
     expect(isGen9Grounded(pokemon, false)).toBe(true);
   });
 
@@ -2518,6 +2630,7 @@ describe("isGen9Grounded", () => {
     const volatiles = new Map();
     volatiles.set(VOLATILES.magnetRise, { turnsLeft: 5 });
     const pokemon = createOnFieldPokemon({ types: [TYPES.normal], volatiles });
+    // Source: Showdown Gen 9 — Magnet Rise volatile prevents grounding
     expect(isGen9Grounded(pokemon, false)).toBe(false);
   });
 });
@@ -2547,6 +2660,7 @@ describe("Flash Fire volatile boost", () => {
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
 
+    // Source: Showdown Gen 9 — Flash Fire volatile 1.5× boosts Fire moves
     expect(resultFF.damage).toBeGreaterThan(resultNone.damage);
   });
 });
@@ -2579,6 +2693,7 @@ describe("Move-specific power doubling", () => {
     const resultHealthy = calculateGen9Damage(ctxHealthy, typeChart);
 
     // Poisoned target should take roughly double damage
+    // Source: Showdown Gen 9 — Venoshock doubles power vs poisoned target
     expect(resultPoison.damage).toBeGreaterThan(resultHealthy.damage);
   });
 
@@ -2616,6 +2731,7 @@ describe("Move-specific power doubling", () => {
     });
     const resultHealthy = calculateGen9Damage(ctxHealthy, typeChart);
 
+    // Source: Showdown Gen 9 — Hex doubles power vs statused target
     expect(resultStatus.damage).toBeGreaterThan(resultHealthy.damage);
   });
 
@@ -2641,6 +2757,7 @@ describe("Move-specific power doubling", () => {
     });
     const resultWithItem = calculateGen9Damage(ctxWithItem, typeChart);
 
+    // Source: Showdown Gen 9 — Acrobatics doubles power when no held item
     expect(resultNoItem.damage).toBeGreaterThan(resultWithItem.damage);
   });
 });
@@ -2677,6 +2794,7 @@ describe("Screens", () => {
     });
     const resultNoScreen = calculateGen9Damage(ctxNoScreen, typeChart);
 
+    // Source: Showdown Gen 9 — Reflect halves physical damage in singles
     expect(resultScreen.damage).toBeLessThan(resultNoScreen.damage);
   });
 
@@ -2717,6 +2835,7 @@ describe("Screens", () => {
     const resultCritNoScreen = calculateGen9Damage(ctxCritNoScreen, typeChart);
 
     // Crit bypasses screen, so damage should be equal
+    // Source: Showdown Gen 9 — critical hits bypass Reflect/Light Screen
     expect(resultCrit.damage).toBe(resultCritNoScreen.damage);
   });
 });
@@ -2748,6 +2867,7 @@ describe("Huge Power / Pure Power", () => {
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
 
+    // Source: Showdown Gen 9 — Huge Power doubles Attack stat
     expect(resultHP.damage).toBeGreaterThan(resultNone.damage);
   });
 
@@ -2773,6 +2893,7 @@ describe("Huge Power / Pure Power", () => {
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
 
+    // Source: Showdown Gen 9 — Pure Power doubles Attack stat (same as Huge Power)
     expect(resultPP.damage).toBeGreaterThan(resultNone.damage);
   });
 });
@@ -2808,6 +2929,7 @@ describe("Contact/flag-based ability boosts", () => {
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
 
+    // Source: Showdown Gen 9 — Tough Claws 1.3× boost for contact moves
     expect(resultTC.damage).toBeGreaterThan(resultNone.damage);
   });
 
@@ -2837,6 +2959,7 @@ describe("Contact/flag-based ability boosts", () => {
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
 
+    // Source: Showdown Gen 9 — Strong Jaw 1.5× boost for bite moves
     expect(resultSJ.damage).toBeGreaterThan(resultNone.damage);
   });
 
@@ -2866,6 +2989,7 @@ describe("Contact/flag-based ability boosts", () => {
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
 
+    // Source: Showdown Gen 9 — Mega Launcher 1.5× boost for pulse moves
     expect(resultML.damage).toBeGreaterThan(resultNone.damage);
   });
 
@@ -2895,6 +3019,7 @@ describe("Contact/flag-based ability boosts", () => {
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
 
+    // Source: Showdown Gen 9 — Iron Fist 1.2× boost for punch moves
     expect(resultIF.damage).toBeGreaterThan(resultNone.damage);
   });
 });
@@ -2915,6 +3040,7 @@ describe("Magnet Rise", () => {
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
+    // Source: Showdown Gen 9 — Magnet Rise volatile grants Ground immunity; damage = 0
     expect(result.damage).toBe(0);
     expect(result.effectiveness).toBe(0);
   });
@@ -2934,6 +3060,7 @@ describe("Magnet Rise", () => {
       seed: 42,
     });
     const result = calculateGen9Damage(ctx, typeChart);
+    // Source: Showdown Gen 9 — Magnet Rise is a move effect, not ability; Mold Breaker cannot bypass
     expect(result.damage).toBe(0);
   });
 });
@@ -2966,6 +3093,7 @@ describe("Gravity interaction", () => {
       typeChart,
     );
 
+    // Source: Showdown Gen 9 — Gravity removes Flying type Ground immunity; move hits
     expect(result.effectiveness).toBe(1);
     expect(result.damage).toBe(control.damage);
   });
@@ -3011,6 +3139,7 @@ describe("Rivalry", () => {
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
 
+    // Source: Showdown Gen 9 — Rivalry 1.25× vs same gender
     expect(resultRivalry.damage).toBeGreaterThan(resultNone.damage);
   });
 
@@ -3049,6 +3178,7 @@ describe("Rivalry", () => {
     });
     const resultNone = calculateGen9Damage(ctxNone, typeChart);
 
+    // Source: Showdown Gen 9 — Rivalry 0.75× vs opposite gender
     expect(resultRivalry.damage).toBeLessThan(resultNone.damage);
   });
 });
@@ -3068,6 +3198,7 @@ describe("DamageResult structure", () => {
     const result = calculateGen9Damage(ctx, typeChart);
 
     // Fire 2x SE vs Grass; damage is non-zero
+    // Source: Showdown Gen 9 damage formula — DamageResult has all required fields
     expect(result.damage).toBeGreaterThanOrEqual(1);
     expect(result.effectiveness).toBe(2);
     expect(result.isCrit).toBe(false);
@@ -3087,8 +3218,10 @@ describe("DamageResult structure", () => {
     });
     const result = calculateGen9Damage(ctx, typeChart);
 
+    // Source: Showdown Gen 9 — DamageResult breakdown object is populated
     expect(result.breakdown).not.toBeUndefined();
     const bd = result.breakdown!;
+    // Source: Showdown Gen 9 — DamageResult breakdown contains all multiplier fields as numbers
     expect(typeof bd.baseDamage).toBe("number");
     expect(typeof bd.weatherMultiplier).toBe("number");
     expect(typeof bd.critMultiplier).toBe("number");
@@ -3121,6 +3254,7 @@ describe("Gen9Ruleset.calculateDamage integration", () => {
     });
     const result = ruleset.calculateDamage(ctx);
     // Fire 2x SE vs Grass; delegation to calculateGen9Damage produces non-zero damage
+    // Source: Showdown Gen 9 — Gen9Ruleset.calculateDamage delegates to calculateGen9Damage
     expect(result.damage).toBeGreaterThanOrEqual(1);
     expect(result.effectiveness).toBe(2);
   });
@@ -3157,6 +3291,7 @@ describe("Gen 9 damage calc -- Unaware vs Simple interaction (regression: #757)"
     const move = SYNTHETIC_NORMAL_PHYSICAL_50();
     const ctx = createDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen9Damage(ctx, typeChart);
+    // Source: Showdown Gen 9 — Unaware zeros out attacker stages regardless of Simple (damage = 22)
     expect(result.damage).toBe(22);
   });
 
@@ -3183,6 +3318,7 @@ describe("Gen 9 damage calc -- Unaware vs Simple interaction (regression: #757)"
     const move = SYNTHETIC_NORMAL_PHYSICAL_50();
     const ctx = createDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen9Damage(ctx, typeChart);
+    // Source: Showdown Gen 9 — Simple doubles stat stages to +4 vs non-Unaware defender (damage = 63)
     expect(result.damage).toBe(63);
   });
 
@@ -3211,6 +3347,7 @@ describe("Gen 9 damage calc -- Unaware vs Simple interaction (regression: #757)"
     const move = SYNTHETIC_NORMAL_PHYSICAL_50();
     const ctx = createDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen9Damage(ctx, typeChart);
+    // Source: Showdown Gen 9 — Mold Breaker bypasses Unaware; attacker stages apply (damage = 43)
     expect(result.damage).toBe(43);
   });
 
@@ -3239,6 +3376,7 @@ describe("Gen 9 damage calc -- Unaware vs Simple interaction (regression: #757)"
     const move = SYNTHETIC_NORMAL_PHYSICAL_50();
     const ctx = createDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen9Damage(ctx, typeChart);
+    // Source: Showdown Gen 9 — defending Teravolt does not suppress attacker Simple (damage = 63)
     expect(result.damage).toBe(63);
   });
 });
