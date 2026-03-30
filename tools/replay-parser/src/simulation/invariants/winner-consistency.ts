@@ -1,4 +1,5 @@
 import type { BattleEvent } from "@pokemon-lib-ts/battle";
+import { BATTLE_EVENT_TYPES } from "@pokemon-lib-ts/battle";
 import type { Invariant, InvariantViolation } from "../types.js";
 
 /** Invariant 14: Winner side has fewer faints than the loser side
@@ -18,11 +19,11 @@ export const winnerConsistency: Invariant = {
     for (let i = 0; i < events.length; i++) {
       const event = events[i];
       if (!event) continue;
-      if (event.type === "faint") {
+      if (event.type === BATTLE_EVENT_TYPES.faint) {
         const e = event as Extract<BattleEvent, { type: "faint" }>;
         faintedBySide[e.side].add(`${e.side}:${e.pokemon}`);
       }
-      if (event.type === "battle-end") {
+      if (event.type === BATTLE_EVENT_TYPES.battleEnd) {
         const e = event as Extract<BattleEvent, { type: "battle-end" }>;
         battleEndIndex = i;
         battleEndWinner = e.winner;

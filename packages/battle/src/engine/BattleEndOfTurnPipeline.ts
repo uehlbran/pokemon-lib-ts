@@ -9,7 +9,7 @@ import {
   CORE_TERRAIN_IDS,
   CORE_VOLATILE_IDS,
 } from "@pokemon-lib-ts/core";
-import { BATTLE_SOURCE_IDS } from "../constants/reference-ids";
+import { BATTLE_EVENT_TYPES, BATTLE_SOURCE_IDS } from "../constants/reference-ids";
 import type { AbilityResult, EndOfTurnEffect, ItemResult } from "../context";
 import type { BattleEvent } from "../events";
 import type { GenerationRuleset } from "../ruleset";
@@ -122,7 +122,7 @@ function endVolatileStatus(
 ): void {
   active.volatileStatuses.delete(volatile);
   host.emit({
-    type: "volatile-end",
+    type: BATTLE_EVENT_TYPES.volatileEnd,
     side: sideIndex,
     pokemon: getPokemonName(active),
     volatile,
@@ -175,7 +175,7 @@ function processFieldCountdown(
   if (fieldState.turnsLeft > 0) return;
 
   fieldState.active = false;
-  host.emit({ type: "message", text: expirationMessage });
+  host.emit({ type: BATTLE_EVENT_TYPES.message, text: expirationMessage });
 }
 
 /**
@@ -273,7 +273,7 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
         processSimpleVolatileCountdown(host, CORE_VOLATILE_IDS.slowStart, (active) => {
           const pokeName = active.pokemon.nickname ?? String(active.pokemon.speciesId);
           host.emit({
-            type: "message",
+            type: BATTLE_EVENT_TYPES.message,
             text: `${pokeName}'s Slow Start wore off!`,
           });
         });
@@ -300,7 +300,7 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
           const healed = active.pokemon.currentHp - oldHp;
           if (healed > 0) {
             host.emit({
-              type: "heal",
+              type: BATTLE_EVENT_TYPES.heal,
               side: side.index,
               pokemon: getPokemonName(active),
               amount: healed,
@@ -324,7 +324,7 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
           const healed = active.pokemon.currentHp - oldHp;
           if (healed > 0) {
             host.emit({
-              type: "heal",
+              type: BATTLE_EVENT_TYPES.heal,
               side: side.index,
               pokemon: getPokemonName(active),
               amount: healed,
@@ -347,7 +347,7 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
               if (healAmount > 0) {
                 active.pokemon.currentHp += healAmount;
                 host.emit({
-                  type: "heal",
+                  type: BATTLE_EVENT_TYPES.heal,
                   side: side.index,
                   pokemon: getPokemonName(active),
                   amount: healAmount,
@@ -393,7 +393,7 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
                     futureDamage = result.damage;
                   } catch {
                     host.emit({
-                      type: "engine-warning",
+                      type: BATTLE_EVENT_TYPES.engineWarning,
                       message:
                         `Future attack move "${side.futureAttack.moveId}" data missing while resolving. ` +
                         "Using stored fallback damage.",
@@ -407,7 +407,7 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
               const maxHp =
                 active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp + clampedDamage;
               host.emit({
-                type: "damage",
+                type: BATTLE_EVENT_TYPES.damage,
                 side: side.index,
                 pokemon: getPokemonName(active),
                 amount: clampedDamage,
@@ -497,13 +497,13 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
               if (uproarData.turnsLeft === 0) {
                 active.volatileStatuses.delete(uproarVolatile);
                 host.emit({
-                  type: "volatile-end",
+                  type: BATTLE_EVENT_TYPES.volatileEnd,
                   side: side.index,
                   pokemon: getPokemonName(active),
                   volatile: uproarVolatile,
                 });
                 host.emit({
-                  type: "message",
+                  type: BATTLE_EVENT_TYPES.message,
                   text: `${getPokemonName(active)}'s uproar ended!`,
                 });
               }
@@ -533,13 +533,13 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
               }
               active.pokemon.status = null;
               host.emit({
-                type: "status-cure",
+                type: BATTLE_EVENT_TYPES.statusCure,
                 side: side.index,
                 pokemon: getPokemonName(active),
                 status: CORE_STATUS_IDS.sleep,
               });
               host.emit({
-                type: "message",
+                type: BATTLE_EVENT_TYPES.message,
                 text: `${getPokemonName(active)} woke up due to the uproar!`,
               });
             }
@@ -562,7 +562,7 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
                 if (healed > 0) {
                   active.pokemon.currentHp += healed;
                   host.emit({
-                    type: "heal",
+                    type: BATTLE_EVENT_TYPES.heal,
                     side: result.side,
                     pokemon: result.pokemon,
                     amount: healed,
@@ -573,7 +573,7 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
                 }
               }
               if (result.message) {
-                host.emit({ type: "message", text: result.message });
+                host.emit({ type: BATTLE_EVENT_TYPES.message, text: result.message });
               }
             }
           }

@@ -27,6 +27,7 @@ import type {
   BattleSide,
   BattleState,
 } from "@pokemon-lib-ts/battle";
+import { BATTLE_EVENT_TYPES } from "@pokemon-lib-ts/battle";
 import {
   ALL_NATURES,
   CORE_STAT_IDS,
@@ -210,7 +211,7 @@ export class Gen7MegaEvolution implements BattleGimmick {
     pokemon.pokemon.megaAbility = megaData.ability;
 
     const event: BattleEvent = {
-      type: "mega-evolve",
+      type: BATTLE_EVENT_TYPES.megaEvolve,
       side: side.index,
       pokemon: pokemon.pokemon.uid,
       form: megaData.form,

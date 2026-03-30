@@ -31,7 +31,7 @@ import {
   BATTLE_ITEM_EFFECT_TYPES,
   BATTLE_ITEM_EFFECT_VALUES,
 } from "../constants/effect-protocol";
-import { BATTLE_SOURCE_IDS } from "../constants/reference-ids";
+import { BATTLE_EVENT_TYPES, BATTLE_SOURCE_IDS } from "../constants/reference-ids";
 import type {
   AvailableMove,
   BattleConfig,
@@ -501,13 +501,13 @@ export class BattleEngine implements BattleEventEmitter {
     if (damage > 0 && target.substituteHp > 0 && !moveData.flags.bypassSubstitute) {
       target.substituteHp = Math.max(0, target.substituteHp - damage);
       this.emit({
-        type: "message",
+        type: BATTLE_EVENT_TYPES.message,
         text: "The substitute took damage!",
       });
       if (target.substituteHp === 0) {
         target.volatileStatuses.delete(CORE_VOLATILE_IDS.substitute);
         this.emit({
-          type: "volatile-end",
+          type: BATTLE_EVENT_TYPES.volatileEnd,
           side: targetSide,
           pokemon: getPokemonName(target),
           volatile: CORE_VOLATILE_IDS.substitute,
@@ -526,12 +526,12 @@ export class BattleEngine implements BattleEventEmitter {
       );
       damage = this.normalizeCustomDamageAmount(survivalResult.damage);
       for (const message of survivalResult.messages) {
-        this.emit({ type: "message", text: message });
+        this.emit({ type: BATTLE_EVENT_TYPES.message, text: message });
       }
       if (survivalResult.consumedItem) {
         target.pokemon.heldItem = null;
         this.emit({
-          type: "item-consumed",
+          type: BATTLE_EVENT_TYPES.itemConsumed,
           side: targetSide,
           pokemon: getPokemonName(target),
           item: survivalResult.consumedItem,
@@ -545,7 +545,7 @@ export class BattleEngine implements BattleEventEmitter {
     target.lastDamageType = type ?? moveData.type;
     target.lastDamageCategory = moveData.category;
     this.emit({
-      type: "damage",
+      type: BATTLE_EVENT_TYPES.damage,
       side: targetSide,
       pokemon: getPokemonName(target),
       amount: damage,
@@ -873,7 +873,7 @@ export class BattleEngine implements BattleEventEmitter {
     this.resetBattleGimmicks();
 
     this.emit({
-      type: "battle-start",
+      type: BATTLE_EVENT_TYPES.battleStart,
       format: this.state.format,
       generation: this.state.generation,
     });
@@ -1117,7 +1117,7 @@ export class BattleEngine implements BattleEventEmitter {
           moveData = this.dataManager.getMove(slot.moveId);
         } catch {
           this.emit({
-            type: "engine-warning",
+            type: BATTLE_EVENT_TYPES.engineWarning,
             message: `Move "${slot.moveId}" not found in data for Pokémon "${active.pokemon.speciesId}". Slot skipped.`,
           });
           return [];
@@ -1150,7 +1150,7 @@ export class BattleEngine implements BattleEventEmitter {
             moveData = this.dataManager.getMove(slot.moveId);
           } catch {
             this.emit({
-              type: "engine-warning",
+              type: BATTLE_EVENT_TYPES.engineWarning,
               message: `Move "${slot.moveId}" not found in data for Pokémon "${active.pokemon.speciesId}". Slot skipped.`,
             });
             return [];
@@ -1178,7 +1178,7 @@ export class BattleEngine implements BattleEventEmitter {
         moveData = this.dataManager.getMove(slot.moveId);
       } catch {
         this.emit({
-          type: "engine-warning",
+          type: BATTLE_EVENT_TYPES.engineWarning,
           message: `Move "${slot.moveId}" not found in data for Pokémon "${active.pokemon.speciesId}". Slot skipped.`,
         });
         return [];
@@ -1357,7 +1357,7 @@ export class BattleEngine implements BattleEventEmitter {
         const side = this.getSideIndex(actor);
         actor.volatileStatuses.delete(volatile);
         this.emit({
-          type: "volatile-end",
+          type: BATTLE_EVENT_TYPES.volatileEnd,
           side,
           pokemon: getPokemonName(actor),
           volatile,
@@ -1385,7 +1385,7 @@ export class BattleEngine implements BattleEventEmitter {
 
           active.volatileStatuses.delete(volatile);
           this.emit({
-            type: "volatile-end",
+            type: BATTLE_EVENT_TYPES.volatileEnd,
             side: side.index,
             pokemon: getPokemonName(active),
             volatile,
@@ -1727,7 +1727,7 @@ export class BattleEngine implements BattleEventEmitter {
     side.active[0] = active;
 
     this.emit({
-      type: "switch-in",
+      type: BATTLE_EVENT_TYPES.switchIn,
       side: side.index,
       pokemon: createPokemonSnapshot(active),
       slot: 0,
@@ -1739,7 +1739,7 @@ export class BattleEngine implements BattleEventEmitter {
       if (hazardResult.damage > 0) {
         active.pokemon.currentHp = Math.max(0, active.pokemon.currentHp - hazardResult.damage);
         this.emit({
-          type: "damage",
+          type: BATTLE_EVENT_TYPES.damage,
           side: side.index,
           pokemon: getPokemonName(active),
           amount: hazardResult.damage,
@@ -1760,7 +1760,7 @@ export class BattleEngine implements BattleEventEmitter {
           const newStage = Math.max(-6, Math.min(6, currentStage + change.stages));
           active.statStages[change.stat] = newStage;
           this.emit({
-            type: "stat-change",
+            type: BATTLE_EVENT_TYPES.statChange,
             side: side.index,
             pokemon: getPokemonName(active),
             stat: change.stat,
@@ -1779,14 +1779,14 @@ export class BattleEngine implements BattleEventEmitter {
         for (const hazardType of hazardResult.hazardsToRemove) {
           side.hazards = side.hazards.filter((h) => h.type !== hazardType);
           this.emit({
-            type: "hazard-clear",
+            type: BATTLE_EVENT_TYPES.hazardClear,
             side: side.index,
             hazard: hazardType,
           });
         }
       }
       for (const msg of hazardResult.messages) {
-        this.emit({ type: "message", text: msg });
+        this.emit({ type: BATTLE_EVENT_TYPES.message, text: msg });
       }
     }
 
@@ -1872,7 +1872,7 @@ export class BattleEngine implements BattleEventEmitter {
     // --- turn-start ---
     this.transitionTo("turn-start");
     this.state.turnNumber++;
-    this.emit({ type: "turn-start", turnNumber: this.state.turnNumber });
+    this.emit({ type: BATTLE_EVENT_TYPES.turnStart, turnNumber: this.state.turnNumber });
 
     // --- turn-resolve ---
     this.transitionTo("turn-resolve");
@@ -1900,7 +1900,7 @@ export class BattleEngine implements BattleEventEmitter {
           moveData = this.dataManager.getMove(moveSlot.moveId);
         } catch {
           this.emit({
-            type: "engine-warning",
+            type: BATTLE_EVENT_TYPES.engineWarning,
             message: `Pursuit move data not found. Skipping Pursuit execution.`,
           });
         }
@@ -1952,7 +1952,7 @@ export class BattleEngine implements BattleEventEmitter {
           break;
         case "recharge":
           this.emit({
-            type: "message",
+            type: BATTLE_EVENT_TYPES.message,
             text: `${getPokemonName(actor)} must recharge!`,
           });
           break;
@@ -2040,11 +2040,11 @@ export class BattleEngine implements BattleEventEmitter {
     } catch {
       // Move data missing — this should not happen for pre-validated moves.
       this.emit({
-        type: "engine-warning",
+        type: BATTLE_EVENT_TYPES.engineWarning,
         message: `Move "${moveSlot.moveId}" data missing during execution.`,
       });
       this.emit({
-        type: "move-fail",
+        type: BATTLE_EVENT_TYPES.moveFail,
         side: action.side,
         pokemon: getPokemonName(actor),
         move: moveSlot.moveId,
@@ -2150,7 +2150,7 @@ export class BattleEngine implements BattleEventEmitter {
     moveSlot.currentPP = Math.max(0, moveSlot.currentPP - ppCost);
 
     this.emit({
-      type: "move-start",
+      type: BATTLE_EVENT_TYPES.moveStart,
       side: action.side,
       pokemon: getPokemonName(actor),
       move: moveData.id,
@@ -2187,7 +2187,7 @@ export class BattleEngine implements BattleEventEmitter {
         // Protect failed due to consecutive use
         actor.consecutiveProtects = 0;
         this.emit({
-          type: "move-fail",
+          type: BATTLE_EVENT_TYPES.moveFail,
           side: action.side,
           pokemon: getPokemonName(actor),
           move: moveData.id,
@@ -2232,7 +2232,7 @@ export class BattleEngine implements BattleEventEmitter {
     const defender = this.getActiveMutable(defenderSide as 0 | 1);
     if (!defender) {
       this.emit({
-        type: "move-fail",
+        type: BATTLE_EVENT_TYPES.moveFail,
         side: action.side,
         pokemon: getPokemonName(actor),
         move: moveData.id,
@@ -2251,7 +2251,7 @@ export class BattleEngine implements BattleEventEmitter {
       if (defender.volatileStatuses.has(vol)) {
         if (!this.ruleset.canHitSemiInvulnerable(moveData.id, vol)) {
           this.emit({
-            type: "move-miss",
+            type: BATTLE_EVENT_TYPES.moveMiss,
             side: action.side,
             pokemon: getPokemonName(actor),
             move: moveData.id,
@@ -2370,7 +2370,7 @@ export class BattleEngine implements BattleEventEmitter {
       })
     ) {
       this.emit({
-        type: "move-miss",
+        type: BATTLE_EVENT_TYPES.moveMiss,
         side: action.side,
         pokemon: getPokemonName(actor),
         move: moveData.id,
@@ -2402,16 +2402,16 @@ export class BattleEngine implements BattleEventEmitter {
       if (this.ruleset.canBypassProtect(effectiveMoveData, actor, activeProtectVolatile)) {
         hitThroughProtect = true;
         this.emit({
-          type: "message",
+          type: BATTLE_EVENT_TYPES.message,
           text: `${getPokemonName(defender)} protected itself!`,
         });
         this.emit({
-          type: "message",
+          type: BATTLE_EVENT_TYPES.message,
           text: `${getPokemonName(defender)} couldn't fully protect itself!`,
         });
       } else {
         this.emit({
-          type: "message",
+          type: BATTLE_EVENT_TYPES.message,
           text: `${getPokemonName(defender)} protected itself!`,
         });
         actor.lastMoveUsed = moveData.id;
@@ -2426,7 +2426,7 @@ export class BattleEngine implements BattleEventEmitter {
       const naturalPriority: number = moveData.priority ?? 0;
       if (moveData.id !== "feint" && naturalPriority > 0) {
         this.emit({
-          type: "message",
+          type: BATTLE_EVENT_TYPES.message,
           text: `Quick Guard protected ${getPokemonName(defender)}!`,
         });
         actor.lastMoveUsed = moveData.id;
@@ -2441,7 +2441,7 @@ export class BattleEngine implements BattleEventEmitter {
       const moveTarget = moveData.target ?? "";
       if (moveTarget === "all-adjacent" || moveTarget === "all-adjacent-foes") {
         this.emit({
-          type: "message",
+          type: BATTLE_EVENT_TYPES.message,
           text: `Wide Guard protected ${getPokemonName(defender)}!`,
         });
         actor.lastMoveUsed = moveData.id;
@@ -2458,10 +2458,10 @@ export class BattleEngine implements BattleEventEmitter {
     );
     if (preExecutionMoveFailure) {
       for (const message of preExecutionMoveFailure.messages ?? []) {
-        this.emit({ type: "message", text: message });
+        this.emit({ type: BATTLE_EVENT_TYPES.message, text: message });
       }
       this.emit({
-        type: "move-fail",
+        type: BATTLE_EVENT_TYPES.moveFail,
         side: action.side,
         pokemon: getPokemonName(actor),
         move: effectiveMoveData.id,
@@ -2485,7 +2485,7 @@ export class BattleEngine implements BattleEventEmitter {
       );
       if (reflectResult) {
         for (const msg of reflectResult.messages) {
-          this.emit({ type: "message", text: msg });
+          this.emit({ type: BATTLE_EVENT_TYPES.message, text: msg });
         }
         // Execute the reflected move: defender uses the move against the original attacker
         this.executeMoveById(
@@ -2576,7 +2576,7 @@ export class BattleEngine implements BattleEventEmitter {
       //   move execution terminates before any damage path when typeEffectiveness===0.
       if (damage === 0 && result.effectiveness === 0) {
         this.emit({
-          type: "message",
+          type: BATTLE_EVENT_TYPES.message,
           text: `It doesn't affect ${getPokemonName(defender)}!`,
         });
         // Delegate self-faint moves (Self-Destruct / Explosion) to onMoveMiss, which
@@ -2592,10 +2592,10 @@ export class BattleEngine implements BattleEventEmitter {
       // Effectiveness and crit events fire regardless of substitute — emit before
       // the damage is applied so the ordering matches real cartridge behaviour.
       if (result.effectiveness !== 1) {
-        this.emit({ type: "effectiveness", multiplier: result.effectiveness });
+        this.emit({ type: BATTLE_EVENT_TYPES.effectiveness, multiplier: result.effectiveness });
       }
       if (result.isCrit) {
-        this.emit({ type: "critical-hit" });
+        this.emit({ type: BATTLE_EVENT_TYPES.criticalHit });
       }
 
       // Apply damage to substitute or pokemon
@@ -2604,14 +2604,14 @@ export class BattleEngine implements BattleEventEmitter {
         hitSubstitute = true;
         defender.substituteHp = Math.max(0, defender.substituteHp - damage);
         this.emit({
-          type: "message",
+          type: BATTLE_EVENT_TYPES.message,
           text: "The substitute took damage!",
         });
         if (defender.substituteHp === 0) {
           brokeSubstitute = true;
           defender.volatileStatuses.delete(CORE_VOLATILE_IDS.substitute);
           this.emit({
-            type: "volatile-end",
+            type: BATTLE_EVENT_TYPES.volatileEnd,
             side: defenderSide as 0 | 1,
             pokemon: getPokemonName(defender),
             volatile: CORE_VOLATILE_IDS.substitute,
@@ -2633,7 +2633,7 @@ export class BattleEngine implements BattleEventEmitter {
           );
           damage = survivalResult.damage;
           for (const msg of survivalResult.messages) {
-            this.emit({ type: "message", text: msg });
+            this.emit({ type: BATTLE_EVENT_TYPES.message, text: msg });
           }
           // If the survival was triggered by a consumable item (e.g., Focus Sash),
           // consume the item and emit an item-consumed event.
@@ -2641,7 +2641,7 @@ export class BattleEngine implements BattleEventEmitter {
           if (survivalResult.consumedItem) {
             defender.pokemon.heldItem = null;
             this.emit({
-              type: "item-consumed",
+              type: BATTLE_EVENT_TYPES.itemConsumed,
               side: defenderSide as 0 | 1,
               pokemon: getPokemonName(defender),
               item: survivalResult.consumedItem,
@@ -2653,7 +2653,7 @@ export class BattleEngine implements BattleEventEmitter {
         defender.lastDamageType = result.effectiveType ?? effectiveMoveData.type;
         defender.lastDamageCategory = result.effectiveCategory ?? effectiveMoveData.category;
         this.emit({
-          type: "damage",
+          type: BATTLE_EVENT_TYPES.damage,
           side: defenderSide as 0 | 1,
           pokemon: getPokemonName(defender),
           amount: damage,
@@ -2821,7 +2821,7 @@ export class BattleEngine implements BattleEventEmitter {
             })
           ) {
             this.emit({
-              type: "move-miss",
+              type: BATTLE_EVENT_TYPES.moveMiss,
               side: action.side,
               pokemon: getPokemonName(actor),
               move: effectiveMoveData.id,
@@ -2854,12 +2854,12 @@ export class BattleEngine implements BattleEventEmitter {
         // Apply damage to substitute or Pokemon
         if (defender.substituteHp > 0 && !effectiveMoveData.flags.bypassSubstitute) {
           defender.substituteHp = Math.max(0, defender.substituteHp - hitDamage);
-          this.emit({ type: "message", text: "The substitute took damage!" });
+          this.emit({ type: BATTLE_EVENT_TYPES.message, text: "The substitute took damage!" });
           if (defender.substituteHp === 0) {
             brokeSubstitute = true;
             defender.volatileStatuses.delete(CORE_VOLATILE_IDS.substitute);
             this.emit({
-              type: "volatile-end",
+              type: BATTLE_EVENT_TYPES.volatileEnd,
               side: defenderSide as 0 | 1,
               pokemon: getPokemonName(defender),
               volatile: CORE_VOLATILE_IDS.substitute,
@@ -2881,12 +2881,12 @@ export class BattleEngine implements BattleEventEmitter {
             );
             hitDamage = survivalResult.damage;
             for (const msg of survivalResult.messages) {
-              this.emit({ type: "message", text: msg });
+              this.emit({ type: BATTLE_EVENT_TYPES.message, text: msg });
             }
             if (survivalResult.consumedItem) {
               defender.pokemon.heldItem = null;
               this.emit({
-                type: "item-consumed",
+                type: BATTLE_EVENT_TYPES.itemConsumed,
                 side: defenderSide as 0 | 1,
                 pokemon: getPokemonName(defender),
                 item: survivalResult.consumedItem,
@@ -2896,7 +2896,7 @@ export class BattleEngine implements BattleEventEmitter {
           defender.pokemon.currentHp = Math.max(0, defender.pokemon.currentHp - hitDamage);
           defender.lastDamageTaken = hitDamage;
           this.emit({
-            type: "damage",
+            type: BATTLE_EVENT_TYPES.damage,
             side: defenderSide as 0 | 1,
             pokemon: getPokemonName(defender),
             amount: hitDamage,
@@ -2911,7 +2911,7 @@ export class BattleEngine implements BattleEventEmitter {
         totalHits++;
       }
       this.emit({
-        type: "message",
+        type: BATTLE_EVENT_TYPES.message,
         text: `Hit ${totalHits} time${totalHits === 1 ? "" : "s"}!`,
       });
 
@@ -3070,14 +3070,14 @@ export class BattleEngine implements BattleEventEmitter {
       moveData = this.dataManager.getMove(moveId);
     } catch {
       this.emit({
-        type: "engine-warning",
+        type: BATTLE_EVENT_TYPES.engineWarning,
         message: `Recursive move "${moveId}" data missing.`,
       });
       return;
     }
 
     this.emit({
-      type: "move-start",
+      type: BATTLE_EVENT_TYPES.moveStart,
       side: actorSide,
       pokemon: getPokemonName(actor),
       move: moveId,
@@ -3094,7 +3094,7 @@ export class BattleEngine implements BattleEventEmitter {
       });
       if (!hits) {
         this.emit({
-          type: "move-miss",
+          type: BATTLE_EVENT_TYPES.moveMiss,
           side: actorSide,
           pokemon: getPokemonName(actor),
           move: moveId,
@@ -3173,7 +3173,7 @@ export class BattleEngine implements BattleEventEmitter {
       //   (Mirror Move, Metronome chains) exactly as to primary attacks.
       if (damage === 0 && result.effectiveness === 0) {
         this.emit({
-          type: "message",
+          type: BATTLE_EVENT_TYPES.message,
           text: `It doesn't affect ${getPokemonName(defender)}!`,
         });
         // Delegate self-faint moves to onMoveMiss (same as the miss path).
@@ -3185,10 +3185,10 @@ export class BattleEngine implements BattleEventEmitter {
       }
 
       if (result.effectiveness !== 1) {
-        this.emit({ type: "effectiveness", multiplier: result.effectiveness });
+        this.emit({ type: BATTLE_EVENT_TYPES.effectiveness, multiplier: result.effectiveness });
       }
       if (result.isCrit) {
-        this.emit({ type: "critical-hit" });
+        this.emit({ type: BATTLE_EVENT_TYPES.criticalHit });
       }
 
       // Apply damage to substitute or pokemon
@@ -3196,12 +3196,12 @@ export class BattleEngine implements BattleEventEmitter {
       if (defender.substituteHp > 0 && !moveData.flags.bypassSubstitute) {
         hitSubstitute = true;
         defender.substituteHp = Math.max(0, defender.substituteHp - damage);
-        this.emit({ type: "message", text: "The substitute took damage!" });
+        this.emit({ type: BATTLE_EVENT_TYPES.message, text: "The substitute took damage!" });
         if (defender.substituteHp === 0) {
           brokeSubstitute = true;
           defender.volatileStatuses.delete(CORE_VOLATILE_IDS.substitute);
           this.emit({
-            type: "volatile-end",
+            type: BATTLE_EVENT_TYPES.volatileEnd,
             side: defenderSide,
             pokemon: getPokemonName(defender),
             volatile: CORE_VOLATILE_IDS.substitute,
@@ -3222,12 +3222,12 @@ export class BattleEngine implements BattleEventEmitter {
           );
           damage = survivalResult.damage;
           for (const msg of survivalResult.messages) {
-            this.emit({ type: "message", text: msg });
+            this.emit({ type: BATTLE_EVENT_TYPES.message, text: msg });
           }
           if (survivalResult.consumedItem) {
             defender.pokemon.heldItem = null;
             this.emit({
-              type: "item-consumed",
+              type: BATTLE_EVENT_TYPES.itemConsumed,
               side: defenderSide,
               pokemon: getPokemonName(defender),
               item: survivalResult.consumedItem,
@@ -3239,7 +3239,7 @@ export class BattleEngine implements BattleEventEmitter {
         defender.lastDamageType = moveData.type;
         defender.lastDamageCategory = moveData.category;
         this.emit({
-          type: "damage",
+          type: BATTLE_EVENT_TYPES.damage,
           side: defenderSide,
           pokemon: getPokemonName(defender),
           amount: damage,
@@ -3384,7 +3384,7 @@ export class BattleEngine implements BattleEventEmitter {
       this.clearSourceLinkedVolatiles(outgoing.pokemon.uid);
 
       this.emit({
-        type: "switch-out",
+        type: BATTLE_EVENT_TYPES.switchOut,
         side: action.side,
         pokemon: createPokemonSnapshot(outgoing),
       });
@@ -3439,7 +3439,7 @@ export class BattleEngine implements BattleEventEmitter {
       this.ruleset.onSwitchOut(outgoing, this.state);
       this.clearSourceLinkedVolatiles(outgoing.pokemon.uid);
       this.emit({
-        type: "switch-out",
+        type: BATTLE_EVENT_TYPES.switchOut,
         side: sideIndex,
         pokemon: createPokemonSnapshot(outgoing),
       });
@@ -3461,7 +3461,7 @@ export class BattleEngine implements BattleEventEmitter {
     }
 
     if (options?.message) {
-      this.emit({ type: "message", text: options.message });
+      this.emit({ type: BATTLE_EVENT_TYPES.message, text: options.message });
     }
 
     return true;
@@ -3496,7 +3496,7 @@ export class BattleEngine implements BattleEventEmitter {
     if (isLiveVoluntarySelfSwitch) {
       this.ruleset.onSwitchOut(outgoing, this.state);
       this.emit({
-        type: "switch-out",
+        type: BATTLE_EVENT_TYPES.switchOut,
         side,
         pokemon: createPokemonSnapshot(outgoing),
       });
@@ -3525,7 +3525,7 @@ export class BattleEngine implements BattleEventEmitter {
    */
   private executeItem(action: ItemAction): void {
     if (!this.ruleset.canUseBagItems()) {
-      this.emit({ type: "message", text: "Items cannot be used here!" });
+      this.emit({ type: BATTLE_EVENT_TYPES.message, text: "Items cannot be used here!" });
       return;
     }
 
@@ -3535,7 +3535,7 @@ export class BattleEngine implements BattleEventEmitter {
       itemData = this.dataManager.getItem(action.itemId);
     } catch {
       this.emit({
-        type: "engine-warning",
+        type: BATTLE_EVENT_TYPES.engineWarning,
         message: `Item "${action.itemId}" not found in data manager; falling back to bag-item handling.`,
       });
     }
@@ -3552,12 +3552,12 @@ export class BattleEngine implements BattleEventEmitter {
     // For bench Pokemon (e.g., Revive on a fainted team member), create a temporary wrapper.
     const target = this.resolveItemTarget(side, targetSlot);
     if (!target) {
-      this.emit({ type: "message", text: "Invalid target for item." });
+      this.emit({ type: BATTLE_EVENT_TYPES.message, text: "Invalid target for item." });
       return;
     }
 
     this.emit({
-      type: "message",
+      type: BATTLE_EVENT_TYPES.message,
       text: `Side ${action.side} used ${action.itemId}!`,
     });
 
@@ -3566,7 +3566,7 @@ export class BattleEngine implements BattleEventEmitter {
     // If the item had no effect, emit messages and return
     if (!result.activated) {
       for (const msg of result.messages) {
-        this.emit({ type: "message", text: msg });
+        this.emit({ type: BATTLE_EVENT_TYPES.message, text: msg });
       }
       return;
     }
@@ -3581,7 +3581,7 @@ export class BattleEngine implements BattleEventEmitter {
         target.pokemon.currentHp = Math.min(maxHp, target.pokemon.currentHp + result.healAmount);
       }
       this.emit({
-        type: "heal",
+        type: BATTLE_EVENT_TYPES.heal,
         side: action.side,
         pokemon: getPokemonName(target),
         amount: result.healAmount,
@@ -3595,7 +3595,7 @@ export class BattleEngine implements BattleEventEmitter {
     if (result.statusCured) {
       target.pokemon.status = null;
       this.emit({
-        type: "status-cure",
+        type: BATTLE_EVENT_TYPES.statusCure,
         side: action.side,
         pokemon: getPokemonName(target),
         status: result.statusCured,
@@ -3611,7 +3611,7 @@ export class BattleEngine implements BattleEventEmitter {
       const newStage = Math.max(-6, Math.min(6, current + stages));
       target.statStages[stat] = newStage;
       this.emit({
-        type: "stat-change",
+        type: BATTLE_EVENT_TYPES.statChange,
         side: action.side,
         pokemon: getPokemonName(target),
         stat,
@@ -3627,7 +3627,7 @@ export class BattleEngine implements BattleEventEmitter {
 
     // Emit result messages
     for (const msg of result.messages) {
-      this.emit({ type: "message", text: msg });
+      this.emit({ type: BATTLE_EVENT_TYPES.message, text: msg });
     }
   }
 
@@ -3690,7 +3690,10 @@ export class BattleEngine implements BattleEventEmitter {
   private executeCatchAttempt(action: ItemAction, itemData: ItemData): void {
     // Only valid in wild battles
     if (!this.state.isWildBattle) {
-      this.emit({ type: "message", text: "You can't throw a Poke Ball at a trainer's Pokemon!" });
+      this.emit({
+        type: BATTLE_EVENT_TYPES.message,
+        text: "You can't throw a Poke Ball at a trainer's Pokemon!",
+      });
       return;
     }
 
@@ -3716,7 +3719,7 @@ export class BattleEngine implements BattleEventEmitter {
       baseCatchRate = species.catchRate;
     } catch {
       this.emit({
-        type: "message",
+        type: BATTLE_EVENT_TYPES.message,
         text: "The Poke Ball missed! (species data unavailable)",
       });
       return;
@@ -3729,7 +3732,7 @@ export class BattleEngine implements BattleEventEmitter {
     const maxHp = wildActive.pokemon.calculatedStats?.hp;
     if (maxHp === undefined) {
       this.emit({
-        type: "message",
+        type: BATTLE_EVENT_TYPES.message,
         text: "The Poke Ball missed! (stat data unavailable)",
       });
       return;
@@ -3747,7 +3750,7 @@ export class BattleEngine implements BattleEventEmitter {
 
     // Emit catch attempt event
     this.emit({
-      type: "catch-attempt",
+      type: BATTLE_EVENT_TYPES.catchAttempt,
       ball: action.itemId,
       pokemon: getPokemonName(wildActive),
       shakes: result.shakes,
@@ -3755,14 +3758,17 @@ export class BattleEngine implements BattleEventEmitter {
     });
 
     if (result.caught) {
-      this.emit({ type: "message", text: `${getPokemonName(wildActive)} was caught!` });
+      this.emit({
+        type: BATTLE_EVENT_TYPES.message,
+        text: `${getPokemonName(wildActive)} was caught!`,
+      });
       // Synchronize state before emitting battle-end so getWinner() and getPhase() are
       // consistent for synchronous listeners — mirrors the checkBattleEnd() pattern.
       this.state.ended = true;
       this.state.winner = 0;
       this.transitionTo("battle-end");
       // Side 0 (player) wins by catching
-      this.emit({ type: "battle-end", winner: 0 });
+      this.emit({ type: BATTLE_EVENT_TYPES.battleEnd, winner: 0 });
     } else {
       const shakeMessages = [
         "Oh no! The Pokemon broke free!",
@@ -3771,7 +3777,7 @@ export class BattleEngine implements BattleEventEmitter {
         "Gah! It was so close, too!",
       ];
       this.emit({
-        type: "message",
+        type: BATTLE_EVENT_TYPES.message,
         text: shakeMessages[result.shakes] ?? "The Pokemon broke free!",
       });
     }
@@ -3782,7 +3788,7 @@ export class BattleEngine implements BattleEventEmitter {
     const defender = this.getActiveMutable(defenderSide as 0 | 1);
 
     this.emit({
-      type: "move-start",
+      type: BATTLE_EVENT_TYPES.moveStart,
       side: action.side,
       pokemon: getPokemonName(actor),
       move: CORE_MOVE_IDS.struggle,
@@ -3802,7 +3808,7 @@ export class BattleEngine implements BattleEventEmitter {
       })
     ) {
       this.emit({
-        type: "move-miss",
+        type: BATTLE_EVENT_TYPES.moveMiss,
         side: action.side,
         pokemon: getPokemonName(actor),
         move: CORE_MOVE_IDS.struggle,
@@ -3820,7 +3826,7 @@ export class BattleEngine implements BattleEventEmitter {
 
     defender.pokemon.currentHp = Math.max(0, defender.pokemon.currentHp - damage);
     this.emit({
-      type: "damage",
+      type: BATTLE_EVENT_TYPES.damage,
       side: defenderSide as 0 | 1,
       pokemon: getPokemonName(defender),
       amount: damage,
@@ -3835,7 +3841,7 @@ export class BattleEngine implements BattleEventEmitter {
     const recoil = this.ruleset.calculateStruggleRecoil(actor, actualDamage);
     actor.pokemon.currentHp = Math.max(0, actor.pokemon.currentHp - recoil);
     this.emit({
-      type: "damage",
+      type: BATTLE_EVENT_TYPES.damage,
       side: action.side,
       pokemon: getPokemonName(actor),
       amount: recoil,
@@ -3856,7 +3862,7 @@ export class BattleEngine implements BattleEventEmitter {
   private executeRun(action: RunAction): void {
     // Only valid in wild battles
     if (!this.state.isWildBattle) {
-      this.emit({ type: "message", text: "Can't run from a trainer battle!" });
+      this.emit({ type: BATTLE_EVENT_TYPES.message, text: "Can't run from a trainer battle!" });
       return;
     }
 
@@ -3888,15 +3894,15 @@ export class BattleEngine implements BattleEventEmitter {
 
     const success = this.ruleset.rollFleeSuccess(playerSpeed, wildSpeed, attempts, this.state.rng);
 
-    this.emit({ type: "flee-attempt", side: 0, success });
+    this.emit({ type: BATTLE_EVENT_TYPES.fleeAttempt, side: 0, success });
 
     if (success) {
-      this.emit({ type: "message", text: "Got away safely!" });
+      this.emit({ type: BATTLE_EVENT_TYPES.message, text: "Got away safely!" });
       this.state.ended = true;
       // winner is null = no winner (fled)
-      this.emit({ type: "battle-end", winner: null });
+      this.emit({ type: BATTLE_EVENT_TYPES.battleEnd, winner: null });
     } else {
-      this.emit({ type: "message", text: "Can't escape!" });
+      this.emit({ type: BATTLE_EVENT_TYPES.message, text: "Can't escape!" });
     }
   }
 
@@ -3907,7 +3913,7 @@ export class BattleEngine implements BattleEventEmitter {
     if (actor.volatileStatuses.has(CORE_VOLATILE_IDS.flinch)) {
       actor.volatileStatuses.delete(CORE_VOLATILE_IDS.flinch);
       this.emit({
-        type: "message",
+        type: BATTLE_EVENT_TYPES.message,
         text: `${getPokemonName(actor)} flinched and couldn't move!`,
       });
 
@@ -3941,7 +3947,7 @@ export class BattleEngine implements BattleEventEmitter {
       if (actor.pokemon.status === null) {
         // Pokemon woke up (status cleared by processSleepTurn)
         this.emit({
-          type: "status-cure",
+          type: BATTLE_EVENT_TYPES.statusCure,
           side,
           pokemon: getPokemonName(actor),
           status: CORE_STATUS_IDS.sleep,
@@ -3949,7 +3955,7 @@ export class BattleEngine implements BattleEventEmitter {
       } else {
         // Still sleeping
         this.emit({
-          type: "message",
+          type: BATTLE_EVENT_TYPES.message,
           text: `${getPokemonName(actor)} is fast asleep!`,
         });
       }
@@ -3970,7 +3976,7 @@ export class BattleEngine implements BattleEventEmitter {
         // Defrost moves (Scald, Flame Wheel, etc.) always thaw the user
         actor.pokemon.status = null;
         this.emit({
-          type: "status-cure",
+          type: BATTLE_EVENT_TYPES.statusCure,
           side,
           pokemon: getPokemonName(actor),
           status: CORE_STATUS_IDS.freeze,
@@ -3978,14 +3984,14 @@ export class BattleEngine implements BattleEventEmitter {
       } else if (this.ruleset.checkFreezeThaw(actor, this.state.rng)) {
         actor.pokemon.status = null;
         this.emit({
-          type: "status-cure",
+          type: BATTLE_EVENT_TYPES.statusCure,
           side,
           pokemon: getPokemonName(actor),
           status: CORE_STATUS_IDS.freeze,
         });
       } else {
         this.emit({
-          type: "message",
+          type: BATTLE_EVENT_TYPES.message,
           text: `${getPokemonName(actor)} is frozen solid!`,
         });
         return false;
@@ -3996,7 +4002,7 @@ export class BattleEngine implements BattleEventEmitter {
     if (actor.pokemon.status === CORE_STATUS_IDS.paralysis) {
       if (this.ruleset.checkFullParalysis(actor, this.state.rng)) {
         this.emit({
-          type: "message",
+          type: BATTLE_EVENT_TYPES.message,
           text: `${getPokemonName(actor)} is fully paralyzed!`,
         });
         return false;
@@ -4010,7 +4016,7 @@ export class BattleEngine implements BattleEventEmitter {
         // Confusion already expired (e.g., turnsLeft was set to 0 before this check)
         actor.volatileStatuses.delete(CORE_VOLATILE_IDS.confusion);
         this.emit({
-          type: "volatile-end",
+          type: BATTLE_EVENT_TYPES.volatileEnd,
           side,
           pokemon: getPokemonName(actor),
           volatile: CORE_VOLATILE_IDS.confusion,
@@ -4021,14 +4027,14 @@ export class BattleEngine implements BattleEventEmitter {
           // Confusion ended after decrement
           actor.volatileStatuses.delete(CORE_VOLATILE_IDS.confusion);
           this.emit({
-            type: "volatile-end",
+            type: BATTLE_EVENT_TYPES.volatileEnd,
             side,
             pokemon: getPokemonName(actor),
             volatile: CORE_VOLATILE_IDS.confusion,
           });
         } else {
           this.emit({
-            type: "message",
+            type: BATTLE_EVENT_TYPES.message,
             text: `${getPokemonName(actor)} is confused!`,
           });
           if (this.state.rng.chance(this.ruleset.getConfusionSelfHitChance())) {
@@ -4039,7 +4045,7 @@ export class BattleEngine implements BattleEventEmitter {
               this.state.rng,
             );
             this.emit({
-              type: "message",
+              type: BATTLE_EVENT_TYPES.message,
               text: "It hurt itself in its confusion!",
             });
 
@@ -4054,13 +4060,13 @@ export class BattleEngine implements BattleEventEmitter {
             ) {
               opponent.substituteHp = Math.max(0, opponent.substituteHp - selfDamage);
               this.emit({
-                type: "message",
+                type: BATTLE_EVENT_TYPES.message,
                 text: "The substitute took damage!",
               });
               if (opponent.substituteHp === 0) {
                 opponent.volatileStatuses.delete(CORE_VOLATILE_IDS.substitute);
                 this.emit({
-                  type: "volatile-end",
+                  type: BATTLE_EVENT_TYPES.volatileEnd,
                   side: opponentSide as 0 | 1,
                   pokemon: getPokemonName(opponent),
                   volatile: CORE_VOLATILE_IDS.substitute,
@@ -4070,7 +4076,7 @@ export class BattleEngine implements BattleEventEmitter {
               const maxHp = actor.pokemon.calculatedStats?.hp ?? actor.pokemon.currentHp;
               actor.pokemon.currentHp = Math.max(0, actor.pokemon.currentHp - selfDamage);
               this.emit({
-                type: "damage",
+                type: BATTLE_EVENT_TYPES.damage,
                 side,
                 pokemon: getPokemonName(actor),
                 amount: selfDamage,
@@ -4092,7 +4098,7 @@ export class BattleEngine implements BattleEventEmitter {
         // Bound already expired
         actor.volatileStatuses.delete(CORE_VOLATILE_IDS.bound);
         this.emit({
-          type: "volatile-end",
+          type: BATTLE_EVENT_TYPES.volatileEnd,
           side,
           pokemon: getPokemonName(actor),
           volatile: CORE_VOLATILE_IDS.bound,
@@ -4103,14 +4109,14 @@ export class BattleEngine implements BattleEventEmitter {
           // Binding ended after decrement
           actor.volatileStatuses.delete(CORE_VOLATILE_IDS.bound);
           this.emit({
-            type: "volatile-end",
+            type: BATTLE_EVENT_TYPES.volatileEnd,
             side,
             pokemon: getPokemonName(actor),
             volatile: CORE_VOLATILE_IDS.bound,
           });
         } else {
           this.emit({
-            type: "message",
+            type: BATTLE_EVENT_TYPES.message,
             text: `${getPokemonName(actor)} is bound and can't move!`,
           });
           return false;
@@ -4123,7 +4129,7 @@ export class BattleEngine implements BattleEventEmitter {
     const sourceLinkedBlocker = this.getSourceLinkedActionBlocker(actor);
     if (sourceLinkedBlocker) {
       this.emit({
-        type: "message",
+        type: BATTLE_EVENT_TYPES.message,
         text: `${getPokemonName(actor)} can't move!`,
       });
       return false;
@@ -4133,7 +4139,7 @@ export class BattleEngine implements BattleEventEmitter {
     // Source: Showdown Gen 4 mod — Gravity disables gravity-flagged moves
     if (this.state.gravity.active && move.flags.gravity) {
       this.emit({
-        type: "message",
+        type: BATTLE_EVENT_TYPES.message,
         text: `${getPokemonName(actor)} can't use ${move.displayName} because of gravity!`,
       });
       return false;
@@ -4146,7 +4152,7 @@ export class BattleEngine implements BattleEventEmitter {
       move.category === CORE_MOVE_CATEGORIES.status
     ) {
       this.emit({
-        type: "message",
+        type: BATTLE_EVENT_TYPES.message,
         text: `${getPokemonName(actor)} can't use ${move.id} after the taunt!`,
       });
       return false;
@@ -4166,7 +4172,7 @@ export class BattleEngine implements BattleEventEmitter {
       !actor.volatileStatuses.has(CORE_VOLATILE_IDS.embargo)
     ) {
       this.emit({
-        type: "message",
+        type: BATTLE_EVENT_TYPES.message,
         text: `${getPokemonName(actor)} can't use ${move.displayName} because of its Assault Vest!`,
       });
       return false;
@@ -4179,7 +4185,7 @@ export class BattleEngine implements BattleEventEmitter {
       const lockedMoveId = choiceData?.moveId as string | undefined;
       if (lockedMoveId && move.id !== lockedMoveId) {
         this.emit({
-          type: "message",
+          type: BATTLE_EVENT_TYPES.message,
           text: `${getPokemonName(actor)} is locked into ${lockedMoveId} by its Choice item!`,
         });
         return false;
@@ -4211,7 +4217,7 @@ export class BattleEngine implements BattleEventEmitter {
       const terrainResult = this.ruleset.checkTerrainStatusImmunity(status, target, this.state);
       if (terrainResult.immune) {
         if (terrainResult.message) {
-          this.emit({ type: "message", text: terrainResult.message });
+          this.emit({ type: BATTLE_EVENT_TYPES.message, text: terrainResult.message });
         }
         return;
       }
@@ -4243,7 +4249,7 @@ export class BattleEngine implements BattleEventEmitter {
     }
 
     this.emit({
-      type: "status-inflict",
+      type: BATTLE_EVENT_TYPES.statusInflict,
       side,
       pokemon: getPokemonName(target),
       status,
@@ -4283,12 +4289,12 @@ export class BattleEngine implements BattleEventEmitter {
       // Source: pret/pokered src/engine/battle/effect_commands.asm — successful wild Teleport
       // uses the standard flee-attempt + "Got away safely!" flow, and BattleEndEvent
       // is documented as the final event before the engine enters battle-end phase.
-      this.emit({ type: "flee-attempt", side: 0, success: true });
-      this.emit({ type: "message", text: "Got away safely!" });
+      this.emit({ type: BATTLE_EVENT_TYPES.fleeAttempt, side: 0, success: true });
+      this.emit({ type: BATTLE_EVENT_TYPES.message, text: "Got away safely!" });
       this.state.ended = true;
       this.state.winner = null;
       this.transitionTo("battle-end");
-      this.emit({ type: "battle-end", winner: null });
+      this.emit({ type: BATTLE_EVENT_TYPES.battleEnd, winner: null });
       return;
     }
 
@@ -4307,7 +4313,7 @@ export class BattleEngine implements BattleEventEmitter {
           data: result.volatileData?.data,
         });
         this.emit({
-          type: "volatile-start",
+          type: BATTLE_EVENT_TYPES.volatileStart,
           side: defenderSide,
           pokemon: getPokemonName(defender),
           volatile: result.volatileInflicted,
@@ -4330,7 +4336,7 @@ export class BattleEngine implements BattleEventEmitter {
           blocksAction: linkedVolatile.blocksAction ?? false,
         });
         this.emit({
-          type: "volatile-start",
+          type: BATTLE_EVENT_TYPES.volatileStart,
           side: defenderSide,
           pokemon: getPokemonName(defender),
           volatile: linkedVolatile.volatile,
@@ -4347,7 +4353,7 @@ export class BattleEngine implements BattleEventEmitter {
       const newStage = Math.max(-6, Math.min(6, currentStage + change.stages));
       target.statStages[change.stat] = newStage;
       this.emit({
-        type: "stat-change",
+        type: BATTLE_EVENT_TYPES.statChange,
         side: targetSide,
         pokemon: getPokemonName(target),
         stat: change.stat,
@@ -4365,7 +4371,7 @@ export class BattleEngine implements BattleEventEmitter {
     if (result.recoilDamage > 0) {
       attacker.pokemon.currentHp = Math.max(0, attacker.pokemon.currentHp - result.recoilDamage);
       this.emit({
-        type: "damage",
+        type: BATTLE_EVENT_TYPES.damage,
         side: attackerSide,
         pokemon: getPokemonName(attacker),
         amount: result.recoilDamage,
@@ -4383,7 +4389,7 @@ export class BattleEngine implements BattleEventEmitter {
       const healed = attacker.pokemon.currentHp - oldHp;
       if (healed > 0) {
         this.emit({
-          type: "heal",
+          type: BATTLE_EVENT_TYPES.heal,
           side: attackerSide,
           pokemon: getPokemonName(attacker),
           amount: healed,
@@ -4403,7 +4409,7 @@ export class BattleEngine implements BattleEventEmitter {
       const defHealed = defender.pokemon.currentHp - defOldHp;
       if (defHealed > 0) {
         this.emit({
-          type: "heal",
+          type: BATTLE_EVENT_TYPES.heal,
           side: defenderSide,
           pokemon: getPokemonName(defender),
           amount: defHealed,
@@ -4423,7 +4429,7 @@ export class BattleEngine implements BattleEventEmitter {
       if (consumedItemId) {
         attacker.pokemon.heldItem = null;
         this.emit({
-          type: "item-consumed",
+          type: BATTLE_EVENT_TYPES.itemConsumed,
           side: attackerSide,
           pokemon: getPokemonName(attacker),
           item: consumedItemId,
@@ -4433,7 +4439,7 @@ export class BattleEngine implements BattleEventEmitter {
 
     // Messages
     for (const msg of result.messages) {
-      this.emit({ type: "message", text: msg });
+      this.emit({ type: BATTLE_EVENT_TYPES.message, text: msg });
     }
 
     // Weather from move effects
@@ -4444,7 +4450,7 @@ export class BattleEngine implements BattleEventEmitter {
         source: result.weatherSet.source,
       };
       this.emit({
-        type: "weather-set",
+        type: BATTLE_EVENT_TYPES.weatherSet,
         weather: result.weatherSet.weather,
         source: result.weatherSet.source,
       });
@@ -4463,7 +4469,7 @@ export class BattleEngine implements BattleEventEmitter {
           source: result.terrainSet.source,
         };
         this.emit({
-          type: "terrain-set",
+          type: BATTLE_EVENT_TYPES.terrainSet,
           terrain: result.terrainSet.terrain,
           source: result.terrainSet.source,
         });
@@ -4472,7 +4478,7 @@ export class BattleEngine implements BattleEventEmitter {
         const previousTerrain = this.state.terrain?.type;
         if (previousTerrain) {
           this.state.terrain = null;
-          this.emit({ type: "terrain-end", terrain: previousTerrain });
+          this.emit({ type: BATTLE_EVENT_TYPES.terrainEnd, terrain: previousTerrain });
         }
       }
     }
@@ -4486,7 +4492,7 @@ export class BattleEngine implements BattleEventEmitter {
       if (!existing) {
         targetSide.hazards.push({ type: hazardType, layers: 1 });
         this.emit({
-          type: "hazard-set",
+          type: BATTLE_EVENT_TYPES.hazardSet,
           side: result.hazardSet.targetSide,
           hazard: hazardType,
           layers: 1,
@@ -4495,7 +4501,7 @@ export class BattleEngine implements BattleEventEmitter {
         // Bug #537 fix: increment layers for stackable hazards
         existing.layers += 1;
         this.emit({
-          type: "hazard-set",
+          type: BATTLE_EVENT_TYPES.hazardSet,
           side: result.hazardSet.targetSide,
           hazard: hazardType,
           layers: existing.layers,
@@ -4513,7 +4519,7 @@ export class BattleEngine implements BattleEventEmitter {
         if (target.volatileStatuses.has(clear.volatile)) {
           target.volatileStatuses.delete(clear.volatile);
           this.emit({
-            type: "volatile-end",
+            type: BATTLE_EVENT_TYPES.volatileEnd,
             side: targetSide,
             pokemon: getPokemonName(target),
             volatile: clear.volatile,
@@ -4535,13 +4541,13 @@ export class BattleEngine implements BattleEventEmitter {
         clearSide.hazards = [];
         for (const clearedHazard of clearedHazards) {
           this.emit({
-            type: "hazard-clear",
+            type: BATTLE_EVENT_TYPES.hazardClear,
             side: clearSideIndex,
             hazard: clearedHazard.type,
           });
         }
         this.emit({
-          type: "message",
+          type: BATTLE_EVENT_TYPES.message,
           text: "The hazards were cleared!",
         });
       }
@@ -4570,7 +4576,7 @@ export class BattleEngine implements BattleEventEmitter {
       if (!screenSide.screens.some((s) => s.type === screenType)) {
         screenSide.screens.push({ type: screenType, turnsLeft: result.screenSet.turnsLeft });
         this.emit({
-          type: "screen-set",
+          type: BATTLE_EVENT_TYPES.screenSet,
           side: screenSideIndex,
           screen: screenType,
           turns: result.screenSet.turnsLeft,
@@ -4608,7 +4614,7 @@ export class BattleEngine implements BattleEventEmitter {
         result.tailwindSet.side === BATTLE_EFFECT_TARGETS.attacker ? attackerSide : defenderSide;
       tailwindSide.tailwind = { active: true, turnsLeft: result.tailwindSet.turnsLeft };
       this.emit({
-        type: "message",
+        type: BATTLE_EVENT_TYPES.message,
         text: `Side ${tailwindSideIndex}'s tailwind began!`,
       });
     }
@@ -4664,7 +4670,7 @@ export class BattleEngine implements BattleEventEmitter {
           launchDamage = calcResult.damage;
         } catch {
           this.emit({
-            type: "engine-warning",
+            type: BATTLE_EVENT_TYPES.engineWarning,
             message:
               `Future attack move "${result.futureAttack.moveId}" data missing while scheduling. ` +
               "Storing 0 damage fallback.",
@@ -4677,7 +4683,7 @@ export class BattleEngine implements BattleEventEmitter {
           sourceSide: result.futureAttack.sourceSide,
         };
         this.emit({
-          type: "message",
+          type: BATTLE_EVENT_TYPES.message,
           text: `${getPokemonName(attacker)} foresaw an attack!`,
         });
       }
@@ -4711,7 +4717,7 @@ export class BattleEngine implements BattleEventEmitter {
           turnsLeft: 1,
         });
         this.emit({
-          type: "volatile-start",
+          type: BATTLE_EVENT_TYPES.volatileStart,
           side: attackerSide,
           pokemon: getPokemonName(attacker),
           volatile: result.forcedMoveSet.volatileStatus,
@@ -4723,7 +4729,7 @@ export class BattleEngine implements BattleEventEmitter {
     // Source: Showdown Gen 4 mod — Gravity lasts 5 turns, grounds all Pokemon
     if (result.gravitySet) {
       this.state.gravity = { active: true, turnsLeft: 5 };
-      this.emit({ type: "message", text: "Gravity intensified!" });
+      this.emit({ type: BATTLE_EVENT_TYPES.message, text: "Gravity intensified!" });
 
       // Gravity grounds all in-flight Pokemon — cancel Fly/Bounce mid-air
       // Both Fly and Bounce use the "flying" volatile status.
@@ -4737,13 +4743,13 @@ export class BattleEngine implements BattleEventEmitter {
           sideActive.volatileStatuses.delete(CORE_VOLATILE_IDS.flying);
           sideActive.forcedMove = null;
           this.emit({
-            type: "volatile-end",
+            type: BATTLE_EVENT_TYPES.volatileEnd,
             side: side.index,
             pokemon: getPokemonName(sideActive),
             volatile: CORE_VOLATILE_IDS.flying,
           });
           this.emit({
-            type: "message",
+            type: BATTLE_EVENT_TYPES.message,
             text: `${getPokemonName(sideActive)} was brought back down by gravity!`,
           });
         }
@@ -4785,7 +4791,7 @@ export class BattleEngine implements BattleEventEmitter {
         }
         pokemon.statStages[stat] = 0;
         this.emit({
-          type: "stat-change",
+          type: BATTLE_EVENT_TYPES.statChange,
           side,
           pokemon: getPokemonName(pokemon),
           stat,
@@ -4817,7 +4823,7 @@ export class BattleEngine implements BattleEventEmitter {
           const curedStatus = t.pokemon.status;
           t.pokemon.status = null;
           this.emit({
-            type: "status-cure",
+            type: BATTLE_EVENT_TYPES.statusCure,
             side: tSide,
             pokemon: getPokemonName(t),
             status: curedStatus,
@@ -4868,7 +4874,7 @@ export class BattleEngine implements BattleEventEmitter {
           const curedStatus = t.pokemon.status;
           t.pokemon.status = null;
           this.emit({
-            type: "status-cure",
+            type: BATTLE_EVENT_TYPES.statusCure,
             side: tSide,
             pokemon: getPokemonName(t),
             status: curedStatus,
@@ -4893,7 +4899,7 @@ export class BattleEngine implements BattleEventEmitter {
           const curedStatus = teamMember.status;
           teamMember.status = null;
           this.emit({
-            type: "status-cure",
+            type: BATTLE_EVENT_TYPES.statusCure,
             side: cureSideIndex,
             pokemon: teamMember.nickname ?? String(teamMember.speciesId),
             status: curedStatus,
@@ -4907,7 +4913,7 @@ export class BattleEngine implements BattleEventEmitter {
         const curedStatus = activePokemon.pokemon.status;
         activePokemon.pokemon.status = null;
         this.emit({
-          type: "status-cure",
+          type: BATTLE_EVENT_TYPES.statusCure,
           side: cureSideIndex,
           pokemon: getPokemonName(activePokemon),
           status: curedStatus,
@@ -4935,7 +4941,7 @@ export class BattleEngine implements BattleEventEmitter {
         data: result.selfVolatileData?.data,
       });
       this.emit({
-        type: "volatile-start",
+        type: BATTLE_EVENT_TYPES.volatileStart,
         side: attackerSide,
         pokemon: getPokemonName(attacker),
         volatile: result.selfVolatileInflicted,
@@ -4948,7 +4954,7 @@ export class BattleEngine implements BattleEventEmitter {
         result.typeChange.target === BATTLE_EFFECT_TARGETS.attacker ? attacker : defender;
       typeTarget.types = [...result.typeChange.types];
       this.emit({
-        type: "message",
+        type: BATTLE_EVENT_TYPES.message,
         text: `${getPokemonName(typeTarget)}'s type changed!`,
       });
     }
@@ -4966,7 +4972,7 @@ export class BattleEngine implements BattleEventEmitter {
       const oldAbility = abilityTarget.ability;
       abilityTarget.ability = result.abilityChange.ability;
       this.emit({
-        type: "message",
+        type: BATTLE_EVENT_TYPES.message,
         text: `${getPokemonName(abilityTarget)}'s ability changed from ${oldAbility} to ${result.abilityChange.ability}!`,
       });
     }
@@ -4980,7 +4986,7 @@ export class BattleEngine implements BattleEventEmitter {
         moveSlots[slot] = { moveId: newMoveId, currentPP: newPP, maxPP: newPP, ppUps: 0 };
         // Volatile storage and event emission handled by selfVolatileInflicted in the result
         this.emit({
-          type: "message",
+          type: BATTLE_EVENT_TYPES.message,
           text: `${getPokemonName(attacker)} learned ${newMoveId}!`,
         });
       }
@@ -5092,7 +5098,7 @@ export class BattleEngine implements BattleEventEmitter {
         if (active) {
           active.pokemon.currentHp = Math.max(0, active.pokemon.currentHp - result.damage);
           this.emit({
-            type: "damage",
+            type: BATTLE_EVENT_TYPES.damage,
             side: result.side,
             pokemon: result.pokemon,
             amount: result.damage,
@@ -5112,7 +5118,7 @@ export class BattleEngine implements BattleEventEmitter {
     if (this.state.weather.turnsLeft <= 0) {
       const weatherType = this.state.weather.type;
       this.state.weather = null;
-      this.emit({ type: "weather-end", weather: weatherType });
+      this.emit({ type: BATTLE_EVENT_TYPES.weatherEnd, weather: weatherType });
     }
   }
 
@@ -5123,7 +5129,7 @@ export class BattleEngine implements BattleEventEmitter {
     if (this.state.terrain.turnsLeft <= 0) {
       const terrainType = this.state.terrain.type;
       this.state.terrain = null;
-      this.emit({ type: "terrain-end", terrain: terrainType });
+      this.emit({ type: BATTLE_EVENT_TYPES.terrainEnd, terrain: terrainType });
     }
   }
 
@@ -5143,7 +5149,7 @@ export class BattleEngine implements BattleEventEmitter {
       if (damage > 0) {
         active.pokemon.currentHp = Math.max(0, active.pokemon.currentHp - damage);
         this.emit({
-          type: "damage",
+          type: BATTLE_EVENT_TYPES.damage,
           side: sideIndex,
           pokemon: getPokemonName(active),
           amount: damage,
@@ -5174,7 +5180,7 @@ export class BattleEngine implements BattleEventEmitter {
         screen.turnsLeft--;
         if (screen.turnsLeft <= 0) {
           this.emit({
-            type: "screen-end",
+            type: BATTLE_EVENT_TYPES.screenEnd,
             side: side.index,
             screen: screen.type,
           });
@@ -5202,7 +5208,7 @@ export class BattleEngine implements BattleEventEmitter {
 
     for (const removedScreen of removedScreens) {
       this.emit({
-        type: "screen-end",
+        type: BATTLE_EVENT_TYPES.screenEnd,
         side: sideIndex,
         screen: removedScreen.type,
       });
@@ -5228,7 +5234,7 @@ export class BattleEngine implements BattleEventEmitter {
         if (side.tailwind.turnsLeft <= 0) {
           side.tailwind.active = false;
           this.emit({
-            type: "message",
+            type: BATTLE_EVENT_TYPES.message,
             text: `Side ${side.index}'s tailwind petered out!`,
           });
         }
@@ -5241,7 +5247,10 @@ export class BattleEngine implements BattleEventEmitter {
       this.state.trickRoom.turnsLeft--;
       if (this.state.trickRoom.turnsLeft <= 0) {
         this.state.trickRoom.active = false;
-        this.emit({ type: "message", text: "The twisted dimensions returned to normal!" });
+        this.emit({
+          type: BATTLE_EVENT_TYPES.message,
+          text: "The twisted dimensions returned to normal!",
+        });
       }
     }
   }
@@ -5276,7 +5285,7 @@ export class BattleEngine implements BattleEventEmitter {
         if (this.faintedPokemonThisTurn.has(key)) continue;
         this.faintedPokemonThisTurn.add(key);
         this.emit({
-          type: "faint",
+          type: BATTLE_EVENT_TYPES.faint,
           side: side.index,
           pokemon: getPokemonName(active),
         });
@@ -5302,11 +5311,11 @@ export class BattleEngine implements BattleEventEmitter {
             if (!this.faintedPokemonThisTurn.has(opponentKey)) {
               this.faintedPokemonThisTurn.add(opponentKey);
               this.emit({
-                type: "message",
+                type: BATTLE_EVENT_TYPES.message,
                 text: `${getPokemonName(active)} took its attacker down with it!`,
               });
               this.emit({
-                type: "faint",
+                type: BATTLE_EVENT_TYPES.faint,
                 side: moveSource.attackerSide,
                 pokemon: getPokemonName(opponent),
               });
@@ -5335,7 +5344,7 @@ export class BattleEngine implements BattleEventEmitter {
         moveData = this.dataManager.getMove(moveSlot.moveId);
       } catch {
         this.emit({
-          type: "engine-warning",
+          type: BATTLE_EVENT_TYPES.engineWarning,
           message: `Go-first item check skipped because move data for slot ${action.moveIndex} was not found.`,
         });
         continue;
@@ -5474,7 +5483,7 @@ export class BattleEngine implements BattleEventEmitter {
       participant.experience += expGained;
 
       this.emit({
-        type: "exp-gain",
+        type: BATTLE_EVENT_TYPES.expGain,
         side: winnerSide,
         pokemon: participant.uid,
         amount: expGained,
@@ -5498,7 +5507,7 @@ export class BattleEngine implements BattleEventEmitter {
         participant.currentHp = Math.min(participant.currentHp + hpIncrease, newStats.hp);
 
         this.emit({
-          type: "level-up",
+          type: BATTLE_EVENT_TYPES.levelUp,
           side: winnerSide,
           pokemon: participant.uid,
           newLevel: participant.level,
@@ -5514,7 +5523,7 @@ export class BattleEngine implements BattleEventEmitter {
         const winner = (side.index === 0 ? 1 : 0) as 0 | 1;
         this.state.ended = true;
         this.state.winner = winner;
-        this.emit({ type: "battle-end", winner });
+        this.emit({ type: BATTLE_EVENT_TYPES.battleEnd, winner });
         return true;
       }
     }
@@ -5578,7 +5587,7 @@ export class BattleEngine implements BattleEventEmitter {
       return { id: moveData.id, category: moveData.category };
     } catch {
       this.emit({
-        type: "engine-warning",
+        type: BATTLE_EVENT_TYPES.engineWarning,
         message:
           `Move "${moveSlot.moveId}" not found while resolving defenderSelectedMove ` +
           `for Sucker Punch. Treating this as missing move data, not a switch action.`,
@@ -5634,7 +5643,7 @@ export class BattleEngine implements BattleEventEmitter {
           const healed = pokemon.pokemon.currentHp - oldHp;
           if (healed > 0) {
             this.emit({
-              type: "heal",
+              type: BATTLE_EVENT_TYPES.heal,
               side,
               pokemon: getPokemonName(pokemon),
               amount: healed,
@@ -5650,7 +5659,7 @@ export class BattleEngine implements BattleEventEmitter {
           if (status) {
             pokemon.pokemon.status = null;
             this.emit({
-              type: "status-cure",
+              type: BATTLE_EVENT_TYPES.statusCure,
               side,
               pokemon: getPokemonName(pokemon),
               status,
@@ -5671,7 +5680,7 @@ export class BattleEngine implements BattleEventEmitter {
           }
           pokemon.pokemon.heldItem = null;
           this.emit({
-            type: "item-consumed",
+            type: BATTLE_EVENT_TYPES.itemConsumed,
             side,
             pokemon: getPokemonName(pokemon),
             item: consumedItemId,
@@ -5698,7 +5707,7 @@ export class BattleEngine implements BattleEventEmitter {
               volatile as import("@pokemon-lib-ts/core").VolatileStatus,
             );
             this.emit({
-              type: "volatile-end",
+              type: BATTLE_EVENT_TYPES.volatileEnd,
               side,
               pokemon: getPokemonName(pokemon),
               volatile: volatile as import("@pokemon-lib-ts/core").VolatileStatus,
@@ -5738,7 +5747,7 @@ export class BattleEngine implements BattleEventEmitter {
             damagedPokemon.pokemon.currentHp - chipAmount,
           );
           this.emit({
-            type: "damage",
+            type: BATTLE_EVENT_TYPES.damage,
             side: damagedSide,
             pokemon: getPokemonName(damagedPokemon),
             amount: chipAmount,
@@ -5760,7 +5769,7 @@ export class BattleEngine implements BattleEventEmitter {
             const newStage = Math.max(-6, Math.min(6, currentStage + boostStages));
             statStages[stat] = newStage;
             this.emit({
-              type: "stat-change",
+              type: BATTLE_EVENT_TYPES.statChange,
               side,
               pokemon: getPokemonName(pokemon),
               stat,
@@ -5789,7 +5798,7 @@ export class BattleEngine implements BattleEventEmitter {
             damagedPokemon.pokemon.calculatedStats?.hp ?? damagedPokemon.pokemon.currentHp;
           damagedPokemon.pokemon.currentHp = Math.max(0, damagedPokemon.pokemon.currentHp - amount);
           this.emit({
-            type: "damage",
+            type: BATTLE_EVENT_TYPES.damage,
             side: damagedSide,
             pokemon: getPokemonName(damagedPokemon),
             amount,
@@ -5823,7 +5832,7 @@ export class BattleEngine implements BattleEventEmitter {
     ) {
       // Non-consuming activations surface as item-activate; consumed items already emit item-consumed.
       this.emit({
-        type: "item-activate",
+        type: BATTLE_EVENT_TYPES.itemActivate,
         side,
         pokemon: getPokemonName(pokemon),
         item: heldItemId,
@@ -5831,7 +5840,7 @@ export class BattleEngine implements BattleEventEmitter {
     }
 
     for (const msg of result.messages) {
-      this.emit({ type: "message", text: msg });
+      this.emit({ type: BATTLE_EVENT_TYPES.message, text: msg });
     }
   }
 
@@ -5847,7 +5856,7 @@ export class BattleEngine implements BattleEventEmitter {
 
     // Emit ability activation event
     this.emit({
-      type: "ability-activate",
+      type: BATTLE_EVENT_TYPES.abilityActivate,
       side: pokemonSide,
       pokemon: getPokemonName(pokemon),
       ability: pokemon.ability ?? CORE_ABILITY_IDS.none,
@@ -5867,7 +5876,7 @@ export class BattleEngine implements BattleEventEmitter {
           const newStage = Math.max(-6, Math.min(6, currentStage + stages));
           target.statStages[stat] = newStage;
           this.emit({
-            type: "stat-change",
+            type: BATTLE_EVENT_TYPES.statChange,
             side: targetSide,
             pokemon: getPokemonName(target),
             stat,
@@ -5890,7 +5899,7 @@ export class BattleEngine implements BattleEventEmitter {
               source: pokemon.ability ?? BATTLE_SOURCE_IDS.ability,
             };
             this.emit({
-              type: "weather-set",
+              type: BATTLE_EVENT_TYPES.weatherSet,
               weather: effect.weather,
               source: pokemon.ability ?? BATTLE_SOURCE_IDS.ability,
             });
@@ -5911,7 +5920,7 @@ export class BattleEngine implements BattleEventEmitter {
           const healed = target.pokemon.currentHp - oldHp;
           if (healed > 0) {
             this.emit({
-              type: "heal",
+              type: BATTLE_EVENT_TYPES.heal,
               side: targetSide,
               pokemon: getPokemonName(target),
               amount: healed,
@@ -5930,7 +5939,7 @@ export class BattleEngine implements BattleEventEmitter {
           const chipAmount = effect.value;
           target.pokemon.currentHp = Math.max(0, target.pokemon.currentHp - chipAmount);
           this.emit({
-            type: "damage",
+            type: BATTLE_EVENT_TYPES.damage,
             side: targetSide,
             pokemon: getPokemonName(target),
             amount: chipAmount,
@@ -5954,7 +5963,7 @@ export class BattleEngine implements BattleEventEmitter {
               if (status) {
                 ally.pokemon.status = null;
                 this.emit({
-                  type: "status-cure",
+                  type: BATTLE_EVENT_TYPES.statusCure,
                   side: pokemonSide,
                   pokemon: getPokemonName(ally),
                   status,
@@ -5969,7 +5978,7 @@ export class BattleEngine implements BattleEventEmitter {
             if (status) {
               target.pokemon.status = null;
               this.emit({
-                type: "status-cure",
+                type: BATTLE_EVENT_TYPES.statusCure,
                 side: targetSide,
                 pokemon: getPokemonName(target),
                 status,
@@ -6008,7 +6017,7 @@ export class BattleEngine implements BattleEventEmitter {
                 ...(Object.keys(volatileData).length > 0 ? { data: volatileData } : {}),
               });
               this.emit({
-                type: "volatile-start",
+                type: BATTLE_EVENT_TYPES.volatileStart,
                 side: targetSide,
                 pokemon: getPokemonName(target),
                 volatile: effect.volatile,
@@ -6023,7 +6032,7 @@ export class BattleEngine implements BattleEventEmitter {
           const target = effect.target === BATTLE_EFFECT_TARGETS.self ? pokemon : opponent;
           target.ability = effect.newAbility;
           this.emit({
-            type: "message",
+            type: BATTLE_EVENT_TYPES.message,
             text: `${getPokemonName(target)}'s ability changed to ${effect.newAbility}!`,
           });
           break;
@@ -6037,7 +6046,7 @@ export class BattleEngine implements BattleEventEmitter {
             effect.target === BATTLE_EFFECT_TARGETS.self ? pokemonSide : opponentSide;
           target.types = [...effect.types];
           this.emit({
-            type: "message",
+            type: BATTLE_EVENT_TYPES.message,
             text: `${getPokemonName(target)}'s type changed!`,
           });
           // Suppress unused variable warning — targetSide is available for future event emission
@@ -6053,7 +6062,7 @@ export class BattleEngine implements BattleEventEmitter {
           if (target.volatileStatuses.has(effect.volatile)) {
             target.volatileStatuses.delete(effect.volatile);
             this.emit({
-              type: "volatile-end",
+              type: BATTLE_EVENT_TYPES.volatileEnd,
               side: targetSide,
               pokemon: getPokemonName(target),
               volatile: effect.volatile,
@@ -6068,7 +6077,7 @@ export class BattleEngine implements BattleEventEmitter {
           if (!target.pokemon.heldItem) {
             target.pokemon.heldItem = effect.item;
             this.emit({
-              type: "message",
+              type: BATTLE_EVENT_TYPES.message,
               text: `${getPokemonName(target)} restored its ${effect.item}!`,
             });
           }
@@ -6085,7 +6094,7 @@ export class BattleEngine implements BattleEventEmitter {
 
     // Emit messages
     for (const msg of result.messages) {
-      this.emit({ type: "message", text: msg });
+      this.emit({ type: BATTLE_EVENT_TYPES.message, text: msg });
     }
   }
 
@@ -6125,7 +6134,7 @@ export class BattleEngine implements BattleEventEmitter {
     active.pokemon.currentHp = Math.max(0, active.pokemon.currentHp - drain);
 
     this.emit({
-      type: "damage",
+      type: BATTLE_EVENT_TYPES.damage,
       side: sideIndex,
       pokemon: getPokemonName(active),
       amount: drain,
@@ -6143,7 +6152,7 @@ export class BattleEngine implements BattleEventEmitter {
       const healed = opponent.pokemon.currentHp - oldHp;
       if (healed > 0) {
         this.emit({
-          type: "heal",
+          type: BATTLE_EVENT_TYPES.heal,
           side: opponentSide,
           pokemon: getPokemonName(opponent),
           amount: healed,
@@ -6173,7 +6182,7 @@ export class BattleEngine implements BattleEventEmitter {
       const perishResult = this.ruleset.processPerishSong(active);
 
       this.emit({
-        type: "message",
+        type: BATTLE_EVENT_TYPES.message,
         text: `${getPokemonName(active)}'s perish count fell to ${perishResult.newCount}!`,
       });
 
@@ -6195,7 +6204,7 @@ export class BattleEngine implements BattleEventEmitter {
     active.pokemon.currentHp = Math.max(0, active.pokemon.currentHp - damage);
 
     this.emit({
-      type: "damage",
+      type: BATTLE_EVENT_TYPES.damage,
       side: sideIndex,
       pokemon: getPokemonName(active),
       amount: damage,
@@ -6223,7 +6232,7 @@ export class BattleEngine implements BattleEventEmitter {
     active.pokemon.currentHp = Math.max(0, active.pokemon.currentHp - damage);
 
     this.emit({
-      type: "damage",
+      type: BATTLE_EVENT_TYPES.damage,
       side: sideIndex,
       pokemon: getPokemonName(active),
       amount: damage,
@@ -6253,7 +6262,7 @@ export class BattleEngine implements BattleEventEmitter {
       // Source: Showdown sim/battle.ts -- residual damage subtracts HP before emitting event
       active.pokemon.currentHp = Math.max(0, active.pokemon.currentHp - damage);
       this.emit({
-        type: "damage",
+        type: BATTLE_EVENT_TYPES.damage,
         side: side.index,
         pokemon: getPokemonName(active),
         amount: damage,
@@ -6278,7 +6287,7 @@ export class BattleEngine implements BattleEventEmitter {
       const maxHp = active.pokemon.calculatedStats?.hp ?? active.pokemon.currentHp;
       active.pokemon.currentHp = Math.max(0, active.pokemon.currentHp - damage);
       this.emit({
-        type: "damage",
+        type: BATTLE_EVENT_TYPES.damage,
         side: side.index,
         pokemon: getPokemonName(active),
         amount: damage,
@@ -6307,7 +6316,7 @@ export class BattleEngine implements BattleEventEmitter {
       if (this.ruleset.processEndOfTurnDefrost(active, this.state.rng)) {
         active.pokemon.status = null;
         this.emit({
-          type: "status-cure",
+          type: BATTLE_EVENT_TYPES.statusCure,
           side: side.index,
           pokemon: getPokemonName(active),
           status: CORE_STATUS_IDS.freeze,
@@ -6336,12 +6345,12 @@ export class BattleEngine implements BattleEventEmitter {
       if (safeguard.turnsLeft <= 0) {
         side.screens.splice(safeguardIdx, 1);
         this.emit({
-          type: "screen-end",
+          type: BATTLE_EVENT_TYPES.screenEnd,
           side: side.index,
           screen: "safeguard",
         });
         this.emit({
-          type: "message",
+          type: BATTLE_EVENT_TYPES.message,
           text: `Side ${side.index}'s Safeguard wore off!`,
         });
       }
@@ -6370,13 +6379,13 @@ export class BattleEngine implements BattleEventEmitter {
       moveSlot.currentPP = Math.min(moveSlot.maxPP, moveSlot.currentPP + restoreAmount);
       active.pokemon.heldItem = null;
       this.emit({
-        type: "item-consumed",
+        type: BATTLE_EVENT_TYPES.itemConsumed,
         side: side.index,
         pokemon: getPokemonName(active),
         item: CORE_ITEM_IDS.mysteryBerry,
       });
       this.emit({
-        type: "message",
+        type: BATTLE_EVENT_TYPES.message,
         text: `${getPokemonName(active)}'s Mystery Berry restored PP!`,
       });
     }
@@ -6478,7 +6487,7 @@ export class BattleEngine implements BattleEventEmitter {
       if (shouldEnd) {
         active.volatileStatuses.delete(CORE_VOLATILE_IDS.encore);
         this.emit({
-          type: "volatile-end",
+          type: BATTLE_EVENT_TYPES.volatileEnd,
           side: side.index,
           pokemon: getPokemonName(active),
           volatile: CORE_VOLATILE_IDS.encore,
