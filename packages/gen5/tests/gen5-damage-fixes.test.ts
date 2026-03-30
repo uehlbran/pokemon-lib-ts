@@ -221,6 +221,7 @@ describe("#643 — type-boost items and Plates use pokeRound rounding", () => {
     const result = calculateGen5Damage(ctx, typeChart);
     // With pokeRound (correct): power=72 -> damage=65
     // With old floor (wrong): power=71 -> damage=64
+    // Source: Showdown Gen 5 damage formula — pokeRound chain modifier for type-boost items
     expect(result.damage).toBe(65);
   });
 
@@ -238,6 +239,7 @@ describe("#643 — type-boost items and Plates use pokeRound rounding", () => {
     });
     const ctx = createDamageContextFixture({ attacker, defender, move, seed: 36 });
     const result = calculateGen5Damage(ctx, typeChart);
+    // Source: Showdown data/items.ts — Flame Plate chainModify([4915, 4096]) = pokeRound rounding
     expect(result.damage).toBe(65);
   });
 
@@ -256,6 +258,7 @@ describe("#643 — type-boost items and Plates use pokeRound rounding", () => {
     const result = calculateGen5Damage(ctx, typeChart);
     // Power stays 60, SpAtk=100, Def=100
     // baseDamage = floor(floor(22*60*100/100)/50)+2 = floor(1320/50)+2 = 26+2 = 28
+    // Source: Showdown data/items.ts — type-boost items only apply to matching type
     expect(result.damage).toBe(28);
   });
 });
@@ -277,6 +280,7 @@ describe("#653 — ability modifiers use pokeRound rounding", () => {
     const result = calculateGen5Damage(ctx, typeChart);
     // power=90, Atk=100, Def=100, L50:
     //   baseDamage = floor(floor(22*90*100/100)/50)+2 = floor(1980/50)+2 = 39+2 = 41
+    // Source: Showdown data/abilities.ts — iron-fist chainModify([4915, 4096]) boosts punching moves
     expect(result.damage).toBe(41);
   });
 
@@ -295,6 +299,7 @@ describe("#653 — ability modifiers use pokeRound rounding", () => {
     const ctx = createDamageContextFixture({ attacker, defender, move, seed: 36 });
     const result = calculateGen5Damage(ctx, typeChart);
     // power=60: baseDamage = floor(floor(22*60*100/100)/50)+2 = floor(1320/50)+2 = 26+2 = 28
+    // Source: Showdown data/abilities.ts — iron-fist chainModify([4915, 4096]), pokeRound(50, 4915)=60
     expect(result.damage).toBe(28);
   });
 
@@ -317,6 +322,7 @@ describe("#653 — ability modifiers use pokeRound rounding", () => {
     //   baseDamage = floor(floor(22*54*200/100)/50)+2 = floor(2376/50)+2 = 47+2 = 49
     // With old power=53:
     //   baseDamage = floor(floor(22*53*200/100)/50)+2 = floor(2332/50)+2 = 46+2 = 48
+    // Source: Showdown data/abilities.ts — dry-skin chainModify([5120, 4096]) boosts Fire damage on defender
     expect(result.damage).toBe(49);
   });
 
@@ -335,6 +341,7 @@ describe("#653 — ability modifiers use pokeRound rounding", () => {
     const ctx = createDamageContextFixture({ attacker, defender, move, seed: 36 });
     const result = calculateGen5Damage(ctx, typeChart);
     // power=75: baseDamage = floor(floor(22*75*100/100)/50)+2 = floor(1650/50)+2 = 33+2 = 35
+    // Source: Showdown data/abilities.ts — dry-skin chainModify([5120, 4096]), pokeRound(60, 5120)=75
     expect(result.damage).toBe(35);
   });
 
@@ -359,6 +366,7 @@ describe("#653 — ability modifiers use pokeRound rounding", () => {
     const result = calculateGen5Damage(ctx, typeChart);
     // power=54, Atk=200, Def=100:
     //   baseDamage = floor(floor(22*54*200/100)/50)+2 = floor(2376/50)+2 = 47+2 = 49
+    // Source: Showdown data/abilities.ts — rivalry same-gender chainModify([5120, 4096]), pokeRound(43, 5120)=54
     expect(result.damage).toBe(49);
   });
 
@@ -385,6 +393,7 @@ describe("#653 — ability modifiers use pokeRound rounding", () => {
     //   baseDamage = floor(floor(22*43*200/100)/50)+2 = floor(1892/50)+2 = 37+2 = 39
     // With old power=42:
     //   baseDamage = floor(floor(22*42*200/100)/50)+2 = floor(1848/50)+2 = 36+2 = 38
+    // Source: Showdown data/abilities.ts — rivalry opposite-gender chainModify([3072, 4096]), pokeRound(57, 3072)=43
     expect(result.damage).toBe(39);
   });
 
@@ -404,6 +413,7 @@ describe("#653 — ability modifiers use pokeRound rounding", () => {
     const ctx = createDamageContextFixture({ attacker, defender, move, seed: 36 });
     const result = calculateGen5Damage(ctx, typeChart);
     // power=75: baseDamage = floor(floor(22*75*100/100)/50)+2 = floor(1650/50)+2 = 33+2 = 35
+    // Source: Showdown data/abilities.ts — technician chainModify([6144, 4096]), pokeRound(50, 6144)=75
     expect(result.damage).toBe(35);
   });
 
@@ -421,6 +431,7 @@ describe("#653 — ability modifiers use pokeRound rounding", () => {
     const ctx = createDamageContextFixture({ attacker, defender, move, seed: 36 });
     const result = calculateGen5Damage(ctx, typeChart);
     // power=90: baseDamage = floor(floor(22*90*100/100)/50)+2 = floor(1980/50)+2 = 39+2 = 41
+    // Source: Showdown data/abilities.ts — technician applies to base power <= 60, chainModify([6144, 4096])
     expect(result.damage).toBe(41);
   });
 });
@@ -448,6 +459,7 @@ describe("#653 — Flash Fire and Pinch abilities are stat modifiers (not base-p
     });
     const ctx = createDamageContextFixture({ attacker, defender, move, seed: 36 });
     const result = calculateGen5Damage(ctx, typeChart);
+    // Source: Showdown data/abilities.ts — flash-fire onModifyAtk/onModifySpA chainModify(1.5) for Fire moves
     expect(result.damage).toBe(35);
   });
 
@@ -468,6 +480,7 @@ describe("#653 — Flash Fire and Pinch abilities are stat modifiers (not base-p
     const result = calculateGen5Damage(ctx, typeChart);
     // No boost: SpAtk=100, power=50
     // baseDamage = floor(floor(22*50*100/100)/50)+2 = floor(1100/50)+2 = 22+2 = 24
+    // Source: Showdown data/abilities.ts — flash-fire only boosts Fire-type moves
     expect(result.damage).toBe(24);
   });
 
@@ -492,6 +505,7 @@ describe("#653 — Flash Fire and Pinch abilities are stat modifiers (not base-p
     });
     const ctx = createDamageContextFixture({ attacker, defender, move, seed: 36 });
     const result = calculateGen5Damage(ctx, typeChart);
+    // Source: Showdown data/abilities.ts — blaze onModifyAtk/onModifySpA chainModify(1.5) at HP <= 1/3
     expect(result.damage).toBe(35);
   });
 
@@ -519,6 +533,7 @@ describe("#653 — Flash Fire and Pinch abilities are stat modifiers (not base-p
     });
     const ctx = createDamageContextFixture({ attacker, defender, move, seed: 36 });
     const result = calculateGen5Damage(ctx, typeChart);
+    // Source: Showdown data/abilities.ts — overgrow onModifySpA chainModify(1.5) + STAB 1.5× at HP <= 1/3
     expect(result.damage).toBe(52);
   });
 
@@ -542,6 +557,7 @@ describe("#653 — Flash Fire and Pinch abilities are stat modifiers (not base-p
     const result = calculateGen5Damage(ctx, typeChart);
     // No boost: Atk=100, power=50
     // baseDamage = floor(floor(22*50*100/100)/50)+2 = floor(1100/50)+2 = 22+2 = 24
+    // Source: Showdown data/abilities.ts — blaze only activates at HP <= floor(maxHP/3)
     expect(result.damage).toBe(24);
   });
 });
@@ -577,6 +593,7 @@ describe("#641 — Reckless hasCrashDamage", () => {
     // power=156, Atk=100, Def=100
     // baseDamage = floor(floor(22*156*100/100)/50)+2 = floor(3432/50)+2 = 68+2 = 70
     // Fighting vs Psychic = 0.5x: baseDamage = floor(70/2) = 35
+    // Source: Showdown data/abilities.ts — reckless chainModify([4915, 4096]) for hasCrashDamage moves
     expect(result.damage).toBe(35);
   });
 
@@ -595,6 +612,7 @@ describe("#641 — Reckless hasCrashDamage", () => {
     const result = calculateGen5Damage(ctx, typeChart);
     // No boost: power stays 100
     // baseDamage = floor(floor(22*100*100/100)/50)+2 = floor(2200/50)+2 = 44+2 = 46
+    // Source: Showdown data/abilities.ts — reckless requires move.recoil OR move.hasCrashDamage
     expect(result.damage).toBe(46);
   });
 
@@ -613,6 +631,7 @@ describe("#641 — Reckless hasCrashDamage", () => {
     const ctx = createDamageContextFixture({ attacker, defender, move, seed: 36 });
     const result = calculateGen5Damage(ctx, typeChart);
     // power=96: baseDamage = floor(floor(22*96*100/100)/50)+2 = floor(2112/50)+2 = 42+2 = 44
+    // Source: Showdown data/abilities.ts — reckless chainModify([4915, 4096]) for recoil moves
     expect(result.damage).toBe(44);
   });
 });
@@ -657,6 +676,7 @@ describe("#640 — Solar Power and Flower Gift stat modifiers in sun", () => {
     //   type effectiveness = 1x: 91
     //   no burn
     //   final = 91
+    // Source: Showdown data/abilities.ts — solar-power onModifySpA chainModify(1.5) in sun
     expect(result.damage).toBe(91);
   });
 
@@ -679,6 +699,7 @@ describe("#640 — Solar Power and Flower Gift stat modifiers in sun", () => {
     // SpAtk stays 120 (no sun)
     // baseDamage = floor(floor(22*50*120/100)/50)+2 = floor(1320/50)+2 = 26+2 = 28
     // No weather mod, random=100, STAB: pokeRound(28, 6144) = floor((28*6144+2047)/4096) = floor(174079/4096) = 42
+    // Source: Showdown data/abilities.ts — solar-power only activates in sun/harsh-sun
     expect(result.damage).toBe(42);
   });
 
@@ -701,6 +722,7 @@ describe("#640 — Solar Power and Flower Gift stat modifiers in sun", () => {
     // baseDamage = floor(floor(22*50*120/100)/50)+2 = floor(1320/50)+2 = 26+2 = 28
     // weather (sun+fire): pokeRound(28, 6144) = floor((28*6144+2047)/4096) = floor(174079/4096) = 42
     // random=100, no STAB (attacker types=psychic default), eff=1x: 42
+    // Source: Showdown data/abilities.ts — solar-power only modifies SpA, not Atk
     expect(result.damage).toBe(42);
   });
 
@@ -726,6 +748,7 @@ describe("#640 — Solar Power and Flower Gift stat modifiers in sun", () => {
     // weather (sun+fire): pokeRound(41, 6144) = floor((41*6144+2047)/4096) = floor(253951/4096) = 61
     // random=100: 61
     // no STAB (attacker types=psychic), eff=1x: 61
+    // Source: Showdown data/abilities.ts — flower-gift onModifyAtk chainModify(1.5) in sun
     expect(result.damage).toBe(61);
   });
 
@@ -748,6 +771,7 @@ describe("#640 — Solar Power and Flower Gift stat modifiers in sun", () => {
     // baseDamage = floor(floor(22*50*120/100)/50)+2 = floor(1320/50)+2 = 26+2 = 28
     // weather (sun+fire): pokeRound(28, 6144) = floor((28*6144+2047)/4096) = floor(174079/4096) = 42
     // random=100, no STAB, eff=1x: 42
+    // Source: Showdown data/abilities.ts — flower-gift only boosts Atk, not SpAtk
     expect(result.damage).toBe(42);
   });
 
@@ -767,6 +791,7 @@ describe("#640 — Solar Power and Flower Gift stat modifiers in sun", () => {
     const ctx = createDamageContextFixture({ attacker, defender, move, state, seed: 36 });
     const result = calculateGen5Damage(ctx, typeChart);
     // Same as sun test: Atk=180, baseDamage=41, weather 1.5x=61
+    // Source: Showdown data/abilities.ts — flower-gift activates in both 'sun' and 'harshsunshine' weather
     expect(result.damage).toBe(61);
   });
 });

@@ -95,6 +95,7 @@ describe("Gen5 Protect consecutive success", () => {
     // Source: references/pokemon-showdown/data/mods/gen5/conditions.ts -- first use always succeeds
     const rng = new SeededRandom(42);
     for (let i = 0; i < 100; i++) {
+      // Source: references/pokemon-showdown/data/mods/gen5/conditions.ts — first use always succeeds (no RNG)
       expect(ruleset.rollProtectSuccess(0, rng)).toBe(true);
     }
   });
@@ -105,7 +106,9 @@ describe("Gen5 Protect consecutive success", () => {
     //   At N=1, onStallMove checks counter=2 → randomChance(1, 2) = 1/2
     const ratio = sampleProtectSuccessRate(1, 2000, 42);
     // Expected: 1/2 = 0.5, with tolerance
+    // Source: references/pokemon-showdown/data/mods/gen5/conditions.ts — stall randomChance(1, 2) after first use
     expect(ratio).toBeGreaterThan(0.43);
+    // Source: references/pokemon-showdown/data/mods/gen5/conditions.ts — stall randomChance(1, 2) after first use
     expect(ratio).toBeLessThan(0.57);
   });
 
@@ -114,7 +117,9 @@ describe("Gen5 Protect consecutive success", () => {
     //   At N=2, onRestart doubled counter to 4 → chance = 1/4
     const ratio = sampleProtectSuccessRate(2, 4000, 42);
     // Expected: 1/4 = 0.25, with tolerance
+    // Source: references/pokemon-showdown/data/mods/gen5/conditions.ts — counter doubled to 4, randomChance(1, 4)
     expect(ratio).toBeGreaterThan(0.18);
+    // Source: references/pokemon-showdown/data/mods/gen5/conditions.ts — counter doubled to 4, randomChance(1, 4)
     expect(ratio).toBeLessThan(0.32);
   });
 
@@ -123,7 +128,9 @@ describe("Gen5 Protect consecutive success", () => {
     //   At N=7, counter = 2^7 = 128 (still below cap of 256) → chance = 1/128 ≈ 0.0078
     const ratio = sampleProtectSuccessRate(7, 15000, 42);
     // Expected: 1/128 ~ 0.0078
+    // Source: references/pokemon-showdown/data/mods/gen5/conditions.ts — counter = 2^7 = 128, randomChance(1, 128)
     expect(ratio).toBeGreaterThan(0.003);
+    // Source: references/pokemon-showdown/data/mods/gen5/conditions.ts — counter = 2^7 = 128, randomChance(1, 128)
     expect(ratio).toBeLessThan(0.016);
   });
 
@@ -140,6 +147,7 @@ describe("Gen5 Protect consecutive success", () => {
       return count;
     })();
     // Expected: ~0 successes (1 in 2^32 chance per attempt)
+    // Source: references/pokemon-showdown/data/mods/gen5/conditions.ts — counterMax: 256, uses randomChance(1, 2^32) at cap
     expect(successCount).toBe(0);
   });
 
@@ -155,6 +163,7 @@ describe("Gen5 Protect consecutive success", () => {
       return count;
     })();
     // Expected: ~0 successes (1 in 2^32 chance per attempt)
+    // Source: Showdown Gen 5 conditions.ts — counterMax: 256, denominator capped, randomChance(1, 2^32) effectively 0
     expect(successCount).toBe(0);
   });
 
@@ -162,7 +171,9 @@ describe("Gen5 Protect consecutive success", () => {
     // Source: references/pokemon-showdown/data/mods/gen5/conditions.ts -- first use always succeeds
     // Verifying that consecutiveProtects=0 is a deterministic true, confirming the formula boundary.
     const rng = new SeededRandom(12345);
+    // Source: references/pokemon-showdown/data/mods/gen5/conditions.ts — consecutiveProtects=0 always succeeds
     expect(ruleset.rollProtectSuccess(0, rng)).toBe(true);
+    // Source: references/pokemon-showdown/data/mods/gen5/conditions.ts — consecutiveProtects=0 always succeeds
     expect(ruleset.rollProtectSuccess(0, rng)).toBe(true);
   });
 });
@@ -177,6 +188,7 @@ describe("Gen5 speed resolution", () => {
     // Gen 7+ changed to 50% (x0.5)
     const pokemon = createOnFieldPokemon({ speed: 100, status: C_STATUSES.paralysis });
     const speed = (ruleset as any).getEffectiveSpeed(pokemon);
+    // Source: Bulbapedia "Paralysis" — speed reduced to 25% in Gen 1-6
     expect(speed).toBe(25);
   });
 
@@ -185,6 +197,7 @@ describe("Gen5 speed resolution", () => {
     // Triangulation case
     const pokemon = createOnFieldPokemon({ speed: 80, status: C_STATUSES.paralysis });
     const speed = (ruleset as any).getEffectiveSpeed(pokemon);
+    // Source: Bulbapedia "Paralysis" — speed reduced to 25% in Gen 1-6 (triangulation: 80*0.25=20)
     expect(speed).toBe(20);
   });
 
@@ -192,6 +205,7 @@ describe("Gen5 speed resolution", () => {
     // Source: Choice Scarf effect -- 1.5x speed
     const pokemon = createOnFieldPokemon({ speed: 100, heldItem: G_ITEMS.choiceScarf });
     const speed = (ruleset as any).getEffectiveSpeed(pokemon);
+    // Source: Showdown Gen 5 — Choice Scarf item boosts speed by 1.5×
     expect(speed).toBe(150);
   });
 
@@ -200,6 +214,7 @@ describe("Gen5 speed resolution", () => {
     // Triangulation case: floor(80 * 1.5) = 120
     const pokemon = createOnFieldPokemon({ speed: 80, heldItem: G_ITEMS.choiceScarf });
     const speed = (ruleset as any).getEffectiveSpeed(pokemon);
+    // Source: Showdown Gen 5 — Choice Scarf 1.5× speed (triangulation: floor(80*1.5)=120)
     expect(speed).toBe(120);
   });
 
@@ -211,6 +226,7 @@ describe("Gen5 speed resolution", () => {
       volatileStatuses: new Map([[C_ABILITIES.slowStart, { turnsLeft: 3 }]]),
     });
     const speed = (ruleset as any).getEffectiveSpeed(pokemon);
+    // Source: Showdown Gen 5 — Slow Start ability halves speed for first 5 turns
     expect(speed).toBe(50);
   });
 
@@ -220,6 +236,7 @@ describe("Gen5 speed resolution", () => {
     (ruleset as any)._currentWeather = C_WEATHER.sun;
     const speed = (ruleset as any).getEffectiveSpeed(pokemon);
     (ruleset as any)._currentWeather = null;
+    // Source: Showdown Gen 5 — Chlorophyll ability doubles speed in sun
     expect(speed).toBe(200);
   });
 
@@ -229,6 +246,7 @@ describe("Gen5 speed resolution", () => {
     (ruleset as any)._currentWeather = C_WEATHER.rain;
     const speed = (ruleset as any).getEffectiveSpeed(pokemon);
     (ruleset as any)._currentWeather = null;
+    // Source: Showdown Gen 5 — Swift Swim ability doubles speed in rain
     expect(speed).toBe(200);
   });
 
@@ -238,6 +256,7 @@ describe("Gen5 speed resolution", () => {
     (ruleset as any)._currentWeather = C_WEATHER.sand;
     const speed = (ruleset as any).getEffectiveSpeed(pokemon);
     (ruleset as any)._currentWeather = null;
+    // Source: Showdown Gen 5 — Sand Rush ability doubles speed in sandstorm
     expect(speed).toBe(200);
   });
 
@@ -245,6 +264,7 @@ describe("Gen5 speed resolution", () => {
     // Source: Iron Ball -- halves speed
     const pokemon = createOnFieldPokemon({ speed: 100, heldItem: C_ITEMS.ironBall });
     const speed = (ruleset as any).getEffectiveSpeed(pokemon);
+    // Source: Showdown Gen 5 — Iron Ball item halves holder's speed
     expect(speed).toBe(50);
   });
 
@@ -256,6 +276,7 @@ describe("Gen5 speed resolution", () => {
       status: C_STATUSES.paralysis,
     });
     const speed = (ruleset as any).getEffectiveSpeed(pokemon);
+    // Source: Showdown Gen 5 — Quick Feet ability boosts speed 1.5× when statused, overrides paralysis penalty
     expect(speed).toBe(150);
   });
 
@@ -268,6 +289,7 @@ describe("Gen5 speed resolution", () => {
       volatileStatuses: new Map([[C_VOLATILES.unburden, { turnsLeft: 99 }]]),
     });
     const speed = (ruleset as any).getEffectiveSpeed(pokemon);
+    // Source: Showdown Gen 5 — Unburden ability doubles speed when held item is consumed
     expect(speed).toBe(200);
   });
 
@@ -275,6 +297,7 @@ describe("Gen5 speed resolution", () => {
     // Source: No modifiers = base speed unchanged
     const pokemon = createOnFieldPokemon({ speed: 120 });
     const speed = (ruleset as any).getEffectiveSpeed(pokemon);
+    // Source: Showdown Gen 5 — no modifiers, effective speed equals base stat
     expect(speed).toBe(120);
   });
 
@@ -282,6 +305,7 @@ describe("Gen5 speed resolution", () => {
     // Source: Stat stage +1 = 1.5x (3/2)
     const pokemon = createOnFieldPokemon({ speed: 100, statStages: { speed: 1 } });
     const speed = (ruleset as any).getEffectiveSpeed(pokemon);
+    // Source: Showdown Gen 5 — stat stage +1 multiplier = (2+1)/2 = 1.5×
     expect(speed).toBe(150);
   });
 
@@ -296,6 +320,7 @@ describe("Gen5 speed resolution", () => {
       statStages: { speed: 2 },
     });
     const speed = (ruleset as any).getEffectiveSpeed(pokemon);
+    // Source: Bulbapedia "Simple (ability)" — Simple doubles stat stage effects, +2→+4, multiplier 3.0
     expect(speed).toBe(300);
   });
 
@@ -308,6 +333,7 @@ describe("Gen5 speed resolution", () => {
       statStages: { speed: 4 },
     });
     const speed = (ruleset as any).getEffectiveSpeed(pokemon);
+    // Source: Bulbapedia "Simple (ability)" — +4 doubled=+8, clamped to +6, multiplier (2+6)/2=4.0
     expect(speed).toBe(400);
   });
 
@@ -320,6 +346,7 @@ describe("Gen5 speed resolution", () => {
       statStages: { speed: -2 },
     });
     const speed = (ruleset as any).getEffectiveSpeed(pokemon);
+    // Source: Bulbapedia "Simple (ability)" — -2 doubled=-4, multiplier 2/(2+4)=0.333, floor(100*0.333)=33
     expect(speed).toBe(33);
   });
 
@@ -334,6 +361,7 @@ describe("Gen5 speed resolution", () => {
       heldItem: G_ITEMS.choiceScarf,
     });
     const speed = (ruleset as any).getEffectiveSpeed(pokemon);
+    // Source: Bulbapedia "Klutz (ability)" — suppresses holder's item effects including Choice Scarf
     expect(speed).toBe(100);
   });
 
@@ -346,6 +374,7 @@ describe("Gen5 speed resolution", () => {
       heldItem: C_ITEMS.ironBall,
     });
     const speed = (ruleset as any).getEffectiveSpeed(pokemon);
+    // Source: Bulbapedia "Klutz (ability)" — suppresses holder's item effects including Iron Ball
     expect(speed).toBe(100);
   });
 
@@ -358,6 +387,7 @@ describe("Gen5 speed resolution", () => {
       heldItem: G_ITEMS.choiceScarf,
     });
     const speed = (ruleset as any).getEffectiveSpeed(pokemon);
+    // Source: Bulbapedia "Klutz (ability)" — suppresses Choice Scarf, triangulation with base 80 speed
     expect(speed).toBe(80);
   });
 });
@@ -376,6 +406,7 @@ describe("Gen5 status damage abilities", () => {
     });
     const state = {} as BattleState;
     const damage = ruleset.applyStatusDamage(pokemon, C_STATUSES.burn, state);
+    // Source: Bulbapedia "Magic Guard" — prevents all indirect damage including burn
     expect(damage).toBe(0);
   });
 
@@ -391,6 +422,7 @@ describe("Gen5 status damage abilities", () => {
     });
     const state = {} as BattleState;
     const damage = ruleset.applyStatusDamage(pokemon, C_STATUSES.badlyPoisoned, state);
+    // Source: Bulbapedia "Magic Guard" — prevents all indirect damage including toxic
     expect(damage).toBe(0);
   });
 
@@ -403,6 +435,7 @@ describe("Gen5 status damage abilities", () => {
     });
     const state = {} as BattleState;
     const damage = ruleset.applyStatusDamage(pokemon, C_STATUSES.poison, state);
+    // Source: Bulbapedia "Magic Guard" — prevents all indirect damage including poison
     expect(damage).toBe(0);
   });
 
@@ -416,6 +449,7 @@ describe("Gen5 status damage abilities", () => {
     });
     const state = {} as BattleState;
     const damage = ruleset.applyStatusDamage(pokemon, C_STATUSES.burn, state);
+    // Source: Bulbapedia "Heatproof (ability)" — halves burn damage from 1/8 to 1/16; floor(200/16)=12
     expect(damage).toBe(12);
   });
 
@@ -429,6 +463,7 @@ describe("Gen5 status damage abilities", () => {
     });
     const state = {} as BattleState;
     const damage = ruleset.applyStatusDamage(pokemon, C_STATUSES.burn, state);
+    // Source: Bulbapedia "Heatproof (ability)" — halves burn damage from 1/8 to 1/16; floor(160/16)=10
     expect(damage).toBe(10);
   });
 
@@ -441,6 +476,7 @@ describe("Gen5 status damage abilities", () => {
     });
     const state = {} as BattleState;
     const damage = ruleset.applyStatusDamage(pokemon, C_STATUSES.burn, state);
+    // Source: Showdown sim/battle-actions.ts — Gen < 7 burn damage = maxhp/8; floor(200/8)=25
     expect(damage).toBe(25);
   });
 
@@ -453,6 +489,7 @@ describe("Gen5 status damage abilities", () => {
     });
     const state = {} as BattleState;
     const damage = ruleset.applyStatusDamage(pokemon, C_STATUSES.burn, state);
+    // Source: Showdown sim/battle-actions.ts — Gen < 7 burn damage = maxhp/8; floor(160/8)=20
     expect(damage).toBe(20);
   });
 });
@@ -467,6 +504,7 @@ describe("Gen5 multi-hit", () => {
     const rng = new SeededRandom(42);
     const pokemon = createOnFieldPokemon({ ability: C_ABILITIES.skillLink });
     for (let i = 0; i < 50; i++) {
+      // Source: Showdown Gen 5 — Skill Link always produces maximum 5 hits
       expect(ruleset.rollMultiHitCount(pokemon, rng)).toBe(5);
     }
   });
@@ -479,17 +517,27 @@ describe("Gen5 multi-hit", () => {
     const iterations = 2000;
     for (let i = 0; i < iterations; i++) {
       const hits = ruleset.rollMultiHitCount(pokemon, rng);
+      // Source: Showdown Gen 5 — multi-hit moves hit 2-5 times
       expect(hits).toBeGreaterThanOrEqual(2);
+      // Source: Showdown Gen 5 — multi-hit moves hit 2-5 times
       expect(hits).toBeLessThanOrEqual(5);
       counts[hits as 2 | 3 | 4 | 5]++;
     }
+    // Source: Showdown Gen 5 — multi-hit distribution: 35% 2-hits, 35% 3-hits, 15% 4-hits, 15% 5-hits
     expect(counts[2] / iterations).toBeGreaterThan(0.28);
+    // Source: Showdown Gen 5 — multi-hit distribution: 35% 2-hits upper bound
     expect(counts[2] / iterations).toBeLessThan(0.42);
+    // Source: Showdown Gen 5 — multi-hit distribution: 35% 3-hits lower bound
     expect(counts[3] / iterations).toBeGreaterThan(0.28);
+    // Source: Showdown Gen 5 — multi-hit distribution: 35% 3-hits upper bound
     expect(counts[3] / iterations).toBeLessThan(0.42);
+    // Source: Showdown Gen 5 — multi-hit distribution: 15% 4-hits lower bound
     expect(counts[4] / iterations).toBeGreaterThan(0.08);
+    // Source: Showdown Gen 5 — multi-hit distribution: 15% 4-hits upper bound
     expect(counts[4] / iterations).toBeLessThan(0.22);
+    // Source: Showdown Gen 5 — multi-hit distribution: 15% 5-hits lower bound
     expect(counts[5] / iterations).toBeGreaterThan(0.08);
+    // Source: Showdown Gen 5 — multi-hit distribution: 15% 5-hits upper bound
     expect(counts[5] / iterations).toBeLessThan(0.22);
   });
 });
@@ -503,6 +551,7 @@ describe("Gen5 bind damage", () => {
     // Source: BaseRuleset Gen 5+ bind damage = 1/8 max HP (increased from 1/16 in Gen 4)
     const pokemon = createOnFieldPokemon({ maxHp: 160 });
     const damage = ruleset.calculateBindDamage(pokemon);
+    // Source: Showdown Gen 5 — bind/wrap damage increased to 1/8 maxHP (from 1/16 in Gen 4)
     expect(damage).toBe(20);
   });
 
@@ -511,6 +560,7 @@ describe("Gen5 bind damage", () => {
     // Triangulation case
     const pokemon = createOnFieldPokemon({ maxHp: 200 });
     const damage = ruleset.calculateBindDamage(pokemon);
+    // Source: Showdown Gen 5 — bind/wrap damage 1/8 maxHP (triangulation: floor(200/8)=25)
     expect(damage).toBe(25);
   });
 });
@@ -523,6 +573,7 @@ describe("Gen5 end-of-turn order", () => {
   it("given Gen5Ruleset, when getEndOfTurnOrder called, then weather-damage comes first", () => {
     // Source: specs/battle/06-gen5.md section 17 -- weather damage is first
     const order = ruleset.getEndOfTurnOrder();
+    // Source: Showdown Gen 5 — weather damage fires first in end-of-turn sequence
     expect(order[0]).toBe(C_EOT.weatherDamage);
   });
 
@@ -531,6 +582,7 @@ describe("Gen5 end-of-turn order", () => {
     const order = ruleset.getEndOfTurnOrder();
     const weatherIdx = order.indexOf(C_EOT.weatherDamage);
     const statusIdx = order.indexOf(C_EOT.statusDamage);
+    // Source: Showdown Gen 5 — status damage follows weather damage in end-of-turn order
     expect(statusIdx).toBeGreaterThan(weatherIdx);
   });
 
@@ -538,20 +590,25 @@ describe("Gen5 end-of-turn order", () => {
     // Source: specs/battle/06-gen5.md section 17 -- Perish Song is one of the last effects
     const order = ruleset.getEndOfTurnOrder();
     const perishIdx = order.indexOf(C_MOVES.perishSong);
+    // Source: Showdown Gen 5 — Perish Song countdown occurs after status damage in EOT
     expect(perishIdx).toBeGreaterThan(order.indexOf(C_EOT.statusDamage));
+    // Source: Showdown Gen 5 — Perish Song countdown occurs after Leftovers in EOT
     expect(perishIdx).toBeGreaterThan(order.indexOf(C_ITEMS.leftovers));
   });
 
   it("given Gen5Ruleset, when getEndOfTurnOrder called, then includes speed-boost and moody", () => {
     // Source: specs/battle/06-gen5.md section 17 -- Speed Boost and Moody are end-of-turn effects
     const order = ruleset.getEndOfTurnOrder();
+    // Source: Showdown Gen 5 — Speed Boost triggers at end of turn
     expect(order).toContain(C_ABILITIES.speedBoost);
+    // Source: Showdown Gen 5 — Moody triggers at end of turn
     expect(order).toContain(C_ABILITIES.moody);
   });
 
   it("given Gen5Ruleset, when getEndOfTurnOrder called, then leftovers is included", () => {
     // Source: specs/battle/06-gen5.md section 17
     const order = ruleset.getEndOfTurnOrder();
+    // Source: Showdown Gen 5 — Leftovers heals at end of turn
     expect(order).toContain(C_ITEMS.leftovers);
   });
 
@@ -559,12 +616,14 @@ describe("Gen5 end-of-turn order", () => {
     // Source: specs/battle/06-gen5.md section 17 -- weather countdown near end
     const order = ruleset.getEndOfTurnOrder();
     const weatherCdIdx = order.indexOf(C_EOT.weatherCountdown);
+    // Source: Showdown Gen 5 — weather turn countdown occurs near end of EOT order
     expect(weatherCdIdx).toBeGreaterThan(order.indexOf(C_EOT.statusDamage));
   });
 
   it("given Gen5Ruleset, when getPostAttackResidualOrder called, then returns empty array", () => {
     // Source: Gen 5 (like Gen 3+) has no per-attack residuals; all in Phase 2
     const order = ruleset.getPostAttackResidualOrder();
+    // Source: Showdown Gen 5 — no post-attack residuals; all EOT effects in main phase
     expect(order).toEqual([]);
   });
 });

@@ -99,14 +99,18 @@ describe("Gen7Ruleset", () => {
       const ruleset = createTestRuleset();
       // The getStatusCatchModifiers is protected, so we verify via behavior
       // For scaffold smoke tests, we use a type assertion to access it
-      const modifiers = (ruleset as any).getStatusCatchModifiers();
+      const modifiers = (
+        ruleset as unknown as { getStatusCatchModifiers(): Record<string, number> }
+      ).getStatusCatchModifiers();
       expect(modifiers.sleep).toBe(2.5);
     });
 
     it("given a Gen7Ruleset, when getting status catch modifiers, then freeze modifier is 2.5x", () => {
       // Source: Bulbapedia -- Catch rate: Gen 5+ uses 2.5x for sleep/freeze
       const ruleset = createTestRuleset();
-      const modifiers = (ruleset as any).getStatusCatchModifiers();
+      const modifiers = (
+        ruleset as unknown as { getStatusCatchModifiers(): Record<string, number> }
+      ).getStatusCatchModifiers();
       expect(modifiers.freeze).toBe(2.5);
     });
   });

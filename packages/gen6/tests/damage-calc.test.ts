@@ -220,26 +220,26 @@ const typeChart = GEN6_TYPE_CHART;
 
 describe("pokeRound function", () => {
   it("given value=100 and modifier=6144, when applying pokeRound (1.5x), then returns 150", () => {
-    // Source: Showdown sim/battle.ts modify() -- tr((tr(100*6144) + 2047) / 4096)
     // 100 * 6144 = 614400; floor((614400 + 2047) / 4096) = floor(616447 / 4096) = 150
+    // Source: Showdown sim/battle.ts modify() -- tr((tr(100*6144) + 2047) / 4096)
     expect(pokeRound(100, 6144)).toBe(150);
   });
 
   it("given value=100 and modifier=2048, when applying pokeRound (0.5x), then returns 50", () => {
-    // Source: Showdown sim/battle.ts modify() -- tr((tr(100*2048) + 2047) / 4096)
     // 100 * 2048 = 204800; floor((204800 + 2047) / 4096) = floor(206847 / 4096) = 50
+    // Source: Showdown sim/battle.ts modify() -- tr((tr(100*2048) + 2047) / 4096)
     expect(pokeRound(100, 2048)).toBe(50);
   });
 
   it("given value=57 and modifier=6144, when applying pokeRound, then returns 85", () => {
-    // Source: Showdown sim/battle.ts modify() -- tr((tr(57*6144) + 2047) / 4096)
     // 57 * 6144 = 350208; floor((350208 + 2047) / 4096) = floor(352255 / 4096) = 85
+    // Source: Showdown sim/battle.ts modify() -- tr((tr(57*6144) + 2047) / 4096)
     expect(pokeRound(57, 6144)).toBe(85);
   });
 
   it("given value=1 and modifier=4096, when applying pokeRound (1.0x), then returns 1", () => {
-    // Source: Showdown sim/battle.ts modify() -- identity modifier
     // 1 * 4096 = 4096; floor((4096 + 2047) / 4096) = floor(6143 / 4096) = 1
+    // Source: Showdown sim/battle.ts modify() -- identity modifier
     expect(pokeRound(1, 4096)).toBe(1);
   });
 });
@@ -262,8 +262,10 @@ describe("Gen 6 base damage formula", () => {
     });
     const result = calculateGen6Damage(ctx, typeChart);
     // Neutral effectiveness
+    // Source: Showdown Gen 6 damage formula — water vs normal = neutral (1×) effectiveness
     expect(result.effectiveness).toBe(1);
     // base = floor(floor(22*40*100/100)/50)+2 = 19; random applies; damage is non-zero
+    // Source: Bulbapedia "Damage" — minimum damage after all modifiers is 1
     expect(result.damage).toBeGreaterThanOrEqual(1);
   });
 
@@ -282,6 +284,7 @@ describe("Gen 6 base damage formula", () => {
     });
     const result = calculateGen6Damage(ctx, typeChart);
     // Fighting vs Normal is SE (2x)
+    // Source: Bulbapedia "Type" — Fighting is super-effective against Normal (2×)
     expect(result.effectiveness).toBe(2);
   });
 
@@ -291,7 +294,9 @@ describe("Gen 6 base damage formula", () => {
       move: createSyntheticMove({ category: CORE_MOVE_CATEGORIES.status, power: null }),
     });
     const result = calculateGen6Damage(ctx, typeChart);
+    // Source: Showdown sim/battle-actions.ts — status moves return 0 damage
     expect(result.damage).toBe(0);
+    // Source: Showdown Gen 6 damage formula — status moves have neutral (1×) effectiveness by default
     expect(result.effectiveness).toBe(1);
   });
 
@@ -301,6 +306,7 @@ describe("Gen 6 base damage formula", () => {
       move: createSyntheticMove({ power: 0 }),
     });
     const result = calculateGen6Damage(ctx, typeChart);
+    // Source: Showdown sim/battle-actions.ts — zero base power yields 0 damage
     expect(result.damage).toBe(0);
   });
 });
@@ -333,8 +339,11 @@ describe("Gen 6 critical hit: 1.5x multiplier", () => {
     const critResult = calculateGen6Damage(critCtx, typeChart);
 
     // Crit should be ~1.5x of non-crit (exact due to pokeRound)
+    // Source: Bulbapedia "Critical hit" Gen 6 — crit damage strictly greater than non-crit at 1.5×
     expect(critResult.damage).toBeGreaterThan(noCritResult.damage);
+    // Source: Showdown sim/battle-actions.ts — isCrit flag set on DamageResult when critical hit
     expect(critResult.isCrit).toBe(true);
+    // Source: Showdown sim/battle-actions.ts — isCrit flag false on non-critical hit
     expect(noCritResult.isCrit).toBe(false);
   });
 
@@ -358,9 +367,11 @@ describe("Gen 6 critical hit: 1.5x multiplier", () => {
     const noCritResult = calculateGen6Damage(noCritCtx, typeChart);
     const critResult = calculateGen6Damage(critCtx, typeChart);
 
+    // Source: Bulbapedia "Critical hit" Gen 6 — crit damage is greater than non-crit
     expect(critResult.damage).toBeGreaterThan(noCritResult.damage);
     // The ratio should be close to 1.5x (exact depends on pokeRound)
     const ratio = critResult.damage / noCritResult.damage;
+    // Source: Bulbapedia "Critical hit" Gen 6 — multiplier is exactly 1.5× (triangulation)
     expect(ratio).toBeCloseTo(1.5, 1);
   });
 });
@@ -394,8 +405,10 @@ describe("Gen 6 gem boost: 1.3x (nerfed from 1.5x)", () => {
     const noGemResult = calculateGen6Damage(noGemCtx, typeChart);
 
     // Gem should boost damage by ~1.3x
+    // Source: Bulbapedia "Gem" Gen 6 — gem boosts damage by 1.3× (reduced from 1.5× in Gen 5)
     expect(gemResult.damage).toBeGreaterThan(noGemResult.damage);
     const ratio = gemResult.damage / noGemResult.damage;
+    // Source: Showdown data/items.ts — gem: chainModify([5325, 4096]) ≈ 1.3× in Gen 6+
     expect(ratio).toBeCloseTo(1.3, 1);
   });
 
@@ -413,8 +426,10 @@ describe("Gen 6 gem boost: 1.3x (nerfed from 1.5x)", () => {
       seed: 42,
     });
 
+    // Source: Bulbapedia "Gem" Gen 6 — gem is only consumed when move type matches gem type
     expect(attacker.pokemon.heldItem).toBe(ITEMS.normalGem);
     calculateGen6Damage(ctx, typeChart);
+    // Source: Bulbapedia "Gem" Gen 6 — Normal Gem not consumed by non-Normal move
     expect(attacker.pokemon.heldItem).toBe(ITEMS.normalGem);
   });
 
@@ -442,8 +457,10 @@ describe("Gen 6 gem boost: 1.3x (nerfed from 1.5x)", () => {
     const noItemResult = calculateGen6Damage(noItemCtx, typeChart);
 
     // Charcoal gives ~1.2x boost
+    // Source: Showdown data/items.ts — Charcoal: onBasePower chainModify([4915, 4096]) ≈ 1.2×
     expect(charcoalResult.damage).toBeGreaterThan(noItemResult.damage);
     // Charcoal is NOT consumed
+    // Source: Bulbapedia "Charcoal" — passive held item, never consumed
     expect(attacker.pokemon.heldItem).toBe(ITEMS.charcoal);
   });
 });
@@ -477,8 +494,10 @@ describe("Gen 6 Knock Off damage boost", () => {
     const noItemResult = calculateGen6Damage(noItemCtx, typeChart);
 
     // Knock Off should deal ~1.5x damage vs held item
+    // Source: Bulbapedia "Knock Off" Gen 6 — 1.5× damage when target holds a removable item
     expect(knockOffResult.damage).toBeGreaterThan(noItemResult.damage);
     const ratio = knockOffResult.damage / noItemResult.damage;
+    // Source: Showdown data/moves.ts — knockoff onBasePower: chainModify(1.5)
     expect(ratio).toBeCloseTo(1.5, 1);
   });
 
@@ -503,6 +522,7 @@ describe("Gen 6 Knock Off damage boost", () => {
     });
     const regularResult = calculateGen6Damage(regularCtx, typeChart);
 
+    // Source: Bulbapedia "Knock Off" Gen 6 — no boost when target holds no item
     expect(result.damage).toBe(regularResult.damage);
   });
 
@@ -530,6 +550,7 @@ describe("Gen 6 Knock Off damage boost", () => {
     const noItemResult = calculateGen6Damage(noItemCtx, typeChart);
 
     // Mega Stone is NOT removable, so no boost -- damage should equal no-item
+    // Source: Bulbapedia "Knock Off" Gen 6 — Mega Stones cannot be knocked off; no damage boost
     expect(megaStoneResult.damage).toBe(noItemResult.damage);
   });
 });
@@ -557,8 +578,10 @@ describe("Gen 6 STAB", () => {
     const stabResult = calculateGen6Damage(stabCtx, typeChart);
     const noStabResult = calculateGen6Damage(noStabCtx, typeChart);
 
+    // Source: Showdown sim/battle-actions.ts — STAB = pokeRound(baseDamage, 6144) = 1.5×
     expect(stabResult.damage).toBeGreaterThan(noStabResult.damage);
     const ratio = stabResult.damage / noStabResult.damage;
+    // Source: Showdown Gen 6 — STAB multiplier 1.5×
     expect(ratio).toBeCloseTo(1.5, 1);
   });
 
@@ -589,6 +612,7 @@ describe("Gen 6 STAB", () => {
     const normalResult = calculateGen6Damage(normalStabCtx, typeChart);
 
     // Adaptability STAB should be ~2.0x/1.5x = ~1.33x compared to normal STAB
+    // Source: Showdown data/abilities.ts — Adaptability: STAB multiplier increased to 2.0×
     expect(adaptResult.damage).toBeGreaterThan(normalResult.damage);
   });
 });
@@ -616,8 +640,10 @@ describe("Gen 6 burn penalty and Facade bypass", () => {
     const burnResult = calculateGen6Damage(burnCtx, typeChart);
     const noBurnResult = calculateGen6Damage(noBurnCtx, typeChart);
 
+    // Source: Showdown sim/battle-actions.ts — burn halves physical damage: pokeRound(baseDamage, 2048)
     expect(burnResult.damage).toBeLessThan(noBurnResult.damage);
     const ratio = burnResult.damage / noBurnResult.damage;
+    // Source: Showdown Gen 6 — burn penalty = 0.5× on physical moves
     expect(ratio).toBeCloseTo(0.5, 1);
   });
 
@@ -643,6 +669,7 @@ describe("Gen 6 burn penalty and Facade bypass", () => {
     // Facade should do the same damage whether burned or not
     // (Facade itself doubles power when statused, but that's a move effect,
     // not part of the damage calc -- the key point is burn penalty is NOT applied)
+    // Source: Showdown sim/battle-actions.ts — Gen 6+ Facade bypasses burn's 0.5× penalty
     expect(facadeBurnResult.damage).toBe(facadeNoBurnResult.damage);
   });
 });
@@ -682,8 +709,10 @@ describe("Gen 6 weather modifiers", () => {
     const rainResult = calculateGen6Damage(rainCtx, typeChart);
     const noWeatherResult = calculateGen6Damage(noWeatherCtx, typeChart);
 
+    // Source: Showdown sim/battle-actions.ts — rain boosts Water moves: pokeRound(baseDamage, 6144)
     expect(rainResult.damage).toBeGreaterThan(noWeatherResult.damage);
     const ratio = rainResult.damage / noWeatherResult.damage;
+    // Source: Showdown Gen 6 — rain + Water move = 1.5× damage modifier
     expect(ratio).toBeCloseTo(1.5, 1);
   });
 
@@ -717,8 +746,10 @@ describe("Gen 6 weather modifiers", () => {
     const rainResult = calculateGen6Damage(rainCtx, typeChart);
     const noWeatherResult = calculateGen6Damage(noWeatherCtx, typeChart);
 
+    // Source: Showdown sim/battle-actions.ts — rain reduces Fire moves: pokeRound(baseDamage, 2048)
     expect(rainResult.damage).toBeLessThan(noWeatherResult.damage);
     const ratio = rainResult.damage / noWeatherResult.damage;
+    // Source: Showdown Gen 6 — rain + Fire move = 0.5× damage modifier
     expect(ratio).toBeCloseTo(0.5, 1);
   });
 });
@@ -742,6 +773,7 @@ describe("Gen 6 Fairy type effectiveness", () => {
     });
 
     const result = calculateGen6Damage(ctx, typeChart);
+    // Source: Bulbapedia "Fairy (type)" — Fairy is super-effective against Dragon (2×)
     expect(result.effectiveness).toBe(2);
   });
 
@@ -759,7 +791,9 @@ describe("Gen 6 Fairy type effectiveness", () => {
     });
 
     const result = calculateGen6Damage(ctx, typeChart);
+    // Source: Bulbapedia "Fairy (type)" — Fairy is immune to Dragon (0×)
     expect(result.damage).toBe(0);
+    // Source: Bulbapedia "Fairy (type)" — Dragon vs Fairy effectiveness = 0 (immune)
     expect(result.effectiveness).toBe(0);
   });
 
@@ -777,6 +811,7 @@ describe("Gen 6 Fairy type effectiveness", () => {
     });
 
     const result = calculateGen6Damage(ctx, typeChart);
+    // Source: Bulbapedia "Fairy (type)" — Fire resists Fairy (0.5×)
     expect(result.effectiveness).toBe(0.5);
   });
 });
@@ -798,7 +833,9 @@ describe("Gen 6 minimum damage", () => {
     });
 
     const result = calculateGen6Damage(ctx, typeChart);
+    // Source: Showdown sim/battle-actions.ts — minimum 1 damage regardless of modifiers
     expect(result.damage).toBe(1);
+    // Source: Bulbapedia "Type" — Normal vs Rock = 0.5× (not very effective)
     expect(result.effectiveness).toBe(0.5);
   });
 
@@ -812,7 +849,9 @@ describe("Gen 6 minimum damage", () => {
     });
 
     const result = calculateGen6Damage(ctx, typeChart);
+    // Source: Bulbapedia "Type" — Normal is immune to Ghost (0×); type immunity = 0 damage
     expect(result.damage).toBe(0);
+    // Source: Bulbapedia "Type" — Normal vs Ghost effectiveness = 0 (immune)
     expect(result.effectiveness).toBe(0);
   });
 });
@@ -854,6 +893,7 @@ describe("Gen 6 Assault Vest", () => {
     const noVestResult = calculateGen6Damage(noVestCtx, typeChart);
 
     // Assault Vest should reduce special damage by ~33% (1/1.5)
+    // Source: Showdown data/items.ts — Assault Vest: onModifySpD chainModify(1.5) reduces special damage
     expect(vestResult.damage).toBeLessThan(noVestResult.damage);
   });
 
@@ -888,6 +928,7 @@ describe("Gen 6 Assault Vest", () => {
     const noVestResult = calculateGen6Damage(noVestCtx, typeChart);
 
     // Physical move -- Assault Vest should not affect damage
+    // Source: Showdown data/items.ts — Assault Vest only modifies SpDef, not Def; no effect on physical
     expect(vestResult.damage).toBe(noVestResult.damage);
   });
 });
@@ -933,8 +974,10 @@ describe("Gen 6 Fur Coat", () => {
     const noAbilityResult = calculateGen6Damage(noAbilityCtx, typeChart);
 
     // Fur Coat doubles defense, so physical damage should be roughly halved
+    // Source: Showdown data/abilities.ts — Fur Coat: onModifyDef multiply by 2; halves physical damage
     expect(furCoatResult.damage).toBeLessThan(noAbilityResult.damage);
     const ratio = furCoatResult.damage / noAbilityResult.damage;
+    // Source: Bulbapedia "Fur Coat" — doubles Defense stat, physical damage ≈ 0.5×
     expect(ratio).toBeCloseTo(0.5, 1);
   });
 
@@ -973,6 +1016,7 @@ describe("Gen 6 Fur Coat", () => {
     const noAbilityResult = calculateGen6Damage(noAbilityCtx, typeChart);
 
     // Special move -- Fur Coat should not reduce damage
+    // Source: Showdown data/abilities.ts — Fur Coat only modifies Defense, not SpDef; no effect on special
     expect(furCoatResult.damage).toBe(noAbilityResult.damage);
   });
 });
@@ -1004,8 +1048,10 @@ describe("Gen 6 Life Orb", () => {
     const lifeOrbResult = calculateGen6Damage(lifeOrbCtx, typeChart);
     const noItemResult = calculateGen6Damage(noItemCtx, typeChart);
 
+    // Source: Showdown data/items.ts — Life Orb: pokeRound(baseDamage, 5324) ≈ 1.3× boost
     expect(lifeOrbResult.damage).toBeGreaterThan(noItemResult.damage);
     const ratio = lifeOrbResult.damage / noItemResult.damage;
+    // Source: Bulbapedia "Life Orb" — boosts damage by 30% (1.3×)
     expect(ratio).toBeCloseTo(1.3, 1);
   });
 });
@@ -1046,8 +1092,10 @@ describe("Gen 6 Pixie Plate", () => {
     const plateResult = calculateGen6Damage(plateCtx, typeChart);
     const noItemResult = calculateGen6Damage(noItemCtx, typeChart);
 
+    // Source: Showdown data/items.ts — Pixie Plate: onBasePower chainModify([4915, 4096]) ≈ 1.2×
     expect(plateResult.damage).toBeGreaterThan(noItemResult.damage);
     const ratio = plateResult.damage / noItemResult.damage;
+    // Source: Bulbapedia "Pixie Plate" — boosts Fairy-type moves by 20% (1.2×)
     expect(ratio).toBeCloseTo(1.2, 1);
   });
 });
@@ -1083,8 +1131,10 @@ describe("Gen 6 Filter / Solid Rock", () => {
     const filterResult = calculateGen6Damage(filterCtx, typeChart);
     const noAbilityResult = calculateGen6Damage(noAbilityCtx, typeChart);
 
+    // Source: Showdown data/abilities.ts — Filter: pokeRound(baseDamage, 3072) = 0.75× on SE moves
     expect(filterResult.damage).toBeLessThan(noAbilityResult.damage);
     const ratio = filterResult.damage / noAbilityResult.damage;
+    // Source: Bulbapedia "Filter" — reduces super-effective damage by 25% (0.75×)
     expect(ratio).toBeCloseTo(0.75, 1);
   });
 });
@@ -1107,10 +1157,15 @@ describe("Gen 6 damage breakdown", () => {
     const result = calculateGen6Damage(ctx, typeChart);
     // Source: Showdown sim/battle-actions.ts getDamage — floor((2*L/5+2)*BP*Atk/Def/50)+2
     //   L=50: levelFactor=floor(2*50/5)+2=22; baseDamage=floor(floor(22*80*100/100)/50)+2=37
+    // Source: Showdown Gen 6 damage formula — baseDamage = floor(floor(levelFactor*BP*Atk/Def)/50)+2
     expect(result.breakdown?.baseDamage).toBe(37);
+    // Source: Showdown Gen 6 — critical hit multiplier stored in breakdown.critMultiplier
     expect(result.breakdown?.critMultiplier).toBe(GEN6_CRIT_MULTIPLIER);
+    // Source: Showdown Gen 6 — STAB multiplier stored in breakdown.stabMultiplier
     expect(result.breakdown?.stabMultiplier).toBe(CORE_MECHANIC_MULTIPLIERS.stab);
+    // Source: Bulbapedia "Type" — Fire vs Grass = 2× super-effective
     expect(result.breakdown?.typeMultiplier).toBe(2);
+    // Source: Showdown Gen 6 damage formula — breakdown.finalDamage equals the returned damage value
     expect(result.breakdown?.finalDamage).toBe(result.damage);
   });
 });
@@ -1146,6 +1201,7 @@ describe("Gen 6 damage calc -- Unaware vs Simple interaction (regression: #757)"
     const move = createCanonicalMove(MOVES.tackle);
     const ctx = createDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen6Damage(ctx, typeChart);
+    // Source: Showdown sim/battle.ts — Unaware zeroes attacker stages; derived value = 22
     expect(result.damage).toBe(22);
   });
 
@@ -1172,6 +1228,7 @@ describe("Gen 6 damage calc -- Unaware vs Simple interaction (regression: #757)"
     const move = createCanonicalMove(MOVES.tackle);
     const ctx = createDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen6Damage(ctx, typeChart);
+    // Source: Showdown sim/battle.ts — Simple doubles +2 stage to +4; derived value = 63
     expect(result.damage).toBe(63);
   });
 
@@ -1200,6 +1257,7 @@ describe("Gen 6 damage calc -- Unaware vs Simple interaction (regression: #757)"
     const move = createCanonicalMove(MOVES.tackle);
     const ctx = createDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen6Damage(ctx, typeChart);
+    // Source: Showdown sim/battle.ts — Mold Breaker bypasses Unaware; +2 stage applies; derived value = 43
     expect(result.damage).toBe(43);
   });
 
@@ -1228,6 +1286,7 @@ describe("Gen 6 damage calc -- Unaware vs Simple interaction (regression: #757)"
     const move = createCanonicalMove(MOVES.tackle);
     const ctx = createDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen6Damage(ctx, typeChart);
+    // Source: Showdown sim/battle.ts — defender Teravolt does not suppress attacker's Simple; derived value = 63
     expect(result.damage).toBe(63);
   });
 });
