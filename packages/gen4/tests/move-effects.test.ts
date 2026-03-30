@@ -1053,6 +1053,8 @@ describe("Gen 4 executeMoveEffect — Defog", () => {
 
 describe("Gen 4 executeMoveEffect — Roost (null-effect)", () => {
   it("given Roost used by Flying/Normal type, when executeMoveEffect called, then healAmount and typeChange removes Flying", () => {
+    // Source: Showdown Gen 4 — Roost heals 50% max HP and removes Flying type for the turn
+    // Source: Bulbapedia — Roost: heals 1/2 of max HP; Flying type removed until end of turn
     // Note: Roost has effect: { type: "heal", amount: 0.5 } in the data,
     // so this test validates the data-driven path, not the null-effect handler.
     // The null-effect handler for ROOST would only fire if effect were null.
@@ -2377,6 +2379,7 @@ describe("Gen 4 executeMoveEffect — handleCustomEffect branches via synthetic 
   });
 
   it("given synthetic custom-effect safeguard move, when used, then screenSet = safeguard for 5 turns", () => {
+    // Source: Showdown Gen 4 — Safeguard lasts 5 turns
     // Covers handleCustomEffect case 'safeguard' (line 497) via synthetic custom effect
     const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.normal], nickname: "Blissey" });
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
@@ -2392,6 +2395,7 @@ describe("Gen 4 executeMoveEffect — handleCustomEffect branches via synthetic 
   });
 
   it("given synthetic custom-effect lucky-chant move, when used, then screenSet = lucky-chant for 5 turns", () => {
+    // Source: Showdown Gen 4 — Lucky Chant lasts 5 turns
     // Covers handleCustomEffect case 'lucky-chant' (line 498) via synthetic custom effect
     const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.normal], nickname: "Clefable" });
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
@@ -2514,6 +2518,7 @@ describe("Gen 4 executeMoveEffect — handleNullEffectMoves haze", () => {
 
 describe("Gen 4 executeMoveEffect — handleNullEffectMoves null-effect moves", () => {
   it("given Safeguard (null effect), when executeMoveEffect called, then screenSet = safeguard 5 turns", () => {
+    // Source: Showdown Gen 4 — Safeguard lasts 5 turns
     // Covers handleNullEffectMoves case 'safeguard' (line 576)
     const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.normal], nickname: "Blissey" });
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
@@ -2527,6 +2532,7 @@ describe("Gen 4 executeMoveEffect — handleNullEffectMoves null-effect moves", 
   });
 
   it("given Lucky Chant (null effect), when executeMoveEffect called, then screenSet = lucky-chant 5 turns", () => {
+    // Source: Showdown Gen 4 — Lucky Chant lasts 5 turns
     // Covers handleNullEffectMoves case 'lucky-chant' (line 584)
     const attacker = createActivePokemon({ types: [CORE_TYPE_IDS.normal], nickname: "Clefable" });
     const defender = createActivePokemon({ types: [CORE_TYPE_IDS.normal] });
