@@ -757,6 +757,7 @@ describe("Gen8AbilitiesStat formatStatName via Beast Boost", () => {
     // Source: Bulbapedia "Beast Boost" -- "raises the user's highest stat by one stage"
     // This test exercises formatStatName("spAttack") -> "Special Attack"
     const faintedOpponent = createOnFieldPokemon({ currentHp: 0 });
+    const beastBoostState1 = createBattleState();
     const ctx: AbilityContext = {
       pokemon: {
         ...createOnFieldPokemon({
@@ -783,8 +784,8 @@ describe("Gen8AbilitiesStat formatStatName via Beast Boost", () => {
         },
       } as unknown as ActivePokemon,
       opponent: faintedOpponent,
-      state: createBattleState(),
-      rng: createBattleState().rng,
+      state: beastBoostState1,
+      rng: beastBoostState1.rng,
       trigger: TRIGGERS.onAfterMoveUsed,
     };
 
@@ -808,6 +809,7 @@ describe("Gen8AbilitiesStat formatStatName via Beast Boost", () => {
     // Source: Showdown data/abilities.ts -- beastboost: raises highest stat
     // This test exercises formatStatName("spDefense") -> "Special Defense"
     const faintedOpponent = createOnFieldPokemon({ currentHp: 0 });
+    const beastBoostState2 = createBattleState();
     const ctx: AbilityContext = {
       pokemon: {
         ...createOnFieldPokemon({
@@ -834,8 +836,8 @@ describe("Gen8AbilitiesStat formatStatName via Beast Boost", () => {
         },
       } as unknown as ActivePokemon,
       opponent: faintedOpponent,
-      state: createBattleState(),
-      rng: createBattleState().rng,
+      state: beastBoostState2,
+      rng: beastBoostState2.rng,
       trigger: TRIGGERS.onAfterMoveUsed,
     };
 
@@ -859,6 +861,7 @@ describe("Gen8AbilitiesStat formatStatName via Beast Boost", () => {
     // Source: Showdown data/abilities.ts -- beastboost: raises highest stat
     // This test exercises formatStatName("speed") -> "Speed"
     const faintedOpponent = createOnFieldPokemon({ currentHp: 0 });
+    const beastBoostState3 = createBattleState();
     const ctx: AbilityContext = {
       pokemon: {
         ...createOnFieldPokemon({
@@ -885,8 +888,8 @@ describe("Gen8AbilitiesStat formatStatName via Beast Boost", () => {
         },
       } as unknown as ActivePokemon,
       opponent: faintedOpponent,
-      state: createBattleState(),
-      rng: createBattleState().rng,
+      state: beastBoostState3,
+      rng: beastBoostState3.rng,
       trigger: TRIGGERS.onAfterMoveUsed,
     };
 
