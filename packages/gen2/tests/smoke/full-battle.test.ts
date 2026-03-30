@@ -871,7 +871,11 @@ describe("Gen 2 Full Battle Integration", () => {
     // No damage event emitted for Umbreon from Psychic
     expect(
       damageEvents.some(
-        (e) => "pokemon" in e && e.pokemon === GEN2_SPECIES_NAMES.umbreon && "source" in e && e.source === GEN2_MOVE_IDS.psychic,
+        (e) =>
+          "pokemon" in e &&
+          e.pokemon === GEN2_SPECIES_NAMES.umbreon &&
+          "source" in e &&
+          e.source === GEN2_MOVE_IDS.psychic,
       ),
     ).toBe(false);
 

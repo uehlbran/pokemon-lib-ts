@@ -67,7 +67,7 @@ const EXPECTED_TERRAIN_EXTENDED_TURNS = 8;
  * Source: Showdown data/conditions.ts — mistyterrain onBasePower: chainModify(0.5) (ERRATA #27)
  */
 const EXPECTED_TERRAIN_BOOST_GEN6_7 = 6144; // 1.5× in 4096-based math
-const EXPECTED_TERRAIN_BOOST_GEN8_PLUS = 5325; // 1.3× in 4096-based math
+const _EXPECTED_TERRAIN_BOOST_GEN8_PLUS = 5325; // 1.3× in 4096-based math — reserved for Gen 8+ terrain checks
 const EXPECTED_MISTY_DRAGON_REDUCTION = 2048; // 0.5× in 4096-based math
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
