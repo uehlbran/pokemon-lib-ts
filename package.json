@@ -54,6 +54,9 @@
     "validate:pret": "tsx tools/data-importer/src/pret-overrides/validate-committed-data.ts",
     "test:mutant": "stryker run stryker.config.mjs",
     "test:mutant:core": "stryker run stryker.config.mjs",
+    "test:mutant:gen1": "stryker run stryker.gen1.config.mjs",
+    "test:mutant:gen2": "stryker run stryker.gen2.config.mjs",
+    "test:mutant:gen3": "stryker run stryker.gen3.config.mjs",
     "test:mutant:gen4": "stryker run stryker.gen4.config.mjs"
   },
   "devDependencies": {
