@@ -855,6 +855,10 @@ describe("Gen 2 Full Battle Integration", () => {
 
     // Act
     engine.start();
+    // Capture Umbreon's HP after stat calculation but before the turn resolves
+    const umbreonHpBefore = engine.getState().sides[1]?.active[0]?.pokemon.currentHp ?? -1;
+    expect(umbreonHpBefore).toBeGreaterThan(0); // sanity check
+
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 }); // Psychic
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 3 }); // Quick Attack
 
@@ -881,6 +885,11 @@ describe("Gen 2 Full Battle Integration", () => {
 
     // "It doesn't affect" message is emitted
     expect(messageEvents.some((e) => "text" in e && e.text.includes("doesn't affect"))).toBe(true);
+
+    // Umbreon's HP is unchanged (immune move deals zero HP change)
+    // Source: pokecrystal engine/battle/core.asm CheckTypeMatchup — no HP subtraction on immunity
+    const umbreonHpAfter = engine.getState().sides[1]?.active[0]?.pokemon.currentHp ?? -1;
+    expect(umbreonHpAfter).toBe(umbreonHpBefore);
   });
 
   it("given Gen 2, when a Ghost move hits a Psychic type, then it is super effective (2x — Gen 1 bug fixed)", () => {
