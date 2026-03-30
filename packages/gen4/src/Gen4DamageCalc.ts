@@ -605,6 +605,21 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
     power = Math.floor(power / 2);
   }
 
+  // Facade: doubles base power (70 → 140) when the user has a major status condition
+  // (burn, paralysis, poison, or badly-poisoned). Sleep does NOT trigger the doubling.
+  // Source: pret/pokeemerald data/battle_scripts_1.s BattleScript_EffectFacade —
+  //   jumpifstatus BS_ATTACKER, STATUS1_POISON|STATUS1_BURN|STATUS1_PARALYSIS|STATUS1_TOXIC_POISON,
+  //   BattleScript_FacadeDoubleDmg; then setbyte sDMG_MULTIPLIER, 2
+  // Source: Showdown data/moves.ts facade.onBasePower —
+  //   if (pokemon.status && pokemon.status !== 'slp') { return this.chainModify(2); }
+  if (
+    move.id === GEN4_MOVE_IDS.facade &&
+    attacker.pokemon.status !== null &&
+    attacker.pokemon.status !== CORE_STATUS_IDS.sleep
+  ) {
+    power = power * 2;
+  }
+
   // Normalize: all moves used by the Pokemon become Normal type, EXCEPT Struggle.
   // Struggle is typeless ("???") in Gen 4 and Normalize must not affect it.
   // Source: Showdown Gen 4 mod references/pokemon-showdown/data/mods/gen4/abilities.ts —

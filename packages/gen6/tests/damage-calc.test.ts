@@ -672,11 +672,14 @@ describe("Gen 6 burn penalty and Facade bypass", () => {
     const facadeBurnResult = calculateGen6Damage(facadeBurnCtx, typeChart);
     const facadeNoBurnResult = calculateGen6Damage(facadeNoBurnCtx, typeChart);
 
-    // Facade should do the same damage whether burned or not
-    // (Facade itself doubles power when statused, but that's a move effect,
-    // not part of the damage calc -- the key point is burn penalty is NOT applied)
+    // With Facade power doubling implemented: burned Facade = 140 BP + burn bypass (no halving).
+    // Updated from the original `toBe(facadeNoBurnResult.damage)` — that assertion assumed
+    // power doubling was a separate "move effect" not in the damage calc, which is incorrect.
     // Source: Showdown sim/battle-actions.ts — Gen 6+ Facade bypasses burn's 0.5× penalty
-    expect(facadeBurnResult.damage).toBe(facadeNoBurnResult.damage);
+    // Source: Showdown data/moves.ts facade.onBasePower — power doubles when statused
+    // Exact values (seed 42): 140 BP no-burn-penalty vs 70 BP no-status
+    expect(facadeBurnResult.damage).toBe(88);
+    expect(facadeNoBurnResult.damage).toBe(45);
   });
 });
 
