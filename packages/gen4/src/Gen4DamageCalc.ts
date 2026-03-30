@@ -21,6 +21,7 @@ import {
   getTypeEffectiveness,
   getTypeMultiplier,
   getWeatherDamageModifier,
+  TYPE_EFFECTIVENESS_MULTIPLIERS,
 } from "@pokemon-lib-ts/core";
 import { GEN4_ABILITY_IDS, GEN4_ITEM_IDS, GEN4_MOVE_IDS } from "./data/reference-ids";
 import { isWeatherSuppressedGen4 } from "./Gen4Abilities";
@@ -1082,7 +1083,7 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Source: Showdown data/abilities.ts — Scrappy onModifyMovePriority
   if (
     attackerAbility === GEN4_ABILITY_IDS.scrappy &&
-    effectiveness === 0 &&
+    effectiveness === TYPE_EFFECTIVENESS_MULTIPLIERS.immune &&
     (effectiveMoveType === CORE_TYPE_IDS.normal || effectiveMoveType === CORE_TYPE_IDS.fighting) &&
     defender.types.includes(CORE_TYPE_IDS.ghost)
   ) {
@@ -1100,7 +1101,7 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   const burnMultiplier = burnApplied ? 0.5 : 1;
 
   // 16. If effectiveness === 0: type immunity — return 0 damage
-  if (effectiveness === 0) {
+  if (effectiveness === TYPE_EFFECTIVENESS_MULTIPLIERS.immune) {
     return {
       damage: 0,
       effectiveness: 0,
@@ -1130,7 +1131,7 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   if (
     !moldBreaker &&
     defenderAbility === GEN4_ABILITY_IDS.wonderGuard &&
-    effectiveness < 2 &&
+    effectiveness < TYPE_EFFECTIVENESS_MULTIPLIERS.superEffective &&
     move.id !== GEN4_MOVE_IDS.fireFang
   ) {
     return {
@@ -1170,7 +1171,10 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // 18. Tinted Lens (NEW in Gen 4): double damage if not very effective
   // Source: Bulbapedia — Tinted Lens: "The power of not very effective moves is doubled."
   // Source: Showdown sim/abilities.ts — Tinted Lens
-  if (attackerAbility === GEN4_ABILITY_IDS.tintedLens && effectiveness < 1) {
+  if (
+    attackerAbility === GEN4_ABILITY_IDS.tintedLens &&
+    effectiveness < TYPE_EFFECTIVENESS_MULTIPLIERS.neutral
+  ) {
     baseDamage = baseDamage * 2;
     abilityMultiplier *= 2;
   }
@@ -1184,7 +1188,7 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
     !moldBreaker &&
     (defenderAbility === GEN4_ABILITY_IDS.filter ||
       defenderAbility === GEN4_ABILITY_IDS.solidRock) &&
-    effectiveness > 1
+    effectiveness > TYPE_EFFECTIVENESS_MULTIPLIERS.neutral
   ) {
     baseDamage = Math.floor(baseDamage * 0.75);
     abilityMultiplier *= 0.75;
@@ -1209,7 +1213,12 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   const defenderItem = defender.pokemon.heldItem;
   const defenderHasKlutz = defenderAbility === GEN4_ABILITY_IDS.klutz;
   const defenderHasEmbargo = defender.volatileStatuses.has(CORE_VOLATILE_IDS.embargo);
-  if (defenderItem && !defenderHasKlutz && !defenderHasEmbargo && effectiveness > 1) {
+  if (
+    defenderItem &&
+    !defenderHasKlutz &&
+    !defenderHasEmbargo &&
+    effectiveness > TYPE_EFFECTIVENESS_MULTIPLIERS.neutral
+  ) {
     const resistType = TYPE_RESIST_BERRIES[defenderItem];
     if (resistType && resistType === effectiveMoveType) {
       baseDamage = Math.floor(baseDamage * 0.5);
@@ -1228,7 +1237,11 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   // Expert Belt: 1.2x damage for super-effective moves
   // Source: Bulbapedia — Expert Belt: "Boosts the power of super effective moves by 20%."
   // Source: Showdown sim/items.ts — Expert Belt
-  if (!attackerHasKlutz && attackerItem === GEN4_ITEM_IDS.expertBelt && effectiveness > 1) {
+  if (
+    !attackerHasKlutz &&
+    attackerItem === GEN4_ITEM_IDS.expertBelt &&
+    effectiveness > TYPE_EFFECTIVENESS_MULTIPLIERS.neutral
+  ) {
     baseDamage = Math.floor((baseDamage * 4915) / 4096);
     itemMultiplier = 4915 / 4096;
   }

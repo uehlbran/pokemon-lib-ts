@@ -66,6 +66,7 @@ import {
   getStatStageMultiplier,
   getTypeEffectiveness,
   pokeRound,
+  TYPE_EFFECTIVENESS_MULTIPLIERS,
 } from "@pokemon-lib-ts/core";
 import { GEN7_ABILITY_IDS, GEN7_ITEM_IDS, GEN7_MOVE_IDS } from "./data/reference-ids.js";
 import { isWeatherSuppressedGen7 } from "./Gen7Weather.js";
@@ -1249,7 +1250,7 @@ export function calculateGen7Damage(
   // Source: Showdown data/abilities.ts -- Scrappy
   if (
     attackerAbility === GEN7_ABILITY_IDS.scrappy &&
-    effectiveness === 0 &&
+    effectiveness === TYPE_EFFECTIVENESS_MULTIPLIERS.immune &&
     (effectiveMoveType === CORE_TYPE_IDS.normal || effectiveMoveType === CORE_TYPE_IDS.fighting) &&
     defender.types.includes(CORE_TYPE_IDS.ghost)
   ) {
@@ -1261,7 +1262,7 @@ export function calculateGen7Damage(
   }
 
   // If effectiveness === 0: type immunity -- return 0 damage
-  if (effectiveness === 0) {
+  if (effectiveness === TYPE_EFFECTIVENESS_MULTIPLIERS.immune) {
     return {
       damage: 0,
       effectiveness: 0,
@@ -1289,7 +1290,7 @@ export function calculateGen7Damage(
   if (
     !bypassesDefensiveAbilities &&
     defenderAbility === CORE_ABILITY_IDS.wonderGuard &&
-    effectiveness < 2
+    effectiveness < TYPE_EFFECTIVENESS_MULTIPLIERS.superEffective
   ) {
     return {
       damage: 0,
@@ -1315,13 +1316,16 @@ export function calculateGen7Damage(
 
   // Apply type effectiveness as integer multiplication
   // Source: Showdown sim/battle-actions.ts
-  if (effectiveness > 1) {
+  if (effectiveness > TYPE_EFFECTIVENESS_MULTIPLIERS.neutral) {
     let typeMod = effectiveness;
     while (typeMod >= 2) {
       baseDamage = baseDamage * 2;
       typeMod /= 2;
     }
-  } else if (effectiveness < 1 && effectiveness > 0) {
+  } else if (
+    effectiveness < TYPE_EFFECTIVENESS_MULTIPLIERS.neutral &&
+    effectiveness > TYPE_EFFECTIVENESS_MULTIPLIERS.immune
+  ) {
     let typeMod = effectiveness;
     while (typeMod <= 0.5) {
       baseDamage = Math.floor(baseDamage / 2);
@@ -1344,7 +1348,10 @@ export function calculateGen7Damage(
 
   // Tinted Lens: double damage if not very effective
   // Source: Showdown data/abilities.ts -- Tinted Lens
-  if (attackerAbility === GEN7_ABILITY_IDS.tintedLens && effectiveness < 1) {
+  if (
+    attackerAbility === GEN7_ABILITY_IDS.tintedLens &&
+    effectiveness < TYPE_EFFECTIVENESS_MULTIPLIERS.neutral
+  ) {
     baseDamage = baseDamage * 2;
     abilityMultiplier *= 2;
   }
@@ -1356,7 +1363,7 @@ export function calculateGen7Damage(
     !bypassesDefensiveAbilities &&
     (defenderAbility === GEN7_ABILITY_IDS.filter ||
       defenderAbility === GEN7_ABILITY_IDS.solidRock) &&
-    effectiveness > 1
+    effectiveness > TYPE_EFFECTIVENESS_MULTIPLIERS.neutral
   ) {
     baseDamage = pokeRound(baseDamage, 3072); // 0.75x
     abilityMultiplier *= 0.75;
@@ -1366,7 +1373,10 @@ export function calculateGen7Damage(
   // Unlike Filter/Solid Rock, Prism Armor is NOT bypassed by Mold Breaker.
   // Source: Showdown data/abilities.ts -- prismarmo: onSourceModifyDamage (no breakable flag)
   // Source: Bulbapedia "Prism Armor" -- "reduces damage from super-effective moves by 25%"
-  if (defenderAbility === GEN7_ABILITY_IDS.prismArmor && effectiveness > 1) {
+  if (
+    defenderAbility === GEN7_ABILITY_IDS.prismArmor &&
+    effectiveness > TYPE_EFFECTIVENESS_MULTIPLIERS.neutral
+  ) {
     baseDamage = pokeRound(baseDamage, 3072); // 0.75x
     abilityMultiplier *= 0.75;
   }
@@ -1374,7 +1384,10 @@ export function calculateGen7Damage(
   // Neuroforce (Ultra Necrozma ability): 1.25x damage on super-effective hits.
   // Source: Showdown data/abilities.ts -- neuroforce: onSourceModifyDamage chainModify([5120, 4096])
   // Source: Bulbapedia "Neuroforce" -- "increases damage dealt by super-effective moves by 25%"
-  if (attackerAbility === GEN7_ABILITY_IDS.neuroforce && effectiveness > 1) {
+  if (
+    attackerAbility === GEN7_ABILITY_IDS.neuroforce &&
+    effectiveness > TYPE_EFFECTIVENESS_MULTIPLIERS.neutral
+  ) {
     baseDamage = pokeRound(baseDamage, 5120); // 1.25x (5120/4096)
     abilityMultiplier *= 1.25;
   }
@@ -1431,7 +1444,11 @@ export function calculateGen7Damage(
 
   // Expert Belt: 1.2x for super-effective moves
   // Source: Showdown data/items.ts -- Expert Belt
-  if (!attackerHasKlutz && attackerItem === GEN7_ITEM_IDS.expertBelt && effectiveness > 1) {
+  if (
+    !attackerHasKlutz &&
+    attackerItem === GEN7_ITEM_IDS.expertBelt &&
+    effectiveness > TYPE_EFFECTIVENESS_MULTIPLIERS.neutral
+  ) {
     baseDamage = pokeRound(baseDamage, 4915); // ~1.2x
     itemMultiplier = 4915 / 4096;
   }
@@ -1481,7 +1498,10 @@ export function calculateGen7Damage(
     if (resistType && resistType === effectiveMoveType) {
       // Chilan Berry activates on any Normal-type hit; others require SE
       // Source: Showdown data/items.ts -- Chilan Berry: onSourceModifyDamage (no SE check)
-      if (resistType === CORE_TYPE_IDS.normal || effectiveness > 1) {
+      if (
+        resistType === CORE_TYPE_IDS.normal ||
+        effectiveness > TYPE_EFFECTIVENESS_MULTIPLIERS.neutral
+      ) {
         baseDamage = pokeRound(baseDamage, 2048); // 0.5x via pokeRound
         typeResistBerryConsumed = defenderItemForBerry;
       }

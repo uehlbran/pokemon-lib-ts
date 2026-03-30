@@ -1,5 +1,10 @@
 import type { DataManager, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
-import { CORE_TYPE_IDS, GEN_NUMBERS, getTypeEffectiveness } from "@pokemon-lib-ts/core";
+import {
+  CORE_TYPE_IDS,
+  GEN_NUMBERS,
+  getTypeEffectiveness,
+  TYPE_EFFECTIVENESS_MULTIPLIERS,
+} from "@pokemon-lib-ts/core";
 import { createGen1DataManager } from "@pokemon-lib-ts/gen1";
 import { createGen2DataManager } from "@pokemon-lib-ts/gen2";
 import { createGen3DataManager } from "@pokemon-lib-ts/gen3";
@@ -180,15 +185,24 @@ export function validateReplay(replay: ParsedReplay): ValidationResult {
 
           // Compare Showdown's claim to our calculation
           let mismatchMessage: string | null = null;
-          if (effectivenessType === SHOWDOWN_EVENT_TYPES.supereffective && multiplier < 2) {
+          if (
+            effectivenessType === SHOWDOWN_EVENT_TYPES.supereffective &&
+            multiplier < TYPE_EFFECTIVENESS_MULTIPLIERS.superEffective
+          ) {
             mismatchMessage =
               `Showdown says "${moveEvent.moveName}" is super-effective vs ${targetPokemon.species} ` +
               `(${targetTypes.join("/")}), but our chart gives ×${multiplier}`;
-          } else if (effectivenessType === SHOWDOWN_EVENT_TYPES.resisted && multiplier > 0.5) {
+          } else if (
+            effectivenessType === SHOWDOWN_EVENT_TYPES.resisted &&
+            multiplier > TYPE_EFFECTIVENESS_MULTIPLIERS.halfDamage
+          ) {
             mismatchMessage =
               `Showdown says "${moveEvent.moveName}" is resisted vs ${targetPokemon.species} ` +
               `(${targetTypes.join("/")}), but our chart gives ×${multiplier}`;
-          } else if (effectivenessType === SHOWDOWN_EVENT_TYPES.immune && multiplier !== 0) {
+          } else if (
+            effectivenessType === SHOWDOWN_EVENT_TYPES.immune &&
+            multiplier !== TYPE_EFFECTIVENESS_MULTIPLIERS.immune
+          ) {
             mismatchMessage =
               `Showdown says "${moveEvent.moveName}" is immune vs ${targetPokemon.species} ` +
               `(${targetTypes.join("/")}), but our chart gives ×${multiplier}`;

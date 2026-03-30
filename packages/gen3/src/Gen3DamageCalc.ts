@@ -19,6 +19,7 @@ import {
   getTypeEffectiveness,
   getTypeMultiplier,
   getWeatherDamageModifier,
+  TYPE_EFFECTIVENESS_MULTIPLIERS,
 } from "@pokemon-lib-ts/core";
 import { GEN3_ABILITY_IDS, GEN3_ITEM_IDS, GEN3_MOVE_IDS } from "./data/reference-ids";
 import { isWeatherSuppressedGen3 } from "./Gen3Abilities";
@@ -628,7 +629,7 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
 
   const burnMultiplier = burnApplied ? 0.5 : 1;
 
-  if (effectiveness === 0) {
+  if (effectiveness === TYPE_EFFECTIVENESS_MULTIPLIERS.immune) {
     // Type immunity — return 0 damage
     return {
       damage: 0,
@@ -653,7 +654,10 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
 
   // Wonder Guard — only super-effective moves hit
   // Source: pret/pokeemerald ABILITY_WONDER_GUARD — only 2x and 4x moves land
-  if (defenderAbility === CORE_ABILITY_IDS.wonderGuard && effectiveness < 2) {
+  if (
+    defenderAbility === CORE_ABILITY_IDS.wonderGuard &&
+    effectiveness < TYPE_EFFECTIVENESS_MULTIPLIERS.superEffective
+  ) {
     return {
       damage: 0,
       effectiveness,

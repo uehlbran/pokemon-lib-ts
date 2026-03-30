@@ -16,6 +16,7 @@ import {
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   getTypeEffectiveness,
+  TYPE_EFFECTIVENESS_MULTIPLIERS,
 } from "@pokemon-lib-ts/core";
 import { GEN7_ABILITY_IDS, GEN7_ITEM_IDS, GEN7_MOVE_IDS } from "./data/reference-ids.js";
 import { GEN7_TYPE_CHART } from "./Gen7TypeChart.js";
@@ -1253,7 +1254,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
           pokemon.types,
           GEN7_TYPE_CHART,
         );
-        if (effectiveness >= 2) {
+        if (effectiveness >= TYPE_EFFECTIVENESS_MULTIPLIERS.superEffective) {
           return {
             activated: true,
             effects: [

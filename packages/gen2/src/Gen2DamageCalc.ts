@@ -11,6 +11,7 @@ import {
   createFriendship,
   getGen12StatStageRatio,
   getStabModifier,
+  TYPE_EFFECTIVENESS_MULTIPLIERS,
 } from "@pokemon-lib-ts/core";
 
 import { getWeatherDamageModifier } from "./Gen2Weather";
@@ -540,7 +541,7 @@ export function calculateGen2Damage(
   let isImmune = false;
   for (const defType of defenderTypes) {
     const factor = typeChart[effectiveMoveType]?.[defType] ?? 1;
-    if (factor === 0) {
+    if (factor === TYPE_EFFECTIVENESS_MULTIPLIERS.immune) {
       isImmune = true;
       break;
     }
@@ -559,10 +560,10 @@ export function calculateGen2Damage(
   // Apply each defender type's multiplier sequentially with floor after each step
   for (const defType of defenderTypes) {
     const factor = typeChart[effectiveMoveType]?.[defType] ?? 1;
-    if (factor === 2) {
+    if (factor === TYPE_EFFECTIVENESS_MULTIPLIERS.superEffective) {
       // SE: floor(damage * 20 / 10) = floor(damage * 2)
       baseDamage = Math.floor((baseDamage * 20) / 10);
-    } else if (factor === 0.5) {
+    } else if (factor === TYPE_EFFECTIVENESS_MULTIPLIERS.halfDamage) {
       // NVE: floor(damage * 5 / 10)
       baseDamage = Math.floor((baseDamage * 5) / 10);
     }
