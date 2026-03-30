@@ -11,7 +11,7 @@
  */
 
 import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
+import type { MoveData, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
@@ -94,9 +94,9 @@ function createSyntheticOnFieldPokemon(overrides: {
       ability: overrides.ability ?? NONE,
       abilitySlot: CORE_ABILITY_SLOTS.normal1,
       heldItem: overrides.heldItem ?? null,
-      status: (overrides.status ?? null) as any,
+      status: (overrides.status ?? null) as PrimaryStatus | null,
       friendship: 0,
-      gender: CORE_GENDERS.male as any,
+      gender: CORE_GENDERS.male,
       isShiny: false,
       metLocation: "",
       metLevel: 1,

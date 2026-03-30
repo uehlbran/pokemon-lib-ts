@@ -1,5 +1,11 @@
 import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
-import type { Gender, MoveData, PokemonType, WeatherType } from "@pokemon-lib-ts/core";
+import type {
+  Gender,
+  MoveData,
+  PokemonType,
+  PrimaryStatus,
+  WeatherType,
+} from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
@@ -89,7 +95,7 @@ function createOnFieldPokemon(overrides: {
   });
 
   pokemon.currentHp = overrides.currentHp ?? hp;
-  pokemon.status = (overrides.status ?? null) as any;
+  pokemon.status = (overrides.status ?? null) as PrimaryStatus | null;
   pokemon.heldItem = overrides.heldItem ?? null;
   pokemon.ability = overrides.ability ?? ABILITIES.none;
   pokemon.moves = [createMoveSlot(DEFAULT_MOVE.id, DEFAULT_MOVE.pp)];

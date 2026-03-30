@@ -1,6 +1,6 @@
 import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
 import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
-import type { MoveData } from "@pokemon-lib-ts/core";
+import type { MoveData, PrimaryStatus } from "@pokemon-lib-ts/core";
 import { CORE_ITEM_IDS, createPokemonInstance, SeededRandom } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -62,7 +62,7 @@ function createSyntheticActivePokemon(overrides: {
 
   pokemon.currentHp = overrides.currentHp ?? hp;
   pokemon.heldItem = overrides.heldItem ?? null;
-  pokemon.status = (overrides.status ?? null) as any;
+  pokemon.status = (overrides.status ?? null) as PrimaryStatus | null;
   if (overrides.ability != null) {
     pokemon.ability = overrides.ability;
   }

@@ -669,12 +669,14 @@ describe("handleEmbodyAspect", () => {
 
   it("given already used (volatile set), when handling, then does not activate again (once per battle)", () => {
     // Source: Showdown data/abilities.ts:1162-1212 -- once per battle check
-    const volatiles = new Map([[VOLATILES.embodyAspectUsed, { turnsLeft: -1 }]]);
+    const volatiles = new Map<string, { turnsLeft: number }>([
+      [VOLATILES.embodyAspectUsed, { turnsLeft: -1 }],
+    ]);
     const ctx = createAbilityContext({
       pokemon: createOnFieldPokemon({
         ability: ABILITIES.embodyAspectTeal,
         isTerastallized: true,
-        volatiles: volatiles as any,
+        volatiles,
       }),
       trigger: TRIGGER_IDS.onSwitchIn,
     });
@@ -1074,12 +1076,14 @@ describe("handleProteanGen9", () => {
 
   it("given already used (volatile set), when handling, then does not activate (once per switch-in)", () => {
     // Source: specs/battle/10-gen9.md -- "Protean/Libero: once per switchin"
-    const volatiles = new Map([[VOLATILES.proteanUsed, { turnsLeft: -1 }]]);
+    const volatiles = new Map<string, { turnsLeft: number }>([
+      [VOLATILES.proteanUsed, { turnsLeft: -1 }],
+    ]);
     const ctx = createAbilityContext({
       pokemon: createOnFieldPokemon({
         ability: ABILITIES.protean,
         types: [TYPES.normal],
-        volatiles: volatiles as any,
+        volatiles,
       }),
       trigger: TRIGGER_IDS.onBeforeMove,
       move: createSyntheticMoveFromRepresentativeBase({ type: TYPES.fire }),

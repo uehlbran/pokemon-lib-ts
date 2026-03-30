@@ -65,7 +65,7 @@ function createSyntheticOnFieldPokemon(overrides: {
       ivs: createIvs(),
       evs: createEvs(),
       abilitySlot: CORE_ABILITY_SLOTS.normal1,
-      gender: CORE_GENDERS.male as any,
+      gender: CORE_GENDERS.male,
     },
     ability: overrides.ability ?? A.blaze,
     types: overrides.types ?? [T.normal],

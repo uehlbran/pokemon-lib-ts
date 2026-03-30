@@ -284,7 +284,7 @@ describe("Gen 2 Screens and Safeguard", () => {
         rng,
         isCrit: false,
       };
-      const noScreenResult = calculateGen2Damage(ctxNoScreen, typeChart, species as any);
+      const noScreenResult = calculateGen2Damage(ctxNoScreen, typeChart, species);
 
       // With Reflect
       const stateWithReflect = createMockStateWithSides(attacker, defender, [
@@ -298,7 +298,7 @@ describe("Gen 2 Screens and Safeguard", () => {
         rng: createMockRng(255),
         isCrit: false,
       };
-      const reflectResult = calculateGen2Damage(ctxWithReflect, typeChart, species as any);
+      const reflectResult = calculateGen2Damage(ctxWithReflect, typeChart, species);
 
       // Source: pret/pokecrystal engine/battle/effect_commands.asm:2553-2557 — Reflect doubles
       // defense stat (sla c; rl b), not halves damage. Defense-doubling produces different
@@ -344,7 +344,7 @@ describe("Gen 2 Screens and Safeguard", () => {
         rng,
         isCrit: false,
       };
-      const noScreenResult = calculateGen2Damage(ctxNoScreen, typeChart, species as any);
+      const noScreenResult = calculateGen2Damage(ctxNoScreen, typeChart, species);
 
       // With Light Screen
       const stateWithLS = createMockStateWithSides(attacker, defender, [
@@ -358,7 +358,7 @@ describe("Gen 2 Screens and Safeguard", () => {
         rng: createMockRng(255),
         isCrit: false,
       };
-      const lsResult = calculateGen2Damage(ctxWithLS, typeChart, species as any);
+      const lsResult = calculateGen2Damage(ctxWithLS, typeChart, species);
 
       // Source: pret/pokecrystal engine/battle/effect_commands.asm:2577-2581 — Light Screen
       // doubles SpDef stat (sla c; rl b), not halves damage.
@@ -405,7 +405,7 @@ describe("Gen 2 Screens and Safeguard", () => {
         rng,
         isCrit: true,
       };
-      const critWithReflect = calculateGen2Damage(ctxCritReflect, typeChart, species as any);
+      const critWithReflect = calculateGen2Damage(ctxCritReflect, typeChart, species);
 
       // Crit without Reflect
       const stateNoScreen = createMockStateWithSides(attacker, defender, []);
@@ -417,7 +417,7 @@ describe("Gen 2 Screens and Safeguard", () => {
         rng: createMockRng(255),
         isCrit: true,
       };
-      const critNoScreen = calculateGen2Damage(ctxCritNoScreen, typeChart, species as any);
+      const critNoScreen = calculateGen2Damage(ctxCritNoScreen, typeChart, species);
 
       // Source: crits bypass screens, so damage should be identical
       expect(critWithReflect.damage).toBe(critNoScreen.damage);
@@ -459,7 +459,7 @@ describe("Gen 2 Screens and Safeguard", () => {
         rng,
         isCrit: true,
       };
-      const critWithLS = calculateGen2Damage(ctxCritLS, typeChart, species as any);
+      const critWithLS = calculateGen2Damage(ctxCritLS, typeChart, species);
 
       // Crit without Light Screen
       const stateNoScreen = createMockStateWithSides(attacker, defender, []);
@@ -471,7 +471,7 @@ describe("Gen 2 Screens and Safeguard", () => {
         rng: createMockRng(255),
         isCrit: true,
       };
-      const critNoScreen = calculateGen2Damage(ctxCritNoScreen, typeChart, species as any);
+      const critNoScreen = calculateGen2Damage(ctxCritNoScreen, typeChart, species);
 
       // Source: crits bypass screens, damage should be identical
       expect(critWithLS.damage).toBe(critNoScreen.damage);
@@ -512,7 +512,7 @@ describe("Gen 2 Screens and Safeguard", () => {
         rng: createMockRng(255),
         isCrit: false,
       };
-      const reflectResult = calculateGen2Damage(ctxReflect, typeChart, species as any);
+      const reflectResult = calculateGen2Damage(ctxReflect, typeChart, species);
 
       // Without Reflect
       const stateNoScreen = createMockStateWithSides(attacker, defender, []);
@@ -524,7 +524,7 @@ describe("Gen 2 Screens and Safeguard", () => {
         rng: createMockRng(255),
         isCrit: false,
       };
-      const noScreenResult = calculateGen2Damage(ctxNoScreen, typeChart, species as any);
+      const noScreenResult = calculateGen2Damage(ctxNoScreen, typeChart, species);
 
       // Source: Reflect only affects physical — damage should be identical
       expect(reflectResult.damage).toBe(noScreenResult.damage);

@@ -1,11 +1,18 @@
-import type { ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
+import type {
+  AbilityContext,
+  ActivePokemon,
+  BattleState,
+  MoveEffectContext,
+} from "@pokemon-lib-ts/battle";
 import {
+  type AbilityTrigger,
   CORE_ABILITY_IDS,
   CORE_END_OF_TURN_EFFECT_IDS,
   CORE_ITEM_TRIGGER_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
+  type SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { GEN5_ABILITY_IDS, GEN5_MOVE_IDS, GEN5_SPECIES_IDS } from "@pokemon-lib-ts/gen5";
 import { describe, expect, it, vi } from "vitest";
@@ -158,8 +165,8 @@ describe("Gen 5 master dispatchers", () => {
     const mockCtx = {
       pokemon: { ability: "unknown-ability" },
       trigger: "unrecognized-trigger",
-    } as any;
-    const result = applyGen5Ability("unrecognized-trigger" as any, mockCtx);
+    } as unknown as AbilityContext;
+    const result = applyGen5Ability("unrecognized-trigger" as AbilityTrigger, mockCtx);
     expect(result.activated).toBe(false);
     expect(result.effects).toEqual([]);
     expect(result.messages).toEqual([]);
@@ -183,7 +190,7 @@ describe("Gen 5 master dispatchers", () => {
     const result = applyGen5HeldItem(CORE_ITEM_TRIGGER_IDS.endOfTurn, {
       pokemon: mockPokemon,
       state: {} as BattleState,
-      rng: { chance: () => false, nextInt: () => 0, next: () => 0 } as any,
+      rng: { chance: () => false, nextInt: () => 0, next: () => 0 } as unknown as SeededRandom,
     });
     expect(result.activated).toBe(false);
     expect(result.effects).toEqual([]);
@@ -196,8 +203,12 @@ describe("Gen 5 master dispatchers", () => {
       attacker: { pokemon: { currentHp: 100 } },
       defender: { pokemon: { currentHp: 100 } },
       state: { rng: { chance: () => false, next: () => 0, nextInt: () => 0 } },
-    } as any;
-    const mockRng = { chance: () => false, next: () => 0, nextInt: () => 0 } as any;
+    } as unknown as MoveEffectContext;
+    const mockRng = {
+      chance: () => false,
+      next: () => 0,
+      nextInt: () => 0,
+    } as unknown as SeededRandom;
     const mockRollProtect = vi.fn(() => true);
     const result = executeGen5MoveEffect(mockCtx, mockRng, mockRollProtect);
     expect({
@@ -305,14 +316,14 @@ describe("Gen5Ruleset rollProtectSuccess", () => {
 
   it("given 0 consecutive protects, when rolling, then always succeeds", () => {
     // Source: Showdown Gen 5 mod -- first Protect always succeeds
-    const rng = { chance: () => false } as any;
+    const rng = { chance: () => false } as unknown as SeededRandom;
     expect(ruleset.rollProtectSuccess(0, rng)).toBe(true);
   });
 
   it("given 1 consecutive protect, when rolling with success, then uses 1/2 chance", () => {
     // Source: Showdown Gen 5 mod -- stall counter starts at 2, chance = 1/2
     const chance = vi.fn(() => true);
-    const rng = { chance } as any;
+    const rng = { chance } as unknown as SeededRandom;
     ruleset.rollProtectSuccess(1, rng);
     expect(chance).toHaveBeenCalledWith(0.5);
   });
@@ -321,7 +332,7 @@ describe("Gen5Ruleset rollProtectSuccess", () => {
     // Source: references/pokemon-showdown/data/mods/gen5/conditions.ts -- counterMax: 256
     //   At cap (counter >= 256), Showdown uses randomChance(1, 2**32), not 1/256.
     const chance = vi.fn(() => false);
-    const rng = { chance } as any;
+    const rng = { chance } as unknown as SeededRandom;
     ruleset.rollProtectSuccess(10, rng);
     expect(chance).toHaveBeenCalledTimes(1);
     expect(chance.mock.calls[0]?.[0]).toBeCloseTo(1 / 2 ** 32);

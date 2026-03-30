@@ -18,6 +18,7 @@ import type {
   BattleEvent,
   BattleSide,
   BattleState,
+  ItemContext,
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
 import { BattleEngine } from "@pokemon-lib-ts/battle";
@@ -109,7 +110,7 @@ function createSyntheticOnFieldPokemon(overrides: {
     turnsOnField: 0,
     substituteHp: overrides.substituteHp ?? 0,
     isTerastallized: false,
-    teraType: null as any,
+    teraType: null,
     teamSlot: overrides.teamSlot ?? 0,
     statStages: overrides.statStages ?? {
       hp: 0,
@@ -170,7 +171,7 @@ function createSyntheticPokemonInstance(overrides?: Partial<PokemonInstance>): P
     heldItem: null,
     status: null,
     friendship: 70,
-    gender: CORE_GENDERS.male as any,
+    gender: CORE_GENDERS.male,
     isShiny: false,
     metLocation: "pallet-town",
     metLevel: 5,
@@ -643,7 +644,7 @@ describe("Bug #804: Focus Sash respects item suppression (Klutz, Embargo, Magic 
     const attacker = createSyntheticOnFieldPokemon({});
     const move = getCanonicalMove(MOVES.darkPulse);
     const state = createBattleState();
-    (state as any).magicRoom = { active: true, turnsLeft: 3 };
+    state.magicRoom = { active: true, turnsLeft: 3 };
 
     const result = ruleset.capLethalDamage!(500, defender, attacker, move, state);
 
@@ -695,7 +696,7 @@ describe("Bug #726: Lansat Berry grants crit stages via focus-energy volatile", 
       pokemon,
       state: createBattleState(),
       rng: new SeededRandom(42),
-    } as any);
+    } as ItemContext);
 
     // The item should activate and set focus-energy volatile
     if (result.activated) {
@@ -717,7 +718,7 @@ describe("Bug #726: Lansat Berry grants crit stages via focus-energy volatile", 
       pokemon,
       state: createBattleState(),
       rng: new SeededRandom(42),
-    } as any);
+    } as ItemContext);
 
     expect(result.activated).toBe(false);
   });
@@ -733,7 +734,7 @@ describe("Bug #724: Misty Terrain blocks confusion via shouldBlockVolatile", () 
     const ruleset = new Gen9Ruleset();
     const target = createSyntheticOnFieldPokemon({ types: [TYPES.normal] }); // grounded
     const state = createBattleState({
-      terrain: { type: TERRAINS.misty as any, turnsLeft: 5, source: GEN9_ABILITY_IDS.mistySurge },
+      terrain: { type: TERRAINS.misty, turnsLeft: 5, source: GEN9_ABILITY_IDS.mistySurge },
     });
 
     const blocked = ruleset.shouldBlockVolatile!(VOLATILES.confusion, target, state);
@@ -746,7 +747,7 @@ describe("Bug #724: Misty Terrain blocks confusion via shouldBlockVolatile", () 
     const ruleset = new Gen9Ruleset();
     const target = createSyntheticOnFieldPokemon({ types: [TYPES.flying] }); // NOT grounded
     const state = createBattleState({
-      terrain: { type: TERRAINS.misty as any, turnsLeft: 5, source: GEN9_ABILITY_IDS.mistySurge },
+      terrain: { type: TERRAINS.misty, turnsLeft: 5, source: GEN9_ABILITY_IDS.mistySurge },
     });
 
     const blocked = ruleset.shouldBlockVolatile!(VOLATILES.confusion, target, state);
@@ -758,7 +759,7 @@ describe("Bug #724: Misty Terrain blocks confusion via shouldBlockVolatile", () 
     // Source: No terrain = no confusion blocking
     const ruleset = new Gen9Ruleset();
     const target = createSyntheticOnFieldPokemon({ types: [TYPES.normal] });
-    const state = createBattleState({ terrain: null as any });
+    const state = createBattleState({ terrain: null });
 
     const blocked = ruleset.shouldBlockVolatile!(VOLATILES.confusion, target, state);
 
@@ -770,7 +771,7 @@ describe("Bug #724: Misty Terrain blocks confusion via shouldBlockVolatile", () 
     const ruleset = new Gen9Ruleset();
     const target = createSyntheticOnFieldPokemon({ types: [TYPES.normal] });
     const state = createBattleState({
-      terrain: { type: TERRAINS.misty as any, turnsLeft: 5, source: GEN9_ABILITY_IDS.mistySurge },
+      terrain: { type: TERRAINS.misty, turnsLeft: 5, source: GEN9_ABILITY_IDS.mistySurge },
     });
 
     const blocked = ruleset.shouldBlockVolatile!(VOLATILES.taunt, target, state);
@@ -793,7 +794,7 @@ describe("Bug #723: Psychic Terrain blocks priority moves via shouldBlockPriorit
     const move = getCanonicalMove(MOVES.quickAttack);
     const state = createBattleState({
       terrain: {
-        type: TERRAINS.psychic as any,
+        type: TERRAINS.psychic,
         turnsLeft: 5,
         source: GEN9_ABILITY_IDS.psychicSurge,
       },
@@ -812,7 +813,7 @@ describe("Bug #723: Psychic Terrain blocks priority moves via shouldBlockPriorit
     const move = getCanonicalMove(MOVES.quickAttack);
     const state = createBattleState({
       terrain: {
-        type: TERRAINS.psychic as any,
+        type: TERRAINS.psychic,
         turnsLeft: 5,
         source: GEN9_ABILITY_IDS.psychicSurge,
       },
@@ -831,7 +832,7 @@ describe("Bug #723: Psychic Terrain blocks priority moves via shouldBlockPriorit
     const move = getCanonicalMove(MOVES.tackle);
     const state = createBattleState({
       terrain: {
-        type: TERRAINS.psychic as any,
+        type: TERRAINS.psychic,
         turnsLeft: 5,
         source: GEN9_ABILITY_IDS.psychicSurge,
       },
@@ -848,7 +849,7 @@ describe("Bug #723: Psychic Terrain blocks priority moves via shouldBlockPriorit
     const actor = createSyntheticOnFieldPokemon({});
     const defender = createSyntheticOnFieldPokemon({ types: [TYPES.normal] });
     const move = getCanonicalMove(MOVES.quickAttack);
-    const state = createBattleState({ terrain: null as any });
+    const state = createBattleState({ terrain: null });
 
     const blocked = ruleset.shouldBlockPriorityMove!(actor, move, defender, state);
 

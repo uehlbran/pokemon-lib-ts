@@ -1,5 +1,5 @@
 import type { ActivePokemon, BattleState, CritContext } from "@pokemon-lib-ts/battle";
-import type { SeededRandom, VolatileStatus } from "@pokemon-lib-ts/core";
+import type { MoveData, SeededRandom, VolatileStatus } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
   CORE_END_OF_TURN_EFFECT_IDS,
@@ -78,6 +78,17 @@ function createOnFieldPokemon(
       (overrides.volatiles ?? []).map(([k, v]) => [k, v] as [string, unknown]),
     ),
   } as unknown as ActivePokemon;
+}
+
+/**
+ * Narrow test-only type to allow mutating `currentHp` and `calculatedStats.hp`
+ * on a known-initialised ActivePokemon without `as any`.
+ */
+type TestablePokemon = ActivePokemon & {
+  pokemon: { currentHp: number; calculatedStats: { hp: number } };
+};
+function asTestable(p: ActivePokemon): TestablePokemon {
+  return p as unknown as TestablePokemon;
 }
 
 // ---------------------------------------------------------------------------
@@ -164,7 +175,7 @@ describe("Gen6Ruleset — rollCritical", () => {
     const context: CritContext = {
       attacker: createOnFieldPokemon(),
       defender: createOnFieldPokemon({ ability: ABILITIES.battleArmor }),
-      move: { critRatio: 0 } as any,
+      move: { critRatio: 0 } as unknown as MoveData,
       rng: { int: () => 1 } as unknown as SeededRandom,
     };
     expect(ruleset.rollCritical(context)).toBe(false);
@@ -175,7 +186,7 @@ describe("Gen6Ruleset — rollCritical", () => {
     const context: CritContext = {
       attacker: createOnFieldPokemon(),
       defender: createOnFieldPokemon({ ability: ABILITIES.shellArmor }),
-      move: { critRatio: 0 } as any,
+      move: { critRatio: 0 } as unknown as MoveData,
       rng: { int: () => 1 } as unknown as SeededRandom,
     };
     expect(ruleset.rollCritical(context)).toBe(false);
@@ -187,7 +198,7 @@ describe("Gen6Ruleset — rollCritical", () => {
     const context: CritContext = {
       attacker: createOnFieldPokemon(),
       defender: createOnFieldPokemon(),
-      move: { critRatio: 0 } as any,
+      move: { critRatio: 0 } as unknown as MoveData,
       rng: { int: () => 1 } as unknown as SeededRandom,
     };
     expect(ruleset.rollCritical(context)).toBe(true);
@@ -199,14 +210,14 @@ describe("Gen6Ruleset — capLethalDamage (Sturdy)", () => {
 
   it("given defender with Sturdy at full HP and lethal damage, when capping, then caps at maxHp-1", () => {
     // Source: Showdown data/abilities.ts -- Sturdy: survive at 1 HP from full
-    const defender = createOnFieldPokemon({ ability: ABILITIES.sturdy }) as any;
+    const defender = asTestable(createOnFieldPokemon({ ability: ABILITIES.sturdy }));
     defender.pokemon.currentHp = 200;
     defender.pokemon.calculatedStats.hp = 200;
     const result = ruleset.capLethalDamage(
       300,
       defender,
       createOnFieldPokemon(),
-      { id: MOVES.tackle } as any,
+      { id: MOVES.tackle } as unknown as MoveData,
       {} as BattleState,
     );
     expect(result.damage).toBe(199);
@@ -216,14 +227,14 @@ describe("Gen6Ruleset — capLethalDamage (Sturdy)", () => {
 
   it("given defender with Sturdy at full HP and exact-lethal damage, when capping, then caps at maxHp-1", () => {
     // Source: Showdown data/abilities.ts -- Sturdy: damage >= currentHp means lethal
-    const defender = createOnFieldPokemon({ ability: ABILITIES.sturdy }) as any;
+    const defender = asTestable(createOnFieldPokemon({ ability: ABILITIES.sturdy }));
     defender.pokemon.currentHp = 200;
     defender.pokemon.calculatedStats.hp = 200;
     const result = ruleset.capLethalDamage(
       200,
       defender,
       createOnFieldPokemon(),
-      { id: MOVES.tackle } as any,
+      { id: MOVES.tackle } as unknown as MoveData,
       {} as BattleState,
     );
     expect(result.damage).toBe(199);
@@ -232,14 +243,14 @@ describe("Gen6Ruleset — capLethalDamage (Sturdy)", () => {
 
   it("given defender with Sturdy NOT at full HP and lethal damage, when capping, then does NOT cap", () => {
     // Source: Showdown data/abilities.ts -- Sturdy only works at full HP
-    const defender = createOnFieldPokemon({ ability: ABILITIES.sturdy }) as any;
+    const defender = asTestable(createOnFieldPokemon({ ability: ABILITIES.sturdy }));
     defender.pokemon.currentHp = 150;
     defender.pokemon.calculatedStats.hp = 200;
     const result = ruleset.capLethalDamage(
       200,
       defender,
       createOnFieldPokemon(),
-      { id: MOVES.tackle } as any,
+      { id: MOVES.tackle } as unknown as MoveData,
       {} as BattleState,
     );
     expect(result.damage).toBe(200);
@@ -248,14 +259,14 @@ describe("Gen6Ruleset — capLethalDamage (Sturdy)", () => {
 
   it("given defender without Sturdy at full HP and lethal damage, when capping, then does NOT cap", () => {
     // Source: Showdown data/abilities.ts -- only Sturdy triggers this
-    const defender = createOnFieldPokemon() as any;
+    const defender = asTestable(createOnFieldPokemon());
     defender.pokemon.currentHp = 200;
     defender.pokemon.calculatedStats.hp = 200;
     const result = ruleset.capLethalDamage(
       300,
       defender,
       createOnFieldPokemon(),
-      { id: MOVES.tackle } as any,
+      { id: MOVES.tackle } as unknown as MoveData,
       {} as BattleState,
     );
     expect(result.damage).toBe(300);
@@ -264,14 +275,14 @@ describe("Gen6Ruleset — capLethalDamage (Sturdy)", () => {
 
   it("given defender with Sturdy at full HP and non-lethal damage, when capping, then does NOT cap", () => {
     // Source: Showdown data/abilities.ts -- Sturdy only caps lethal damage
-    const defender = createOnFieldPokemon({ ability: ABILITIES.sturdy }) as any;
+    const defender = asTestable(createOnFieldPokemon({ ability: ABILITIES.sturdy }));
     defender.pokemon.currentHp = 200;
     defender.pokemon.calculatedStats.hp = 200;
     const result = ruleset.capLethalDamage(
       100,
       defender,
       createOnFieldPokemon(),
-      { id: MOVES.tackle } as any,
+      { id: MOVES.tackle } as unknown as MoveData,
       {} as BattleState,
     );
     expect(result.damage).toBe(100);
@@ -289,14 +300,14 @@ describe("Gen6Ruleset — capLethalDamage (Focus Sash)", () => {
   it("given Pokemon at full HP holding Focus Sash, when lethal damage is dealt, then survives at 1 HP and consumedItem is set", () => {
     // Source: Showdown data/items.ts -- Focus Sash: "If holder has full HP, will survive an attack that would KO it with 1 HP"
     // Source: Bulbapedia -- Focus Sash: "If the holder has full HP, it will survive a hit that would KO it with 1 HP"
-    const defender = createOnFieldPokemon({ heldItem: ITEMS.focusSash }) as any;
+    const defender = asTestable(createOnFieldPokemon({ heldItem: ITEMS.focusSash }));
     defender.pokemon.currentHp = 200;
     defender.pokemon.calculatedStats.hp = 200;
     const result = ruleset.capLethalDamage(
       300,
       defender,
       createOnFieldPokemon(),
-      { id: MOVES.tackle } as any,
+      { id: MOVES.tackle } as unknown as MoveData,
       {} as BattleState,
     );
     expect(result.damage).toBe(199);
@@ -307,14 +318,14 @@ describe("Gen6Ruleset — capLethalDamage (Focus Sash)", () => {
 
   it("given Pokemon NOT at full HP holding Focus Sash, when lethal damage is dealt, then Focus Sash does not activate", () => {
     // Source: Showdown data/items.ts -- Focus Sash requires full HP (currentHp === maxHp)
-    const defender = createOnFieldPokemon({ heldItem: ITEMS.focusSash }) as any;
+    const defender = asTestable(createOnFieldPokemon({ heldItem: ITEMS.focusSash }));
     defender.pokemon.currentHp = 150;
     defender.pokemon.calculatedStats.hp = 200;
     const result = ruleset.capLethalDamage(
       200,
       defender,
       createOnFieldPokemon(),
-      { id: MOVES.tackle } as any,
+      { id: MOVES.tackle } as unknown as MoveData,
       {} as BattleState,
     );
     expect(result.damage).toBe(200);
@@ -325,17 +336,19 @@ describe("Gen6Ruleset — capLethalDamage (Focus Sash)", () => {
   it("given Pokemon at full HP holding Focus Sash with Klutz, when lethal damage is dealt, then Focus Sash is suppressed", () => {
     // Source: Showdown data/abilities.ts -- klutz: "This Pokemon's held item has no effect"
     // Klutz suppresses item activation, so Focus Sash does not trigger
-    const defender = createOnFieldPokemon({
-      ability: GEN6_ABILITY_IDS.klutz,
-      heldItem: ITEMS.focusSash,
-    }) as any;
+    const defender = asTestable(
+      createOnFieldPokemon({
+        ability: GEN6_ABILITY_IDS.klutz,
+        heldItem: ITEMS.focusSash,
+      }),
+    );
     defender.pokemon.currentHp = 200;
     defender.pokemon.calculatedStats.hp = 200;
     const result = ruleset.capLethalDamage(
       300,
       defender,
       createOnFieldPokemon(),
-      { id: MOVES.tackle } as any,
+      { id: MOVES.tackle } as unknown as MoveData,
       {} as BattleState,
     );
     expect(result.damage).toBe(300);
@@ -346,17 +359,19 @@ describe("Gen6Ruleset — capLethalDamage (Focus Sash)", () => {
   it("given Pokemon at full HP holding Focus Sash under Embargo, when lethal damage is dealt, then Focus Sash is suppressed", () => {
     // Source: Showdown data/moves.ts -- embargo: "target's held item has no effect"
     // Embargo volatile status suppresses item activation
-    const defender = createOnFieldPokemon({
-      heldItem: ITEMS.focusSash,
-      volatiles: [[VOLATILES.embargo, { turnsLeft: 5 }]],
-    }) as any;
+    const defender = asTestable(
+      createOnFieldPokemon({
+        heldItem: ITEMS.focusSash,
+        volatiles: [[VOLATILES.embargo, { turnsLeft: 5 }]],
+      }),
+    );
     defender.pokemon.currentHp = 200;
     defender.pokemon.calculatedStats.hp = 200;
     const result = ruleset.capLethalDamage(
       300,
       defender,
       createOnFieldPokemon(),
-      { id: MOVES.tackle } as any,
+      { id: MOVES.tackle } as unknown as MoveData,
       {} as BattleState,
     );
     expect(result.damage).toBe(300);
@@ -367,7 +382,7 @@ describe("Gen6Ruleset — capLethalDamage (Focus Sash)", () => {
   it("given Magic Room active on field, when lethal damage dealt to full-HP Pokemon with Focus Sash, then faints (sash suppressed)", () => {
     // Source: Showdown sim/battle.ts -- Magic Room suppresses all item effects
     // Source: Showdown data/items.ts -- Focus Sash is an item effect, suppressed by Magic Room
-    const defender = createOnFieldPokemon({ heldItem: ITEMS.focusSash }) as any;
+    const defender = asTestable(createOnFieldPokemon({ heldItem: ITEMS.focusSash }));
     defender.pokemon.currentHp = 200;
     defender.pokemon.calculatedStats.hp = 200;
     const state = { magicRoom: { active: true, turnsLeft: 3 } } as BattleState;
@@ -375,7 +390,7 @@ describe("Gen6Ruleset — capLethalDamage (Focus Sash)", () => {
       300,
       defender,
       createOnFieldPokemon(),
-      { id: MOVES.tackle } as any,
+      { id: MOVES.tackle } as unknown as MoveData,
       state,
     );
     expect(result.damage).toBe(300);
