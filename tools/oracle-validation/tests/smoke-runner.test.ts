@@ -280,11 +280,13 @@ describe("smoke-runner checkBattleInvariants — invariant detection", () => {
     expect(violations).toHaveLength(0);
   });
 
-  it("given damage event with amount 0, when checking invariants, then violation reported (fixes #1161)", () => {
-    // Source: DamageEvent.amount must be a positive integer (> 0).
-    // Engine fix #1161: type-immune moves (effectiveness=0) no longer emit DamageEvent at all;
-    // they emit a "doesn't affect" message and return early.
-    // So amount=0 is now an engine contract violation, just like amount < 0.
+  it("given damage event with amount 0, when checking invariants, then no violation (amount=0 still allowed pending Wonder Guard / Disguise fix)", () => {
+    // Source: DamageEvent.amount=0 can still occur from Wonder Guard (#1168) or Disguise ability
+    //   immunities where effectiveness > 0 but the ability reduces damage to 0. These are tracked
+    //   as separate issues (#1167, #1168). Once those are fixed, this test should be updated to
+    //   expect a violation (amount <= 0 will become a full invariant violation).
+    // #1161 fix: type-immune moves (effectiveness=0) no longer emit DamageEvent; they emit
+    //   "doesn't affect" and return early — so the type-immunity path is now correct.
     const events = [
       {
         type: "damage",
@@ -297,8 +299,7 @@ describe("smoke-runner checkBattleInvariants — invariant detection", () => {
       },
     ] as const;
     const violations = checkBattleInvariants(events as never);
-    expect(violations).toHaveLength(1);
-    expect(violations[0]?.description).toContain("positive");
+    expect(violations).toHaveLength(0);
   });
 
   it("given damage event with negative amount, when checking invariants, then violation reported", () => {
