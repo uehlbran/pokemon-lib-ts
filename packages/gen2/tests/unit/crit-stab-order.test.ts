@@ -1,4 +1,4 @@
-import type { ActivePokemon, DamageContext } from "@pokemon-lib-ts/battle";
+import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
 import type {
   MoveData,
   PokemonSpeciesData,
@@ -207,7 +207,7 @@ describe("#547: Gen 2 critical hit uses 2x post-formula multiplier (not level do
       attacker,
       defender,
       move,
-      state: { weather: null, sides: [], turn: 1 } as any,
+      state: { weather: null, sides: [], turn: 1 } as unknown as BattleState,
       rng: createMockRng(MAX_RANDOM_ROLL),
       isCrit: true,
     };
@@ -267,7 +267,7 @@ describe("#547: Gen 2 critical hit uses 2x post-formula multiplier (not level do
       attacker,
       defender,
       move,
-      state: { weather: null, sides: [], turn: 1 } as any,
+      state: { weather: null, sides: [], turn: 1 } as unknown as BattleState,
       rng: createMockRng(MAX_RANDOM_ROLL),
       isCrit: false,
     };
@@ -390,7 +390,7 @@ describe("#544: Weather modifier applied before STAB (pokecrystal order)", () =>
         weather: { type: WEATHER_IDS.rain, turnsLeft: 5 },
         sides: [],
         turn: 1,
-      } as any,
+      } as unknown as BattleState,
       rng: createMockRng(MAX_RANDOM_ROLL),
       isCrit: false,
     };
@@ -462,7 +462,7 @@ describe("#544: Weather modifier applied before STAB (pokecrystal order)", () =>
         weather: { type: WEATHER_IDS.rain, turnsLeft: 5 },
         sides: [],
         turn: 1,
-      } as any,
+      } as unknown as BattleState,
       rng: createMockRng(MAX_RANDOM_ROLL),
       isCrit: false,
     };

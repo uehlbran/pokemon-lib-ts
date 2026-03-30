@@ -1,4 +1,5 @@
 import type { ExpContext } from "@pokemon-lib-ts/battle";
+import type { PokemonSpeciesData } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import { Gen6Ruleset } from "../src/Gen6Ruleset";
 
@@ -35,7 +36,7 @@ describe("Gen6Ruleset — calculateExpGain base formula", () => {
     const context = makeExpContext({
       defeatedLevel: 50,
       participantLevel: 50,
-      defeatedSpecies: { baseExp: 100 } as any,
+      defeatedSpecies: { baseExp: 100 } as unknown as PokemonSpeciesData,
     });
     expect(ruleset.calculateExpGain(context)).toBe(101);
   });
@@ -49,7 +50,7 @@ describe("Gen6Ruleset — calculateExpGain base formula", () => {
     const context = makeExpContext({
       defeatedLevel: 70,
       participantLevel: 50,
-      defeatedSpecies: { baseExp: 100 } as any,
+      defeatedSpecies: { baseExp: 100 } as unknown as PokemonSpeciesData,
     });
     const result = ruleset.calculateExpGain(context);
     expect(result).toBe(144);
@@ -64,7 +65,7 @@ describe("Gen6Ruleset — calculateExpGain base formula", () => {
     const context = makeExpContext({
       defeatedLevel: 30,
       participantLevel: 50,
-      defeatedSpecies: { baseExp: 100 } as any,
+      defeatedSpecies: { baseExp: 100 } as unknown as PokemonSpeciesData,
     });
     const result = ruleset.calculateExpGain(context);
     expect(result).toBe(54);
@@ -81,7 +82,7 @@ describe("Gen6Ruleset — calculateExpGain modifiers", () => {
     const context = makeExpContext({
       defeatedLevel: 50,
       participantLevel: 50,
-      defeatedSpecies: { baseExp: 100 } as any,
+      defeatedSpecies: { baseExp: 100 } as unknown as PokemonSpeciesData,
       isTrainerBattle: true,
     });
     expect(ruleset.calculateExpGain(context)).toBe(151);
@@ -94,7 +95,7 @@ describe("Gen6Ruleset — calculateExpGain modifiers", () => {
     const context = makeExpContext({
       defeatedLevel: 50,
       participantLevel: 50,
-      defeatedSpecies: { baseExp: 100 } as any,
+      defeatedSpecies: { baseExp: 100 } as unknown as PokemonSpeciesData,
       hasLuckyEgg: true,
     });
     expect(ruleset.calculateExpGain(context)).toBe(151);
@@ -106,7 +107,7 @@ describe("Gen6Ruleset — calculateExpGain modifiers", () => {
     const context = makeExpContext({
       defeatedLevel: 50,
       participantLevel: 50,
-      defeatedSpecies: { baseExp: 100 } as any,
+      defeatedSpecies: { baseExp: 100 } as unknown as PokemonSpeciesData,
       isTrainerBattle: true,
       hasLuckyEgg: true,
     });
@@ -119,7 +120,7 @@ describe("Gen6Ruleset — calculateExpGain modifiers", () => {
     const context = makeExpContext({
       defeatedLevel: 50,
       participantLevel: 50,
-      defeatedSpecies: { baseExp: 100 } as any,
+      defeatedSpecies: { baseExp: 100 } as unknown as PokemonSpeciesData,
       participantCount: 2,
     });
     expect(ruleset.calculateExpGain(context)).toBe(50);
@@ -134,7 +135,7 @@ describe("Gen6Ruleset — calculateExpGain modifiers", () => {
     const context = makeExpContext({
       defeatedLevel: 1,
       participantLevel: 100,
-      defeatedSpecies: { baseExp: 1 } as any,
+      defeatedSpecies: { baseExp: 1 } as unknown as PokemonSpeciesData,
       participantCount: 6,
     });
     expect(ruleset.calculateExpGain(context)).toBe(1);
@@ -151,7 +152,7 @@ describe("Gen6Ruleset — calculateExpGain with different baseExp values", () =>
     const context = makeExpContext({
       defeatedLevel: 50,
       participantLevel: 50,
-      defeatedSpecies: { baseExp: 200 } as any,
+      defeatedSpecies: { baseExp: 200 } as unknown as PokemonSpeciesData,
     });
     expect(ruleset.calculateExpGain(context)).toBe(201);
   });
@@ -162,7 +163,7 @@ describe("Gen6Ruleset — calculateExpGain with different baseExp values", () =>
     const context = makeExpContext({
       defeatedLevel: 50,
       participantLevel: 50,
-      defeatedSpecies: { baseExp: 50 } as any,
+      defeatedSpecies: { baseExp: 50 } as unknown as PokemonSpeciesData,
     });
     expect(ruleset.calculateExpGain(context)).toBe(51);
   });
@@ -179,7 +180,7 @@ describe("Gen6Ruleset — calculateExpGain traded Pokemon EXP bonus", () => {
     const baseCtx = makeExpContext({
       defeatedLevel: 50,
       participantLevel: 50,
-      defeatedSpecies: { baseExp: 100 } as any,
+      defeatedSpecies: { baseExp: 100 } as unknown as PokemonSpeciesData,
     });
     const notTraded = ruleset.calculateExpGain(baseCtx);
     const traded = ruleset.calculateExpGain({
@@ -199,7 +200,7 @@ describe("Gen6Ruleset — calculateExpGain traded Pokemon EXP bonus", () => {
     const baseCtx = makeExpContext({
       defeatedLevel: 50,
       participantLevel: 50,
-      defeatedSpecies: { baseExp: 100 } as any,
+      defeatedSpecies: { baseExp: 100 } as unknown as PokemonSpeciesData,
     });
     const result = ruleset.calculateExpGain({
       ...baseCtx,

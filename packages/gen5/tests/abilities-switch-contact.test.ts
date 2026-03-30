@@ -1,6 +1,12 @@
 import type { AbilityContext, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
 import { BATTLE_ABILITY_EFFECT_TYPES, type BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
-import type { Gender, MoveData, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
+import type {
+  AbilityTrigger,
+  Gender,
+  MoveData,
+  PokemonType,
+  PrimaryStatus,
+} from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
@@ -1133,7 +1139,7 @@ describe("handleGen5SwitchAbility on-damage-taken -- Cursed Body", () => {
       { turnsLeft: number }
     >;
     const opponent = createOnFieldPokemon({ ability: ABILITY_IDS.blaze });
-    (opponent as any).volatileStatuses = disableVolatile;
+    opponent.volatileStatuses = disableVolatile as unknown as typeof opponent.volatileStatuses;
     const ctx = createAbilityContext({
       ability: ABILITY_IDS.cursedBody,
       trigger: TRIGGER_IDS.onDamageTaken,
@@ -1860,7 +1866,7 @@ describe("handleGen5SwitchAbility default behavior", () => {
   it("given unknown trigger type, when dispatched, then returns no effect", () => {
     const invalidTrigger = "not-a-real-trigger";
     const ctx = createAbilityContext({ ability: ABILITY_IDS.intimidate, trigger: invalidTrigger });
-    const result = handleGen5SwitchAbility(invalidTrigger as any, ctx);
+    const result = handleGen5SwitchAbility(invalidTrigger as AbilityTrigger, ctx);
 
     expect(result.activated).toBe(false);
   });

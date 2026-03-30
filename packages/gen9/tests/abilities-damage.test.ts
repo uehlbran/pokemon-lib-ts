@@ -24,6 +24,7 @@ import type {
   AbilitySlot,
   Gender,
   MoveData,
+  MoveEffect,
   PokemonInstance,
   PokemonType,
 } from "@pokemon-lib-ts/core";
@@ -1845,7 +1846,7 @@ describe("hasSheerForceEligibleEffect", () => {
         stat: "attack",
         stages: -1,
         chance: 30,
-      } as any),
+      } as unknown as MoveEffect),
     ).toBe(true);
   });
 
@@ -1858,7 +1859,7 @@ describe("hasSheerForceEligibleEffect", () => {
         stages: 1,
         chance: 0,
         fromSecondary: true,
-      } as any),
+      } as unknown as MoveEffect),
     ).toBe(true);
   });
 

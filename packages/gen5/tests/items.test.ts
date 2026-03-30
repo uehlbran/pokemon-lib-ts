@@ -79,7 +79,7 @@ function createOnFieldPokemon(overrides: {
       heldItem: overrides.heldItem ?? null,
       status: overrides.status ?? null,
       friendship: createFriendship(0),
-      gender: CORE_GENDERS.male as any,
+      gender: CORE_GENDERS.male,
       isShiny: false,
       metLocation: "",
       metLevel: 1,
@@ -155,7 +155,7 @@ function createSyntheticMoveFrom(overrides?: {
   } as MoveData;
 }
 
-function createBattleState(overrides?: { sides?: [any, any] }): BattleState {
+function createBattleState(overrides?: { sides?: readonly object[] }): BattleState {
   return {
     weather: null,
     terrain: null,
@@ -1117,7 +1117,7 @@ describe("Gen 5 Items -- Rocky Helmet", () => {
       { active: [defender], team: [], format: "singles" },
       { active: [attacker], team: [], format: "singles" },
     ];
-    const state = createBattleState({ sides: sides as any });
+    const state = createBattleState({ sides });
     const contactMove = createSyntheticMoveFrom({ flags: { contact: true } });
     const ctx = createItemContext({ pokemon: defender, state, move: contactMove, damage: 50 });
     const result = applyGen5HeldItem(TRIGGER_IDS.onContact, ctx);
@@ -1551,7 +1551,7 @@ describe("Gen 5 Items -- Jaboca / Rowap Berry", () => {
       { active: [defender], team: [], format: "singles" },
       { active: [attacker], team: [], format: "singles" },
     ];
-    const state = createBattleState({ sides: sides as any });
+    const state = createBattleState({ sides });
     const physicalMove = createSyntheticMoveFrom({ category: CORE_MOVE_CATEGORIES.physical });
     const ctx = createItemContext({ pokemon: defender, state, move: physicalMove, damage: 50 });
     const result = applyGen5HeldItem(TRIGGER_IDS.onDamageTaken, ctx);
@@ -1581,7 +1581,7 @@ describe("Gen 5 Items -- Jaboca / Rowap Berry", () => {
       { active: [defender], team: [], format: "singles" },
       { active: [attacker], team: [], format: "singles" },
     ];
-    const state = createBattleState({ sides: sides as any });
+    const state = createBattleState({ sides });
     const specialMove = createSyntheticMoveFrom({ category: CORE_MOVE_CATEGORIES.special });
     const ctx = createItemContext({ pokemon: defender, state, move: specialMove, damage: 50 });
     const result = applyGen5HeldItem(TRIGGER_IDS.onDamageTaken, ctx);

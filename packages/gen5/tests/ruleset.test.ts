@@ -26,6 +26,19 @@ const G_ITEMS = GEN5_ITEM_IDS;
 const G_SPECIES = GEN5_SPECIES_IDS;
 
 /**
+ * Typed accessor for Gen5Ruleset internals under test.
+ * getEffectiveSpeed is protected, _currentWeather is private —
+ * accessed here via unknown cast to avoid `as any`.
+ */
+type Gen5RulesetInternals = Gen5Ruleset & {
+  getEffectiveSpeed(active: ActivePokemon): number;
+  _currentWeather: string | null;
+};
+function asInternals(r: Gen5Ruleset): Gen5RulesetInternals {
+  return r as unknown as Gen5RulesetInternals;
+}
+
+/**
  * Helper: create a minimal ActivePokemon mock for ruleset tests.
  */
 function createOnFieldPokemon(overrides: {
@@ -187,7 +200,7 @@ describe("Gen5 speed resolution", () => {
     // Source: Bulbapedia -- Paralysis reduces speed to 25% in Gen 1-6 (x0.25)
     // Gen 7+ changed to 50% (x0.5)
     const pokemon = createOnFieldPokemon({ speed: 100, status: C_STATUSES.paralysis });
-    const speed = (ruleset as any).getEffectiveSpeed(pokemon);
+    const speed = asInternals(ruleset).getEffectiveSpeed(pokemon);
     // Source: Bulbapedia "Paralysis" — speed reduced to 25% in Gen 1-6
     expect(speed).toBe(25);
   });
@@ -196,7 +209,7 @@ describe("Gen5 speed resolution", () => {
     // Source: Bulbapedia -- Paralysis reduces speed to 25% in Gen 1-6 (x0.25)
     // Triangulation case
     const pokemon = createOnFieldPokemon({ speed: 80, status: C_STATUSES.paralysis });
-    const speed = (ruleset as any).getEffectiveSpeed(pokemon);
+    const speed = asInternals(ruleset).getEffectiveSpeed(pokemon);
     // Source: Bulbapedia "Paralysis" — speed reduced to 25% in Gen 1-6 (triangulation: 80*0.25=20)
     expect(speed).toBe(20);
   });
@@ -204,7 +217,7 @@ describe("Gen5 speed resolution", () => {
   it("given pokemon with Choice Scarf, when getEffectiveSpeed called, then speed is 1.5x", () => {
     // Source: Choice Scarf effect -- 1.5x speed
     const pokemon = createOnFieldPokemon({ speed: 100, heldItem: G_ITEMS.choiceScarf });
-    const speed = (ruleset as any).getEffectiveSpeed(pokemon);
+    const speed = asInternals(ruleset).getEffectiveSpeed(pokemon);
     // Source: Showdown Gen 5 — Choice Scarf item boosts speed by 1.5×
     expect(speed).toBe(150);
   });
@@ -213,7 +226,7 @@ describe("Gen5 speed resolution", () => {
     // Source: Choice Scarf effect -- 1.5x speed
     // Triangulation case: floor(80 * 1.5) = 120
     const pokemon = createOnFieldPokemon({ speed: 80, heldItem: G_ITEMS.choiceScarf });
-    const speed = (ruleset as any).getEffectiveSpeed(pokemon);
+    const speed = asInternals(ruleset).getEffectiveSpeed(pokemon);
     // Source: Showdown Gen 5 — Choice Scarf 1.5× speed (triangulation: floor(80*1.5)=120)
     expect(speed).toBe(120);
   });
@@ -225,7 +238,7 @@ describe("Gen5 speed resolution", () => {
       ability: C_ABILITIES.slowStart,
       volatileStatuses: new Map([[C_ABILITIES.slowStart, { turnsLeft: 3 }]]),
     });
-    const speed = (ruleset as any).getEffectiveSpeed(pokemon);
+    const speed = asInternals(ruleset).getEffectiveSpeed(pokemon);
     // Source: Showdown Gen 5 — Slow Start ability halves speed for first 5 turns
     expect(speed).toBe(50);
   });
@@ -233,9 +246,9 @@ describe("Gen5 speed resolution", () => {
   it("given pokemon with Chlorophyll in Sun, when getEffectiveSpeed called, then speed is doubled", () => {
     // Source: Chlorophyll ability -- 2x speed in sun
     const pokemon = createOnFieldPokemon({ speed: 100, ability: G_ABILITIES.chlorophyll });
-    (ruleset as any)._currentWeather = C_WEATHER.sun;
-    const speed = (ruleset as any).getEffectiveSpeed(pokemon);
-    (ruleset as any)._currentWeather = null;
+    asInternals(ruleset)._currentWeather = C_WEATHER.sun;
+    const speed = asInternals(ruleset).getEffectiveSpeed(pokemon);
+    asInternals(ruleset)._currentWeather = null;
     // Source: Showdown Gen 5 — Chlorophyll ability doubles speed in sun
     expect(speed).toBe(200);
   });
@@ -243,9 +256,9 @@ describe("Gen5 speed resolution", () => {
   it("given pokemon with Swift Swim in Rain, when getEffectiveSpeed called, then speed is doubled", () => {
     // Source: Swift Swim ability -- 2x speed in rain
     const pokemon = createOnFieldPokemon({ speed: 100, ability: G_ABILITIES.swiftSwim });
-    (ruleset as any)._currentWeather = C_WEATHER.rain;
-    const speed = (ruleset as any).getEffectiveSpeed(pokemon);
-    (ruleset as any)._currentWeather = null;
+    asInternals(ruleset)._currentWeather = C_WEATHER.rain;
+    const speed = asInternals(ruleset).getEffectiveSpeed(pokemon);
+    asInternals(ruleset)._currentWeather = null;
     // Source: Showdown Gen 5 — Swift Swim ability doubles speed in rain
     expect(speed).toBe(200);
   });
@@ -253,9 +266,9 @@ describe("Gen5 speed resolution", () => {
   it("given pokemon with Sand Rush in Sandstorm, when getEffectiveSpeed called, then speed is doubled", () => {
     // Source: Sand Rush ability -- 2x speed in sandstorm
     const pokemon = createOnFieldPokemon({ speed: 100, ability: G_ABILITIES.sandRush });
-    (ruleset as any)._currentWeather = C_WEATHER.sand;
-    const speed = (ruleset as any).getEffectiveSpeed(pokemon);
-    (ruleset as any)._currentWeather = null;
+    asInternals(ruleset)._currentWeather = C_WEATHER.sand;
+    const speed = asInternals(ruleset).getEffectiveSpeed(pokemon);
+    asInternals(ruleset)._currentWeather = null;
     // Source: Showdown Gen 5 — Sand Rush ability doubles speed in sandstorm
     expect(speed).toBe(200);
   });
@@ -263,7 +276,7 @@ describe("Gen5 speed resolution", () => {
   it("given pokemon with Iron Ball, when getEffectiveSpeed called, then speed is halved", () => {
     // Source: Iron Ball -- halves speed
     const pokemon = createOnFieldPokemon({ speed: 100, heldItem: C_ITEMS.ironBall });
-    const speed = (ruleset as any).getEffectiveSpeed(pokemon);
+    const speed = asInternals(ruleset).getEffectiveSpeed(pokemon);
     // Source: Showdown Gen 5 — Iron Ball item halves holder's speed
     expect(speed).toBe(50);
   });
@@ -275,7 +288,7 @@ describe("Gen5 speed resolution", () => {
       ability: G_ABILITIES.quickFeet,
       status: C_STATUSES.paralysis,
     });
-    const speed = (ruleset as any).getEffectiveSpeed(pokemon);
+    const speed = asInternals(ruleset).getEffectiveSpeed(pokemon);
     // Source: Showdown Gen 5 — Quick Feet ability boosts speed 1.5× when statused, overrides paralysis penalty
     expect(speed).toBe(150);
   });
@@ -288,7 +301,7 @@ describe("Gen5 speed resolution", () => {
       heldItem: null,
       volatileStatuses: new Map([[C_VOLATILES.unburden, { turnsLeft: 99 }]]),
     });
-    const speed = (ruleset as any).getEffectiveSpeed(pokemon);
+    const speed = asInternals(ruleset).getEffectiveSpeed(pokemon);
     // Source: Showdown Gen 5 — Unburden ability doubles speed when held item is consumed
     expect(speed).toBe(200);
   });
@@ -296,7 +309,7 @@ describe("Gen5 speed resolution", () => {
   it("given pokemon with no modifiers, when getEffectiveSpeed called, then returns base speed", () => {
     // Source: No modifiers = base speed unchanged
     const pokemon = createOnFieldPokemon({ speed: 120 });
-    const speed = (ruleset as any).getEffectiveSpeed(pokemon);
+    const speed = asInternals(ruleset).getEffectiveSpeed(pokemon);
     // Source: Showdown Gen 5 — no modifiers, effective speed equals base stat
     expect(speed).toBe(120);
   });
@@ -304,7 +317,7 @@ describe("Gen5 speed resolution", () => {
   it("given pokemon with +1 speed stage, when getEffectiveSpeed called, then applies stage multiplier", () => {
     // Source: Stat stage +1 = 1.5x (3/2)
     const pokemon = createOnFieldPokemon({ speed: 100, statStages: { speed: 1 } });
-    const speed = (ruleset as any).getEffectiveSpeed(pokemon);
+    const speed = asInternals(ruleset).getEffectiveSpeed(pokemon);
     // Source: Showdown Gen 5 — stat stage +1 multiplier = (2+1)/2 = 1.5×
     expect(speed).toBe(150);
   });
@@ -319,7 +332,7 @@ describe("Gen5 speed resolution", () => {
       ability: C_ABILITIES.simple,
       statStages: { speed: 2 },
     });
-    const speed = (ruleset as any).getEffectiveSpeed(pokemon);
+    const speed = asInternals(ruleset).getEffectiveSpeed(pokemon);
     // Source: Bulbapedia "Simple (ability)" — Simple doubles stat stage effects, +2→+4, multiplier 3.0
     expect(speed).toBe(300);
   });
@@ -332,7 +345,7 @@ describe("Gen5 speed resolution", () => {
       ability: C_ABILITIES.simple,
       statStages: { speed: 4 },
     });
-    const speed = (ruleset as any).getEffectiveSpeed(pokemon);
+    const speed = asInternals(ruleset).getEffectiveSpeed(pokemon);
     // Source: Bulbapedia "Simple (ability)" — +4 doubled=+8, clamped to +6, multiplier (2+6)/2=4.0
     expect(speed).toBe(400);
   });
@@ -345,7 +358,7 @@ describe("Gen5 speed resolution", () => {
       ability: C_ABILITIES.simple,
       statStages: { speed: -2 },
     });
-    const speed = (ruleset as any).getEffectiveSpeed(pokemon);
+    const speed = asInternals(ruleset).getEffectiveSpeed(pokemon);
     // Source: Bulbapedia "Simple (ability)" — -2 doubled=-4, multiplier 2/(2+4)=0.333, floor(100*0.333)=33
     expect(speed).toBe(33);
   });
@@ -360,7 +373,7 @@ describe("Gen5 speed resolution", () => {
       ability: C_ABILITIES.klutz,
       heldItem: G_ITEMS.choiceScarf,
     });
-    const speed = (ruleset as any).getEffectiveSpeed(pokemon);
+    const speed = asInternals(ruleset).getEffectiveSpeed(pokemon);
     // Source: Bulbapedia "Klutz (ability)" — suppresses holder's item effects including Choice Scarf
     expect(speed).toBe(100);
   });
@@ -373,7 +386,7 @@ describe("Gen5 speed resolution", () => {
       ability: C_ABILITIES.klutz,
       heldItem: C_ITEMS.ironBall,
     });
-    const speed = (ruleset as any).getEffectiveSpeed(pokemon);
+    const speed = asInternals(ruleset).getEffectiveSpeed(pokemon);
     // Source: Bulbapedia "Klutz (ability)" — suppresses holder's item effects including Iron Ball
     expect(speed).toBe(100);
   });
@@ -386,7 +399,7 @@ describe("Gen5 speed resolution", () => {
       ability: C_ABILITIES.klutz,
       heldItem: G_ITEMS.choiceScarf,
     });
-    const speed = (ruleset as any).getEffectiveSpeed(pokemon);
+    const speed = asInternals(ruleset).getEffectiveSpeed(pokemon);
     // Source: Bulbapedia "Klutz (ability)" — suppresses Choice Scarf, triangulation with base 80 speed
     expect(speed).toBe(80);
   });

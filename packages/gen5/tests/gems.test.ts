@@ -1,5 +1,5 @@
-import type { ActivePokemon, DamageContext } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
+import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
+import type { MoveData, PokemonType, PrimaryStatus, TypeChart } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
@@ -65,7 +65,7 @@ function createOnFieldPokemon(overrides: {
       ability: overrides.ability ?? CORE_ABILITY_IDS.none,
       abilitySlot: CORE_ABILITY_SLOTS.normal1,
       heldItem: overrides.heldItem ?? null,
-      status: (overrides.status ?? null) as any,
+      status: (overrides.status ?? null) as PrimaryStatus | null,
       friendship: defaultSpecies.baseFriendship,
       gender: CORE_GENDERS.male,
       isShiny: false,
@@ -152,7 +152,7 @@ function makeDamageContext(overrides: {
       generation: 5,
       turnNumber: 1,
       sides: [{}, {}],
-    } as any,
+    } as unknown as BattleState,
     rng: new SeededRandom(overrides.seed ?? 42),
     isCrit: overrides.isCrit ?? false,
   };
