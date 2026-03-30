@@ -1172,7 +1172,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
 
   describe("Tier 2 abilities — implemented trigger handlers", () => {
     it("given Static holder and contact move, when on-contact fires, then attacker is paralyzed", () => {
-      // Source: pret/pokeemerald ABILITY_STATIC — 30% chance to paralyze attacker on contact move
+      // Source: pret/pokeemerald ABILITY_STATIC — 1/3 chance to paralyze attacker on contact move (Random() % 3 == 0)
       const ctx = createAbilityContext({
         pokemonAbility: GEN3_ABILITY_IDS.static,
       });
@@ -1189,7 +1189,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
     });
 
     it("given Flame Body holder and contact move, when on-contact fires, then attacker is burned", () => {
-      // Source: pret/pokeemerald ABILITY_FLAME_BODY — 30% chance to burn attacker on contact move
+      // Source: pret/pokeemerald ABILITY_FLAME_BODY — 1/3 chance to burn attacker on contact move (Random() % 3 == 0)
       const ctx = createAbilityContext({
         pokemonAbility: GEN3_ABILITY_IDS.flameBody,
       });
@@ -1222,7 +1222,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
     });
 
     it("given Poison Point holder and contact move, when on-contact fires, then attacker is poisoned", () => {
-      // Source: pret/pokeemerald ABILITY_POISON_POINT — 30% chance to poison attacker on contact move
+      // Source: pret/pokeemerald ABILITY_POISON_POINT — 1/3 chance to poison attacker on contact move (Random() % 3 == 0)
       const ctx = createAbilityContext({
         pokemonAbility: GEN3_ABILITY_IDS.poisonPoint,
       });
@@ -1239,7 +1239,8 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
     });
 
     it("given Natural Cure holder switches out, when switch-out fires, then status is cured and volatiles clear", () => {
-      // Source: pret/pokeemerald ABILITY_NATURAL_CURE — cures primary status and volatile statuses on switch-out
+      // Source: pret/pokeemerald ABILITY_NATURAL_CURE — clears status1 (primary status) on switch-out
+      // Library design: also clears volatile statuses on switch-out (not in pokeemerald source)
       const pokemon = createOnFieldPokemon({
         level: 50,
         attack: 100,
@@ -1260,7 +1261,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
     });
 
     it("given Shed Skin holder at turn end and a successful roll, then status is cured", () => {
-      // Source: pret/pokeemerald ABILITY_SHED_SKIN — 30% chance to cure primary status at end of each turn
+      // Source: pret/pokeemerald ABILITY_SHED_SKIN — 1/3 chance to cure primary status at end of each turn (Random() % 3 == 0)
       const ctx = createAbilityContext({
         pokemonAbility: GEN3_ABILITY_IDS.shedSkin,
       });
