@@ -323,8 +323,9 @@ describe("Gen 3 Damage Calculation", () => {
         spDefense: 100,
         types: [typeIds.normal],
       });
-      const move = createMove(GEN3_MOVE_IDS.growl);
-      move.category = CORE_MOVE_CATEGORIES.status as any;
+      const move = createSyntheticMove(GEN3_MOVE_IDS.growl, {
+        category: CORE_MOVE_CATEGORIES.status,
+      });
       const chart = createNeutralTypeChart();
       const ctx = createDamageContext({ attacker, defender, move });
 

@@ -78,7 +78,7 @@ describe("Entry hazard stat changes in sendOut (issue #609)", () => {
 
     // Override getAvailableHazards to include sticky-web
     // Source: Showdown — Sticky Web is an entry hazard type
-    ruleset.getAvailableHazards = () => [CORE_HAZARD_IDS.stickyWeb] as any;
+    ruleset.getAvailableHazards = () => [CORE_HAZARD_IDS.stickyWeb];
 
     // Override applyEntryHazards to return a Speed drop
     // Source: Showdown data/moves.ts — stickyweb: this.boost({spe: -1}, pokemon)
@@ -101,7 +101,7 @@ describe("Entry hazard stat changes in sendOut (issue #609)", () => {
 
     // Add sticky-web hazard to side 0 (Charizard's side)
     const state = engine.getState();
-    state.sides[0].hazards.push({ type: CORE_HAZARD_IDS.stickyWeb as any, layers: 1 });
+    state.sides[0].hazards.push({ type: CORE_HAZARD_IDS.stickyWeb, layers: 1 });
 
     events.length = 0;
 
@@ -130,7 +130,7 @@ describe("Entry hazard stat changes in sendOut (issue #609)", () => {
     const ruleset = new MockRuleset();
     ruleset.setFixedDamage(0);
 
-    ruleset.getAvailableHazards = () => [CORE_HAZARD_IDS.stealthRock] as any;
+    ruleset.getAvailableHazards = () => [CORE_HAZARD_IDS.stealthRock];
 
     ruleset.applyEntryHazards = (
       _pokemon: ActivePokemon,
@@ -152,7 +152,7 @@ describe("Entry hazard stat changes in sendOut (issue #609)", () => {
     engine.start();
 
     const state = engine.getState();
-    state.sides[0].hazards.push({ type: CORE_HAZARD_IDS.stealthRock as any, layers: 1 });
+    state.sides[0].hazards.push({ type: CORE_HAZARD_IDS.stealthRock, layers: 1 });
 
     events.length = 0;
 

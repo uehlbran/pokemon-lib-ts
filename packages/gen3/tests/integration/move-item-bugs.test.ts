@@ -4,7 +4,14 @@ import type {
   ItemContext,
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
+import type {
+  MoveData,
+  MoveEffect,
+  PokemonInstance,
+  PokemonType,
+  SeededRandom,
+  StatBlock,
+} from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
@@ -12,6 +19,7 @@ import {
   CORE_ITEM_IDS,
   CORE_ITEM_TRIGGER_IDS,
   type CORE_MOVE_CATEGORIES,
+  CORE_MOVE_EFFECT_TYPES,
   CORE_SCREEN_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
@@ -302,11 +310,13 @@ describe("#338 — Whirlwind/Roar forcedSwitch flag", () => {
 
   it("given defender has Ingrain, when Roar used, then phazing fails and message shown", () => {
     // Source: pret/pokeemerald src/battle_util.c — STATUS3_ROOTED blocks phazing
-    const volatiles = new Map([[volatileIds.ingrain, { turnsLeft: -1 }]]);
+    const volatiles = new Map<string, { turnsLeft: number; data?: Record<string, unknown> }>([
+      [volatileIds.ingrain, { turnsLeft: -1 }],
+    ]);
     const attacker = createActivePokemon({ types: [typeIds.normal] });
     const defender = createActivePokemon({
       types: [typeIds.grass],
-      volatiles: volatiles as any,
+      volatiles,
     });
     const move = dataManager.getMove(moveIds.roar);
     const rng = createMockRng(0);
@@ -474,11 +484,13 @@ describe("#343 — Torment", () => {
 
   it("given Torment used on target that already has Torment, when executeMoveEffect called, then move fails", () => {
     // Source: pret/pokeemerald — Torment fails if target already has it
-    const volatiles = new Map([[moveIds.torment, { turnsLeft: -1 }]]);
+    const volatiles = new Map<string, { turnsLeft: number; data?: Record<string, unknown> }>([
+      [moveIds.torment, { turnsLeft: -1 }],
+    ]);
     const attacker = createActivePokemon({ types: [typeIds.dark] });
     const defender = createActivePokemon({
       types: [typeIds.normal],
-      volatiles: volatiles as any,
+      volatiles,
     });
     const move = dataManager.getMove(moveIds.torment);
     const rng = createMockRng(0);
@@ -510,10 +522,12 @@ describe("#343 — Ingrain", () => {
 
   it("given Ingrain used when already ingrained, when executeMoveEffect called, then move fails", () => {
     // Source: pret/pokeemerald — Ingrain fails if already active
-    const volatiles = new Map([[volatileIds.ingrain, { turnsLeft: -1 }]]);
+    const volatiles = new Map<string, { turnsLeft: number; data?: Record<string, unknown> }>([
+      [volatileIds.ingrain, { turnsLeft: -1 }],
+    ]);
     const attacker = createActivePokemon({
       types: [typeIds.grass],
-      volatiles: volatiles as any,
+      volatiles,
     });
     const defender = createActivePokemon({ types: [typeIds.normal] });
     const move = dataManager.getMove(moveIds.ingrain);
@@ -719,7 +733,7 @@ describe("#348 — Macho Brace speed halving", () => {
       { type: "move" as const, side: 1 as const, slot: 0, moveIndex: 0, moveId: moveIds.tackle },
     ];
 
-    const sorted = ruleset.resolveTurnOrder(actions, state, rng as any);
+    const sorted = ruleset.resolveTurnOrder(actions, state, rng as unknown as SeededRandom);
 
     // Side 1 (no item, speed 100) should go before Side 0 (Macho Brace, speed 50)
     expect(sorted[0].side).toBe(1);
@@ -749,7 +763,7 @@ describe("#348 — Macho Brace speed halving", () => {
       { type: "move" as const, side: 1 as const, slot: 0, moveIndex: 0, moveId: moveIds.tackle },
     ];
 
-    const sorted = ruleset.resolveTurnOrder(actions, state, rng as any);
+    const sorted = ruleset.resolveTurnOrder(actions, state, rng as unknown as SeededRandom);
 
     // Side 0: Macho Brace + paralysis = floor(floor(100/2) * 0.25) = floor(12.5) = 12
     // Side 1: no item, no paralysis, speed 15
@@ -816,10 +830,14 @@ describe("#348 — King's Rock flinch restriction", () => {
       effect: {
         type: "multi",
         effects: [
-          { type: "damage" },
-          { type: "volatile-status", status: volatileIds.flinch, chance: 30 },
+          { type: CORE_MOVE_EFFECT_TYPES.damage } as const,
+          {
+            type: CORE_MOVE_EFFECT_TYPES.volatileStatus,
+            status: volatileIds.flinch,
+            chance: 30,
+          } as const,
         ],
-      } as any,
+      } as MoveEffect,
     });
     const context: ItemContext = {
       pokemon,

@@ -241,7 +241,7 @@ describe("Bug #537 — entry hazard layers must increment beyond 1", () => {
     engine.start();
 
     // Pre-set 1 existing Spikes layer
-    (engine as any).state.sides[1].hazards.push({ type: CORE_HAZARD_IDS.spikes, layers: 1 });
+    engine.state.sides[1].hazards.push({ type: CORE_HAZARD_IDS.spikes, layers: 1 });
 
     // Act — use Spikes again (second application)
     events.length = 0;
@@ -265,7 +265,7 @@ describe("Bug #537 — entry hazard layers must increment beyond 1", () => {
     const { engine, events } = createHazardEngine();
     engine.start();
 
-    (engine as any).state.sides[1].hazards.push({ type: CORE_HAZARD_IDS.spikes, layers: 2 });
+    engine.state.sides[1].hazards.push({ type: CORE_HAZARD_IDS.spikes, layers: 2 });
 
     // Act — third Spikes use
     events.length = 0;
@@ -290,7 +290,7 @@ describe("Bug #537 — entry hazard layers must increment beyond 1", () => {
     const { engine, events } = createHazardEngine();
     engine.start();
 
-    (engine as any).state.sides[1].hazards.push({ type: CORE_HAZARD_IDS.spikes, layers: 3 });
+    engine.state.sides[1].hazards.push({ type: CORE_HAZARD_IDS.spikes, layers: 3 });
 
     events.length = 0;
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
@@ -337,7 +337,7 @@ describe("Bug #537 — Toxic Spikes layer 2 must register as badly-poisoned sour
     engine.start();
 
     // Pre-seed 1 layer
-    (engine as any).state.sides[1].hazards.push({
+    engine.state.sides[1].hazards.push({
       type: CORE_HAZARD_IDS.toxicSpikes,
       layers: 1,
     });
@@ -363,7 +363,7 @@ describe("Bug #537 — Toxic Spikes layer 2 must register as badly-poisoned sour
     ruleset.setHazard(CORE_HAZARD_IDS.toxicSpikes);
     engine.start();
 
-    (engine as any).state.sides[1].hazards.push({
+    engine.state.sides[1].hazards.push({
       type: CORE_HAZARD_IDS.toxicSpikes,
       layers: 2,
     });
@@ -434,7 +434,7 @@ describe("Stealth Rock — single-layer hazard unaffected by layering bug", () =
     ruleset.setHazard(CORE_HAZARD_IDS.stealthRock);
     engine.start();
 
-    (engine as any).state.sides[1].hazards.push({
+    engine.state.sides[1].hazards.push({
       type: CORE_HAZARD_IDS.stealthRock,
       layers: 1,
     });

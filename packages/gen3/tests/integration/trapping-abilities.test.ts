@@ -254,7 +254,7 @@ describe("Gen 3 canSwitch (trapping abilities)", () => {
 
     it("given Pokemon has trapped volatile, when checking switch, then Pokemon cannot switch", () => {
       const pokemon = createMockPokemon({ types: [TYPES.normal] });
-      (pokemon as any).volatileStatuses.set(VOLATILES.trapped, { turnsLeft: -1 });
+      pokemon.volatileStatuses.set(VOLATILES.trapped, { turnsLeft: -1 });
       const opponent = createMockPokemon({ types: [TYPES.ghost] });
       const state = createMinimalBattleState(pokemon, opponent);
 
@@ -300,7 +300,7 @@ describe("Gen 3 processSleepTurn (Early Bird)", () => {
       status: STATUSES.sleep,
       ability: ABILITIES.blaze,
     });
-    (pokemon as any).volatileStatuses.set(VOLATILES.sleepCounter, { turnsLeft: 3 });
+    pokemon.volatileStatuses.set(VOLATILES.sleepCounter, { turnsLeft: 3 });
     const opponent = createMockPokemon({ types: [TYPES.normal] });
     const state = createMinimalBattleState(pokemon, opponent);
 
@@ -318,7 +318,7 @@ describe("Gen 3 processSleepTurn (Early Bird)", () => {
       status: STATUSES.sleep,
       ability: ABILITIES.earlyBird,
     });
-    (pokemon as any).volatileStatuses.set(VOLATILES.sleepCounter, { turnsLeft: 3 });
+    pokemon.volatileStatuses.set(VOLATILES.sleepCounter, { turnsLeft: 3 });
     const opponent = createMockPokemon({ types: [TYPES.normal] });
     const state = createMinimalBattleState(pokemon, opponent);
 
@@ -334,7 +334,7 @@ describe("Gen 3 processSleepTurn (Early Bird)", () => {
       status: STATUSES.sleep,
       ability: ABILITIES.earlyBird,
     });
-    (pokemon as any).volatileStatuses.set(VOLATILES.sleepCounter, { turnsLeft: 2 });
+    pokemon.volatileStatuses.set(VOLATILES.sleepCounter, { turnsLeft: 2 });
     const opponent = createMockPokemon({ types: [TYPES.normal] });
     const state = createMinimalBattleState(pokemon, opponent);
 
@@ -353,7 +353,7 @@ describe("Gen 3 processSleepTurn (Early Bird)", () => {
       status: STATUSES.sleep,
       ability: ABILITIES.earlyBird,
     });
-    (pokemon as any).volatileStatuses.set(VOLATILES.sleepCounter, { turnsLeft: 1 });
+    pokemon.volatileStatuses.set(VOLATILES.sleepCounter, { turnsLeft: 1 });
     const opponent = createMockPokemon({ types: [TYPES.normal] });
     const state = createMinimalBattleState(pokemon, opponent);
 
@@ -371,7 +371,7 @@ describe("Gen 3 processSleepTurn (Early Bird)", () => {
       status: STATUSES.sleep,
       ability: ABILITIES.blaze,
     });
-    (pokemon as any).volatileStatuses.set(VOLATILES.sleepCounter, { turnsLeft: 1 });
+    pokemon.volatileStatuses.set(VOLATILES.sleepCounter, { turnsLeft: 1 });
     const opponent = createMockPokemon({ types: [TYPES.normal] });
     const state = createMinimalBattleState(pokemon, opponent);
 
@@ -462,8 +462,8 @@ describe("Gen 3 onSwitchOut (Natural Cure)", () => {
       ability: ABILITIES.naturalCure,
       status: STATUSES.sleep,
     });
-    (pokemon as any).volatileStatuses.set(VOLATILES.confusion, { turnsLeft: 3 });
-    (pokemon as any).volatileStatuses.set(VOLATILES.sleepCounter, { turnsLeft: 2 });
+    pokemon.volatileStatuses.set(VOLATILES.confusion, { turnsLeft: 3 });
+    pokemon.volatileStatuses.set(VOLATILES.sleepCounter, { turnsLeft: 2 });
     const opponent = createMockPokemon({ types: [TYPES.normal] });
     const state = createMinimalBattleState(pokemon, opponent);
 

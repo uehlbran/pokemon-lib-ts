@@ -81,11 +81,11 @@ describe("BattleEngine — faint deduplication (#78)", () => {
     active.pokemon.currentHp = 0;
 
     // Access the private method via cast — test-only pattern
-    const engineAny = engine as any;
+    const enginePrivate = engine as unknown as { checkMidTurnFaints(): void };
 
     // Act — call twice to simulate the duplicate-emission scenario
-    engineAny.checkMidTurnFaints();
-    engineAny.checkMidTurnFaints();
+    enginePrivate.checkMidTurnFaints();
+    enginePrivate.checkMidTurnFaints();
 
     // Assert — exactly one faint event for the pokemon on side 0
     const faintEvents = events.filter((e) => e.type === "faint" && e.side === 0);
@@ -102,10 +102,10 @@ describe("BattleEngine — faint deduplication (#78)", () => {
     if (!active) throw new Error("No active pokemon on side 0");
     active.pokemon.currentHp = 0;
 
-    const engineAny = engine as any;
+    const enginePrivate = engine as unknown as { checkMidTurnFaints(): void };
 
     // Act
-    engineAny.checkMidTurnFaints();
+    enginePrivate.checkMidTurnFaints();
 
     // Assert
     const faintEvents = events.filter((e) => e.type === "faint" && e.side === 0);
@@ -124,12 +124,12 @@ describe("BattleEngine — faint deduplication (#78)", () => {
     if (!active) throw new Error("No active pokemon on side 0");
     active.pokemon.currentHp = 0;
 
-    const engineAny = engine as any;
+    const enginePrivate = engine as unknown as { checkMidTurnFaints(): void };
     const faintCountBefore = side0.faintCount;
 
     // Act
-    engineAny.checkMidTurnFaints();
-    engineAny.checkMidTurnFaints();
+    enginePrivate.checkMidTurnFaints();
+    enginePrivate.checkMidTurnFaints();
 
     // Assert — faintCount incremented exactly once
     expect(side0.faintCount).toBe(faintCountBefore + 1);
@@ -145,11 +145,11 @@ describe("BattleEngine — faint deduplication (#78)", () => {
       if (active) active.pokemon.currentHp = 0;
     }
 
-    const engineAny = engine as any;
+    const enginePrivate = engine as unknown as { checkMidTurnFaints(): void };
 
     // Act
-    engineAny.checkMidTurnFaints();
-    engineAny.checkMidTurnFaints();
+    enginePrivate.checkMidTurnFaints();
+    enginePrivate.checkMidTurnFaints();
 
     // Assert — exactly one faint per side (2 total)
     const faintEvents = events.filter((e) => e.type === "faint");
@@ -165,23 +165,26 @@ describe("BattleEngine — faint deduplication (#78)", () => {
     const { engine, events } = createEngine();
     engine.start();
 
-    const engineAny = engine as any;
+    const enginePrivate = engine as unknown as {
+      checkMidTurnFaints(): void;
+      faintedPokemonThisTurn: Set<string>;
+    };
     const side0 = engine.state.sides[0];
     const active = side0.active[0];
     if (!active) throw new Error("No active pokemon on side 0");
     active.pokemon.currentHp = 0;
 
     // Simulate turn 1: two calls — only one faint should be emitted
-    engineAny.checkMidTurnFaints();
-    engineAny.checkMidTurnFaints();
+    enginePrivate.checkMidTurnFaints();
+    enginePrivate.checkMidTurnFaints();
     const faintsAfterFirstBatch = events.filter((e) => e.type === "faint" && e.side === 0).length;
     expect(faintsAfterFirstBatch).toBe(1);
 
     // Simulate start of a new turn: clear the set (mirrors what resolveTurn() does)
-    engineAny.faintedPokemonThisTurn.clear();
+    enginePrivate.faintedPokemonThisTurn.clear();
 
     // Call checkMidTurnFaints again — should emit another faint since set was cleared
-    engineAny.checkMidTurnFaints();
+    enginePrivate.checkMidTurnFaints();
     const faintsAfterSecondBatch = events.filter((e) => e.type === "faint" && e.side === 0).length;
 
     // Assert — clearing the set allows a new faint event to be emitted
