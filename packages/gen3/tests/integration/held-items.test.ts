@@ -5,10 +5,13 @@ import type {
   CritContext,
   DamageContext,
   ItemContext,
+  MoveAction,
 } from "@pokemon-lib-ts/battle";
 import type {
   MoveCategory,
   MoveData,
+  MoveFlags,
+  MoveTarget,
   PokemonType,
   PrimaryStatus,
   StatBlock,
@@ -1080,8 +1083,8 @@ describe("Gen 3 Held Items", () => {
         pp: 35,
         maxPp: 35,
         priority: 0,
-        target: "single" as any,
-        flags: {} as any,
+        target: "adjacent-foe" as MoveTarget,
+        flags: {} as unknown as MoveFlags,
         generation: 3,
         critRatio: 0,
         effectChance: null,
@@ -1119,8 +1122,8 @@ describe("Gen 3 Held Items", () => {
         pp: 35,
         maxPp: 35,
         priority: 0,
-        target: "single" as any,
-        flags: {} as any,
+        target: "adjacent-foe" as MoveTarget,
+        flags: {} as unknown as MoveFlags,
         generation: 3,
         critRatio: 0,
         effectChance: null,
@@ -1177,7 +1180,7 @@ describe("Gen 3 Held Items", () => {
 
       // Side 0 (slower but Quick Claw activated) should go first
       expect(ordered[0]?.type).toBe("move");
-      expect((ordered[0] as any).side).toBe(0);
+      expect((ordered[0] as MoveAction).side).toBe(0);
     });
 
     it("given a slower Pokemon holding Quick Claw, when the activation roll fails, then normal speed order prevails", () => {
@@ -1208,7 +1211,7 @@ describe("Gen 3 Held Items", () => {
 
       // Fast mon (side 1) goes first because Quick Claw didn't activate
       expect(ordered[0]?.type).toBe("move");
-      expect((ordered[0] as any).side).toBe(1);
+      expect((ordered[0] as MoveAction).side).toBe(1);
     });
   });
 
