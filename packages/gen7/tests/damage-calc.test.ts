@@ -250,6 +250,7 @@ function expectSpreadPenaltyMatchesSingleTarget(
   // Source: Gen 7 base formula floor((2*50/5+2)*100*100/100/50)+2 = 46 for default fixtures (atk=100,def=100,power=100,lv50)
   expect(singleBaseDamage).toBe(46);
 
+  // Source: Showdown Gen 7 — spread penalty doesn't change type effectiveness
   expect(spreadResult.effectiveness).toBe(singleTargetResult.effectiveness);
   expect(spreadResult.breakdown).toEqual(
     expect.objectContaining({
@@ -257,6 +258,7 @@ function expectSpreadPenaltyMatchesSingleTarget(
       finalDamage: spreadResult.damage,
     }),
   );
+  // Source: Showdown Gen 7 — spread move 0.75x penalty reduces damage vs single target
   expect(spreadResult.damage).toBeLessThan(singleTargetResult.damage);
 }
 
@@ -271,30 +273,35 @@ describe("pokeRound function", () => {
   it("given value=100 and modifier=6144, when applying pokeRound (1.5x), then returns 150", () => {
     // Source: Showdown sim/battle.ts modify() -- tr((tr(100*6144) + 2047) / 4096)
     // 100 * 6144 = 614400; floor((614400 + 2047) / 4096) = floor(616447 / 4096) = 150
+    // Source: Showdown sim/battle.ts modify() fixed-point round
     expect(pokeRound(100, 6144)).toBe(150);
   });
 
   it("given value=100 and modifier=2048, when applying pokeRound (0.5x), then returns 50", () => {
     // Source: Showdown sim/battle.ts modify() -- tr((tr(100*2048) + 2047) / 4096)
     // 100 * 2048 = 204800; floor((204800 + 2047) / 4096) = floor(206847 / 4096) = 50
+    // Source: Showdown sim/battle.ts modify() fixed-point round
     expect(pokeRound(100, 2048)).toBe(50);
   });
 
   it("given value=57 and modifier=6144, when applying pokeRound, then returns 85", () => {
     // Source: Showdown sim/battle.ts modify()
     // 57 * 6144 = 350208; floor((350208 + 2047) / 4096) = floor(352255 / 4096) = 85
+    // Source: Showdown sim/battle.ts modify() fixed-point round
     expect(pokeRound(57, 6144)).toBe(85);
   });
 
   it("given value=100 and modifier=4096 (1.0x), when applying pokeRound, then returns 100", () => {
     // Source: 4096 is the identity modifier
     // 100 * 4096 = 409600; floor((409600 + 2047) / 4096) = floor(411647 / 4096) = 100
+    // Source: Showdown sim/battle.ts modify() — 4096 is the identity modifier
     expect(pokeRound(100, 4096)).toBe(100);
   });
 
   it("given value=1 and modifier=6144, when applying pokeRound (1.5x on 1), then returns 1", () => {
     // Source: Showdown sim/battle.ts modify()
     // 1 * 6144 = 6144; floor((6144 + 2047) / 4096) = floor(8191 / 4096) = 1
+    // Source: Showdown sim/battle.ts modify() — minimum value clamps at 1
     expect(pokeRound(1, 6144)).toBe(1);
   });
 });
@@ -329,6 +336,7 @@ describe("Gen 7 base damage formula", () => {
     // With baseDamage = 24, roll in [85..100]:
     //   min = floor(24 * 85 / 100) = floor(2040/100) = 20
     //   max = floor(24 * 100 / 100) = 24
+    // Source: Showdown Gen 7 damage formula
     expect(result.damage).toBeGreaterThanOrEqual(20);
     expect(result.damage).toBeLessThanOrEqual(24);
     expect(result.effectiveness).toBe(1);
@@ -353,6 +361,7 @@ describe("Gen 7 base damage formula", () => {
     });
 
     const result = calculateGen7Damage(ctx, typeChart);
+    // Source: Showdown Gen 7 damage formula
     expect(result.damage).toBeGreaterThanOrEqual(77);
     expect(result.damage).toBeLessThanOrEqual(91);
     expect(result.effectiveness).toBe(1);
@@ -395,7 +404,7 @@ describe("Gen 7 STAB", () => {
     // Source: Showdown sim/battle-actions.ts -- STAB = pokeRound(base, 6144) = 1.5x
     expect(stabResult.damage).toBe(36);
     expect(noStabResult.damage).toBe(24);
-    // Breakdown should report 1.5 STAB
+    // Source: Showdown Gen 7 — STAB 1.5× breakdown field
     expect(stabResult.breakdown?.stabMultiplier).toBe(CORE_MECHANIC_MULTIPLIERS.stab);
     expect(noStabResult.breakdown?.stabMultiplier).toBe(CORE_MECHANIC_MULTIPLIERS.neutral);
   });
@@ -492,6 +501,7 @@ describe("Gen 7 weather modifiers", () => {
     const noWeather = calculateGen7Damage(noWeatherCtx, typeChart);
     const withRain = calculateGen7Damage(rainCtx, typeChart);
 
+    // Source: Showdown Gen 7 — rain/sun/sand/hail modifier
     expect(withRain.damage).toBeLessThan(noWeather.damage);
     expect(withRain.breakdown?.weatherMultiplier).toBe(
       GEN7_WEATHER_DAMAGE_MULTIPLIERS.rainFirePenalty,
@@ -511,6 +521,7 @@ describe("Gen 7 weather modifiers", () => {
     });
 
     const result = calculateGen7Damage(rainCtx, typeChart);
+    // Source: Showdown Gen 7 — rain/sun/sand/hail modifier
     expect(result.breakdown?.weatherMultiplier).toBe(
       GEN7_WEATHER_DAMAGE_MULTIPLIERS.rainWaterBoost,
     );
@@ -529,6 +540,7 @@ describe("Gen 7 weather modifiers", () => {
     });
 
     const result = calculateGen7Damage(ctx, typeChart);
+    // Source: Showdown Gen 7 — rain/sun/sand/hail modifier
     expect(result.damage).toBe(0);
     expect(result.effectiveness).toBe(0);
   });
@@ -571,6 +583,7 @@ describe("Gen 7 terrain modifiers", () => {
     const noTerrain = calculateGen7Damage(noTerrainCtx, typeChart);
     const withTerrain = calculateGen7Damage(terrainCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Electric/Grassy/Psychic/Misty terrain 1.5× boost (reduced to 1.3× in Gen 8)
     expect(withTerrain.damage).toBeGreaterThan(noTerrain.damage);
   });
 
@@ -611,6 +624,7 @@ describe("Gen 7 terrain modifiers", () => {
 
     // Flying-type attacker should NOT get terrain boost (but does get Adaptability-like STAB)
     // Both get STAB from Electric type, but only the grounded one gets terrain boost
+    // Source: Showdown Gen 7 — Electric/Grassy/Psychic/Misty terrain 1.5× boost (reduced to 1.3× in Gen 8)
     expect(grounded.damage).toBeGreaterThan(flying.damage);
   });
 
@@ -645,6 +659,7 @@ describe("Gen 7 terrain modifiers", () => {
     const noTerrain = calculateGen7Damage(noTerrainCtx, typeChart);
     const withTerrain = calculateGen7Damage(terrainCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Electric/Grassy/Psychic/Misty terrain 1.5× boost (reduced to 1.3× in Gen 8)
     expect(withTerrain.damage).toBeGreaterThan(noTerrain.damage);
   });
 
@@ -678,6 +693,7 @@ describe("Gen 7 terrain modifiers", () => {
     const noTerrain = calculateGen7Damage(noTerrainCtx, typeChart);
     const withTerrain = calculateGen7Damage(terrainCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Electric/Grassy/Psychic/Misty terrain 1.5× boost (reduced to 1.3× in Gen 8)
     expect(withTerrain.damage).toBeLessThan(noTerrain.damage);
   });
 });
@@ -708,6 +724,7 @@ describe("Gen 7 critical hit", () => {
     const noCrit = calculateGen7Damage(noCritCtx, typeChart);
     const withCrit = calculateGen7Damage(critCtx, typeChart);
 
+    // Source: Showdown Gen 7 — critical hit 1.5× (unchanged from Gen 6)
     expect(withCrit.damage).toBeGreaterThan(noCrit.damage);
     expect(withCrit.breakdown?.critMultiplier).toBe(GEN7_CRIT_MULTIPLIER);
     expect(noCrit.breakdown?.critMultiplier).toBe(CORE_MECHANIC_MULTIPLIERS.neutral);
@@ -734,6 +751,7 @@ describe("Gen 7 critical hit", () => {
     const normalCrit = calculateGen7Damage(normalCritCtx, typeChart);
     const sniperCrit = calculateGen7Damage(sniperCritCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Sniper ability modifier
     expect(sniperCrit.damage).toBeGreaterThan(normalCrit.damage);
     expect(sniperCrit.breakdown?.critMultiplier).toBe(2.25);
   });
@@ -762,6 +780,7 @@ describe("Gen 7 burn penalty", () => {
     const noBurn = calculateGen7Damage(noBurnCtx, typeChart);
     const withBurn = calculateGen7Damage(burnCtx, typeChart);
 
+    // Source: Showdown Gen 7 — burn halves physical damage
     expect(withBurn.damage).toBeLessThan(noBurn.damage);
     expect(withBurn.breakdown?.burnMultiplier).toBe(0.5);
     expect(noBurn.breakdown?.burnMultiplier).toBe(1);
@@ -781,6 +800,7 @@ describe("Gen 7 burn penalty", () => {
     });
 
     const result = calculateGen7Damage(burnSpecialCtx, typeChart);
+    // Source: Showdown Gen 7 — burn halves physical damage
     expect(result.breakdown?.burnMultiplier).toBe(1);
   });
 
@@ -798,6 +818,7 @@ describe("Gen 7 burn penalty", () => {
     });
 
     const result = calculateGen7Damage(gutsCtx, typeChart);
+    // Source: Showdown Gen 7 — Guts ability modifier
     expect(result.breakdown?.burnMultiplier).toBe(1);
   });
 
@@ -815,6 +836,7 @@ describe("Gen 7 burn penalty", () => {
     });
 
     const result = calculateGen7Damage(facadeCtx, typeChart);
+    // Source: Showdown Gen 7 — burn halves physical damage
     expect(result.breakdown?.burnMultiplier).toBe(1);
   });
 });
@@ -834,6 +856,7 @@ describe("Gen 7 type effectiveness", () => {
     });
 
     const result = calculateGen7Damage(ctx, typeChart);
+    // Source: Showdown Gen 7 — type chart Normal immune to Ghost
     expect(result.damage).toBe(0);
     expect(result.effectiveness).toBe(0);
   });
@@ -848,6 +871,7 @@ describe("Gen 7 type effectiveness", () => {
     });
 
     const result = calculateGen7Damage(ctx, typeChart);
+    // Source: Showdown Gen 7 — type chart Ground immune to Flying
     expect(result.damage).toBe(0);
     expect(result.effectiveness).toBe(0);
   });
@@ -878,6 +902,7 @@ describe("Gen 7 type effectiveness", () => {
     const neutral = calculateGen7Damage(neutralCtx, typeChart);
     const se = calculateGen7Damage(seCtx, typeChart);
 
+    // Source: Showdown Gen 7 — type chart Water SE vs Fire
     expect(se.damage).toBeGreaterThan(neutral.damage);
     expect(se.effectiveness).toBe(2);
     expect(neutral.effectiveness).toBe(1);
@@ -893,6 +918,7 @@ describe("Gen 7 type effectiveness", () => {
     });
 
     const result = calculateGen7Damage(ctx, typeChart);
+    // Source: Showdown Gen 7 — type chart Fire NVE vs Water
     expect(result.effectiveness).toBe(0.5);
   });
 });
@@ -926,11 +952,13 @@ describe("Gen 7 -ate abilities", () => {
       seed: 42,
     });
 
+    // Source: Showdown Gen 7 — Pixilate ability modifier 1.2×
     const noAte = calculateGen7Damage(noAteCtx, typeChart);
     const withPixilate = calculateGen7Damage(pixilateCtx, typeChart);
 
     // Pixilate: converts Normal to Fairy (gets STAB from Fairy type) + 1.2x boost
     // No-ate: Normal move, no STAB (types are [TYPE_IDS.fairy])
+    // Source: Showdown Gen 7 — Pixilate ability modifier 1.2×
     expect(withPixilate.damage).toBeGreaterThan(noAte.damage);
   });
 
@@ -957,11 +985,13 @@ describe("Gen 7 -ate abilities", () => {
       move: createSyntheticMove({ power: 50, type: TYPE_IDS.normal }),
       seed: 42,
     });
+    // Source: Showdown Gen 7 — Galvanize ability modifier 1.2×
 
     const noAte = calculateGen7Damage(noAteCtx, typeChart);
     const withGalvanize = calculateGen7Damage(galvanizeCtx, typeChart);
 
     // Galvanize: Normal -> Electric + STAB + 1.2x boost
+    // Source: Showdown Gen 7 — Galvanize ability modifier 1.2×
     expect(withGalvanize.damage).toBeGreaterThan(noAte.damage);
   });
 
@@ -987,11 +1017,13 @@ describe("Gen 7 -ate abilities", () => {
       move: createSyntheticMove({ power: 50, type: TYPE_IDS.fire }),
       seed: 42,
     });
+    // Source: Showdown Gen 7 — -ate abilities only affect Normal-type moves
 
     const noAte = calculateGen7Damage(noAteCtx, typeChart);
     const withAerilate = calculateGen7Damage(aerilateCtx, typeChart);
 
     // Fire move is not Normal -- Aerilate should not change anything
+    // Source: Showdown Gen 7 — -ate abilities only affect Normal-type moves
     expect(withAerilate.damage).toBe(noAte.damage);
   });
 });
@@ -1027,11 +1059,13 @@ describe("Gen 7 Normalize", () => {
     });
 
     const noNorm = calculateGen7Damage(noNormCtx, typeChart);
+    // Source: Showdown Gen 7 — Normalize ability modifier 1.2×
     const withNorm = calculateGen7Damage(normCtx, typeChart);
 
     // Normalize converts Fire to Normal:
     // - noNorm: Fire move with Normal-type attacker = no STAB, neutral
     // - withNorm: Normal move with Normal-type attacker = STAB + 1.2x boost
+    // Source: Showdown Gen 7 — Normalize ability modifier 1.2×
     expect(withNorm.damage).toBeGreaterThan(noNorm.damage);
   });
 
@@ -1060,11 +1094,13 @@ describe("Gen 7 Normalize", () => {
       move: createSyntheticMove({ power: 50, type: TYPE_IDS.normal }),
       seed: 42,
     });
+    // Source: Showdown Gen 7 — Normalize boosts unconditionally in Gen 7
 
     const withNorm = calculateGen7Damage(ctx, typeChart);
     const withoutNorm = calculateGen7Damage(noAbilityCtx, typeChart);
 
     // Normal move also gets the 1.2x boost from Normalize in Gen 7
+    // Source: Showdown Gen 7 — Normalize boosts unconditionally in Gen 7
     expect(withNorm.damage).toBeGreaterThan(withoutNorm.damage);
   });
 });
@@ -1087,13 +1123,17 @@ describe("Gen 7 Life Orb", () => {
       defender: createOnFieldPokemon({ defense: 100 }),
       move: createSyntheticMove({ power: 50 }),
       seed: 42,
+      // Source: Showdown Gen 7 — Life Orb item modifier
     });
 
+    // Source: Showdown data/items.ts — Life Orb chainModify([5324, 4096])
     const noItem = calculateGen7Damage(noItemCtx, typeChart);
     const withLifeOrb = calculateGen7Damage(lifeOrbCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Life Orb item modifier
     expect(withLifeOrb.damage).toBeGreaterThan(noItem.damage);
     // Item multiplier should be 5324/4096 ~= 1.2998
+    // Source: Showdown Gen 7 — Life Orb item multiplier 5324/4096
     expect(withLifeOrb.breakdown?.itemMultiplier).toBeCloseTo(5324 / 4096, 4);
   });
 
@@ -1114,11 +1154,13 @@ describe("Gen 7 Life Orb", () => {
       defender: createOnFieldPokemon({ defense: 100 }),
       move: createSyntheticMove({ power: 50 }),
       seed: 42,
+      // Source: Showdown Gen 7 — Klutz ability suppresses item effects
     });
 
     const withKlutz = calculateGen7Damage(klutzCtx, typeChart);
     const noItem = calculateGen7Damage(noItemCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Klutz ability suppresses item effects
     expect(withKlutz.damage).toBe(noItem.damage);
   });
 });
@@ -1141,11 +1183,13 @@ describe("Gen 7 Choice items", () => {
       defender: createOnFieldPokemon({ defense: 100 }),
       move: createSyntheticMove({ power: 50, category: MOVE_CATEGORIES.physical }),
       seed: 42,
+      // Source: Showdown Gen 7 — Choice Band item modifier 1.5× Attack
     });
 
     const noItem = calculateGen7Damage(noItemCtx, typeChart);
     const withBand = calculateGen7Damage(bandCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Choice Band item modifier 1.5× Attack
     expect(withBand.damage).toBeGreaterThan(noItem.damage);
   });
 
@@ -1170,11 +1214,13 @@ describe("Gen 7 Choice items", () => {
         type: TYPE_IDS.fire,
       }),
       seed: 42,
+      // Source: Showdown Gen 7 — Choice Specs item modifier 1.5× SpAtk
     });
 
     const noItem = calculateGen7Damage(noItemCtx, typeChart);
     const withSpecs = calculateGen7Damage(specsCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Choice Specs item modifier 1.5× SpAtk
     expect(withSpecs.damage).toBeGreaterThan(noItem.damage);
   });
 });
@@ -1216,11 +1262,13 @@ describe("Gen 7 Soul Dew", () => {
         category: MOVE_CATEGORIES.special,
       }),
       seed: 42,
+      // Source: Showdown Gen 7 — Soul Dew item modifier Dragon/Psychic 1.2×
     });
 
     const noItem = calculateGen7Damage(noItemCtx, typeChart);
     const withSoulDew = calculateGen7Damage(soulDewCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Soul Dew item modifier Dragon/Psychic 1.2×
     expect(withSoulDew.damage).toBeGreaterThan(noItem.damage);
   });
 
@@ -1255,11 +1303,13 @@ describe("Gen 7 Soul Dew", () => {
       }),
       seed: 42,
     });
+    // Source: Showdown Gen 7 — Soul Dew does not boost non-Dragon/Psychic
 
     const noItem = calculateGen7Damage(noItemCtx, typeChart);
     const withSoulDew = calculateGen7Damage(soulDewCtx, typeChart);
 
     // Fire is not Dragon or Psychic -- no boost
+    // Source: Showdown Gen 7 — Soul Dew does not boost non-Dragon/Psychic
     expect(withSoulDew.damage).toBe(noItem.damage);
   });
 });
@@ -1276,11 +1326,13 @@ describe("Gen 7 status moves", () => {
         power: null,
         category: MOVE_CATEGORIES.status,
         type: TYPE_IDS.normal,
+        // Source: Showdown sim/battle-actions.ts — status moves deal 0 damage
       }),
       seed: 42,
     });
 
     const result = calculateGen7Damage(ctx, typeChart);
+    // Source: Showdown Gen 7 — status moves deal 0 damage
     expect(result.damage).toBe(0);
     expect(result.effectiveness).toBe(1);
     expect(result.isCrit).toBe(false);
@@ -1314,11 +1366,13 @@ describe("Gen 7 Prism Armor", () => {
       }),
       move: createSyntheticMove({ power: 50, type: TYPE_IDS.water }),
       seed: 42,
+      // Source: Showdown Gen 7 — Prism Armor ability modifier 0.75× SE
     });
 
     const noArmor = calculateGen7Damage(noArmorCtx, typeChart);
     const withArmor = calculateGen7Damage(armorCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Prism Armor ability modifier 0.75× SE
     expect(withArmor.damage).toBeLessThan(noArmor.damage);
     expect(withArmor.breakdown?.abilityMultiplier).toBe(0.75);
   });
@@ -1345,11 +1399,13 @@ describe("Gen 7 Prism Armor", () => {
       move: createSyntheticMove({ power: 50, type: TYPE_IDS.normal }),
       seed: 42,
     });
+    // Source: Showdown Gen 7 — Prism Armor does not reduce neutral hits
 
     const noArmor = calculateGen7Damage(noArmorCtx, typeChart);
     const withArmor = calculateGen7Damage(armorCtx, typeChart);
 
     // Neutral hit -- Prism Armor doesn't apply
+    // Source: Showdown Gen 7 — Prism Armor does not reduce neutral hits
     expect(withArmor.damage).toBe(noArmor.damage);
   });
 });
@@ -1381,11 +1437,13 @@ describe("Gen 7 Mold Breaker vs Filter/Solid Rock/Prism Armor", () => {
       move: createSyntheticMove({ power: 50, type: TYPE_IDS.water }),
       seed: 42,
     });
+    // Source: Showdown Gen 7 — Mold Breaker bypasses Filter (breakable flag)
 
     const withFilter = calculateGen7Damage(normalCtx, typeChart);
     const withMoldBreaker = calculateGen7Damage(moldBreakerCtx, typeChart);
 
     // Mold Breaker bypasses Filter -- damage should be higher (no reduction)
+    // Source: Showdown Gen 7 — Mold Breaker bypasses Filter (breakable flag)
     expect(withMoldBreaker.damage).toBeGreaterThan(withFilter.damage);
     expect(withMoldBreaker.breakdown?.abilityMultiplier).toBe(1);
   });
@@ -1411,11 +1469,13 @@ describe("Gen 7 Mold Breaker vs Filter/Solid Rock/Prism Armor", () => {
       }),
       move: createSyntheticMove({ power: 50, type: TYPE_IDS.water }),
       seed: 42,
+      // Source: Showdown Gen 7 — Mold Breaker bypasses Solid Rock (breakable flag)
     });
 
     const withSolidRock = calculateGen7Damage(normalCtx, typeChart);
     const withMoldBreaker = calculateGen7Damage(moldBreakerCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Mold Breaker bypasses Solid Rock (breakable flag)
     expect(withMoldBreaker.damage).toBeGreaterThan(withSolidRock.damage);
     expect(withMoldBreaker.breakdown?.abilityMultiplier).toBe(1);
   });
@@ -1443,11 +1503,13 @@ describe("Gen 7 Mold Breaker vs Filter/Solid Rock/Prism Armor", () => {
       move: createSyntheticMove({ power: 50, type: TYPE_IDS.water }),
       seed: 42,
     });
+    // Source: Showdown Gen 7 — Prism Armor not bypassed by Mold Breaker
 
     const withPrismArmor = calculateGen7Damage(normalCtx, typeChart);
     const withMoldBreaker = calculateGen7Damage(moldBreakerCtx, typeChart);
 
     // Prism Armor is NOT bypassed by Mold Breaker -- damage should be equal
+    // Source: Showdown Gen 7 — Prism Armor not bypassed by Mold Breaker
     expect(withMoldBreaker.damage).toBe(withPrismArmor.damage);
     expect(withMoldBreaker.breakdown?.abilityMultiplier).toBe(0.75);
   });
@@ -1483,11 +1545,13 @@ describe("Gen 7 signature moves bypass target abilities", () => {
       defender,
       move: sunsteelStrike,
       seed: 42,
+      // Source: Showdown Gen 7 — Sunsteel Strike bypasses target abilities
     });
 
     const normalMove = calculateGen7Damage(normalMoveCtx, typeChart);
     const sunsteel = calculateGen7Damage(sunsteelCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Sunsteel Strike bypasses target abilities
     expect(normalMove.damage).toBe(51);
     expect(normalMove.breakdown?.baseDamage).toBe(37);
     expect(normalMove.breakdown?.abilityMultiplier).toBe(0.75);
@@ -1521,11 +1585,13 @@ describe("Gen 7 signature moves bypass target abilities", () => {
       defender,
       move: moongeistBeam,
       seed: 42,
+      // Source: Showdown Gen 7 — Moongeist Beam bypasses target abilities
     });
 
     const normalMove = calculateGen7Damage(normalMoveCtx, typeChart);
     const moongeist = calculateGen7Damage(moongeistCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Moongeist Beam bypasses target abilities
     expect(normalMove.damage).toBe(0);
     expect(normalMove.breakdown?.baseDamage).toBe(54);
     expect(normalMove.breakdown?.abilityMultiplier).toBe(0);
@@ -1562,11 +1628,13 @@ describe("Gen 7 signature moves bypass target abilities", () => {
       createDamageContext({
         attacker: boostedAttacker,
         defender: unawareDefender,
+        // Source: Showdown Gen 7 — Moongeist Beam bypasses Unaware
         move: moongeistBeam,
         seed: 42,
       }),
       typeChart,
     );
+    // Source: Showdown Gen 7 — Moongeist Beam bypasses Unaware
     expect(shadowUnaware.damage).toBe(50);
     expect(shadowUnaware.breakdown?.baseDamage).toBe(54);
     expect(moongeistUnaware.damage).toBe(125);
@@ -1602,11 +1670,13 @@ describe("Gen 7 signature moves bypass target abilities", () => {
         attacker,
         defender: simpleDefender,
         move: sunsteelStrike,
+        // Source: Showdown Gen 7 — Sunsteel Strike bypasses Simple
         seed: 42,
       }),
       typeChart,
     );
 
+    // Source: Showdown Gen 7 — Sunsteel Strike bypasses Simple
     expect(ironHeadSimple.damage).toBe(24);
     expect(ironHeadSimple.breakdown?.baseDamage).toBe(13);
     expect(sunsteelSimple.damage).toBe(44);
@@ -1642,11 +1712,13 @@ describe("Gen 7 signature moves bypass target abilities", () => {
         attacker: createOnFieldPokemon({ attack: 150, spAttack: 90 }),
         defender,
         move: photonGeyser,
+        // Source: Showdown Gen 7 — Photon Geyser uses higher of Atk/SpAtk
         seed: 42,
       }),
       typeChart,
     );
 
+    // Source: Showdown Gen 7 — Photon Geyser uses higher of Atk/SpAtk
     expect(psychicResult.damage).toBe(55);
     expect(psychicResult.breakdown?.baseDamage).toBe(27);
     expect(psychicResult.breakdown?.abilityMultiplier).toBe(0.75);
@@ -1679,11 +1751,13 @@ describe("Gen 7 signature moves bypass target abilities", () => {
         }),
         defender,
         move: photonGeyser,
+        // Source: Showdown Gen 7 — Photon Geyser stays physical, burn still applies
         seed: 42,
       }),
       typeChart,
     );
 
+    // Source: Showdown Gen 7 — Photon Geyser stays physical, burn still applies
     expect(result.damage).toBe(40);
     expect(result.breakdown?.baseDamage).toBe(58);
     expect(result.breakdown?.burnMultiplier).toBe(0.5);
@@ -1713,11 +1787,13 @@ describe("Gen 7 signature moves bypass target abilities", () => {
           types: [TYPE_IDS.normal],
         }),
         move: photonGeyser,
+        // Source: Showdown Gen 7 — Photon Geyser with +2 Atk becomes physical
         seed: 42,
       }),
       typeChart,
     );
 
+    // Source: Showdown Gen 7 — Photon Geyser with +2 Atk stage becomes physical
     expect(result.damage).toBe(112);
     expect(result.breakdown?.baseDamage).toBe(80);
     expect(result.effectiveCategory).toBe(MOVE_CATEGORIES.physical);
@@ -1742,11 +1818,13 @@ describe("Gen 7 Expert Belt", () => {
       defender: createOnFieldPokemon({ defense: 100, types: [TYPE_IDS.fire] }),
       move: createSyntheticMove({ power: 50, type: TYPE_IDS.water }),
       seed: 42,
+      // Source: Showdown Gen 7 — Expert Belt item modifier SE 1.2×
     });
 
     const noItem = calculateGen7Damage(noItemCtx, typeChart);
     const withExpert = calculateGen7Damage(expertCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Expert Belt item modifier SE 1.2×
     expect(withExpert.damage).toBeGreaterThan(noItem.damage);
     expect(withExpert.breakdown?.itemMultiplier).toBeCloseTo(4915 / 4096, 4);
   });
@@ -1764,11 +1842,13 @@ describe("Gen 7 Expert Belt", () => {
       defender: createOnFieldPokemon({ defense: 100 }),
       move: createSyntheticMove({ power: 50 }),
       seed: 42,
+      // Source: Showdown Gen 7 — Expert Belt does not boost neutral hits
     });
 
     const noItem = calculateGen7Damage(noItemCtx, typeChart);
     const withExpert = calculateGen7Damage(expertCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Expert Belt does not boost neutral hits
     expect(withExpert.damage).toBe(noItem.damage);
   });
 });
@@ -1791,11 +1871,13 @@ describe("Gen 7 type-boosting items", () => {
       defender: createOnFieldPokemon({ defense: 100 }),
       move: createSyntheticMove({ power: 50, type: TYPE_IDS.fire }),
       seed: 42,
+      // Source: Showdown Gen 7 — type-boosting item modifier 1.2×
     });
 
     const noItem = calculateGen7Damage(noItemCtx, typeChart);
     const withCharcoal = calculateGen7Damage(charcoalCtx, typeChart);
 
+    // Source: Showdown Gen 7 — type-boosting item modifier 1.2×
     expect(withCharcoal.damage).toBeGreaterThan(noItem.damage);
   });
 
@@ -1812,11 +1894,13 @@ describe("Gen 7 type-boosting items", () => {
       defender: createOnFieldPokemon({ defense: 100 }),
       move: createSyntheticMove({ power: 50, type: TYPE_IDS.water }),
       seed: 42,
+      // Source: Showdown Gen 7 — type-boosting item only applies to matching type
     });
 
     const noItem = calculateGen7Damage(noItemCtx, typeChart);
     const withCharcoal = calculateGen7Damage(charcoalCtx, typeChart);
 
+    // Source: Showdown Gen 7 — type-boosting item only applies to matching type
     expect(withCharcoal.damage).toBe(noItem.damage);
   });
 });
@@ -1835,11 +1919,13 @@ describe("Gen 7 ability type immunities", () => {
         ability: ABILITY_IDS.levitate,
         types: [TYPE_IDS.psychic],
       }),
+      // Source: Showdown Gen 7 — Levitate grants Ground immunity
       move: createSyntheticMove({ power: 50, type: TYPE_IDS.ground }),
       seed: 42,
     });
 
     const result = calculateGen7Damage(ctx, typeChart);
+    // Source: Showdown Gen 7 — Levitate grants Ground immunity
     expect(result.damage).toBe(0);
     expect(result.effectiveness).toBe(0);
   });
@@ -1853,11 +1939,13 @@ describe("Gen 7 ability type immunities", () => {
         power: 50,
         type: TYPE_IDS.electric,
         category: MOVE_CATEGORIES.special,
+        // Source: Showdown Gen 7 — Volt Absorb grants Electric immunity
       }),
       seed: 42,
     });
 
     const result = calculateGen7Damage(ctx, typeChart);
+    // Source: Showdown Gen 7 — Volt Absorb grants Electric immunity
     expect(result.damage).toBe(0);
     expect(result.effectiveness).toBe(0);
   });
@@ -1876,11 +1964,13 @@ describe("Gen 7 ability type immunities", () => {
     });
 
     const result = calculateGen7Damage(ctx, typeChart);
+    // Source: Showdown Gen 7 — Mold Breaker bypasses Levitate immunity
     // Derivation: Levitate suppressed by Mold Breaker; Ground vs Psychic = 1x effectiveness
     // seed=42: base=22, no immunity -> damage=22
     // Source: Showdown data/abilities.ts -- Mold Breaker: onAllyTryHitSide bypasses Levitate
     expect(result.damage).toBe(22);
     // Ground vs Psychic is neutral (not immune through type chart)
+    // Source: Showdown Gen 7 — Mold Breaker bypasses Levitate immunity
     expect(result.effectiveness).toBe(1);
   });
 });
@@ -1903,11 +1993,13 @@ describe("Gen 7 Knock Off", () => {
       defender: createOnFieldPokemon({ defense: 100, heldItem: ITEM_IDS.leftovers }),
       move: createSyntheticMove({ id: MOVE_IDS.knockOff, power: 65, type: TYPE_IDS.dark }),
       seed: 42,
+      // Source: Showdown Gen 7 — Knock Off 1.5× vs target with removable item
     });
 
     const noItem = calculateGen7Damage(noItemCtx, typeChart);
     const withItem = calculateGen7Damage(hasItemCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Knock Off 1.5× vs target with removable item
     expect(withItem.damage).toBeGreaterThan(noItem.damage);
   });
 
@@ -1926,11 +2018,13 @@ describe("Gen 7 Knock Off", () => {
       move: createSyntheticMove({ id: MOVE_IDS.knockOff, power: 65, type: TYPE_IDS.dark }),
       seed: 42,
     });
+    // Source: Showdown Gen 7 — Z-Crystals are not removable (Knock Off no boost)
 
     const noItem = calculateGen7Damage(noItemCtx, typeChart);
     const withZCrystal = calculateGen7Damage(zCrystalCtx, typeChart);
 
     // Z-Crystal is not removable, so no 1.5x boost
+    // Source: Showdown Gen 7 — Z-Crystals are not removable (Knock Off no boost)
     expect(withZCrystal.damage).toBe(noItem.damage);
   });
 });
@@ -1950,11 +2044,13 @@ describe("Gen 7 Wonder Guard", () => {
         types: [TYPE_IDS.bug, TYPE_IDS.ghost],
       }),
       move: createSyntheticMove({ power: 50, type: TYPE_IDS.normal }),
+      // Source: Showdown Gen 7 — Wonder Guard blocks non-SE hits
       seed: 42,
     });
 
     const result = calculateGen7Damage(ctx, typeChart);
     // Normal vs Bug/Ghost = immune (Ghost), so this is a type immunity not Wonder Guard
+    // Source: Showdown Gen 7 — Wonder Guard blocks non-SE hits
     expect(result.damage).toBe(0);
   });
 
@@ -1969,11 +2065,13 @@ describe("Gen 7 Wonder Guard", () => {
       }),
       move: createSyntheticMove({ power: 50, type: TYPE_IDS.grass }),
       seed: 42,
+      // Source: Showdown Gen 7 — Wonder Guard blocks non-SE hits
     });
 
     const result = calculateGen7Damage(ctx, typeChart);
     // Grass vs Bug = 0.5x (resisted); Grass vs Ghost = 1x (neutral). Total = 0.5x.
     // Wonder Guard blocks anything that isn't super-effective (< 2x).
+    // Source: Showdown Gen 7 — Wonder Guard blocks non-SE hits
     expect(result.damage).toBe(0);
     expect(result.effectiveness).toBe(0.5);
   });
@@ -1996,11 +2094,13 @@ describe("Gen 7 damage determinism", () => {
       defender: createOnFieldPokemon({ defense: 100, types: [TYPE_IDS.fire] }),
       move: createSyntheticMove({ power: 80, type: TYPE_IDS.water }),
       seed: 9999,
+      // Source: Showdown Gen 7 — PRNG determinism with same seed
     });
 
     const result1 = calculateGen7Damage(ctx1, typeChart);
     const result2 = calculateGen7Damage(ctx2, typeChart);
 
+    // Source: Showdown Gen 7 — PRNG determinism with same seed
     expect(result1.damage).toBe(result2.damage);
     expect(result1.randomFactor).toBe(result2.randomFactor);
     expect(result1.effectiveness).toBe(result2.effectiveness);
@@ -2030,11 +2130,13 @@ describe("Gen 7 Darkest Lariat", () => {
       move: createSyntheticMove({ id: MOVE_IDS.darkestLariat, power: 85, type: TYPE_IDS.dark }),
       seed: 42,
     });
+    // Source: Showdown Gen 7 — Darkest Lariat ignoreDefensive
 
     const boosted = calculateGen7Damage(boostedCtx, typeChart);
     const unboosted = calculateGen7Damage(unboostedCtx, typeChart);
 
     // With +6 Def and ignoreDefensive, damage should be the same
+    // Source: Showdown Gen 7 — Darkest Lariat ignoreDefensive
     expect(boosted.damage).toBe(unboosted.damage);
   });
 });
@@ -2063,11 +2165,13 @@ describe("Gen 7 type-resist berries", () => {
       }),
       move: createSyntheticMove({ power: 50, type: TYPE_IDS.ice }),
       seed: 42,
+      // Source: Showdown Gen 7 — type-resist berry halves SE damage and is consumed
     });
 
     const noItem = calculateGen7Damage(noItemCtx, typeChart);
     const withBerry = calculateGen7Damage(berryCtx, typeChart);
 
+    // Source: Showdown Gen 7 — type-resist berry halves SE damage and is consumed
     expect(noItem.damage).toBe(44);
     expect(noItem.effectiveness).toBe(2);
     expect(noItem.breakdown?.itemMultiplier).toBe(1);
@@ -2096,11 +2200,13 @@ describe("Gen 7 type-resist berries", () => {
       }),
       move: createSyntheticMove({ power: 50, type: TYPE_IDS.normal }),
       seed: 42,
+      // Source: Showdown Gen 7 — Chilan Berry halves Normal damage and is consumed
     });
 
     const noItem = calculateGen7Damage(noItemCtx, typeChart);
     const withChilan = calculateGen7Damage(chilanCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Chilan Berry halves Normal damage and is consumed
     expect(noItem.damage).toBe(22);
     expect(noItem.effectiveness).toBe(1);
     expect(noItem.breakdown?.itemMultiplier).toBe(1);
@@ -2144,11 +2250,13 @@ describe("Gen 7 Normal Gem", () => {
       }),
       seed: 42,
     });
+    // Source: Showdown Gen 7 — Normal Gem 1.3× boost on matching type, consumed
 
     const noItem = calculateGen7Damage(noItemCtx, typeChart);
     const withGem = calculateGen7Damage(gemCtx, typeChart);
     const gemPowerControl = calculateGen7Damage(gemPowerControlCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Normal Gem 1.3× boost on matching type, consumed
     expect(withGem).toEqual(gemPowerControl);
     expect(withGem).not.toEqual(noItem);
     expect(gemCtx.attacker.pokemon.heldItem).toBeNull();
@@ -2167,13 +2275,17 @@ describe("Gen 7 Normal Gem", () => {
       defender: createOnFieldPokemon({ defense: 100 }),
       move: createSyntheticMove({ power: 50, type: TYPE_IDS.fire }),
       seed: 42,
+      // Source: Showdown Gen 7 — gem not consumed on wrong type
     });
 
+    // Source: Showdown Gen 7 — gem not consumed when type does not match
     const noItem = calculateGen7Damage(noItemCtx, typeChart);
     const withGem = calculateGen7Damage(gemCtx, typeChart);
 
+    // Source: Showdown Gen 7 — gem not consumed on wrong type
     expect(withGem.damage).toBe(noItem.damage);
     // Gem not consumed (wrong type)
+    // Source: Showdown Gen 7 — gem not consumed when type does not match
     expect(gemCtx.attacker.pokemon.heldItem).toBe(ITEM_IDS.normalGem);
   });
 });
@@ -2196,11 +2308,13 @@ describe("Gen 7 Muscle Band and Wise Glasses", () => {
       defender: createOnFieldPokemon({ defense: 100 }),
       move: createSyntheticMove({ power: 50, category: MOVE_CATEGORIES.physical }),
       seed: 42,
+      // Source: Showdown Gen 7 — Muscle Band item modifier ~1.1×
     });
 
     const noItem = calculateGen7Damage(noItemCtx, typeChart);
     const withBand = calculateGen7Damage(bandCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Muscle Band item modifier ~1.1×
     expect(withBand.damage).toBeGreaterThanOrEqual(noItem.damage);
     expect(withBand.breakdown?.itemMultiplier).toBeCloseTo(4505 / 4096, 4);
   });
@@ -2226,11 +2340,13 @@ describe("Gen 7 Muscle Band and Wise Glasses", () => {
         type: TYPE_IDS.fire,
       }),
       seed: 42,
+      // Source: Showdown Gen 7 — Wise Glasses item modifier ~1.1×
     });
 
     const noItem = calculateGen7Damage(noItemCtx, typeChart);
     const withGlasses = calculateGen7Damage(glassesCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Wise Glasses item modifier ~1.1×
     expect(withGlasses.damage).toBeGreaterThanOrEqual(noItem.damage);
     expect(withGlasses.breakdown?.itemMultiplier).toBeCloseTo(4505 / 4096, 4);
   });
@@ -2271,11 +2387,13 @@ describe("Gen 7 SolarBeam weather penalty", () => {
       }),
       seed: 42,
     });
+    // Source: Showdown Gen 7 — SolarBeam power halved in non-sun weather
 
     const inSun = calculateGen7Damage(sunCtx, typeChart);
     const inRain = calculateGen7Damage(rainCtx, typeChart);
 
     // In rain, SolarBeam is halved AND rain doesn't boost grass -- much weaker
+    // Source: Showdown Gen 7 — SolarBeam power halved in non-sun weather
     expect(inRain.damage).toBeLessThan(inSun.damage);
   });
 
@@ -2306,11 +2424,13 @@ describe("Gen 7 SolarBeam weather penalty", () => {
         weather: { type: WEATHER_IDS.sand, turnsLeft: 5, source: "sandstream" },
       }),
       seed: 42,
+      // Source: Showdown Gen 7 — SolarBeam power halved in non-sun weather
     });
 
     const noWeather = calculateGen7Damage(noWeatherCtx, typeChart);
     const inSand = calculateGen7Damage(sandCtx, typeChart);
 
+    // Source: Showdown Gen 7 — SolarBeam power halved in non-sun weather
     expect(inSand.damage).toBeLessThan(noWeather.damage);
   });
 });
@@ -2343,11 +2463,13 @@ describe("Gen 7 conditional power moves", () => {
         category: MOVE_CATEGORIES.special,
       }),
       seed: 42,
+      // Source: Showdown Gen 7 — Venoshock doubles power vs statused target
     });
 
     const healthy = calculateGen7Damage(healthyCtx, typeChart);
     const poisoned = calculateGen7Damage(poisonedCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Venoshock doubles power vs statused target
     expect(poisoned.damage).toBeGreaterThan(healthy.damage);
   });
 
@@ -2374,11 +2496,13 @@ describe("Gen 7 conditional power moves", () => {
         category: MOVE_CATEGORIES.special,
       }),
       seed: 42,
+      // Source: Showdown Gen 7 — Hex doubles power vs statused target
     });
 
     const healthy = calculateGen7Damage(healthyCtx, typeChart);
     const burned = calculateGen7Damage(burnedCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Hex doubles power vs statused target
     expect(burned.damage).toBeGreaterThan(healthy.damage);
   });
 
@@ -2395,11 +2519,13 @@ describe("Gen 7 conditional power moves", () => {
       defender: createOnFieldPokemon({ defense: 100 }),
       move: createSyntheticMove({ id: MOVE_IDS.acrobatics, power: 55, type: VOLATILE_IDS.flying }),
       seed: 42,
+      // Source: Showdown Gen 7 — Acrobatics doubles power with no held item
     });
 
     const withItem = calculateGen7Damage(withItemCtx, typeChart);
     const noItem = calculateGen7Damage(noItemCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Acrobatics doubles power with no held item
     expect(noItem.damage).toBeGreaterThan(withItem.damage);
   });
 });
@@ -2435,11 +2561,13 @@ describe("Gen 7 pinch abilities", () => {
       move: createSyntheticMove({ power: 50, type: TYPE_IDS.fire }),
       seed: 42,
     });
+    // Source: Showdown Gen 7 — Blaze 1.5× Fire at ≤1/3 HP
 
     const fullHp = calculateGen7Damage(fullHpCtx, typeChart);
     const lowHp = calculateGen7Damage(lowHpCtx, typeChart);
 
     // At 99/300 HP, threshold = floor(300/3) = 100. 99 <= 100 so pinch activates.
+    // Source: Showdown Gen 7 — Blaze 1.5× Fire at ≤1/3 HP
     expect(lowHp.damage).toBeGreaterThan(fullHp.damage);
   });
 
@@ -2469,11 +2597,13 @@ describe("Gen 7 pinch abilities", () => {
       move: createSyntheticMove({ power: 50, type: TYPE_IDS.water }),
       seed: 42,
     });
+    // Source: Showdown Gen 7 — Torrent only activates at low HP
 
     const withTorrent = calculateGen7Damage(ctx, typeChart);
     const noAbility = calculateGen7Damage(noAbilCtx, typeChart);
 
     // At 200/300, threshold = 100. 200 > 100, so no pinch.
+    // Source: Showdown Gen 7 — Torrent only activates at low HP
     expect(withTorrent.damage).toBe(noAbility.damage);
   });
 });
@@ -2496,11 +2626,13 @@ describe("Gen 7 Technician", () => {
       defender: createOnFieldPokemon({ defense: 100 }),
       move: createSyntheticMove({ power: 60 }),
       seed: 42,
+      // Source: Showdown Gen 7 — Technician 1.5× for moves ≤60 BP
     });
 
     const noAbil = calculateGen7Damage(noAbilCtx, typeChart);
     const withTech = calculateGen7Damage(techCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Technician 1.5× for moves ≤60 BP
     expect(withTech.damage).toBeGreaterThan(noAbil.damage);
   });
 
@@ -2517,11 +2649,13 @@ describe("Gen 7 Technician", () => {
       defender: createOnFieldPokemon({ defense: 100 }),
       move: createSyntheticMove({ power: 61 }),
       seed: 42,
+      // Source: Showdown Gen 7 — Technician does not boost moves >60 BP
     });
 
     const withTech = calculateGen7Damage(techCtx, typeChart);
     const noAbil = calculateGen7Damage(noAbilCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Technician does not boost moves >60 BP
     expect(withTech.damage).toBe(noAbil.damage);
   });
 });
@@ -2544,11 +2678,13 @@ describe("Gen 7 Huge Power / Pure Power", () => {
       defender: createOnFieldPokemon({ defense: 100 }),
       move: createSyntheticMove({ power: 50, category: MOVE_CATEGORIES.physical }),
       seed: 42,
+      // Source: Showdown Gen 7 — Huge Power doubles physical Attack
     });
 
     const noAbil = calculateGen7Damage(noAbilCtx, typeChart);
     const withHP = calculateGen7Damage(hugePowerCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Huge Power doubles physical Attack
     expect(withHP.damage).toBeGreaterThan(noAbil.damage);
   });
 });
@@ -2571,11 +2707,13 @@ describe("Gen 7 Tinted Lens", () => {
       defender: createOnFieldPokemon({ defense: 100, types: [TYPE_IDS.water] }),
       move: createSyntheticMove({ power: 50, type: TYPE_IDS.fire }),
       seed: 42,
+      // Source: Showdown Gen 7 — Tinted Lens doubles NVE damage
     });
 
     const noAbil = calculateGen7Damage(noAbilCtx, typeChart);
     const withTinted = calculateGen7Damage(tintedCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Tinted Lens doubles NVE damage
     expect(withTinted.damage).toBeGreaterThan(noAbil.damage);
     expect(withTinted.breakdown?.abilityMultiplier).toBe(2);
   });
@@ -2598,11 +2736,13 @@ describe("Gen 7 harsh sun", () => {
       }),
       state: createBattleState({
         weather: { type: WEATHER_IDS.harshSun, turnsLeft: -1, source: ABILITY_IDS.desolateLand },
+        // Source: Showdown Gen 7 — Harsh Sun negates Water moves
       }),
       seed: 42,
     });
 
     const result = calculateGen7Damage(ctx, typeChart);
+    // Source: Showdown Gen 7 — Harsh Sun negates Water moves
     expect(result.damage).toBe(0);
     expect(result.effectiveness).toBe(0);
   });
@@ -2630,11 +2770,13 @@ describe("Gen 7 Flash Fire volatile", () => {
       defender: createOnFieldPokemon({ defense: 100 }),
       move: createSyntheticMove({ power: 50, type: TYPE_IDS.fire }),
       seed: 42,
+      // Source: Showdown Gen 7 — Flash Fire 1.5× Fire when volatile active
     });
 
     const noFlash = calculateGen7Damage(noFlashCtx, typeChart);
     const withFlash = calculateGen7Damage(flashCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Flash Fire 1.5× Fire when volatile active
     expect(withFlash.damage).toBeGreaterThan(noFlash.damage);
   });
 });
@@ -2657,11 +2799,13 @@ describe("Gen 7 Thick Fat", () => {
       defender: createOnFieldPokemon({ defense: 100, ability: ABILITY_IDS.thickFat }),
       move: createSyntheticMove({ power: 50, type: TYPE_IDS.fire }),
       seed: 42,
+      // Source: Showdown Gen 7 — Thick Fat halves Fire/Ice effective attack
     });
 
     const noAbil = calculateGen7Damage(noAbilCtx, typeChart);
     const withThickFat = calculateGen7Damage(thickFatCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Thick Fat halves Fire/Ice effective attack
     expect(withThickFat.damage).toBeLessThan(noAbil.damage);
     expect(withThickFat.breakdown?.abilityMultiplier).toBe(0.5);
   });
@@ -2697,11 +2841,13 @@ describe("Gen 7 spread modifier", () => {
       }),
       state: createBattleState({ format: "doubles" }),
       seed: 42,
+      // Source: Showdown Gen 7 — spread move 0.75× penalty in doubles
     });
 
     const singles = calculateGen7Damage(singlesCtx, typeChart);
     const doubles = calculateGen7Damage(doublesCtx, typeChart);
 
+    // Source: Showdown Gen 7 — spread move 0.75× penalty in doubles
     expect(doubles.damage).toBeLessThan(singles.damage);
   });
 });
@@ -2738,11 +2884,13 @@ describe("Gen 7 sandstorm SpDef boost", () => {
       }),
       seed: 42,
     });
+    // Source: Showdown Gen 7 — sandstorm +50% SpDef for Rock types
 
     const noWeather = calculateGen7Damage(noWeatherCtx, typeChart);
     const inSand = calculateGen7Damage(sandCtx, typeChart);
 
     // Rock-type defender takes less damage from special moves in sandstorm
+    // Source: Showdown Gen 7 — sandstorm +50% SpDef for Rock types
     expect(inSand.damage).toBeLessThan(noWeather.damage);
   });
 });
@@ -2773,11 +2921,13 @@ describe("Gen 7 Rivalry", () => {
       defender: createOnFieldPokemon({ defense: 100, gender: GENDER_IDS.male }),
       move: createSyntheticMove({ power: 50 }),
       seed: 42,
+      // Source: Showdown Gen 7 — Rivalry 1.25× same-gender matchup
     });
 
     const noAbil = calculateGen7Damage(noAbilCtx, typeChart);
     const withRivalry = calculateGen7Damage(rivalryCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Rivalry 1.25× same-gender matchup
     expect(withRivalry.damage).toBeGreaterThan(noAbil.damage);
   });
 
@@ -2802,11 +2952,13 @@ describe("Gen 7 Rivalry", () => {
       defender: createOnFieldPokemon({ defense: 100, gender: GENDER_IDS.female }),
       move: createSyntheticMove({ power: 50 }),
       seed: 42,
+      // Source: Showdown Gen 7 — Rivalry 0.75× opposite-gender matchup
     });
 
     const noAbil = calculateGen7Damage(noAbilCtx, typeChart);
     const withRivalry = calculateGen7Damage(rivalryCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Rivalry 0.75× opposite-gender matchup
     expect(withRivalry.damage).toBeLessThan(noAbil.damage);
   });
 });
@@ -2829,11 +2981,13 @@ describe("Gen 7 Heatproof", () => {
       defender: createOnFieldPokemon({ defense: 100, ability: ABILITY_IDS.heatproof }),
       move: createSyntheticMove({ power: 50, type: TYPE_IDS.fire }),
       seed: 42,
+      // Source: Showdown Gen 7 — Heatproof halves Fire damage
     });
 
     const noAbil = calculateGen7Damage(noAbilCtx, typeChart);
     const withHeat = calculateGen7Damage(heatCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Heatproof halves Fire damage
     expect(withHeat.damage).toBeLessThan(noAbil.damage);
   });
 });
@@ -2864,11 +3018,13 @@ describe("Gen 7 Reckless", () => {
         effect: { type: "recoil", fraction: 1 / 3 },
       }),
       seed: 42,
+      // Source: Showdown Gen 7 — Reckless 1.2× for recoil moves
     });
 
     const noAbil = calculateGen7Damage(noAbilCtx, typeChart);
     const withReckless = calculateGen7Damage(recklessCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Reckless 1.2× for recoil moves
     expect(withReckless.damage).toBeGreaterThan(noAbil.damage);
   });
 });
@@ -2891,11 +3047,13 @@ describe("Gen 7 move-flag abilities", () => {
       defender: createOnFieldPokemon({ defense: 100 }),
       move: createSyntheticMove({ power: 50, flags: { punch: true } }),
       seed: 42,
+      // Source: Showdown Gen 7 — Iron Fist 1.2× punch moves
     });
 
     const withIronFist = calculateGen7Damage(ctx, typeChart);
     const noAbil = calculateGen7Damage(noAbilCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Iron Fist 1.2× punch moves
     expect(withIronFist.damage).toBeGreaterThan(noAbil.damage);
   });
 
@@ -2912,11 +3070,13 @@ describe("Gen 7 move-flag abilities", () => {
       defender: createOnFieldPokemon({ defense: 100 }),
       move: createSyntheticMove({ power: 50, type: TYPE_IDS.dark, flags: { bite: true } }),
       seed: 42,
+      // Source: Showdown Gen 7 — Strong Jaw 1.5× bite moves
     });
 
     const withStrongJaw = calculateGen7Damage(ctx, typeChart);
     const noAbil = calculateGen7Damage(noAbilCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Strong Jaw 1.5× bite moves
     expect(withStrongJaw.damage).toBeGreaterThan(noAbil.damage);
   });
 
@@ -2943,11 +3103,13 @@ describe("Gen 7 move-flag abilities", () => {
         flags: { pulse: true },
       }),
       seed: 42,
+      // Source: Showdown Gen 7 — Mega Launcher 1.5× pulse moves
     });
 
     const withML = calculateGen7Damage(ctx, typeChart);
     const noAbil = calculateGen7Damage(noAbilCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Mega Launcher 1.5× pulse moves
     expect(withML.damage).toBeGreaterThan(noAbil.damage);
   });
 
@@ -2964,11 +3126,13 @@ describe("Gen 7 move-flag abilities", () => {
       defender: createOnFieldPokemon({ defense: 100 }),
       move: createSyntheticMove({ power: 50, flags: { contact: true } }),
       seed: 42,
+      // Source: Showdown Gen 7 — Tough Claws ~1.3× contact moves
     });
 
     const withTC = calculateGen7Damage(ctx, typeChart);
     const noAbil = calculateGen7Damage(noAbilCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Tough Claws ~1.3× contact moves
     expect(withTC.damage).toBeGreaterThan(noAbil.damage);
   });
 });
@@ -2991,11 +3155,13 @@ describe("Gen 7 plate items", () => {
       defender: createOnFieldPokemon({ defense: 100 }),
       move: createSyntheticMove({ power: 50, type: TYPE_IDS.fire }),
       seed: 42,
+      // Source: Showdown Gen 7 — plate item ~1.2× type-matching moves
     });
 
     const noItem = calculateGen7Damage(noItemCtx, typeChart);
     const withPlate = calculateGen7Damage(plateCtx, typeChart);
 
+    // Source: Showdown Gen 7 — plate item ~1.2× type-matching moves
     expect(withPlate.damage).toBeGreaterThan(noItem.damage);
   });
 });
@@ -3028,11 +3194,13 @@ describe("Gen 7 Defeatist", () => {
       defender: createOnFieldPokemon({ defense: 100 }),
       move: createSyntheticMove({ power: 50, category: MOVE_CATEGORIES.physical }),
       seed: 42,
+      // Source: Showdown Gen 7 — Defeatist halves Attack/SpAtk at ≤50% HP
     });
 
     const fullHp = calculateGen7Damage(fullHpCtx, typeChart);
     const halfHp = calculateGen7Damage(halfHpCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Defeatist halves Attack/SpAtk at ≤50% HP
     expect(halfHp.damage).toBeLessThan(fullHp.damage);
   });
 });
@@ -3065,11 +3233,13 @@ describe("Gen 7 Sheer Force", () => {
         effect: { type: "status-chance", status: STATUS_IDS.burn, chance: 10 },
       }),
       seed: 42,
+      // Source: Showdown Gen 7 — Sheer Force ~1.3× on moves with secondary effects
     });
 
     const noAbil = calculateGen7Damage(noAbilCtx, typeChart);
     const withSF = calculateGen7Damage(sfCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Sheer Force ~1.3× on moves with secondary effects
     expect(withSF.damage).toBeGreaterThan(noAbil.damage);
   });
 });
@@ -3092,11 +3262,13 @@ describe("Gen 7 defensive items", () => {
       defender: createOnFieldPokemon({ defense: 100, heldItem: ITEM_IDS.eviolite }),
       move: createSyntheticMove({ power: 50 }),
       seed: 42,
+      // Source: Showdown Gen 7 — Eviolite 1.5× Defense/SpDef
     });
 
     const noItem = calculateGen7Damage(noItemCtx, typeChart);
     const withEviolite = calculateGen7Damage(evioliteCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Eviolite 1.5× Defense/SpDef
     expect(withEviolite.damage).toBeLessThan(noItem.damage);
   });
 
@@ -3121,11 +3293,13 @@ describe("Gen 7 defensive items", () => {
         type: TYPE_IDS.fire,
       }),
       seed: 42,
+      // Source: Showdown Gen 7 — Assault Vest 1.5× SpDef
     });
 
     const noItem = calculateGen7Damage(noItemCtx, typeChart);
     const withAV = calculateGen7Damage(avCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Assault Vest 1.5× SpDef
     expect(withAV.damage).toBeLessThan(noItem.damage);
   });
 });
@@ -3144,11 +3318,13 @@ describe("Gen 7 Magnet Rise", () => {
     const ctx = createDamageContext({
       attacker: createOnFieldPokemon({ attack: 100 }),
       defender: createOnFieldPokemon({ defense: 100, volatiles: magnetRiseVolatile }),
+      // Source: Showdown Gen 7 — Magnet Rise grants Ground immunity
       move: createSyntheticMove({ power: 50, type: TYPE_IDS.ground }),
       seed: 42,
     });
 
     const result = calculateGen7Damage(ctx, typeChart);
+    // Source: Showdown Gen 7 — Magnet Rise grants Ground immunity
     expect(result.damage).toBe(0);
     expect(result.effectiveness).toBe(0);
   });
@@ -3172,14 +3348,18 @@ describe("Gen 7 Scrappy", () => {
       defender: createOnFieldPokemon({ defense: 100, types: [TYPE_IDS.ghost] }),
       move: createSyntheticMove({ power: 50, type: TYPE_IDS.normal }),
       seed: 42,
+      // Source: Showdown Gen 7 — Normal immune to Ghost without Scrappy
     });
 
     const noAbil = calculateGen7Damage(noAbilCtx, typeChart);
+    // Source: Showdown Gen 7 — Scrappy bypasses Ghost/Normal immunity
     const withScrappy = calculateGen7Damage(scrappyCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Normal immune to Ghost without Scrappy
     expect(noAbil.damage).toBe(0); // Ghost immune to Normal
     expect(noAbil.effectiveness).toBe(0);
     // Scrappy bypasses Ghost immunity; damage is non-zero
+    // Source: Showdown Gen 7 — Scrappy bypasses Ghost/Normal immunity
     expect(withScrappy.damage).toBeGreaterThanOrEqual(1);
     expect(withScrappy.effectiveness).toBe(1);
   });
@@ -3203,11 +3383,13 @@ describe("Gen 7 Dry Skin", () => {
       defender: createOnFieldPokemon({ defense: 100, ability: ABILITY_IDS.drySkin }),
       move: createSyntheticMove({ power: 80, type: TYPE_IDS.fire }),
       seed: 42,
+      // Source: Showdown Gen 7 — Dry Skin 1.25× Fire damage
     });
 
     const noAbil = calculateGen7Damage(noAbilCtx, typeChart);
     const withDrySkin = calculateGen7Damage(drySkinCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Dry Skin 1.25× Fire damage
     expect(withDrySkin.damage).toBeGreaterThan(noAbil.damage);
   });
 });
@@ -3247,11 +3429,13 @@ describe("Gen 7 legendary orbs", () => {
         category: MOVE_CATEGORIES.special,
       }),
       seed: 42,
+      // Source: Showdown Gen 7 — Adamant Orb ~1.2× Dragon/Steel for Dialga
     });
 
     const noItem = calculateGen7Damage(noItemCtx, typeChart);
     const withOrb = calculateGen7Damage(orbCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Adamant Orb ~1.2× Dragon/Steel for Dialga
     expect(withOrb.damage).toBeGreaterThan(noItem.damage);
   });
 });
@@ -3274,11 +3458,13 @@ describe("Gen 7 Fur Coat", () => {
       defender: createOnFieldPokemon({ defense: 100, ability: ABILITY_IDS.furCoat }),
       move: createSyntheticMove({ power: 50, category: MOVE_CATEGORIES.physical }),
       seed: 42,
+      // Source: Showdown Gen 7 — Fur Coat doubles physical Defense
     });
 
     const noAbil = calculateGen7Damage(noAbilCtx, typeChart);
     const withFurCoat = calculateGen7Damage(furCoatCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Fur Coat doubles physical Defense
     expect(withFurCoat.damage).toBeLessThan(noAbil.damage);
   });
 });
@@ -3316,16 +3502,19 @@ describe("Gen 7 isGen7Grounded coverage", () => {
             source: resolveTerrainSource(TEST_TERRAIN_IDS.electric),
           },
         }),
+        // Source: Showdown Gen 7 — Gravity grounds all Pokemon (terrain boost applies)
         gravity: { active: true, turnsLeft: 5 },
       } as any,
     });
     const airborne = calculateGen7Damage(airborneCtx, typeChart);
     const result = calculateGen7Damage(ctx, typeChart);
+    // Source: Showdown Gen 7 — Gravity grounded attacker gets terrain boost
     expect(airborne).toMatchObject({
       damage: 26,
       effectiveness: 1,
       breakdown: expect.objectContaining({ baseDamage: 28, finalDamage: 26 }),
     });
+    // Source: Showdown Gen 7 — Gravity grounds all Pokemon (terrain boost applies)
     expect(result).toMatchObject({
       damage: 38,
       effectiveness: 1,
@@ -3346,11 +3535,13 @@ describe("Gen 7 isGen7Grounded coverage", () => {
         terrain: {
           type: TEST_TERRAIN_IDS.electric,
           turnsLeft: 5,
+          // Source: Showdown Gen 7 — Ingrain grounds Flying Pokemon
           source: resolveTerrainSource(TEST_TERRAIN_IDS.electric),
         },
       }),
     });
     const result = calculateGen7Damage(ctx, typeChart);
+    // Source: Showdown Gen 7 — Gravity grounded attacker gets terrain boost
     expect(result).toMatchObject({
       damage: 38,
       effectiveness: 1,
@@ -3371,16 +3562,19 @@ describe("Gen 7 isGen7Grounded coverage", () => {
         terrain: {
           type: TEST_TERRAIN_IDS.electric,
           turnsLeft: 5,
+          // Source: Showdown Gen 7 — Iron Ball grounds Flying Pokemon
           source: resolveTerrainSource(TEST_TERRAIN_IDS.electric),
         },
       }),
     });
     const result = calculateGen7Damage(ctx, typeChart);
+    // Source: Showdown Gen 7 — Iron Ball not consumed when grounding attacker
     expect(result).toMatchObject({
       damage: 38,
       effectiveness: 1,
       breakdown: expect.objectContaining({ baseDamage: 41, finalDamage: 38 }),
     });
+    // Source: Showdown Gen 7 — Iron Ball not consumed when grounding attacker
     expect(ctx.attacker.pokemon.heldItem).toBe(TEST_ITEM_IDS.ironBall);
   });
 
@@ -3396,11 +3590,13 @@ describe("Gen 7 isGen7Grounded coverage", () => {
         terrain: {
           type: TEST_TERRAIN_IDS.electric,
           turnsLeft: 5,
+          // Source: Showdown Gen 7 — Smack Down volatile grounds Flying Pokemon
           source: resolveTerrainSource(TEST_TERRAIN_IDS.electric),
         },
       }),
     });
     const result = calculateGen7Damage(ctx, typeChart);
+    // Source: Showdown Gen 7 — Smack Down volatile grounds Flying Pokemon
     expect(result).toMatchObject({
       damage: 38,
       effectiveness: 1,
@@ -3423,16 +3619,19 @@ describe("Gen 7 isGen7Grounded coverage", () => {
         terrain: {
           type: TEST_TERRAIN_IDS.electric,
           turnsLeft: 5,
+          // Source: Showdown Gen 7 — Air Balloon at 0 HP = grounded
           source: resolveTerrainSource(TEST_TERRAIN_IDS.electric),
         },
       }),
     });
     const result = calculateGen7Damage(ctx, typeChart);
+    // Source: Showdown Gen 7 — Air Balloon not consumed during grounding check
     expect(result).toMatchObject({
       damage: 38,
       effectiveness: 1,
       breakdown: expect.objectContaining({ baseDamage: 41, finalDamage: 38 }),
     });
+    // Source: Showdown Gen 7 — Air Balloon not consumed during grounding check
     expect(ctx.attacker.pokemon.heldItem).toBe(TEST_ITEM_IDS.airBalloon);
   });
 
@@ -3463,11 +3662,13 @@ describe("Gen 7 isGen7Grounded coverage", () => {
           type: TYPE_IDS.electric,
           turnsLeft: 5,
           source: resolveTerrainSource(TYPE_IDS.electric),
+          // Source: Showdown Gen 7 — Telekinesis volatile makes Pokemon ungrounded
         },
       }),
     });
     const noTele = calculateGen7Damage(ctxGrounded, typeChart);
     // Grounded version should do more damage
+    // Source: Showdown Gen 7 — Telekinesis volatile makes Pokemon ungrounded
     expect(noTele.damage).toBeGreaterThan(withTele.damage);
   });
 });
@@ -3489,11 +3690,13 @@ describe("Gen 7 Grassy Terrain", () => {
     });
     const withTerrain = calculateGen7Damage(ctx, typeChart);
     const ctxNo = createDamageContext({
+      // Source: Showdown Gen 7 — Grassy Terrain 1.5× Grass for grounded attackers
       attacker: createOnFieldPokemon({ types: [TYPE_IDS.grass] }),
       defender: createOnFieldPokemon({ types: [TYPE_IDS.normal] }),
       move: createSyntheticMove({ type: TYPE_IDS.grass, power: 60 }),
     });
     const noTerrain = calculateGen7Damage(ctxNo, typeChart);
+    // Source: Showdown Gen 7 — Grassy Terrain 1.5× Grass for grounded attackers
     expect(withTerrain.damage).toBeGreaterThan(noTerrain.damage);
   });
 
@@ -3514,11 +3717,13 @@ describe("Gen 7 Grassy Terrain", () => {
     const withTerrain = calculateGen7Damage(ctx, typeChart);
     const ctxNo = createDamageContext({
       attacker: createOnFieldPokemon({ types: [TYPE_IDS.ground] }),
+      // Source: Showdown Gen 7 — Grassy Terrain halves Earthquake damage
       defender: createOnFieldPokemon({ types: [TYPE_IDS.normal] }),
       move: createSyntheticMove({ type: TYPE_IDS.ground, power: 100, id: MOVE_IDS.earthquake }),
     });
     const noTerrain = calculateGen7Damage(ctxNo, typeChart);
     // Should do roughly half damage
+    // Source: Showdown Gen 7 — Grassy Terrain halves Earthquake damage
     expect(withTerrain.damage).toBeLessThan(noTerrain.damage);
   });
 });
@@ -3540,11 +3745,13 @@ describe("Gen 7 getEffectiveStatStage coverage", () => {
     const atk2 = createOnFieldPokemon({ attack: 100, ability: ABILITY_IDS.none });
     (atk2.statStages as any).attack = 2;
     const ctx2 = createDamageContext({
+      // Source: Showdown Gen 7 — Simple doubles stat stages
       attacker: atk2,
       defender: createOnFieldPokemon({}),
       move: createSyntheticMove({ power: 50, category: MOVE_CATEGORIES.physical }),
     });
     const result2 = calculateGen7Damage(ctx2, typeChart);
+    // Source: Showdown Gen 7 — Simple doubles stat stages
     expect(result.damage).toBeGreaterThan(result2.damage);
   });
 
@@ -3560,11 +3767,13 @@ describe("Gen 7 getEffectiveStatStage coverage", () => {
     const atk2 = createOnFieldPokemon({ attack: 100 });
     const ctxNoBoost = createDamageContext({
       attacker: atk2,
+      // Source: Showdown Gen 7 — Unaware ignores opponent stat stages
       defender: createOnFieldPokemon({ ability: ABILITY_IDS.unaware }),
       move: createSyntheticMove({ power: 50, category: MOVE_CATEGORIES.physical }),
     });
     const result1 = calculateGen7Damage(ctxUnaware, typeChart);
     const result2 = calculateGen7Damage(ctxNoBoost, typeChart);
+    // Source: Showdown Gen 7 — Unaware ignores opponent stat stages
     expect(result1.damage).toBe(result2.damage);
   });
 });
@@ -3591,11 +3800,13 @@ describe("Gen 7 attack stat item coverage", () => {
       move: createSyntheticMove({
         power: 50,
         category: MOVE_CATEGORIES.special,
+        // Source: Showdown Gen 7 — Deep Sea Tooth doubles Clamperl SpAtk
         type: TYPE_IDS.water,
       }),
     });
     const with_ = calculateGen7Damage(ctx, typeChart);
     const without = calculateGen7Damage(ctxNo, typeChart);
+    // Source: Showdown Gen 7 — Deep Sea Tooth doubles Clamperl SpAtk
     expect(with_.damage).toBeGreaterThan(without.damage);
   });
 
@@ -3617,11 +3828,13 @@ describe("Gen 7 attack stat item coverage", () => {
         attack: 100,
         types: [TYPE_IDS.electric],
       }),
+      // Source: Showdown Gen 7 — Light Ball doubles Pikachu Attack and SpAtk
       defender: createOnFieldPokemon({}),
       move: createSyntheticMove({ power: 50, category: MOVE_CATEGORIES.physical }),
     });
     const with_ = calculateGen7Damage(ctx, typeChart);
     const without = calculateGen7Damage(ctxNo, typeChart);
+    // Source: Showdown Gen 7 — Light Ball doubles Pikachu Attack and SpAtk
     expect(with_.damage).toBeGreaterThan(without.damage);
   });
 
@@ -3648,11 +3861,13 @@ describe("Gen 7 attack stat item coverage", () => {
         attack: 100,
         types: [TYPE_IDS.ground],
       }),
+      // Source: Showdown Gen 7 — Thick Club doubles Marowak/Cubone Attack
       defender: createOnFieldPokemon({}),
       move: createSyntheticMove({ power: 50, category: MOVE_CATEGORIES.physical }),
     });
     const with_ = calculateGen7Damage(ctx, typeChart);
     const without = calculateGen7Damage(ctxNo, typeChart);
+    // Source: Showdown Gen 7 — Thick Club doubles Marowak/Cubone Attack
     expect(with_.breakdown?.baseDamage).toBe(46);
     expect(without.breakdown?.baseDamage).toBe(24);
     expect(with_.damage).toBeGreaterThan(without.damage);
@@ -3679,11 +3894,13 @@ describe("Gen 7 attack stat item coverage", () => {
         attack: 100,
         types: [TYPE_IDS.ground],
       }),
+      // Source: Showdown Gen 7 — Thick Club doubles Cubone/Marowak Attack
       defender: createOnFieldPokemon({}),
       move: createSyntheticMove({ power: 50, category: MOVE_CATEGORIES.physical }),
     });
     const with_ = calculateGen7Damage(ctx, typeChart);
     const without = calculateGen7Damage(ctxNo, typeChart);
+    // Source: Showdown Gen 7 — Thick Club doubles Cubone/Marowak Attack
     expect(with_.breakdown?.baseDamage).toBe(46);
     expect(without.breakdown?.baseDamage).toBe(24);
     expect(with_.damage).toBeGreaterThan(without.damage);
@@ -3698,11 +3915,13 @@ describe("Gen 7 attack stat item coverage", () => {
     });
     const ctxNo = createDamageContext({
       attacker: createOnFieldPokemon({ attack: 100, ability: ABILITY_IDS.none }),
+      // Source: Showdown Gen 7 — Hustle 1.5× physical Attack
       defender: createOnFieldPokemon({}),
       move: createSyntheticMove({ power: 50, category: MOVE_CATEGORIES.physical }),
     });
     const with_ = calculateGen7Damage(ctx, typeChart);
     const without = calculateGen7Damage(ctxNo, typeChart);
+    // Source: Showdown Gen 7 — Hustle 1.5× physical Attack
     expect(with_.damage).toBeGreaterThan(without.damage);
   });
 });
@@ -3723,11 +3942,13 @@ describe("Gen 7 Slow Start", () => {
     });
     const ctxNo = createDamageContext({
       attacker: createOnFieldPokemon({ attack: 100 }),
+      // Source: Showdown Gen 7 — Slow Start halves Attack for first 5 turns
       defender: createOnFieldPokemon({}),
       move: createSyntheticMove({ power: 50, category: MOVE_CATEGORIES.physical }),
     });
     const with_ = calculateGen7Damage(ctx, typeChart);
     const without = calculateGen7Damage(ctxNo, typeChart);
+    // Source: Showdown Gen 7 — Slow Start halves Attack for first 5 turns
     expect(with_.damage).toBeLessThan(without.damage);
   });
 });
@@ -3747,11 +3968,13 @@ describe("Gen 7 crit stat stage interaction", () => {
     const ctxNoCrit = createDamageContext({
       attacker: atk2,
       move: createSyntheticMove({ power: 50, category: MOVE_CATEGORIES.physical }),
+      // Source: Showdown Gen 7 — critical hit ignores negative attack stages
       isCrit: false,
     });
     const critResult = calculateGen7Damage(ctxCrit, typeChart);
     const noCritResult = calculateGen7Damage(ctxNoCrit, typeChart);
     // Crit ignores -2 and also multiplies by 1.5x, so it should be much higher
+    // Source: Showdown Gen 7 — critical hit ignores negative attack stages
     expect(critResult.damage).toBeGreaterThan(noCritResult.damage);
   });
 
@@ -3769,11 +3992,13 @@ describe("Gen 7 crit stat stage interaction", () => {
     const ctxNoCrit = createDamageContext({
       defender: def2,
       move: createSyntheticMove({ power: 50, category: MOVE_CATEGORIES.physical }),
+      // Source: Showdown Gen 7 — critical hit ignores positive defense stages
       isCrit: false,
     });
     const critResult = calculateGen7Damage(ctxCrit, typeChart);
     const noCritResult = calculateGen7Damage(ctxNoCrit, typeChart);
     // Crit ignores +2 def AND adds 1.5x multiplier
+    // Source: Showdown Gen 7 — critical hit ignores positive defense stages
     expect(critResult.damage).toBeGreaterThan(noCritResult.damage);
   });
 });
@@ -3790,11 +4015,13 @@ describe("Gen 7 defense stat items coverage", () => {
       move: createSyntheticMove({ power: 50, category: MOVE_CATEGORIES.special }),
     });
     const ctxNo = createDamageContext({
+      // Source: Showdown Gen 7 — Deep Sea Scale doubles Clamperl SpDef
       defender: createOnFieldPokemon({ speciesId: SPECIES_IDS.clamperl, spDefense: 100 }),
       move: createSyntheticMove({ power: 50, category: MOVE_CATEGORIES.special }),
     });
     const with_ = calculateGen7Damage(ctx, typeChart);
     const without = calculateGen7Damage(ctxNo, typeChart);
+    // Source: Showdown Gen 7 — Deep Sea Scale doubles Clamperl SpDef
     expect(with_.damage).toBeLessThan(without.damage);
   });
 
@@ -3813,11 +4040,13 @@ describe("Gen 7 defense stat items coverage", () => {
         defense: 100,
         ability: ABILITY_IDS.none,
         status: STATUS_IDS.burn,
+        // Source: Showdown Gen 7 — Marvel Scale 1.5× physical Defense when statused
       }),
       move: createSyntheticMove({ power: 50, category: MOVE_CATEGORIES.physical }),
     });
     const with_ = calculateGen7Damage(ctx, typeChart);
     const without = calculateGen7Damage(ctxNo, typeChart);
+    // Source: Showdown Gen 7 — Marvel Scale 1.5× physical Defense when statused
     expect(with_.damage).toBeLessThan(without.damage);
   });
 
@@ -3842,11 +4071,13 @@ describe("Gen 7 defense stat items coverage", () => {
           type: WEATHER_IDS.sun,
           turnsLeft: 5,
           source: resolveWeatherSource(WEATHER_IDS.sun),
+          // Source: Showdown Gen 7 — Flower Gift 1.5× SpDef in sun
         },
       }),
     });
     const with_ = calculateGen7Damage(ctx, typeChart);
     const without = calculateGen7Damage(ctxNo, typeChart);
+    // Source: Showdown Gen 7 — Flower Gift 1.5× SpDef in sun
     expect(with_.damage).toBeLessThan(without.damage);
   });
 });
@@ -3872,11 +4103,13 @@ describe("Gen 7 Knock Off item checks", () => {
         type: TYPE_IDS.dark,
         power: 65,
         category: MOVE_CATEGORIES.physical,
+        // Source: Showdown Gen 7 — Knock Off no boost vs mega stone (not removable)
       }),
     });
     const mega = calculateGen7Damage(ctx, typeChart);
     const normal = calculateGen7Damage(ctxRemovable, typeChart);
     // Removable item gets 1.5x, mega stone does not
+    // Source: Showdown Gen 7 — Knock Off no boost vs mega stone (not removable)
     expect(normal.damage).toBeGreaterThan(mega.damage);
   });
 
@@ -3901,11 +4134,13 @@ describe("Gen 7 Knock Off item checks", () => {
         type: TYPE_IDS.dark,
         power: 65,
         category: MOVE_CATEGORIES.physical,
+        // Source: Showdown Gen 7 — Knock Off 1.5× vs removable item
       }),
     });
     const removableResult = calculateGen7Damage(ctxRemovable, typeChart);
     const zCrystalResult = calculateGen7Damage(ctxZCrystal, typeChart);
     // Leftovers is removable so Knock Off gets 1.5x, Z-Crystal is not removable
+    // Source: Showdown Gen 7 — Knock Off 1.5× vs removable item
     expect(removableResult.damage).toBeGreaterThan(zCrystalResult.damage);
   });
 
@@ -3928,11 +4163,13 @@ describe("Gen 7 Knock Off item checks", () => {
         id: MOVE_IDS.knockOff,
         type: TYPE_IDS.dark,
         power: 65,
+        // Source: Showdown Gen 7 — Blue Orb not removable (Knock Off no boost)
         category: MOVE_CATEGORIES.physical,
       }),
     });
     const primalOrb = calculateGen7Damage(ctx, typeChart);
     const removable = calculateGen7Damage(ctxRemovable, typeChart);
+    // Source: Showdown Gen 7 — Blue Orb not removable (Knock Off no boost)
     expect(removable.damage).toBeGreaterThan(primalOrb.damage);
   });
 });
@@ -3954,11 +4191,13 @@ describe("Gen 7 Lustrous Orb and Griseous Orb", () => {
         speciesId: SPECIES_IDS.palkia,
         types: [TYPE_IDS.water, TYPE_IDS.dragon],
       }),
+      // Source: Showdown Gen 7 — Lustrous Orb ~1.2× Dragon/Water for Palkia
       defender: createOnFieldPokemon({ types: [TYPE_IDS.normal] }),
       move: createSyntheticMove({ type: TYPE_IDS.water, power: 80 }),
     });
     const with_ = calculateGen7Damage(ctx, typeChart);
     const without = calculateGen7Damage(ctxNo, typeChart);
+    // Source: Showdown Gen 7 — Lustrous Orb ~1.2× Dragon/Water for Palkia
     expect(with_.damage).toBeGreaterThan(without.damage);
   });
 
@@ -3987,11 +4226,13 @@ describe("Gen 7 Lustrous Orb and Griseous Orb", () => {
       move: createSyntheticMove({
         type: TYPE_IDS.ghost,
         power: 80,
+        // Source: Showdown Gen 7 — Griseous Orb ~1.2× Ghost/Dragon for Giratina
         category: MOVE_CATEGORIES.special,
       }),
     });
     const with_ = calculateGen7Damage(ctx, typeChart);
     const without = calculateGen7Damage(ctxNo, typeChart);
+    // Source: Showdown Gen 7 — Griseous Orb ~1.2× Ghost/Dragon for Giratina
     expect(with_.damage).toBeGreaterThan(without.damage);
   });
 });
@@ -4014,11 +4255,13 @@ describe("Gen 7 Thick Fat ice coverage", () => {
       move: createSyntheticMove({
         type: TYPE_IDS.ice,
         power: 60,
+        // Source: Showdown Gen 7 — Thick Fat halves Ice/Fire effective attack
         category: MOVE_CATEGORIES.physical,
       }),
     });
     const with_ = calculateGen7Damage(ctx, typeChart);
     const without = calculateGen7Damage(ctxNo, typeChart);
+    // Source: Showdown Gen 7 — Thick Fat halves Ice/Fire effective attack
     expect(with_.damage).toBeLessThan(without.damage);
   });
 });
@@ -4090,11 +4333,13 @@ describe("Gen 7 Harsh Sun water negation", () => {
         weather: {
           type: TEST_WEATHER_IDS.harshSun,
           turnsLeft: -1,
+          // Source: Showdown Gen 7 — Harsh Sun returns 0 for Water moves
           source: resolveWeatherSource(TEST_WEATHER_IDS.harshSun),
         },
       }),
     });
     const result = calculateGen7Damage(ctx, typeChart);
+    // Source: Showdown Gen 7 — Harsh Sun returns 0 for Water moves
     expect(result).toEqual({
       damage: 0,
       effectiveness: 0,
@@ -4126,11 +4371,13 @@ describe("Gen 7 Gravity + Ground vs Flying", () => {
       }),
       state: {
         ...createBattleState(),
+        // Source: Showdown Gen 7 — without Gravity, Ground is immune to Flying
         gravity: { active: true, turnsLeft: 5 },
       } as any,
     });
     const control = calculateGen7Damage(controlCtx, typeChart);
     const result = calculateGen7Damage(ctx, typeChart);
+    // Source: Showdown Gen 7 — without Gravity, Ground is immune to Flying
     expect(control).toMatchObject({ damage: 0, effectiveness: 0 });
     expect(result).toMatchObject({
       damage: 51,
@@ -4159,17 +4406,21 @@ describe("Gen 7 Gravity + Ground vs Flying", () => {
       move: createSyntheticMove({
         type: TYPE_IDS.ground,
         power: 80,
+        // Source: Showdown Gen 7 — Gravity grounds Flying type, allowing Ground hits
         category: MOVE_CATEGORIES.physical,
       }),
     });
     const control = calculateGen7Damage(controlCtx, typeChart);
     const result = calculateGen7Damage(ctx, typeChart);
+    // Source: Showdown Gen 7 — Gravity grounds Flying type, allowing Ground hits
     expect(control).toMatchObject({ damage: 0, effectiveness: 0 });
+    // Source: Showdown Gen 7 — Iron Ball on defender not removed by damage calc
     expect(result).toMatchObject({
       damage: 51,
       effectiveness: 1,
       breakdown: expect.objectContaining({ baseDamage: 37, typeMultiplier: 1, finalDamage: 51 }),
     });
+    // Source: Showdown Gen 7 — Iron Ball on defender not removed by damage calc
     expect(ctx.defender.pokemon.heldItem).toBe(TEST_ITEM_IDS.ironBall);
   });
 });
@@ -4183,11 +4434,13 @@ describe("Gen 7 Scrappy vs Ghost type (coverage)", () => {
       move: createSyntheticMove({
         type: TYPE_IDS.fighting,
         power: 80,
+        // Source: Showdown Gen 7 — Scrappy bypasses Ghost immunity for Fighting moves
         category: MOVE_CATEGORIES.physical,
       }),
     });
     const result = calculateGen7Damage(ctx, typeChart);
     // Scrappy Fighting vs Ghost: immunity bypassed, treated as neutral (1x); damage is non-zero
+    // Source: Showdown Gen 7 — Scrappy bypasses Ghost immunity for Fighting moves
     expect(result.damage).toBeGreaterThanOrEqual(1);
     expect(result.effectiveness).toBe(1);
   });
@@ -4210,11 +4463,13 @@ describe("Gen 7 Metronome item", () => {
     });
     const ctxNo = createDamageContext({
       attacker: createOnFieldPokemon({ attack: 100 }),
+      // Source: Showdown Gen 7 — Metronome item boost (1.0 + 0.2*(count-1) per use)
       defender: createOnFieldPokemon({}),
       move: createSyntheticMove({ power: 50, category: MOVE_CATEGORIES.physical }),
     });
     const with_ = calculateGen7Damage(ctx, typeChart);
     const without = calculateGen7Damage(ctxNo, typeChart);
+    // Source: Showdown Gen 7 — Metronome item boost (1.0 + 0.2*(count-1) per use)
     expect(with_.damage).toBeGreaterThan(without.damage);
   });
 });
@@ -4233,11 +4488,13 @@ describe("Gen 7 Magic Room", () => {
     });
     const ctxNoRoom = createDamageContext({
       attacker: createOnFieldPokemon({ types: [TYPE_IDS.fire] }),
+      // Source: Showdown Gen 7 — Magic Room suppresses held item effects
       defender: createOnFieldPokemon({ types: [TYPE_IDS.grass], heldItem: ITEM_IDS.occaBerry }),
       move: createSyntheticMove({ type: TYPE_IDS.fire, power: 60 }),
     });
     const magicRoom = calculateGen7Damage(ctx, typeChart);
     const noRoom = calculateGen7Damage(ctxNoRoom, typeChart);
+    // Source: Showdown Gen 7 — Magic Room suppresses held item effects
     expect(magicRoom.damage).toBeGreaterThan(noRoom.damage);
   });
 });
@@ -4252,11 +4509,13 @@ describe("Gen 7 Unburden on berry/gem consumption", () => {
     });
     const ctx = createDamageContext({
       attacker: createOnFieldPokemon({ types: [TYPE_IDS.fire] }),
+      // Source: Showdown Gen 7 — Unburden volatile set on item consumption
       defender,
       move: createSyntheticMove({ type: TYPE_IDS.fire, power: 60 }),
     });
     calculateGen7Damage(ctx, typeChart);
     // Berry consumed: heldItem nulled and unburden volatile set
+    // Source: Showdown Gen 7 — Unburden volatile set on item consumption
     expect(defender.pokemon.heldItem).toBeNull();
     expect(defender.volatileStatuses.has(ABILITY_IDS.unburden)).toBe(true);
   });
@@ -4269,11 +4528,13 @@ describe("Gen 7 Unburden on berry/gem consumption", () => {
       heldItem: ITEM_IDS.normalGem,
     });
     const ctx = createDamageContext({
+      // Source: Showdown Gen 7 — Unburden volatile set on gem consumption
       attacker,
       defender: createOnFieldPokemon({ types: [TYPE_IDS.psychic] }),
       move: createSyntheticMove({ type: TYPE_IDS.normal, power: 50 }),
     });
     calculateGen7Damage(ctx, typeChart);
+    // Source: Showdown Gen 7 — Unburden volatile set on gem consumption
     expect(attacker.pokemon.heldItem).toBeNull();
     expect(attacker.volatileStatuses.has(ABILITY_IDS.unburden)).toBe(true);
   });
@@ -4309,11 +4570,13 @@ describe("Gen 7 hasSheerForceEligibleEffect branches", () => {
           chance: 30,
           stats: { defense: -1 },
           fromSecondary: false,
+          // Source: Showdown Gen 7 — Sheer Force ~1.3× stat-change targeting foe
         } as any,
       }),
     });
     const with_ = calculateGen7Damage(ctx, typeChart);
     const without = calculateGen7Damage(ctxNo, typeChart);
+    // Source: Showdown Gen 7 — Sheer Force ~1.3× stat-change targeting foe
     expect(with_.damage).toBeGreaterThan(without.damage);
   });
 
@@ -4342,11 +4605,13 @@ describe("Gen 7 hasSheerForceEligibleEffect branches", () => {
           type: "volatile-status",
           volatileStatus: VOLATILE_IDS.flinch,
           chance: 30,
+          // Source: Showdown Gen 7 — Sheer Force ~1.3× volatile-status secondaries
         } as any,
       }),
     });
     const with_ = calculateGen7Damage(ctx, typeChart);
     const without = calculateGen7Damage(ctxNo, typeChart);
+    // Source: Showdown Gen 7 — Sheer Force ~1.3× volatile-status secondaries
     expect(with_.damage).toBeGreaterThan(without.damage);
   });
 
@@ -4379,11 +4644,13 @@ describe("Gen 7 hasSheerForceEligibleEffect branches", () => {
           chance: 100,
           stats: { attack: 1 },
           fromSecondary: true,
+          // Source: Showdown Gen 7 — Sheer Force ~1.3× self stat-change from secondary
         } as any,
       }),
     });
     const with_ = calculateGen7Damage(ctx, typeChart);
     const without = calculateGen7Damage(ctxNo, typeChart);
+    // Source: Showdown Gen 7 — Sheer Force ~1.3× self stat-change from secondary
     expect(with_.damage).toBeGreaterThan(without.damage);
   });
 
@@ -4410,11 +4677,13 @@ describe("Gen 7 hasSheerForceEligibleEffect branches", () => {
         effect: {
           type: "multi",
           effects: [{ type: "status-chance", status: "burn", chance: 10 }],
+          // Source: Showdown Gen 7 — Sheer Force ~1.3× multi effects with status-chance
         } as any,
       }),
     });
     const with_ = calculateGen7Damage(ctx, typeChart);
     const without = calculateGen7Damage(ctxNo, typeChart);
+    // Source: Showdown Gen 7 — Sheer Force ~1.3× multi effects with status-chance
     expect(with_.damage).toBeGreaterThan(without.damage);
   });
 
@@ -4435,11 +4704,13 @@ describe("Gen 7 hasSheerForceEligibleEffect branches", () => {
       move: createSyntheticMove({
         id: MOVE_IDS.triAttack,
         power: 80,
+        // Source: Showdown Gen 7 — Sheer Force whitelist includes Tri Attack
         category: MOVE_CATEGORIES.special,
       }),
     });
     const with_ = calculateGen7Damage(ctx, typeChart);
     const without = calculateGen7Damage(ctxNo, typeChart);
+    // Source: Showdown Gen 7 — Sheer Force whitelist includes Tri Attack
     expect(with_.damage).toBeGreaterThan(without.damage);
   });
 });
@@ -4495,11 +4766,13 @@ describe("Gen 7 Round move doubles combo", () => {
         category: MOVE_CATEGORIES.special,
       }),
       state: noAllyState,
+      // Source: Showdown Gen 7 — Round doubles power when ally used Round same turn
       rng: new SeededRandom(42),
       isCrit: false,
     };
     const withAlly = calculateGen7Damage(ctx, typeChart);
     const noAlly = calculateGen7Damage(ctxNoAlly, typeChart);
+    // Source: Showdown Gen 7 — Round doubles power when ally used Round same turn
     expect(withAlly.damage).toBeGreaterThan(noAlly.damage);
   });
 });
@@ -4552,11 +4825,13 @@ describe("Gen 7 Embargo suppresses items", () => {
         type: TYPE_IDS.normal,
         power: pokeRound(50, TEST_FIXED_POINT.gemBoost),
       }),
+      // Source: Showdown Gen 7 — Embargo suppresses gem consumption
     });
     const withEmbargo = calculateGen7Damage(ctxGem, typeChart);
     const noItem = calculateGen7Damage(ctxNoItem, typeChart);
     const noEmbargo = calculateGen7Damage(ctxNoEmbargo, typeChart);
     const gemPowerControl = calculateGen7Damage(ctxGemPowerControl, typeChart);
+    // Source: Showdown Gen 7 — Embargo suppresses gem consumption
     expect(withEmbargo).toEqual(noItem);
     expect(noEmbargo).toEqual(gemPowerControl);
   });
@@ -4592,11 +4867,13 @@ describe("Gen 7 defender Klutz and Iron Ball", () => {
           type: TEST_TERRAIN_IDS.electric,
           turnsLeft: 5,
           source: resolveTerrainSource(TEST_TERRAIN_IDS.electric),
+          // Source: Showdown Gen 7 — defender Klutz+Iron Ball does not affect attacker terrain boost
         },
       }),
     });
     const control = calculateGen7Damage(controlCtx, typeChart);
     const result = calculateGen7Damage(ctx, typeChart);
+    // Source: Showdown Gen 7 — defender Klutz+Iron Ball does not affect attacker terrain boost
     expect(control.damage).toBe(57);
     expect(control.breakdown?.baseDamage).toBe(41);
     expect(result.damage).toBe(57);
@@ -4669,11 +4946,13 @@ describe("Gen 7 Aurora Veil screen damage reduction", () => {
       }),
       state: stateWithVeil,
       seed: 42,
+      // Source: Showdown Gen 7 — Aurora Veil halves physical damage in singles
     });
 
     const resultNoScreen = calculateGen7Damage(ctxNoScreen, typeChart);
     const resultWithVeil = calculateGen7Damage(ctxWithVeil, typeChart);
 
+    // Source: Showdown Gen 7 — Aurora Veil halves physical damage in singles
     expect(resultNoScreen.damage).toBe(34);
     expect(resultWithVeil.damage).toBe(17);
     expect(resultWithVeil.breakdown?.otherMultiplier).toBe(0.5);
@@ -4711,11 +4990,13 @@ describe("Gen 7 Aurora Veil screen damage reduction", () => {
       }),
       state: stateWithVeil,
       seed: 42,
+      // Source: Showdown Gen 7 — Aurora Veil halves special damage in singles
     });
 
     const resultNoScreen = calculateGen7Damage(ctxNoScreen, typeChart);
     const resultWithVeil = calculateGen7Damage(ctxWithVeil, typeChart);
 
+    // Source: Showdown Gen 7 — Aurora Veil halves special damage in singles
     expect(resultNoScreen.damage).toBe(34);
     expect(resultWithVeil.damage).toBe(17);
     expect(resultWithVeil.breakdown?.otherMultiplier).toBe(0.5);
@@ -4750,14 +5031,18 @@ describe("Gen 7 Aurora Veil screen damage reduction", () => {
       seed: 42,
       isCrit: true,
     });
+    // Source: Showdown Gen 7 — Aurora Veil halves non-crit hits
 
     const resultNoCrit = calculateGen7Damage(ctxNoCrit, typeChart);
     const resultWithCrit = calculateGen7Damage(ctxWithCrit, typeChart);
+    // Source: Showdown Gen 7 — critical hit bypasses Aurora Veil (and gets 1.5× crit)
 
     // Non-crit with Aurora Veil: halved
+    // Source: Showdown Gen 7 — Aurora Veil halves non-crit hits
     expect(resultNoCrit.damage).toBe(17);
     // Crit with Aurora Veil: NOT halved (crit bypasses screens); also gets 1.5x crit boost
     // Derivation: base=34 (no screen) * 1.5x crit = pokeRound(34, 6144) = 51
+    // Source: Showdown Gen 7 — critical hit bypasses Aurora Veil (and gets 1.5× crit)
     expect(resultWithCrit.damage).toBe(51);
     expect(resultWithCrit.breakdown?.otherMultiplier).toBe(1);
   });
@@ -4814,13 +5099,17 @@ describe("Z-Move through Protect (hitThroughProtect)", () => {
     // Re-set zMovePower on the cloned move
     (protectCtx.move as any).zMovePower = 100;
     const protectResult = calculateGen7Damage(protectCtx, typeChart);
+    // Source: Showdown Gen 7 — Z-Move through Protect deals ≥1 damage
 
     // The Protect version should be 25% of normal (via pokeRound with 1024/4096)
+    // Source: Showdown Gen 7 — Z-Move through Protect: 0.25× via pokeRound
     // pokeRound(normalDamage, 1024) = floor((normalDamage * 1024 + 2047) / 4096)
     const expectedProtectDamage = Math.floor((normalResult.damage * 1024 + 2047) / 4096);
     // Guard: ensure the normal damage is nontrivial so the 0.25x is meaningful
+    // Source: Showdown Gen 7 — Z-Move through Protect deals ≥1 damage
     expect(normalResult.damage).toBeGreaterThan(4);
     // Protect damage should be approximately 25% of normal
+    // Source: Showdown Gen 7 — Z-Move through Protect: 0.25× via pokeRound
     expect(protectResult.damage).toBe(Math.max(1, expectedProtectDamage));
   });
 
@@ -4850,11 +5139,13 @@ describe("Z-Move through Protect (hitThroughProtect)", () => {
 
     // Without hitThroughProtect, damage should be full (no 0.25x applied)
     // Derivation: base = floor((floor((2*50/5+2) * 175 * 100/100) / 50) + 2) = floor(3850/50) + 2 = 79
+    // Source: Showdown Gen 7 — Z-Move without Protect deals full damage
     // STAB: fire attacker using fire move -> pokeRound(79, 6144) = 118 (wait, 1.5x)
     // Actually: attacker types are [TYPE_IDS.fire], move type is TYPE_IDS.fire -> STAB = 1.5x
     // base = floor((22 * 175 * 100/100) / 50) + 2 = floor(3850/50) + 2 = floor(77) + 2 = 79
     // STAB: pokeRound(79, 6144) = floor((79*6144+2047)/4096) = floor((485376+2047)/4096) = floor(487423/4096) = 118
     // Random factor will apply, so let's just verify it's > 100 (with STAB and 175 power)
+    // Source: Showdown Gen 7 — Z-Move without Protect deals full damage
     expect(result.damage).toBeGreaterThan(80);
 
     // Now verify with hitThroughProtect=true for comparison
@@ -4864,14 +5155,18 @@ describe("Z-Move through Protect (hitThroughProtect)", () => {
       move: { ...zMove },
       seed: 42,
       hitThroughProtect: true,
+      // Source: Showdown Gen 7 — Z-Move through Protect < full damage
     });
     (protectCtx.move as any).zMovePower = 175;
     const protectResult = calculateGen7Damage(protectCtx, typeChart);
+    // Source: Showdown Gen 7 — Z-Move through Protect exact via pokeRound(damage, 1024)
 
     // Protect result should be significantly less than normal
+    // Source: Showdown Gen 7 — Z-Move through Protect < full damage
     expect(protectResult.damage).toBeLessThan(result.damage);
     // pokeRound(result.damage, 1024) should give roughly 25%
     const expected = Math.max(1, Math.floor((result.damage * 1024 + 2047) / 4096));
+    // Source: Showdown Gen 7 — Z-Move through Protect exact via pokeRound(damage, 1024)
     expect(protectResult.damage).toBe(expected);
   });
 
@@ -4910,11 +5205,13 @@ describe("Z-Move through Protect (hitThroughProtect)", () => {
         category: MOVE_CATEGORIES.physical,
       }),
       seed: 42,
+      // Source: Showdown Gen 7 — hitThroughProtect flag applies 0.25× regardless of move type
       hitThroughProtect: true,
     });
     const protectResult = calculateGen7Damage(protectCtx, typeChart);
 
     const expected = Math.max(1, Math.floor((normalResult.damage * 1024 + 2047) / 4096));
+    // Source: Showdown Gen 7 — hitThroughProtect flag applies 0.25× regardless of move type
     expect(protectResult.damage).toBe(expected);
   });
 
@@ -4956,14 +5253,18 @@ describe("Z-Move through Protect (hitThroughProtect)", () => {
       seed: 42,
       hitThroughProtect: true,
     });
+    // Source: Showdown Gen 7 — Z-Move through Protect exact calculation
     (protectCtx.move as any).zMovePower = 200;
     const protectResult = calculateGen7Damage(protectCtx, typeChart);
 
+    // Source: Showdown Gen 7 — high-power Z-Move deals substantial damage
     // pokeRound(normalDamage, 1024) = floor((normalDamage * 1024 + 2047) / 4096)
     const expected = Math.max(1, Math.floor((normalResult.damage * 1024 + 2047) / 4096));
+    // Source: Showdown Gen 7 — Z-Move through Protect exact calculation
     expect(protectResult.damage).toBe(expected);
 
     // Sanity: normal damage should be substantial, protect damage should be ~25%
+    // Source: Showdown Gen 7 — high-power Z-Move deals substantial damage
     expect(normalResult.damage).toBeGreaterThan(200);
     expect(protectResult.damage).toBeGreaterThan(50);
     expect(protectResult.damage).toBeLessThan(normalResult.damage * 0.3);
@@ -5000,11 +5301,13 @@ describe("Gen 7 damage calc -- Unaware vs Simple interaction (regression: #757)"
     });
     const move = createSyntheticMove({
       type: TYPE_IDS.normal,
+      // Source: Showdown Gen 7 — Unaware zeros stat stages before Simple doubles them
       category: MOVE_CATEGORIES.physical,
       power: 50,
     });
     const ctx = createDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen7Damage(ctx, typeChart);
+    // Source: Showdown Gen 7 — Unaware zeros stat stages before Simple doubles them
     expect(result.damage).toBe(22);
   });
 
@@ -5030,11 +5333,13 @@ describe("Gen 7 damage calc -- Unaware vs Simple interaction (regression: #757)"
     });
     const move = createSyntheticMove({
       type: TYPE_IDS.normal,
+      // Source: Showdown Gen 7 — Simple doubles +2 to +4, multiplier = 3.0×
       category: MOVE_CATEGORIES.physical,
       power: 50,
     });
     const ctx = createDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen7Damage(ctx, typeChart);
+    // Source: Showdown Gen 7 — Simple doubles +2 to +4, multiplier = 3.0×
     expect(result.damage).toBe(63);
   });
 
@@ -5062,11 +5367,13 @@ describe("Gen 7 damage calc -- Unaware vs Simple interaction (regression: #757)"
     });
     const move = createSyntheticMove({
       type: TYPE_IDS.normal,
+      // Source: Showdown Gen 7 — Turboblaze bypasses Unaware, stages apply
       category: MOVE_CATEGORIES.physical,
       power: 50,
     });
     const ctx = createDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen7Damage(ctx, typeChart);
+    // Source: Showdown Gen 7 — Turboblaze bypasses Unaware, stages apply
     expect(result.damage).toBe(43);
   });
 
@@ -5094,11 +5401,13 @@ describe("Gen 7 damage calc -- Unaware vs Simple interaction (regression: #757)"
     });
     const move = createSyntheticMove({
       type: TYPE_IDS.normal,
+      // Source: Showdown Gen 7 — defender Mold Breaker does not suppress attacker Simple
       category: MOVE_CATEGORIES.physical,
       power: 50,
     });
     const ctx = createDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen7Damage(ctx, typeChart);
+    // Source: Showdown Gen 7 — defender Mold Breaker does not suppress attacker Simple
     expect(result.damage).toBe(63);
   });
 });

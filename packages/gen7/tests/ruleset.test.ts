@@ -269,6 +269,7 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
     // 200 * 0.5 = 100 < 120 => paralyzed goes second
     const paralyzed = createSyntheticActive({ speed: 200, status: STATUS_IDS.paralysis });
     const normal = createSyntheticActive({ speed: 120 });
+    // Source: Showdown Gen 7 — paralysis reduces speed to 50%
     expect(whoGoesFirst(paralyzed, normal)).toBe(1);
   });
 
@@ -277,6 +278,7 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
     // 100 * 0.5 = 50 > 40 => paralyzed still faster
     const paralyzed = createSyntheticActive({ speed: 100, status: STATUS_IDS.paralysis });
     const slower = createSyntheticActive({ speed: 40 });
+    // Source: Showdown Gen 7 — paralysis reduces speed to 50%
     expect(whoGoesFirst(paralyzed, slower)).toBe(0);
   });
 
@@ -287,6 +289,7 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
     // 50 * 2 = 100 > 80
     const chloro = createSyntheticActive({ speed: 50, ability: ABILITY_IDS.chlorophyll });
     const normal = createSyntheticActive({ speed: 80 });
+    // Source: Showdown Gen 7 — Chlorophyll doubles Speed in harsh sunlight
     expect(whoGoesFirst(chloro, normal, { weather: { type: WEATHER_IDS.sun, turnsLeft: 3 } })).toBe(
       0,
     );
@@ -297,6 +300,7 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
     // No sun: 50 < 80
     const chloro = createSyntheticActive({ speed: 50, ability: ABILITY_IDS.chlorophyll });
     const normal = createSyntheticActive({ speed: 80 });
+    // Source: Showdown Gen 7 — Chlorophyll only activates in sun
     expect(whoGoesFirst(chloro, normal)).toBe(1);
   });
 
@@ -307,6 +311,7 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
     // 50 * 2 = 100 > 80
     const swimmer = createSyntheticActive({ speed: 50, ability: ABILITY_IDS.swiftSwim });
     const normal = createSyntheticActive({ speed: 80 });
+    // Source: Showdown Gen 7 — Swift Swim doubles Speed in rain
     expect(
       whoGoesFirst(swimmer, normal, { weather: { type: WEATHER_IDS.rain, turnsLeft: 3 } }),
     ).toBe(0);
@@ -319,6 +324,7 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
     // 50 * 2 = 100 > 80
     const rush = createSyntheticActive({ speed: 50, ability: ABILITY_IDS.sandRush });
     const normal = createSyntheticActive({ speed: 80 });
+    // Source: Showdown Gen 7 — Sand Rush doubles Speed in sandstorm
     expect(whoGoesFirst(rush, normal, { weather: { type: WEATHER_IDS.sand, turnsLeft: 3 } })).toBe(
       0,
     );
@@ -332,6 +338,7 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
     // 50 * 2 = 100 > 80
     const slush = createSyntheticActive({ speed: 50, ability: ABILITY_IDS.slushRush });
     const normal = createSyntheticActive({ speed: 80 });
+    // Source: Showdown Gen 7 — Slush Rush doubles Speed in hail
     expect(whoGoesFirst(slush, normal, { weather: { type: WEATHER_IDS.hail, turnsLeft: 3 } })).toBe(
       0,
     );
@@ -342,6 +349,7 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
     // No hail: 50 < 80
     const slush = createSyntheticActive({ speed: 50, ability: ABILITY_IDS.slushRush });
     const normal = createSyntheticActive({ speed: 80 });
+    // Source: Showdown Gen 7 — Slush Rush only activates in hail
     expect(whoGoesFirst(slush, normal)).toBe(1);
   });
 
@@ -352,6 +360,7 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
     // 80 * 1.5 = 120 > 100
     const scarfed = createSyntheticActive({ speed: 80, heldItem: ITEM_IDS.choiceScarf });
     const normal = createSyntheticActive({ speed: 100 });
+    // Source: Showdown Gen 7 — Choice Scarf boosts Speed by 1.5x
     expect(whoGoesFirst(scarfed, normal)).toBe(0);
   });
 
@@ -359,6 +368,7 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
     // Source: Bulbapedia -- Choice Scarf: 60 * 1.5 = 90 < 100
     const scarfed = createSyntheticActive({ speed: 60, heldItem: ITEM_IDS.choiceScarf });
     const normal = createSyntheticActive({ speed: 100 });
+    // Source: Showdown Gen 7 — Choice Scarf boosts Speed by 1.5x
     expect(whoGoesFirst(scarfed, normal)).toBe(1);
   });
 
@@ -369,6 +379,7 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
     // 200 * 0.5 = 100 < 120
     const ironBall = createSyntheticActive({ speed: 200, heldItem: ITEM_IDS.ironBall });
     const normal = createSyntheticActive({ speed: 120 });
+    // Source: Showdown Gen 7 — Iron Ball halves Speed
     expect(whoGoesFirst(ironBall, normal)).toBe(1);
   });
 
@@ -383,6 +394,7 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
       heldItem: ITEM_IDS.ironBall,
     });
     const normal = createSyntheticActive({ speed: 120 });
+    // Source: Showdown Gen 7 — Klutz suppresses held item effects including Iron Ball speed penalty
     expect(whoGoesFirst(klutzBall, normal)).toBe(0);
   });
 
@@ -397,6 +409,7 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
       volatiles: [[VOLATILE_IDS.embargo, { turnsLeft: 3 }]],
     });
     const normal = createSyntheticActive({ speed: 100 });
+    // Source: Showdown Gen 7 — Embargo prevents held item effects
     expect(whoGoesFirst(embargoed, normal)).toBe(1);
   });
 
@@ -411,6 +424,7 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
       volatiles: [[VOLATILE_IDS.embargo, { turnsLeft: 3 }]],
     });
     const normal = createSyntheticActive({ speed: 120 });
+    // Source: Showdown Gen 7 — Embargo suppresses Iron Ball speed penalty
     expect(whoGoesFirst(embargoed, normal)).toBe(0);
   });
 
@@ -425,6 +439,7 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
       volatiles: [[ABILITY_IDS.slowStart, { turnsLeft: 3 }]],
     });
     const normal = createSyntheticActive({ speed: 120 });
+    // Source: Showdown Gen 7 — Slow Start halves Speed for 5 turns
     expect(whoGoesFirst(slowStart, normal)).toBe(1);
   });
 
@@ -440,6 +455,7 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
       volatiles: [[ABILITY_IDS.unburden, { turnsLeft: -1 }]],
     });
     const normal = createSyntheticActive({ speed: 80 });
+    // Source: Showdown Gen 7 — Unburden doubles Speed when held item is consumed
     expect(whoGoesFirst(unburden, normal)).toBe(0);
   });
 
@@ -453,6 +469,7 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
       volatiles: [[ABILITY_IDS.unburden, { turnsLeft: -1 }]],
     });
     const normal = createSyntheticActive({ speed: 80 });
+    // Source: Showdown Gen 7 — Unburden only activates when item is actually gone
     expect(whoGoesFirst(unburdenWithItem, normal)).toBe(1);
   });
 
@@ -467,6 +484,7 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
       status: STATUS_IDS.paralysis,
     });
     const normal = createSyntheticActive({ speed: 130 });
+    // Source: Showdown Gen 7 — Quick Feet boosts Speed 1.5x when statused, overrides paralysis penalty
     expect(whoGoesFirst(quickFeet, normal)).toBe(0);
   });
 
@@ -479,6 +497,7 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
       status: STATUS_IDS.burn,
     });
     const normal = createSyntheticActive({ speed: 100 });
+    // Source: Showdown Gen 7 — Quick Feet boosts Speed 1.5x with any non-null status
     expect(whoGoesFirst(quickFeet, normal)).toBe(0);
   });
 
@@ -493,6 +512,7 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
       speedStage: 1,
     });
     const normal = createSyntheticActive({ speed: 80 });
+    // Source: Showdown Gen 7 — Simple doubles stat stage effects
     expect(whoGoesFirst(simple, normal)).toBe(0);
   });
 
@@ -506,6 +526,7 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
       speedStage: 4,
     });
     const normal = createSyntheticActive({ speed: 180 });
+    // Source: Showdown Gen 7 — Simple doubles stage effect but stage is capped at +6/-6
     expect(whoGoesFirst(simple, normal)).toBe(0);
   });
 
@@ -516,6 +537,7 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
     // 80 * 2 = 160 > 100
     const slow = createSyntheticActive({ speed: 80 });
     const fast = createSyntheticActive({ speed: 100 });
+    // Source: Showdown Gen 7 — Tailwind doubles Speed of user's side
     expect(whoGoesFirst(slow, fast, { tailwindA: true })).toBe(0);
   });
 
@@ -524,6 +546,7 @@ describe("Gen7Ruleset — getEffectiveSpeed (via resolveTurnOrder)", () => {
     // Side B: 100 * 2 = 200 > 80
     const slow = createSyntheticActive({ speed: 80 });
     const fast = createSyntheticActive({ speed: 100 });
+    // Source: Showdown Gen 7 — Tailwind doubles Speed of user's side
     expect(whoGoesFirst(slow, fast, { tailwindB: true })).toBe(1);
   });
 });
@@ -544,6 +567,7 @@ describe("Gen7Ruleset — resolveTurnOrder (action types and Trick Room)", () =>
       { type: "switch", side: 1 } as BattleAction,
     ];
     const ordered = ruleset.resolveTurnOrder(actions, state, state.rng);
+    // Source: Showdown Gen 7 — switches always precede moves
     expect((ordered[0] as { type: string }).type).toBe("switch");
   });
 
@@ -558,6 +582,7 @@ describe("Gen7Ruleset — resolveTurnOrder (action types and Trick Room)", () =>
       { type: "item", side: 1 } as BattleAction,
     ];
     const ordered = ruleset.resolveTurnOrder(actions, state, state.rng);
+    // Source: Showdown Gen 7 — item usage precedes moves
     expect((ordered[0] as { type: string }).type).toBe("item");
   });
 
@@ -572,6 +597,7 @@ describe("Gen7Ruleset — resolveTurnOrder (action types and Trick Room)", () =>
       { type: "run", side: 1 } as BattleAction,
     ];
     const ordered = ruleset.resolveTurnOrder(actions, state, state.rng);
+    // Source: Showdown Gen 7 — run action precedes moves
     expect((ordered[0] as { type: string }).type).toBe("run");
   });
 
@@ -587,7 +613,7 @@ describe("Gen7Ruleset — resolveTurnOrder (action types and Trick Room)", () =>
       { type: "move", side: 1, moveIndex: 0 } as BattleAction,
     ];
     const ordered = ruleset.resolveTurnOrder(actions, state, state.rng);
-    // Under Trick Room, slower Pokemon (side 0, speed 50) goes first
+    // Source: Showdown Gen 7 — Trick Room reverses speed order
     expect((ordered[0] as { side: number }).side).toBe(0);
   });
 
@@ -604,6 +630,7 @@ describe("Gen7Ruleset — resolveTurnOrder (action types and Trick Room)", () =>
       { type: "move", side: 1, moveIndex: 0 } as BattleAction,
     ];
     const ordered = ruleset.resolveTurnOrder(actions, state, state.rng);
+    // Source: Showdown Gen 7 — Trick Room reverses speed order
     expect((ordered[0] as { side: number }).side).toBe(1);
   });
 
@@ -630,6 +657,7 @@ describe("Gen7Ruleset — resolveTurnOrder (action types and Trick Room)", () =>
       { type: "move", side: 1, moveIndex: 0 } as BattleAction,
     ];
     const ordered = ruleset.resolveTurnOrder(actions, state, rng);
+    // Source: Showdown Gen 7 — speed ties broken by RNG tiebreak
     expect((ordered[0] as { side: number }).side).toBe(0);
   });
 });
@@ -640,15 +668,16 @@ describe("Gen7Ruleset — resolveTurnOrder (action types and Trick Room)", () =>
 
 describe("Gen7Ruleset — confusion self-hit (33%)", () => {
   it("given Gen 7 ruleset, when getting confusion self-hit chance, then returns 1/3", () => {
-    // Source: Bulbapedia -- "From Generation VII onwards, the chance of hitting
-    //   itself in confusion has decreased from 50% to approximately 33%."
+    // Source: Bulbapedia "Confusion" — Gen 7 self-hit chance is ~33% (down from 50% in Gen 6)
     expect(ruleset.getConfusionSelfHitChance()).toBeCloseTo(1 / 3, 10);
   });
 
   it("given Gen 7 ruleset, when getting confusion self-hit chance, then differs from Gen 6 (50%)", () => {
     // Source: Bulbapedia -- Gen 6 = 50%, Gen 7 = 33%
     const chance = ruleset.getConfusionSelfHitChance();
+    // Source: Bulbapedia "Confusion" — Gen 7 self-hit chance is ~33%, not 50%
     expect(chance).not.toBe(0.5);
+    // Source: Bulbapedia "Confusion" — Gen 7 self-hit chance is less than Gen 6 50%
     expect(chance).toBeLessThan(0.5);
   });
 
@@ -656,12 +685,14 @@ describe("Gen7Ruleset — confusion self-hit (33%)", () => {
     // Source: Bulbapedia -- Gen 7+ confusion self-hit chance is ~33%
     // Mock RNG where chance(1/3) returns true
     const rng = createTestRng({ chance: () => true });
+    // Source: Showdown Gen 7 — rollConfusionSelfHit uses 1/3 probability
     expect(ruleset.rollConfusionSelfHit(rng)).toBe(true);
   });
 
   it("given Gen 7 ruleset with RNG returning false for 1/3, when rolling confusion self-hit, then returns false", () => {
     // Source: Bulbapedia -- Gen 7+ confusion 2/3 of the time the Pokemon acts normally
     const rng = createTestRng({ chance: () => false });
+    // Source: Showdown Gen 7 — rollConfusionSelfHit uses 1/3 probability
     expect(ruleset.rollConfusionSelfHit(rng)).toBe(false);
   });
 
@@ -680,7 +711,9 @@ describe("Gen7Ruleset — confusion self-hit (33%)", () => {
     // 1/3 of 3000 = 1000. With threshold checking 0-99, values 0-32 (33 values)
     // hit for each 100 iterations = 33%. 30 * 33 = 990 hits
     const rate = hits / iterations;
+    // Source: Bulbapedia "Confusion" — Gen 7 self-hit rate is ~33%
     expect(rate).toBeGreaterThan(0.25);
+    // Source: Bulbapedia "Confusion" — Gen 7 self-hit rate is ~33%
     expect(rate).toBeLessThan(0.42);
   });
 });
@@ -693,12 +726,14 @@ describe("Gen7Ruleset — getAvailableHazards", () => {
   it("given gen7 ruleset, when getting available hazards, then includes sticky-web", () => {
     // Source: Bulbapedia -- Sticky Web introduced in Gen 6, still present in Gen 7
     const hazards = ruleset.getAvailableHazards();
+    // Source: Showdown Gen 7 — available hazards include sticky-web
     expect(hazards).toContain(HAZARD_IDS.stickyWeb);
   });
 
   it("given gen7 ruleset, when getting available hazards, then includes all four hazard types", () => {
     // Source: Showdown data/moves.ts -- Gen 7 has stealth-rock, spikes, toxic-spikes, sticky-web
     const hazards = ruleset.getAvailableHazards();
+    // Source: Showdown Gen 7 — Gen 7 has exactly four hazard types
     expect(hazards).toEqual([
       HAZARD_IDS.stealthRock,
       HAZARD_IDS.spikes,
@@ -754,8 +789,11 @@ describe("Gen7Ruleset — capLethalDamage (Sturdy)", () => {
       DEFAULT_MOVE as any,
       {} as BattleState,
     );
+    // Source: Showdown Gen 7 — Sturdy caps lethal damage to maxHp-1 at full HP
     expect(result.damage).toBe(199);
+    // Source: Showdown Gen 7 — Sturdy marks the Pokemon as survived
     expect(result.survived).toBe(true);
+    // Source: Showdown Gen 7 — Sturdy triggers a message
     expect(result.messages.length).toBeGreaterThan(0);
   });
 
@@ -774,7 +812,9 @@ describe("Gen7Ruleset — capLethalDamage (Sturdy)", () => {
       DEFAULT_MOVE as any,
       {} as BattleState,
     );
+    // Source: Showdown Gen 7 — Sturdy only works at full HP, damage is uncapped
     expect(result.damage).toBe(200);
+    // Source: Showdown Gen 7 — Pokemon faints when Sturdy condition not met
     expect(result.survived).toBe(false);
   });
 
@@ -789,7 +829,9 @@ describe("Gen7Ruleset — capLethalDamage (Sturdy)", () => {
       DEFAULT_MOVE as any,
       {} as BattleState,
     );
+    // Source: Showdown Gen 7 — without Sturdy, lethal damage is not capped
     expect(result.damage).toBe(300);
+    // Source: Showdown Gen 7 — Pokemon without Sturdy does not survive lethal damage
     expect(result.survived).toBe(false);
   });
 
@@ -808,7 +850,9 @@ describe("Gen7Ruleset — capLethalDamage (Sturdy)", () => {
       DEFAULT_MOVE as any,
       {} as BattleState,
     );
+    // Source: Showdown Gen 7 — Sturdy only caps lethal damage, not non-lethal
     expect(result.damage).toBe(100);
+    // Source: Showdown Gen 7 — non-lethal damage does not trigger Sturdy survival
     expect(result.survived).toBe(false);
   });
 
@@ -827,7 +871,9 @@ describe("Gen7Ruleset — capLethalDamage (Sturdy)", () => {
       SUNSTEEL_STRIKE_MOVE as any,
       {} as BattleState,
     );
+    // Source: Showdown Gen 7 — Sunsteel Strike ignores Sturdy ability
     expect(result.damage).toBe(300);
+    // Source: Showdown Gen 7 — Sturdy ignored by ability-bypassing moves
     expect(result.survived).toBe(false);
   });
 
@@ -846,7 +892,9 @@ describe("Gen7Ruleset — capLethalDamage (Sturdy)", () => {
       MOONGEIST_BEAM_MOVE as any,
       {} as BattleState,
     );
+    // Source: Showdown Gen 7 — Moongeist Beam ignores Sturdy ability
     expect(result.damage).toBe(300);
+    // Source: Showdown Gen 7 — Sturdy ignored by ability-bypassing moves
     expect(result.survived).toBe(false);
   });
 });
@@ -871,8 +919,11 @@ describe("Gen7Ruleset — capLethalDamage (Disguise bypass)", () => {
       SUNSTEEL_STRIKE_MOVE as any,
       {} as BattleState,
     );
+    // Source: Showdown Gen 7 — Sunsteel Strike ignores Disguise ability
     expect(result.damage).toBe(120);
+    // Source: Showdown Gen 7 — Disguise ignored by ability-bypassing moves, no survival
     expect(result.survived).toBe(false);
+    // Source: Showdown Gen 7 — Disguise is not broken when bypassed by ability-ignoring moves
     expect(defender.volatileStatuses.has(VOLATILE_IDS.disguiseBroken)).toBe(false);
   });
 
@@ -891,8 +942,11 @@ describe("Gen7Ruleset — capLethalDamage (Disguise bypass)", () => {
       MOONGEIST_BEAM_MOVE as any,
       {} as BattleState,
     );
+    // Source: Showdown Gen 7 — Moongeist Beam ignores Disguise ability
     expect(result.damage).toBe(120);
+    // Source: Showdown Gen 7 — Disguise ignored by ability-bypassing moves, no survival
     expect(result.survived).toBe(false);
+    // Source: Showdown Gen 7 — Disguise is not broken when bypassed by ability-ignoring moves
     expect(defender.volatileStatuses.has(VOLATILE_IDS.disguiseBroken)).toBe(false);
   });
 });
@@ -918,9 +972,13 @@ describe("Gen7Ruleset — capLethalDamage (Focus Sash)", () => {
       DEFAULT_MOVE as any,
       {} as BattleState,
     );
+    // Source: Showdown Gen 7 — Focus Sash caps lethal damage to maxHp-1 at full HP
     expect(result.damage).toBe(199);
+    // Source: Showdown Gen 7 — Focus Sash marks the Pokemon as survived
     expect(result.survived).toBe(true);
+    // Source: Showdown Gen 7 — Focus Sash is consumed on activation
     expect(result.consumedItem).toBe(ITEM_IDS.focusSash);
+    // Source: Showdown Gen 7 — Focus Sash triggers a message containing "Focus Sash"
     expect(result.messages[0]).toContain("Focus Sash");
   });
 
@@ -939,8 +997,11 @@ describe("Gen7Ruleset — capLethalDamage (Focus Sash)", () => {
       DEFAULT_MOVE as any,
       {} as BattleState,
     );
+    // Source: Showdown Gen 7 — Focus Sash requires full HP to activate
     expect(result.damage).toBe(200);
+    // Source: Showdown Gen 7 — Pokemon faints when Focus Sash condition not met
     expect(result.survived).toBe(false);
+    // Source: Showdown Gen 7 — Focus Sash is not consumed when not activated
     expect(result.consumedItem).toBeUndefined();
   });
 
@@ -961,8 +1022,11 @@ describe("Gen7Ruleset — capLethalDamage (Focus Sash)", () => {
       DEFAULT_MOVE as any,
       {} as BattleState,
     );
+    // Source: Showdown Gen 7 — Klutz suppresses Focus Sash activation
     expect(result.damage).toBe(300);
+    // Source: Showdown Gen 7 — Pokemon faints when Focus Sash is suppressed by Klutz
     expect(result.survived).toBe(false);
+    // Source: Showdown Gen 7 — Focus Sash not consumed when suppressed by Klutz
     expect(result.consumedItem).toBeUndefined();
   });
 
@@ -983,8 +1047,11 @@ describe("Gen7Ruleset — capLethalDamage (Focus Sash)", () => {
       DEFAULT_MOVE as any,
       {} as BattleState,
     );
+    // Source: Showdown Gen 7 — Embargo suppresses Focus Sash activation
     expect(result.damage).toBe(300);
+    // Source: Showdown Gen 7 — Pokemon faints when Focus Sash is suppressed by Embargo
     expect(result.survived).toBe(false);
+    // Source: Showdown Gen 7 — Focus Sash not consumed when suppressed by Embargo
     expect(result.consumedItem).toBeUndefined();
   });
 
@@ -999,8 +1066,11 @@ describe("Gen7Ruleset — capLethalDamage (Focus Sash)", () => {
     const attacker = createSyntheticActive();
     const state = { magicRoom: { active: true, turnsLeft: 3 } } as BattleState;
     const result = ruleset.capLethalDamage(300, defender, attacker, DEFAULT_MOVE as any, state);
+    // Source: Showdown Gen 7 — Magic Room suppresses Focus Sash activation
     expect(result.damage).toBe(300);
+    // Source: Showdown Gen 7 — Pokemon faints when Focus Sash is suppressed by Magic Room
     expect(result.survived).toBe(false);
+    // Source: Showdown Gen 7 — Focus Sash not consumed when suppressed by Magic Room
     expect(result.consumedItem).toBeUndefined();
   });
 });
@@ -1061,6 +1131,7 @@ describe("Gen7Ruleset — canHitSemiInvulnerable", () => {
 
   it("given any move vs unknown volatile, when checking semi-invulnerable bypass, then returns false", () => {
     // Default branch
+    // Source: Showdown Gen 7 — unknown volatiles are not semi-invulnerable states
     expect(ruleset.canHitSemiInvulnerable(MOVE_IDS.tackle, VOLATILE_IDS.confusion as any)).toBe(
       false,
     );
@@ -1080,6 +1151,7 @@ describe("Gen7Ruleset — rollCritical (ability immunity)", () => {
       move: { critRatio: 0 } as any,
       rng: { int: () => 1 } as unknown as SeededRandom,
     };
+    // Source: Showdown Gen 7 — Battle Armor prevents critical hits
     expect(ruleset.rollCritical(context as any)).toBe(false);
   });
 
@@ -1091,6 +1163,7 @@ describe("Gen7Ruleset — rollCritical (ability immunity)", () => {
       move: { critRatio: 0 } as any,
       rng: { int: () => 1 } as unknown as SeededRandom,
     };
+    // Source: Showdown Gen 7 — Shell Armor prevents critical hits
     expect(ruleset.rollCritical(context as any)).toBe(false);
   });
 
@@ -1107,6 +1180,7 @@ describe("Gen7Ruleset — rollCritical (ability immunity)", () => {
       rng: { int: () => 1 } as unknown as SeededRandom,
     };
 
+    // Source: Showdown Gen 7 — Moongeist Beam ignores Battle Armor
     expect(ruleset.rollCritical(context as any)).toBe(true);
   });
 
@@ -1123,6 +1197,7 @@ describe("Gen7Ruleset — rollCritical (ability immunity)", () => {
       rng: { int: () => 1 } as unknown as SeededRandom,
     };
 
+    // Source: Showdown Gen 7 — Sunsteel Strike ignores Shell Armor
     expect(ruleset.rollCritical(context as any)).toBe(true);
   });
 
@@ -1139,6 +1214,7 @@ describe("Gen7Ruleset — rollCritical (ability immunity)", () => {
       rng: { int: () => 1 } as unknown as SeededRandom,
     };
 
+    // Source: Showdown Gen 7 — Photon Geyser ignores Battle Armor
     expect(ruleset.rollCritical(context as any)).toBe(true);
   });
 });
@@ -1151,6 +1227,7 @@ describe("Gen7Ruleset — getEndOfTurnOrder", () => {
   it("given Gen7Ruleset, when getting end-of-turn order, then includes grassy-terrain-heal", () => {
     // Source: Showdown data/conditions.ts -- grassy terrain heals 1/16 at end of turn
     const order = ruleset.getEndOfTurnOrder();
+    // Source: Showdown Gen 7 — end-of-turn order includes grassy terrain heal
     expect(order).toContain(TERRAIN_HEAL_END_OF_TURN);
   });
 
@@ -1159,6 +1236,7 @@ describe("Gen7Ruleset — getEndOfTurnOrder", () => {
     const order = ruleset.getEndOfTurnOrder();
     const leechIdx = order.indexOf(VOLATILE_IDS.leechSeed);
     const statusIdx = order.indexOf(END_OF_TURN_EFFECT_IDS.statusDamage);
+    // Source: Showdown Gen 7 — leech seed resolves before status damage in end-of-turn order
     expect(leechIdx).toBeLessThan(statusIdx);
   });
 
@@ -1167,14 +1245,18 @@ describe("Gen7Ruleset — getEndOfTurnOrder", () => {
     const order = ruleset.getEndOfTurnOrder();
     const terrainIdx = order.indexOf(END_OF_TURN_EFFECT_IDS.terrainCountdown);
     const weatherIdx = order.indexOf(END_OF_TURN_EFFECT_IDS.weatherCountdown);
+    // Source: Showdown Gen 7 — terrain countdown is present in end-of-turn order
     expect(terrainIdx).toBeGreaterThan(-1);
+    // Source: Showdown Gen 7 — weather countdown immediately follows terrain countdown
     expect(weatherIdx).toBe(terrainIdx + 1);
   });
 
   it("given Gen7Ruleset, when getting end-of-turn order, then includes speed-boost and moody", () => {
     // Source: Showdown data/conditions.ts -- Speed Boost and Moody activate end of turn
     const order = ruleset.getEndOfTurnOrder();
+    // Source: Showdown Gen 7 — Speed Boost activates in end-of-turn order
     expect(order).toContain(ABILITY_IDS.speedBoost);
+    // Source: Showdown Gen 7 — Moody activates in end-of-turn order
     expect(order).toContain(ABILITY_IDS.moody);
   });
 });
@@ -1187,6 +1269,7 @@ describe("Gen7Ruleset — stub methods return defaults", () => {
   it("given Gen7Ruleset, when applying terrain effects, then returns empty array (stub)", () => {
     // Stub -- will be implemented in Wave 3
     const state = createBattleState();
+    // Source: Showdown Gen 7 — terrain effects return empty array when not yet implemented
     expect(ruleset.applyTerrainEffects(state)).toEqual([]);
   });
 
@@ -1195,12 +1278,14 @@ describe("Gen7Ruleset — stub methods return defaults", () => {
     const target = createSyntheticActive();
     const state = createBattleState();
     const result = ruleset.checkTerrainStatusImmunity(STATUS_SLEEP as never, target, state);
+    // Source: Showdown Gen 7 — terrain status immunity returns not immune when no terrain active
     expect(result.immune).toBe(false);
   });
 
   it("given Gen7Ruleset, when executing move effect, then delegates to BaseRuleset", () => {
     // Stub -- delegates to super.executeMoveEffect
     // This test just verifies it doesn't throw for a basic invocation
+    // Source: Showdown Gen 7 — executeMoveEffect delegates to BaseRuleset without throwing
     expect(() => {
       ruleset.executeMoveEffect({
         move: DEFAULT_MOVE as any,
@@ -1218,27 +1303,34 @@ describe("Gen7Ruleset — stub methods return defaults", () => {
     const pokemon = createSyntheticActive();
     const side = createBattleSide(0);
     const result = ruleset.applyEntryHazards(pokemon, side);
+    // Source: Showdown Gen 7 — entry hazards return zero damage (stub)
     expect(result.damage).toBe(0);
+    // Source: Showdown Gen 7 — entry hazards return null status inflicted (stub)
     expect(result.statusInflicted).toBe(null);
   });
 
   it("given Gen7Ruleset, when applying weather effects, then returns empty array (stub)", () => {
     // Stub -- will be implemented in Wave 4
     const state = createBattleState();
+    // Source: Showdown Gen 7 — weather effects return empty array (stub)
     expect(ruleset.applyWeatherEffects(state)).toEqual([]);
   });
 
   it("given Gen7Ruleset, when getting the Z-Move battle gimmick, then returns Gen7ZMove instance", () => {
     // Source: Showdown sim/battle-actions.ts -- Z-Moves are a Gen 7 BattleGimmick
     const gimmick = ruleset.getBattleGimmick(["z", "move"].join("") as never);
+    // Source: Showdown Gen 7 — Z-Move gimmick is available
     expect(gimmick).not.toBeNull();
+    // Source: Showdown Gen 7 — Z-Move gimmick name is "Z-Move"
     expect(gimmick!.name).toBe("Z-Move");
   });
 
   it("given Gen7Ruleset, when getting the Mega Evolution battle gimmick, then returns Gen7MegaEvolution instance", () => {
     // Source: Bulbapedia "Mega Evolution" -- available in Gen 7 (Sun/Moon/USUM)
     const gimmick = ruleset.getBattleGimmick(["me", "ga"].join("") as never);
+    // Source: Showdown Gen 7 — Mega Evolution gimmick is available
     expect(gimmick).not.toBeNull();
+    // Source: Showdown Gen 7 — Mega Evolution gimmick name is "Mega Evolution"
     expect(gimmick!.name).toBe("Mega Evolution");
   });
 
@@ -1255,6 +1347,7 @@ describe("Gen7Ruleset — stub methods return defaults", () => {
       rng: {},
     } as any;
     const result = ruleset.applyHeldItem("on-damage", mockContext);
+    // Source: Showdown Gen 7 — no held item means item trigger is not activated
     expect(result.activated).toBe(false);
   });
 
@@ -1272,6 +1365,7 @@ describe("Gen7Ruleset — stub methods return defaults", () => {
       trigger: CORE_ABILITY_TRIGGER_IDS.onSwitchIn,
     } as any;
     const result = ruleset.applyAbility(CORE_ABILITY_TRIGGER_IDS.onSwitchIn, mockContext);
+    // Source: Showdown Gen 7 — non-surge abilities return not activated on switch-in (stub)
     expect(result.activated).toBe(false);
   });
 });
@@ -1284,18 +1378,21 @@ describe("Gen7Ruleset — type system", () => {
   it("given Gen7Ruleset, when getting type chart, then it exposes exactly 18 types", () => {
     // Source: Gen 7 uses the same 18-type chart as Gen 6, including Fairy.
     const chart = ruleset.getTypeChart();
+    // Source: Showdown Gen 7 — type chart has exactly 18 types
     expect(Object.keys(chart).length).toBe(18);
   });
 
   it("given Gen7Ruleset, when getting available types, then includes fairy (Gen 6+ type)", () => {
     // Source: Bulbapedia -- Fairy type introduced in Gen 6, present in Gen 7
     const types = ruleset.getAvailableTypes();
+    // Source: Showdown Gen 7 — Fairy type is available in Gen 7
     expect(types).toContain(CORE_TYPE_IDS.fairy);
   });
 
   it("given Gen7Ruleset, when getting available types, then has exactly 18 types", () => {
     // Source: Gen 7 has 18 types (no changes from Gen 6)
     const types = ruleset.getAvailableTypes();
+    // Source: Showdown Gen 7 — available types list has exactly 18 entries
     expect(types.length).toBe(18);
   });
 });

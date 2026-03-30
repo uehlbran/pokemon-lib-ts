@@ -149,159 +149,167 @@ describe("Gen8Dynamax", () => {
         .getSpecies(GEN8_SPECIES_IDS.eternatus)
         .displayName.toLowerCase();
 
+      // Source: Bulbapedia "Dynamax" -- Zacian cannot Dynamax
       expect(DYNAMAX_IMMUNE_SPECIES).toContain(zacian);
+      // Source: Bulbapedia "Dynamax" -- Zamazenta cannot Dynamax
       expect(DYNAMAX_IMMUNE_SPECIES).toContain(zamazenta);
+      // Source: Bulbapedia "Dynamax" -- Eternatus cannot Dynamax
       expect(DYNAMAX_IMMUNE_SPECIES).toContain(eternatus);
+      // Source: Bulbapedia "Dynamax" -- exactly three immune species in Gen 8
       expect(DYNAMAX_IMMUNE_SPECIES.length).toBe(3);
     });
   });
 
   describe("getDynamaxMaxHp", () => {
     it("given dynamaxLevel=0 and baseMaxHp=300, when calculating, then returns floor(300 * 1.5) = 450", () => {
-      // Source: Showdown data/conditions.ts line 771 -- ratio = 1.5 + (level * 0.05)
       // dynamaxLevel=0: ratio = 1.5, floor(300 * 1.5) = 450
       const result = getDynamaxMaxHp(300, 0);
+      // Source: Showdown data/conditions.ts line 771 -- ratio = 1.5 + (level * 0.05)
       expect(result).toBe(450);
     });
 
     it("given dynamaxLevel=10 and baseMaxHp=300, when calculating, then returns floor(300 * 2.0) = 600", () => {
-      // Source: Showdown data/conditions.ts line 771 -- dynamaxLevel 10: ratio = 2.0
       // floor(300 * 2.0) = 600
       const result = getDynamaxMaxHp(300, 10);
+      // Source: Showdown data/conditions.ts line 771 -- dynamaxLevel 10: ratio = 2.0
       expect(result).toBe(600);
     });
 
     it("given dynamaxLevel=5 and baseMaxHp=300, when calculating, then returns floor(300 * 1.75) = 525", () => {
       // Inline derivation: ratio = 1.5 + (5 * 0.05) = 1.75, floor(300 * 1.75) = 525
       const result = getDynamaxMaxHp(300, 5);
+      // Source: Showdown data/conditions.ts line 771 -- dynamaxLevel 5: ratio = 1.75
       expect(result).toBe(525);
     });
 
     it("given dynamaxLevel=10 and baseMaxHp=1 (Shedinja), when calculating, then returns floor(1 * 2.0) = 2", () => {
-      // Source: Showdown -- Shedinja can Dynamax; HP still scales
       // floor(1 * 2.0) = 2
       const result = getDynamaxMaxHp(1, 10);
+      // Source: Showdown -- Shedinja can Dynamax; HP still scales with dynamaxLevel
       expect(result).toBe(2);
     });
   });
 
   describe("getDynamaxCurrentHp", () => {
     it("given currentHp=200 and dynamaxLevel=0, when calculating, then returns floor(200 * 1.5) = 300", () => {
-      // Source: Showdown data/conditions.ts lines 771-774 -- same ratio applied to currentHp
       const result = getDynamaxCurrentHp(200, 0);
+      // Source: Showdown data/conditions.ts lines 771-774 -- same ratio applied to currentHp
       expect(result).toBe(300);
     });
 
     it("given currentHp=200 and dynamaxLevel=10, when calculating, then returns floor(200 * 2.0) = 400", () => {
       // Inline derivation: ratio = 2.0, floor(200 * 2.0) = 400
       const result = getDynamaxCurrentHp(200, 10);
+      // Source: Showdown data/conditions.ts lines 771-774 -- ratio = 2.0 at dynamaxLevel 10
       expect(result).toBe(400);
     });
 
     it("given currentHp=150 and dynamaxLevel=5, when calculating, then returns floor(150 * 1.75) = 262", () => {
       // Inline derivation: ratio = 1.75, floor(150 * 1.75) = 262.5 -> 262
       const result = getDynamaxCurrentHp(150, 5);
+      // Source: Showdown data/conditions.ts lines 771-774 -- ratio = 1.75 at dynamaxLevel 5
       expect(result).toBe(262);
     });
   });
 
   describe("getUndynamaxedHp", () => {
     it("given currentHp=225, maxHp=450, baseMaxHp=300, when reverting, then returns round(225*300/450) = 150", () => {
-      // Source: Showdown data/conditions.ts lines 801-802 -- proportional HP restoration
       // round(225 * 300 / 450) = round(150) = 150
       const result = getUndynamaxedHp(225, 450, 300);
+      // Source: Showdown data/conditions.ts lines 801-802 -- proportional HP restoration
       expect(result).toBe(150);
     });
 
     it("given currentHp=600, maxHp=600, baseMaxHp=300, when reverting at full HP, then returns 300", () => {
-      // Source: Showdown data/conditions.ts lines 801-802 -- round(600 * 300 / 600) = 300
       const result = getUndynamaxedHp(600, 600, 300);
+      // Source: Showdown data/conditions.ts lines 801-802 -- round(600 * 300 / 600) = 300
       expect(result).toBe(300);
     });
 
     it("given currentHp=0, maxHp=600, baseMaxHp=300, when reverting at 0 HP, then returns 0", () => {
       // Inline derivation: round(0 * 300 / 600) = 0
       const result = getUndynamaxedHp(0, 600, 300);
+      // Source: Showdown data/conditions.ts lines 801-802 -- 0 current HP returns 0
       expect(result).toBe(0);
     });
 
     it("given currentHp=301, maxHp=600, baseMaxHp=300, when reverting with odd ratio, then rounds correctly", () => {
-      // Source: Showdown data/conditions.ts lines 801-802 -- round(301 * 300 / 600) = 151
       const result = getUndynamaxedHp(301, 600, 300);
+      // Source: Showdown data/conditions.ts lines 801-802 -- round(301 * 300 / 600) = 151
       expect(result).toBe(151);
     });
 
     it("given maxHp=0 (edge case), when reverting, then returns 0 without division by zero", () => {
       const result = getUndynamaxedHp(100, 0, 300);
+      // Source: Showdown data/conditions.ts lines 801-802 — guard against division by zero; returns 0
       expect(result).toBe(0);
     });
   });
 
   describe("Gen8Dynamax.canUse", () => {
     it("given pokemon not dynamaxed and side has not used gimmick, when checking canUse, then returns true", () => {
-      // Source: Showdown data/conditions.ts -- basic Dynamax eligibility
       const dynamax = new Gen8Dynamax();
       const pokemon = createGen8OnFieldPokemon();
       const side = createBattleSide();
       const state = createBattleState();
 
+      // Source: Showdown data/conditions.ts -- basic Dynamax eligibility
       expect(dynamax.canUse(pokemon, side, state)).toBe(true);
     });
 
     it("given pokemon already isDynamaxed, when checking canUse, then returns false", () => {
-      // Source: Showdown -- cannot Dynamax if already Dynamaxed
       const dynamax = new Gen8Dynamax();
       const pokemon = createGen8OnFieldPokemon({}, { isDynamaxed: true });
       const side = createBattleSide();
       const state = createBattleState();
 
+      // Source: Showdown -- cannot Dynamax if already Dynamaxed
       expect(dynamax.canUse(pokemon, side, state)).toBe(false);
     });
 
     it("given side.gimmickUsed is true, when checking canUse, then returns false", () => {
-      // Source: Showdown -- one gimmick per side per battle
       const dynamax = new Gen8Dynamax();
       const pokemon = createGen8OnFieldPokemon();
       const side = createBattleSide({ gimmickUsed: true });
       const state = createBattleState();
 
+      // Source: Showdown -- one gimmick per side per battle
       expect(dynamax.canUse(pokemon, side, state)).toBe(false);
     });
 
     it("given Zacian, when checking canUse, then returns false", () => {
-      // Source: Bulbapedia "Dynamax" -- Zacian cannot Dynamax
       const dynamax = new Gen8Dynamax();
       const pokemon = createGen8OnFieldPokemon({ speciesId: GEN8_SPECIES_IDS.zacian });
       const side = createBattleSide();
       const state = createBattleState();
 
+      // Source: Bulbapedia "Dynamax" -- Zacian cannot Dynamax
       expect(dynamax.canUse(pokemon, side, state)).toBe(false);
     });
 
     it("given Zamazenta, when checking canUse, then returns false", () => {
-      // Source: Bulbapedia "Dynamax" -- Zamazenta cannot Dynamax
       const dynamax = new Gen8Dynamax();
       const pokemon = createGen8OnFieldPokemon({ speciesId: GEN8_SPECIES_IDS.zamazenta });
       const side = createBattleSide();
       const state = createBattleState();
 
+      // Source: Bulbapedia "Dynamax" -- Zamazenta cannot Dynamax
       expect(dynamax.canUse(pokemon, side, state)).toBe(false);
     });
 
     it("given Eternatus, when checking canUse, then returns false", () => {
-      // Source: Bulbapedia "Dynamax" -- Eternatus cannot Dynamax
       const dynamax = new Gen8Dynamax();
       const pokemon = createGen8OnFieldPokemon({ speciesId: GEN8_SPECIES_IDS.eternatus });
       const side = createBattleSide();
       const state = createBattleState();
 
+      // Source: Bulbapedia "Dynamax" -- Eternatus cannot Dynamax
       expect(dynamax.canUse(pokemon, side, state)).toBe(false);
     });
   });
 
   describe("Gen8Dynamax.activate", () => {
     it("given a normal pokemon with dynamaxLevel=10, when activating, then sets isDynamaxed=true and dynamaxTurnsLeft=3", () => {
-      // Source: Showdown data/conditions.ts -- Dynamax state on activation
       const dynamax = new Gen8Dynamax();
       const pokemon = createGen8OnFieldPokemon();
       const side = createBattleSide();
@@ -309,12 +317,13 @@ describe("Gen8Dynamax", () => {
 
       dynamax.activate(pokemon, side, state);
 
+      // Source: Showdown data/conditions.ts -- Dynamax state on activation
       expect(pokemon.isDynamaxed).toBe(true);
+      // Source: Showdown data/conditions.ts line 766 -- duration: 3 turns
       expect(pokemon.dynamaxTurnsLeft).toBe(3);
     });
 
     it("given a pokemon with dynamaxLevel=10 and 300 max HP, when activating, then HP doubles to 600", () => {
-      // Source: Showdown data/conditions.ts line 771 -- dynamaxLevel 10: ratio = 2.0
       // floor(300 * 2.0) = 600
       const dynamax = new Gen8Dynamax();
       const pokemon = createGen8OnFieldPokemon({ currentHp: 300, dynamaxLevel: 10 });
@@ -323,12 +332,13 @@ describe("Gen8Dynamax", () => {
 
       dynamax.activate(pokemon, side, state);
 
+      // Source: Showdown data/conditions.ts line 771 -- dynamaxLevel 10: ratio = 2.0, maxHp scaled
       expect(pokemon.pokemon.calculatedStats!.hp).toBe(600);
+      // Source: Showdown data/conditions.ts lines 771-774 -- currentHp also scaled by same ratio
       expect(pokemon.pokemon.currentHp).toBe(600);
     });
 
     it("given a pokemon with dynamaxLevel=0 and 300 max HP/200 current HP, when activating, then scales HP by 1.5x", () => {
-      // Source: Showdown data/conditions.ts line 771 -- dynamaxLevel 0: ratio = 1.5
       // maxHp: floor(300 * 1.5) = 450, currentHp: floor(200 * 1.5) = 300
       const dynamax = new Gen8Dynamax();
       const pokemon = createGen8OnFieldPokemon({ currentHp: 200, dynamaxLevel: 0 });
@@ -337,12 +347,13 @@ describe("Gen8Dynamax", () => {
 
       dynamax.activate(pokemon, side, state);
 
+      // Source: Showdown data/conditions.ts line 771 -- dynamaxLevel 0: ratio = 1.5, maxHp scaled
       expect(pokemon.pokemon.calculatedStats!.hp).toBe(450);
+      // Source: Showdown data/conditions.ts lines 771-774 -- currentHp also scaled by ratio 1.5
       expect(pokemon.pokemon.currentHp).toBe(300);
     });
 
     it("given activation, when checking side state, then side.gimmickUsed is true", () => {
-      // Source: Showdown -- gimmickUsed set on activation
       const dynamax = new Gen8Dynamax();
       const pokemon = createGen8OnFieldPokemon();
       const side = createBattleSide();
@@ -350,11 +361,11 @@ describe("Gen8Dynamax", () => {
 
       dynamax.activate(pokemon, side, state);
 
+      // Source: Showdown -- gimmickUsed set on activation
       expect(side.gimmickUsed).toBe(true);
     });
 
     it("given activation, when checking events, then returns DynamaxEvent with correct data", () => {
-      // Source: BattleEvent interface -- dynamax event
       const dynamax = new Gen8Dynamax();
       const pokemon = createGen8OnFieldPokemon();
       const side = createBattleSide();
@@ -362,7 +373,9 @@ describe("Gen8Dynamax", () => {
 
       const events = dynamax.activate(pokemon, side, state);
 
+      // Source: BattleEvent interface -- dynamax event emitted on activation
       expect(events).toHaveLength(1);
+      // Source: BattleEvent interface -- dynamax event contains side index and pokemon uid
       expect(events[0]).toEqual({
         type: "dynamax",
         side: 0,
@@ -373,7 +386,6 @@ describe("Gen8Dynamax", () => {
 
   describe("Gen8Dynamax.revert", () => {
     it("given dynamaxed pokemon, when reverting, then sets isDynamaxed=false and dynamaxTurnsLeft=0", () => {
-      // Source: Showdown data/conditions.ts -- Dynamax end
       const dynamax = new Gen8Dynamax();
       const pokemon = createGen8OnFieldPokemon({ dynamaxLevel: 10 });
       const side = createBattleSide({ active: [pokemon] });
@@ -381,16 +393,18 @@ describe("Gen8Dynamax", () => {
 
       // First activate
       dynamax.activate(pokemon, side, state);
+      // Source: Showdown data/conditions.ts -- Dynamax state after activation
       expect(pokemon.isDynamaxed).toBe(true);
 
       // Then revert
       dynamax.revert(pokemon, state);
+      // Source: Showdown data/conditions.ts -- Dynamax end: isDynamaxed cleared
       expect(pokemon.isDynamaxed).toBe(false);
+      // Source: Showdown data/conditions.ts -- Dynamax end: turnsLeft cleared
       expect(pokemon.dynamaxTurnsLeft).toBe(0);
     });
 
     it("given dynamaxed pokemon at full HP with dynamaxLevel=10, when reverting, then restores HP proportionally", () => {
-      // Source: Showdown data/conditions.ts lines 801-802
       // Activate: maxHp 300 -> 600, currentHp 300 -> 600
       // Revert: currentHp 600 * (300/600) = 300
       const dynamax = new Gen8Dynamax();
@@ -399,16 +413,19 @@ describe("Gen8Dynamax", () => {
       const state = createBattleState(pokemon, null);
 
       dynamax.activate(pokemon, side, state);
+      // Source: Showdown data/conditions.ts line 771 -- maxHp scaled to 600 after activation
       expect(pokemon.pokemon.calculatedStats!.hp).toBe(600);
+      // Source: Showdown data/conditions.ts lines 771-774 -- currentHp scaled to 600 after activation
       expect(pokemon.pokemon.currentHp).toBe(600);
 
       dynamax.revert(pokemon, state);
+      // Source: Showdown data/conditions.ts lines 801-802 -- maxHp restored to 300 on revert
       expect(pokemon.pokemon.calculatedStats!.hp).toBe(300);
+      // Source: Showdown data/conditions.ts lines 801-802 -- currentHp proportionally restored
       expect(pokemon.pokemon.currentHp).toBe(300);
     });
 
     it("given dynamaxed pokemon that took damage, when reverting, then restores proportional HP", () => {
-      // Source: Showdown data/conditions.ts lines 801-802
       // Activate: maxHp 300 -> 600, currentHp 300 -> 600
       // Take 300 damage -> currentHp = 300 out of 600
       // Revert: round(300 * 300 / 600) = round(150) = 150
@@ -422,7 +439,9 @@ describe("Gen8Dynamax", () => {
       pokemon.pokemon.currentHp = 300;
 
       dynamax.revert(pokemon, state);
+      // Source: Showdown data/conditions.ts lines 801-802 -- maxHp restored to 300 on revert
       expect(pokemon.pokemon.calculatedStats!.hp).toBe(300);
+      // Source: Showdown data/conditions.ts lines 801-802 -- proportional HP: round(300 * 300 / 600) = 150
       expect(pokemon.pokemon.currentHp).toBe(150);
     });
 
@@ -432,11 +451,11 @@ describe("Gen8Dynamax", () => {
       const state = createBattleState(pokemon, null);
 
       const events = dynamax.revert(pokemon, state);
+      // Source: Showdown data/conditions.ts — revert is a no-op if pokemon is not Dynamaxed
       expect(events).toHaveLength(0);
     });
 
     it("given revert, when checking events, then returns DynamaxEndEvent", () => {
-      // Source: BattleEvent interface -- dynamax-end event
       const dynamax = new Gen8Dynamax();
       const pokemon = createGen8OnFieldPokemon({ dynamaxLevel: 10 });
       const side = createBattleSide({ active: [pokemon] });
@@ -445,14 +464,15 @@ describe("Gen8Dynamax", () => {
       dynamax.activate(pokemon, side, state);
       const events = dynamax.revert(pokemon, state);
 
+      // Source: BattleEvent interface -- dynamax-end event emitted on revert
       expect(events).toHaveLength(1);
+      // Source: BattleEvent interface -- dynamax-end event type
       expect(events[0].type).toBe("dynamax-end");
     });
   });
 
   describe("Gen8Dynamax.revert side index (Bug M1)", () => {
     it("given dynamaxed pokemon on side 0, when reverting, then emits event with side: 0", () => {
-      // Source: BattleState.sides[n].active maps ActivePokemon to side index
       const dynamax = new Gen8Dynamax();
       const pokemon = createGen8OnFieldPokemon({ dynamaxLevel: 10 });
       const side = createBattleSide({ active: [pokemon] });
@@ -461,7 +481,9 @@ describe("Gen8Dynamax", () => {
       dynamax.activate(pokemon, side, state);
       const events = dynamax.revert(pokemon, state);
 
+      // Source: BattleState.sides[n].active maps ActivePokemon to side index
       expect(events).toHaveLength(1);
+      // Source: BattleState.sides[n].active -- dynamax-end event includes correct side index 0
       expect(events[0]).toEqual({
         type: "dynamax-end",
         side: 0,
@@ -471,7 +493,6 @@ describe("Gen8Dynamax", () => {
 
     it("given dynamaxed pokemon on side 1, when reverting, then emits event with side: 1", () => {
       // Bug M1: Previously hardcoded side: 0, which was wrong for opponent-side pokemon
-      // Source: BattleState.sides[n].active maps ActivePokemon to side index
       const dynamax = new Gen8Dynamax();
       const pokemon = createGen8OnFieldPokemon({ uid: "opponent-pokemon-1", dynamaxLevel: 10 }, {});
       const side = createBattleSide({ index: 1, active: [pokemon] });
@@ -480,7 +501,9 @@ describe("Gen8Dynamax", () => {
       dynamax.activate(pokemon, side, state);
       const events = dynamax.revert(pokemon, state);
 
+      // Source: BattleState.sides[n].active maps ActivePokemon to side index
       expect(events).toHaveLength(1);
+      // Source: BattleState.sides[n].active -- dynamax-end event includes correct side index 1
       expect(events[0]).toEqual({
         type: "dynamax-end",
         side: 1,
@@ -491,13 +514,13 @@ describe("Gen8Dynamax", () => {
     it("given dynamaxed pokemon not found in any side active slot, when reverting, then throws", () => {
       // Bug M1 fix: rather than silently emitting side: 0 for an invalid state, we now
       // throw an error to surface the corrupted state immediately.
-      // Source: Showdown -- BattleState always has the Dynamaxed pokemon in an active slot
       const dynamax = new Gen8Dynamax();
       const pokemon = createGen8OnFieldPokemon({ uid: "orphan-pokemon", dynamaxLevel: 10 });
       const side = createBattleSide();
       const state = createBattleState(); // No active pokemon in either side
 
       dynamax.activate(pokemon, side, state);
+      // Source: Showdown -- BattleState always has the Dynamaxed pokemon in an active slot
       expect(() => dynamax.revert(pokemon, state)).toThrow(
         "Gen8Dynamax.revert: Pokemon uid=orphan-pokemon not found in any active slot",
       );
@@ -526,11 +549,15 @@ describe("Gen8Dynamax", () => {
       const state = createBattleState(pokemon, null);
 
       dynamax.activate(pokemon, side, state);
+      // Source: Showdown data/conditions.ts line 771 -- ratio = 2.0, floor(100 * 2.0) = 200
       expect(pokemon.pokemon.calculatedStats!.hp).toBe(200);
+      // Source: Showdown data/conditions.ts lines 771-774 -- currentHp also scaled to 200
       expect(pokemon.pokemon.currentHp).toBe(200);
 
       dynamax.revert(pokemon, state);
+      // Source: Showdown sim/pokemon.ts -- baseMaxhp stored; maxHp restored to 100 on revert
       expect(pokemon.pokemon.calculatedStats!.hp).toBe(100);
+      // Source: Showdown data/conditions.ts lines 801-802 -- proportional restore: round(200*100/200) = 100
       expect(pokemon.pokemon.currentHp).toBe(100);
     });
 
@@ -557,11 +584,15 @@ describe("Gen8Dynamax", () => {
       const state = createBattleState(pokemon, null);
 
       dynamax.activate(pokemon, side, state);
+      // Source: Showdown data/conditions.ts line 771 -- ratio = 1.85, floor(137 * 1.85) = 253
       expect(pokemon.pokemon.calculatedStats!.hp).toBe(253); // floor(137 * 1.85)
+      // Source: Showdown data/conditions.ts lines 771-774 -- currentHp also scaled to 253
       expect(pokemon.pokemon.currentHp).toBe(253);
 
       dynamax.revert(pokemon, state);
+      // Source: Showdown sim/pokemon.ts -- baseMaxhp stored; maxHp restored to 137 on revert
       expect(pokemon.pokemon.calculatedStats!.hp).toBe(137);
+      // Source: Showdown data/conditions.ts lines 801-802 -- proportional restore: round(253*137/253) = 137
       expect(pokemon.pokemon.currentHp).toBe(137);
     });
 
@@ -587,11 +618,15 @@ describe("Gen8Dynamax", () => {
       const state = createBattleState(pokemon, null);
 
       dynamax.activate(pokemon, side, state);
+      // Source: Showdown data/conditions.ts line 771 -- ratio = 1.65, floor(141 * 1.65) = 232
       expect(pokemon.pokemon.calculatedStats!.hp).toBe(232); // floor(141 * 1.65)
+      // Source: Showdown data/conditions.ts lines 771-774 -- currentHp also scaled to 232
       expect(pokemon.pokemon.currentHp).toBe(232);
 
       dynamax.revert(pokemon, state);
+      // Source: Showdown sim/pokemon.ts -- baseMaxhp stored; maxHp restored to 141 on revert
       expect(pokemon.pokemon.calculatedStats!.hp).toBe(141);
+      // Source: Showdown data/conditions.ts lines 801-802 -- proportional restore: round(232*141/232) = 141
       expect(pokemon.pokemon.currentHp).toBe(141);
     });
 
@@ -618,14 +653,16 @@ describe("Gen8Dynamax", () => {
       const state = createBattleState(pokemon, null);
 
       dynamax.activate(pokemon, side, state);
+      // Source: Showdown data/conditions.ts line 771 -- ratio = 1.55, floor(201 * 1.55) = 311
       expect(pokemon.pokemon.calculatedStats!.hp).toBe(311); // floor(201 * 1.55)
 
       // Simulate taking 100 damage
       pokemon.pokemon.currentHp = 211;
 
       dynamax.revert(pokemon, state);
+      // Source: Showdown sim/pokemon.ts -- baseMaxhp stored; maxHp restored to 201 on revert
       expect(pokemon.pokemon.calculatedStats!.hp).toBe(201);
-      // round(211 * 201 / 311) = round(136.373...) = 136
+      // Source: Showdown data/conditions.ts lines 801-802 -- proportional restore: round(211*201/311) = 136
       expect(pokemon.pokemon.currentHp).toBe(136);
     });
 
@@ -648,9 +685,11 @@ describe("Gen8Dynamax", () => {
       const state = createBattleState(pokemon, null);
 
       dynamax.activate(pokemon, side, state);
+      // Source: Showdown sim/pokemon.ts — pokemon.baseMaxhp stores original max HP before Dynamax
       expect(pokemon.preDynamaxMaxHp).toBe(100);
 
       dynamax.revert(pokemon, state);
+      // Source: Showdown data/conditions.ts — preDynamaxMaxHp cleared after revert
       expect(pokemon.preDynamaxMaxHp).toBeUndefined();
     });
   });
@@ -661,6 +700,7 @@ describe("Gen8Dynamax", () => {
     it("given non-dynamaxed pokemon, when modifying move, then returns move unchanged", () => {
       const pokemon = createGen8OnFieldPokemon();
       const result = dynamax.modifyMove(FLAMETHROWER_MOVE, pokemon);
+      // Source: Showdown sim/battle-actions.ts — non-Dynamaxed pokemon use their moves unchanged
       expect(result).toBe(FLAMETHROWER_MOVE); // Same reference
     });
 
@@ -670,8 +710,11 @@ describe("Gen8Dynamax", () => {
       const pokemon = createGen8OnFieldPokemon({}, { isDynamaxed: true });
       const result = dynamax.modifyMove(FLAMETHROWER_MOVE, pokemon);
 
+      // Source: Showdown sim/battle-actions.ts -- Fire-type Max Move display name is "Max Flare"
       expect(result.displayName).toBe("Max Flare");
+      // Source: Showdown data/moves.ts -- Max Flare base power for BP 85-90 source moves is 125
       expect(result.power).toBe(125);
+      // Source: Showdown sim/battle-actions.ts -- Max Moves always have null accuracy (never miss)
       expect(result.accuracy).toBeNull();
     });
 
@@ -681,7 +724,9 @@ describe("Gen8Dynamax", () => {
       const statusMove = TOXIC_MOVE;
       const result = dynamax.modifyMove(statusMove, pokemon);
 
+      // Source: Showdown sim/battle-actions.ts -- status moves become Max Guard when Dynamaxed
       expect(result.displayName).toBe("Max Guard");
+      // Source: Showdown data/moves.ts -- Max Guard id maps to maxGuard protect effect variant
       expect(result.id).toBe(CORE_PROTECT_EFFECT_VARIANTS.maxGuard);
     });
   });
