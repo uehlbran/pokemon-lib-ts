@@ -1371,13 +1371,13 @@ export function calculateGen9Damage(
 
   // Apply type effectiveness as integer multiplication
   // Source: Showdown sim/battle-actions.ts
-  if (effectiveness > 1) {
+  if (effectiveness > TYPE_EFFECTIVENESS_MULTIPLIERS.neutral) {
     let typeMod = effectiveness;
     while (typeMod >= 2) {
       baseDamage = baseDamage * 2;
       typeMod /= 2;
     }
-  } else if (effectiveness < 1 && effectiveness > 0) {
+  } else if (effectiveness < TYPE_EFFECTIVENESS_MULTIPLIERS.neutral && effectiveness > TYPE_EFFECTIVENESS_MULTIPLIERS.immune) {
     let typeMod = effectiveness;
     while (typeMod <= 0.5) {
       baseDamage = Math.floor(baseDamage / 2);
@@ -1400,7 +1400,7 @@ export function calculateGen9Damage(
 
   // Tinted Lens: double damage if not very effective
   // Source: Showdown data/abilities.ts -- Tinted Lens
-  if (attackerAbility === "tinted-lens" && effectiveness < 1) {
+  if (attackerAbility === "tinted-lens" && effectiveness < TYPE_EFFECTIVENESS_MULTIPLIERS.neutral) {
     baseDamage = baseDamage * 2;
     abilityMultiplier *= 2;
   }
@@ -1411,7 +1411,7 @@ export function calculateGen9Damage(
   if (
     !moldBreaker &&
     (defenderAbility === "filter" || defenderAbility === "solid-rock") &&
-    effectiveness > 1
+    effectiveness > TYPE_EFFECTIVENESS_MULTIPLIERS.neutral
   ) {
     baseDamage = pokeRound(baseDamage, 3072); // 0.75x
     abilityMultiplier *= 0.75;
@@ -1420,7 +1420,7 @@ export function calculateGen9Damage(
   // Prism Armor: 0.75x damage if super effective.
   // Unlike Filter/Solid Rock, Prism Armor is NOT bypassed by Mold Breaker.
   // Source: Showdown data/abilities.ts -- prismarmo: onSourceModifyDamage (no breakable flag)
-  if (defenderAbility === "prism-armor" && effectiveness > 1) {
+  if (defenderAbility === "prism-armor" && effectiveness > TYPE_EFFECTIVENESS_MULTIPLIERS.neutral) {
     baseDamage = pokeRound(baseDamage, 3072); // 0.75x
     abilityMultiplier *= 0.75;
   }
@@ -1499,7 +1499,7 @@ export function calculateGen9Damage(
 
   // Expert Belt: 1.2x for super-effective moves
   // Source: Showdown data/items.ts -- Expert Belt
-  if (!attackerHasKlutz && attackerItem === "expert-belt" && effectiveness > 1) {
+  if (!attackerHasKlutz && attackerItem === "expert-belt" && effectiveness > TYPE_EFFECTIVENESS_MULTIPLIERS.neutral) {
     baseDamage = pokeRound(baseDamage, 4915); // ~1.2x
     itemMultiplier = 4915 / 4096;
   }
@@ -1549,7 +1549,7 @@ export function calculateGen9Damage(
     if (resistType && resistType === effectiveMoveType) {
       // Chilan Berry activates on any Normal-type hit; others require SE
       // Source: Showdown data/items.ts -- Chilan Berry: onSourceModifyDamage (no SE check)
-      if (resistType === CORE_TYPE_IDS.normal || effectiveness > 1) {
+      if (resistType === CORE_TYPE_IDS.normal || effectiveness > TYPE_EFFECTIVENESS_MULTIPLIERS.neutral) {
         baseDamage = pokeRound(baseDamage, 2048); // 0.5x via pokeRound
         typeResistBerryConsumed = defenderItemForBerry;
       }

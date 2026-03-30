@@ -1615,7 +1615,7 @@ function handleOnDamageTaken(item: string, context: ItemContext): ItemResult {
           pokemon.types,
           GEN9_TYPE_CHART,
         );
-        if (effectiveness >= 2) {
+        if (effectiveness >= TYPE_EFFECTIVENESS_MULTIPLIERS.superEffective) {
           return {
             activated: true,
             effects: [
