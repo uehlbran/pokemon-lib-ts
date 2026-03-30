@@ -2,6 +2,7 @@
 
 **Last updated:** 2026-03-31
 **Overall estimate:** Feature-complete for singles battles, but this page is a summary, not a correctness proof.
+**Generated completeness status:** `tools/oracle-validation/results/completeness-status.md`
 **Architecture:** Pluggable gen-agnostic engine. Delegates ALL gen-specific behavior to GenerationRuleset. Depends only on @pokemon-lib-ts/core.
 
 Battle correctness claims now rely on explicit seam tests, especially:

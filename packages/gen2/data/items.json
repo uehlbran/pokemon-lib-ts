@@ -14,7 +14,8 @@
       "type": "berry",
       "trigger": "hp-below-50",
       "effect": "heal-10-hp"
-    }
+    },
+    "flingPower": 10
   },
   {
     "id": "berry-juice",
@@ -26,7 +27,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 2,
-    "spriteKey": "berry-juice"
+    "spriteKey": "berry-juice",
+    "flingPower": 30
   },
   {
     "id": "berserk-gene",
@@ -59,7 +61,8 @@
       "type": "berry",
       "trigger": "confusion",
       "effect": "cure-confusion"
-    }
+    },
+    "flingPower": 10
   },
   {
     "id": "black-belt",
@@ -76,7 +79,8 @@
       "type": "type-boost",
       "moveType": "fighting",
       "multiplier": 1.1
-    }
+    },
+    "flingPower": 30
   },
   {
     "id": "black-glasses",
@@ -93,7 +97,8 @@
       "type": "type-boost",
       "moveType": "dark",
       "multiplier": 1.1
-    }
+    },
+    "flingPower": 30
   },
   {
     "id": "bright-powder",
@@ -109,7 +114,8 @@
     "holdEffect": {
       "type": "custom",
       "handler": "bright-powder"
-    }
+    },
+    "flingPower": 10
   },
   {
     "id": "burnt-berry",
@@ -126,7 +132,8 @@
       "type": "berry",
       "trigger": "freeze",
       "effect": "cure-freeze"
-    }
+    },
+    "flingPower": 10
   },
   {
     "id": "charcoal",
@@ -143,7 +150,8 @@
       "type": "type-boost",
       "moveType": "fire",
       "multiplier": 1.1
-    }
+    },
+    "flingPower": 30
   },
   {
     "id": "dragon-fang",
@@ -160,7 +168,8 @@
       "type": "type-boost",
       "moveType": "dragon",
       "multiplier": 1.1
-    }
+    },
+    "flingPower": 70
   },
   {
     "id": "dragon-scale",
@@ -177,7 +186,8 @@
       "type": "type-boost",
       "moveType": "dragon",
       "multiplier": 1.1
-    }
+    },
+    "flingPower": 30
   },
   {
     "id": "fast-ball",
@@ -205,7 +215,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 1,
-    "spriteKey": "fire-stone"
+    "spriteKey": "fire-stone",
+    "flingPower": 30
   },
   {
     "id": "focus-band",
@@ -221,7 +232,8 @@
     "holdEffect": {
       "type": "custom",
       "handler": "focus-band"
-    }
+    },
+    "flingPower": 10
   },
   {
     "id": "friend-ball",
@@ -254,7 +266,8 @@
       "type": "berry",
       "trigger": "hp-below-50",
       "effect": "heal-30-hp"
-    }
+    },
+    "flingPower": 10
   },
   {
     "id": "great-ball",
@@ -287,7 +300,8 @@
       "type": "type-boost",
       "moveType": "rock",
       "multiplier": 1.1
-    }
+    },
+    "flingPower": 100
   },
   {
     "id": "heavy-ball",
@@ -320,7 +334,8 @@
       "type": "berry",
       "trigger": "burn",
       "effect": "cure-burn"
-    }
+    },
+    "flingPower": 10
   },
   {
     "id": "kings-rock",
@@ -336,7 +351,9 @@
     "holdEffect": {
       "type": "custom",
       "handler": "kings-rock"
-    }
+    },
+    "flingPower": 30,
+    "flingEffect": "flinch"
   },
   {
     "id": "leaf-stone",
@@ -348,7 +365,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 1,
-    "spriteKey": "leaf-stone"
+    "spriteKey": "leaf-stone",
+    "flingPower": 30
   },
   {
     "id": "leftovers",
@@ -364,7 +382,8 @@
     "holdEffect": {
       "type": "leftovers",
       "healFraction": 0.0625
-    }
+    },
+    "flingPower": 10
   },
   {
     "id": "level-ball",
@@ -396,7 +415,9 @@
     "holdEffect": {
       "type": "custom",
       "handler": "light-ball"
-    }
+    },
+    "flingPower": 30,
+    "flingEffect": "paralysis"
   },
   {
     "id": "love-ball",
@@ -428,7 +449,8 @@
     "holdEffect": {
       "type": "custom",
       "handler": "lucky-punch"
-    }
+    },
+    "flingPower": 40
   },
   {
     "id": "lure-ball",
@@ -461,7 +483,8 @@
       "type": "type-boost",
       "moveType": "electric",
       "multiplier": 1.1
-    }
+    },
+    "flingPower": 30
   },
   {
     "id": "mail",
@@ -506,7 +529,8 @@
       "type": "type-boost",
       "moveType": "steel",
       "multiplier": 1.1
-    }
+    },
+    "flingPower": 30
   },
   {
     "id": "metal-powder",
@@ -522,7 +546,8 @@
     "holdEffect": {
       "type": "custom",
       "handler": "metal-powder"
-    }
+    },
+    "flingPower": 10
   },
   {
     "id": "mint-berry",
@@ -539,7 +564,8 @@
       "type": "berry",
       "trigger": "sleep",
       "effect": "cure-sleep"
-    }
+    },
+    "flingPower": 10
   },
   {
     "id": "miracle-berry",
@@ -556,7 +582,8 @@
       "type": "berry",
       "trigger": "any-status",
       "effect": "cure-all"
-    }
+    },
+    "flingPower": 10
   },
   {
     "id": "miracle-seed",
@@ -573,7 +600,8 @@
       "type": "type-boost",
       "moveType": "grass",
       "multiplier": 1.1
-    }
+    },
+    "flingPower": 30
   },
   {
     "id": "moon-ball",
@@ -601,7 +629,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 1,
-    "spriteKey": "moon-stone"
+    "spriteKey": "moon-stone",
+    "flingPower": 30
   },
   {
     "id": "mystery-berry",
@@ -618,7 +647,8 @@
       "type": "berry",
       "trigger": "pp-zero",
       "effect": "restore-5-pp"
-    }
+    },
+    "flingPower": 10
   },
   {
     "id": "mystic-water",
@@ -635,7 +665,8 @@
       "type": "type-boost",
       "moveType": "water",
       "multiplier": 1.1
-    }
+    },
+    "flingPower": 30
   },
   {
     "id": "never-melt-ice",
@@ -652,7 +683,8 @@
       "type": "type-boost",
       "moveType": "ice",
       "multiplier": 1.1
-    }
+    },
+    "flingPower": 30
   },
   {
     "id": "pink-bow",
@@ -686,7 +718,9 @@
       "type": "type-boost",
       "moveType": "poison",
       "multiplier": 1.1
-    }
+    },
+    "flingPower": 70,
+    "flingEffect": "poison"
   },
   {
     "id": "poke-ball",
@@ -736,7 +770,8 @@
       "type": "berry",
       "trigger": "paralysis",
       "effect": "cure-paralysis"
-    }
+    },
+    "flingPower": 10
   },
   {
     "id": "psn-cure-berry",
@@ -753,7 +788,8 @@
       "type": "berry",
       "trigger": "poison",
       "effect": "cure-poison"
-    }
+    },
+    "flingPower": 10
   },
   {
     "id": "quick-claw",
@@ -769,7 +805,8 @@
     "holdEffect": {
       "type": "custom",
       "handler": "quick-claw"
-    }
+    },
+    "flingPower": 80
   },
   {
     "id": "scope-lens",
@@ -785,7 +822,8 @@
     "holdEffect": {
       "type": "custom",
       "handler": "scope-lens"
-    }
+    },
+    "flingPower": 30
   },
   {
     "id": "sharp-beak",
@@ -802,7 +840,8 @@
       "type": "type-boost",
       "moveType": "flying",
       "multiplier": 1.1
-    }
+    },
+    "flingPower": 50
   },
   {
     "id": "silver-powder",
@@ -819,7 +858,8 @@
       "type": "type-boost",
       "moveType": "bug",
       "multiplier": 1.1
-    }
+    },
+    "flingPower": 10
   },
   {
     "id": "soft-sand",
@@ -836,7 +876,8 @@
       "type": "type-boost",
       "moveType": "ground",
       "multiplier": 1.1
-    }
+    },
+    "flingPower": 10
   },
   {
     "id": "spell-tag",
@@ -853,7 +894,8 @@
       "type": "type-boost",
       "moveType": "ghost",
       "multiplier": 1.1
-    }
+    },
+    "flingPower": 30
   },
   {
     "id": "sport-ball",
@@ -885,7 +927,8 @@
     "holdEffect": {
       "type": "custom",
       "handler": "stick"
-    }
+    },
+    "flingPower": 60
   },
   {
     "id": "sun-stone",
@@ -897,7 +940,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 2,
-    "spriteKey": "sun-stone"
+    "spriteKey": "sun-stone",
+    "flingPower": 30
   },
   {
     "id": "thick-club",
@@ -913,7 +957,8 @@
     "holdEffect": {
       "type": "custom",
       "handler": "thick-club"
-    }
+    },
+    "flingPower": 90
   },
   {
     "id": "thunder-stone",
@@ -925,7 +970,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 1,
-    "spriteKey": "thunder-stone"
+    "spriteKey": "thunder-stone",
+    "flingPower": 30
   },
   {
     "id": "twisted-spoon",
@@ -942,7 +988,8 @@
       "type": "type-boost",
       "moveType": "psychic",
       "multiplier": 1.1
-    }
+    },
+    "flingPower": 30
   },
   {
     "id": "ultra-ball",
@@ -970,7 +1017,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 2,
-    "spriteKey": "up-grade"
+    "spriteKey": "up-grade",
+    "flingPower": 30
   },
   {
     "id": "water-stone",
@@ -982,6 +1030,7 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 1,
-    "spriteKey": "water-stone"
+    "spriteKey": "water-stone",
+    "flingPower": 30
   }
 ]

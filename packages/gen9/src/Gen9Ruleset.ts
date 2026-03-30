@@ -532,19 +532,50 @@ export class Gen9Ruleset extends BaseRuleset {
    * Source: specs/battle/10-gen9.md -- Salt Cure at order 13
    */
   override getEndOfTurnOrder(): readonly EndOfTurnEffect[] {
-    // Get the base order and insert salt-cure after bind (both at residualOrder 13)
-    const baseOrder = super.getEndOfTurnOrder();
-    const result: EndOfTurnEffect[] = [];
-
-    for (const effect of baseOrder) {
-      result.push(effect);
-      // Insert salt-cure right after bind (both at residualOrder 13)
-      if (effect === CORE_END_OF_TURN_EFFECT_IDS.bind) {
-        result.push(CORE_END_OF_TURN_EFFECT_IDS.saltCure as EndOfTurnEffect);
-      }
-    }
-
-    return result;
+    return [
+      CORE_END_OF_TURN_EFFECT_IDS.weatherDamage,
+      CORE_END_OF_TURN_EFFECT_IDS.futureAttack,
+      CORE_END_OF_TURN_EFFECT_IDS.wish,
+      CORE_END_OF_TURN_EFFECT_IDS.weatherHealing,
+      "shed-skin",
+      CORE_END_OF_TURN_EFFECT_IDS.leechSeed,
+      CORE_END_OF_TURN_EFFECT_IDS.leftovers,
+      CORE_END_OF_TURN_EFFECT_IDS.blackSludge,
+      CORE_END_OF_TURN_EFFECT_IDS.aquaRing,
+      CORE_END_OF_TURN_EFFECT_IDS.ingrain,
+      "poison-heal",
+      CORE_END_OF_TURN_EFFECT_IDS.grassyTerrainHeal,
+      CORE_END_OF_TURN_EFFECT_IDS.statusDamage,
+      CORE_END_OF_TURN_EFFECT_IDS.nightmare,
+      CORE_END_OF_TURN_EFFECT_IDS.curse,
+      "bad-dreams",
+      CORE_END_OF_TURN_EFFECT_IDS.bind,
+      CORE_END_OF_TURN_EFFECT_IDS.saltCure,
+      CORE_END_OF_TURN_EFFECT_IDS.yawnCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.encoreCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.tauntCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.disableCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.healBlockCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.embargoCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.magnetRiseCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.telekinesisCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.perishSong,
+      CORE_END_OF_TURN_EFFECT_IDS.screenCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.safeguardCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.tailwindCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.trickRoomCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.magicRoomCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.wonderRoomCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.gravityCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.slowStartCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.terrainCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.weatherCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.toxicOrbActivation,
+      CORE_END_OF_TURN_EFFECT_IDS.flameOrbActivation,
+      "speed-boost",
+      "moody",
+      CORE_END_OF_TURN_EFFECT_IDS.healingItems,
+    ];
   }
 
   // --- Damage Calculation ---

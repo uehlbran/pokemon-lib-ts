@@ -2,6 +2,7 @@
 
 **Last updated:** 2026-03-31
 **Overall estimate:** 100% complete (all 10 waves merged)
+**Generated completeness status:** `tools/oracle-validation/results/completeness-status.md`
 **Architecture:** Extends `BaseRuleset`
 **Spec:** `specs/battle/10-gen9.md`
 **Primary source:** Pokemon Showdown (no Gen 9 disassembly)

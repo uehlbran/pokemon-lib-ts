@@ -2,7 +2,7 @@
 # Gen4 Implementation Status
 
 **Last updated:** 2026-03-22
-**Overall estimate:** ~100% complete (all planned waves and all known bugs resolved)
+**Generated completeness status:** `tools/oracle-validation/results/completeness-status.md`
 **Architecture:** Extends `BaseRuleset`
 
 ---

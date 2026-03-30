@@ -1,7 +1,7 @@
 # Gen1 Implementation Status
 
 **Last updated:** 2026-03-26
-**Overall estimate:** ~100% complete (all known mechanics implemented)
+**Generated completeness status:** `tools/oracle-validation/results/completeness-status.md`
 **Architecture:** Implements `GenerationRuleset` directly (NOT BaseRuleset — too mechanically different)
 
 ---

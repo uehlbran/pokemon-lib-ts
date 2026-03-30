@@ -28,7 +28,12 @@
 
 import type { MoveEffectContext, MoveEffectResult } from "@pokemon-lib-ts/battle";
 import { BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
-import { CORE_SCREEN_IDS, CORE_STATUS_IDS, CORE_VOLATILE_IDS } from "@pokemon-lib-ts/core";
+import {
+  CORE_SCREEN_IDS,
+  CORE_STAT_IDS,
+  CORE_STATUS_IDS,
+  CORE_VOLATILE_IDS,
+} from "@pokemon-lib-ts/core";
 import { GEN4_ABILITY_IDS, GEN4_MOVE_IDS } from "./data/reference-ids";
 
 // ---------------------------------------------------------------------------
@@ -327,6 +332,130 @@ function handleAquaRing(ctx: MoveEffectContext): MoveEffectResult {
   });
 }
 
+function handleStockpile(ctx: MoveEffectContext): MoveEffectResult {
+  const attackerName = ctx.attacker.pokemon.nickname ?? "The Pokemon";
+  const existing = ctx.attacker.volatileStatuses.get(CORE_VOLATILE_IDS.stockpile);
+  const layers = Number(existing?.data?.layers ?? 0);
+  if (layers >= 3) {
+    return makeResult({ messages: ["But it failed!"] });
+  }
+
+  const defenseBoostDelta = ctx.attacker.statStages.defense < 6 ? 1 : 0;
+  const spDefenseBoostDelta = ctx.attacker.statStages.spDefense < 6 ? 1 : 0;
+  const nextState = {
+    layers: layers + 1,
+    defenseBoostsApplied: Number(existing?.data?.defenseBoostsApplied ?? 0) + defenseBoostDelta,
+    spDefenseBoostsApplied:
+      Number(existing?.data?.spDefenseBoostsApplied ?? 0) + spDefenseBoostDelta,
+  };
+
+  if (existing) {
+    ctx.attacker.volatileStatuses.set(CORE_VOLATILE_IDS.stockpile, {
+      turnsLeft: -1,
+      data: nextState,
+    });
+    return makeResult({
+      statChanges: [
+        ...(defenseBoostDelta > 0
+          ? [{ target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.defense, stages: 1 }]
+          : []),
+        ...(spDefenseBoostDelta > 0
+          ? [{ target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.spDefense, stages: 1 }]
+          : []),
+      ],
+      messages: [`${attackerName} stockpiled ${layers + 1}!`],
+    });
+  }
+
+  return makeResult({
+    selfVolatileInflicted: CORE_VOLATILE_IDS.stockpile,
+    selfVolatileData: { turnsLeft: -1, data: nextState },
+    statChanges: [
+      ...(defenseBoostDelta > 0
+        ? [{ target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.defense, stages: 1 }]
+        : []),
+      ...(spDefenseBoostDelta > 0
+        ? [{ target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.spDefense, stages: 1 }]
+        : []),
+    ],
+    messages: [`${attackerName} stockpiled 1!`],
+  });
+}
+
+function handleStockpileRelease(ctx: MoveEffectContext, moveId: string): MoveEffectResult {
+  const attackerName = ctx.attacker.pokemon.nickname ?? "The Pokemon";
+  const stockpile = ctx.attacker.volatileStatuses.get(CORE_VOLATILE_IDS.stockpile);
+  const layers = Number(stockpile?.data?.layers ?? 0);
+  if (layers <= 0) {
+    return makeResult({ messages: ["But it failed!"] });
+  }
+
+  const defenseBoostsApplied = Number(stockpile?.data?.defenseBoostsApplied ?? 0);
+  const spDefenseBoostsApplied = Number(stockpile?.data?.spDefenseBoostsApplied ?? 0);
+
+  return makeResult({
+    volatilesToClear: [
+      { target: BATTLE_EFFECT_TARGETS.attacker, volatile: CORE_VOLATILE_IDS.stockpile },
+    ],
+    healAmount:
+      moveId === GEN4_MOVE_IDS.swallow
+        ? Math.floor(
+            (ctx.attacker.pokemon.calculatedStats?.hp ?? ctx.attacker.pokemon.currentHp) *
+              ([0.25, 0.5, 1][layers - 1] ?? 1),
+          )
+        : 0,
+    statChanges: [
+      ...(defenseBoostsApplied > 0
+        ? [
+            {
+              target: BATTLE_EFFECT_TARGETS.attacker,
+              stat: CORE_STAT_IDS.defense,
+              stages: -defenseBoostsApplied,
+            },
+          ]
+        : []),
+      ...(spDefenseBoostsApplied > 0
+        ? [
+            {
+              target: BATTLE_EFFECT_TARGETS.attacker,
+              stat: CORE_STAT_IDS.spDefense,
+              stages: -spDefenseBoostsApplied,
+            },
+          ]
+        : []),
+    ],
+    messages: [
+      moveId === GEN4_MOVE_IDS.swallow
+        ? `${attackerName} swallowed its stockpile!`
+        : `${attackerName} unleashed its stockpiled power!`,
+    ],
+  });
+}
+
+function handlePowerTrick(ctx: MoveEffectContext): MoveEffectResult {
+  const attackerName = ctx.attacker.pokemon.nickname ?? "The Pokemon";
+  if (ctx.attacker.volatileStatuses.has(CORE_VOLATILE_IDS.powerTrick)) {
+    ctx.attacker.volatileStatuses.delete(CORE_VOLATILE_IDS.powerTrick);
+    return makeResult({ messages: [`${attackerName} switched its power back!`] });
+  }
+  return makeResult({
+    selfVolatileInflicted: CORE_VOLATILE_IDS.powerTrick,
+    messages: [`${attackerName} switched its Attack and Defense!`],
+  });
+}
+
+function handleRecycle(ctx: MoveEffectContext): MoveEffectResult {
+  const attackerName = ctx.attacker.pokemon.nickname ?? "The Pokemon";
+  if (ctx.attacker.pokemon.heldItem || !ctx.attacker.pokemon.lastItem) {
+    return makeResult({ messages: ["But it failed!"] });
+  }
+  ctx.attacker.pokemon.heldItem = ctx.attacker.pokemon.lastItem;
+  ctx.attacker.pokemon.lastItem = null;
+  return makeResult({
+    messages: [`${attackerName} recycled its ${ctx.attacker.pokemon.heldItem}!`],
+  });
+}
+
 function handleRefresh(ctx: MoveEffectContext): MoveEffectResult {
   // Cure own burn, poison, or paralysis — NOT sleep or freeze
   // Source: Bulbapedia — Refresh: "The user relaxes and lightens its body to
@@ -437,6 +566,15 @@ export function handleGen4StatusMove(ctx: MoveEffectContext): MoveEffectResult |
       return handleIngrain(ctx);
     case GEN4_MOVE_IDS.aquaRing:
       return handleAquaRing(ctx);
+    case GEN4_MOVE_IDS.stockpile:
+      return handleStockpile(ctx);
+    case GEN4_MOVE_IDS.spitUp:
+    case GEN4_MOVE_IDS.swallow:
+      return handleStockpileRelease(ctx, ctx.move.id);
+    case GEN4_MOVE_IDS.powerTrick:
+      return handlePowerTrick(ctx);
+    case GEN4_MOVE_IDS.recycle:
+      return handleRecycle(ctx);
     case GEN4_MOVE_IDS.refresh:
       return handleRefresh(ctx);
     case GEN4_MOVE_IDS.destinyBond:

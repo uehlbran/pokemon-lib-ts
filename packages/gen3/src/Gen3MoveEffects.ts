@@ -971,6 +971,104 @@ function handleIdInterceptedMove(context: MoveEffectContext, result: MutableResu
       return true;
     }
 
+    case GEN3_MOVE_IDS.stockpile: {
+      const existing = attacker.volatileStatuses.get(CORE_VOLATILE_IDS.stockpile);
+      const layers = Number(existing?.data?.layers ?? 0);
+      if (layers >= 3) {
+        result.messages.push("But it failed!");
+        return true;
+      }
+
+      const defenseBoostDelta = attacker.statStages.defense < 6 ? 1 : 0;
+      const spDefenseBoostDelta = attacker.statStages.spDefense < 6 ? 1 : 0;
+      const nextState = {
+        layers: layers + 1,
+        defenseBoostsApplied: Number(existing?.data?.defenseBoostsApplied ?? 0) + defenseBoostDelta,
+        spDefenseBoostsApplied:
+          Number(existing?.data?.spDefenseBoostsApplied ?? 0) + spDefenseBoostDelta,
+      };
+
+      if (existing) {
+        attacker.volatileStatuses.set(CORE_VOLATILE_IDS.stockpile, {
+          turnsLeft: -1,
+          data: nextState,
+        });
+      } else {
+        result.selfVolatileInflicted = CORE_VOLATILE_IDS.stockpile;
+        result.selfVolatileData = { turnsLeft: -1, data: nextState };
+      }
+
+      if (defenseBoostDelta > 0) {
+        result.statChanges.push({
+          target: BATTLE_EFFECT_TARGETS.attacker,
+          stat: CORE_STAT_IDS.defense,
+          stages: 1,
+        });
+      }
+      if (spDefenseBoostDelta > 0) {
+        result.statChanges.push({
+          target: BATTLE_EFFECT_TARGETS.attacker,
+          stat: CORE_STAT_IDS.spDefense,
+          stages: 1,
+        });
+      }
+      result.messages.push(`${attackerName} stockpiled ${layers + 1}!`);
+      return true;
+    }
+
+    case GEN3_MOVE_IDS.spitUp:
+    case GEN3_MOVE_IDS.swallow: {
+      const stockpile = attacker.volatileStatuses.get(CORE_VOLATILE_IDS.stockpile);
+      const layers = Number(stockpile?.data?.layers ?? 0);
+      if (layers <= 0) {
+        result.messages.push("But it failed!");
+        return true;
+      }
+
+      const defenseBoostsApplied = Number(stockpile?.data?.defenseBoostsApplied ?? 0);
+      const spDefenseBoostsApplied = Number(stockpile?.data?.spDefenseBoostsApplied ?? 0);
+      result.volatilesToClear = [
+        ...(result.volatilesToClear ?? []),
+        { target: BATTLE_EFFECT_TARGETS.attacker, volatile: CORE_VOLATILE_IDS.stockpile },
+      ];
+
+      if (defenseBoostsApplied > 0) {
+        result.statChanges.push({
+          target: BATTLE_EFFECT_TARGETS.attacker,
+          stat: CORE_STAT_IDS.defense,
+          stages: -defenseBoostsApplied,
+        });
+      }
+      if (spDefenseBoostsApplied > 0) {
+        result.statChanges.push({
+          target: BATTLE_EFFECT_TARGETS.attacker,
+          stat: CORE_STAT_IDS.spDefense,
+          stages: -spDefenseBoostsApplied,
+        });
+      }
+
+      if (move.id === GEN3_MOVE_IDS.swallow) {
+        const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
+        const healFraction = [0.25, 0.5, 1][layers - 1] ?? 1;
+        result.healAmount = Math.floor(maxHp * healFraction);
+        result.messages.push(`${attackerName} swallowed its stockpile!`);
+      } else {
+        result.messages.push(`${attackerName} unleashed its stockpiled power!`);
+      }
+      return true;
+    }
+
+    case GEN3_MOVE_IDS.recycle: {
+      if (attacker.pokemon.heldItem || !attacker.pokemon.lastItem) {
+        result.messages.push("But it failed!");
+        return true;
+      }
+      attacker.pokemon.heldItem = attacker.pokemon.lastItem;
+      attacker.pokemon.lastItem = null;
+      result.messages.push(`${attackerName} recycled its ${attacker.pokemon.heldItem}!`);
+      return true;
+    }
+
     default:
       return false;
   }

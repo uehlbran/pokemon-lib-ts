@@ -2,6 +2,7 @@
 
 **Last updated:** 2026-03-31
 **Overall estimate:** 100% complete (Waves 0–9 merged; Wave 10 docs)
+**Generated completeness status:** `tools/oracle-validation/results/completeness-status.md`
 **Architecture:** Extends `BaseRuleset`
 **Spec:** `specs/battle/09-gen8.md`
 **Ground truth:** `specs/reference/gen8-ground-truth.md`

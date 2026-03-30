@@ -871,7 +871,12 @@ async function buildPokemonData() {
               .map(([, v]) => toKebab(v as string))
               .filter((a): a is string => !!a);
             const hidden = abils.H ? toKebab(abils.H) : null;
-            return { normal, hidden };
+            const special = abils.S ? toKebab(abils.S) : null;
+            return {
+              normal,
+              hidden,
+              ...(special ? { special } : {}),
+            };
           })();
 
     // Evolution
@@ -1016,6 +1021,9 @@ function buildMovesData() {
       effect,
       description: move.desc || move.shortDesc || "",
       generation: move.gen,
+      ...(typeof move.critRatio === "number" && move.critRatio > 1
+        ? { critRatio: move.critRatio - 1 }
+        : {}),
     });
   }
 
@@ -1347,6 +1355,12 @@ function buildItemsData() {
 
     const battleUsable = !!(holdEffect || item.isBerry || useEffect);
     const fieldUsable = false;
+    const flingPower = typeof item.fling?.basePower === "number" ? item.fling.basePower : undefined;
+    const flingEffect = item.fling?.status
+      ? (mapStatus(item.fling.status) ?? item.fling.status)
+      : item.fling?.volatileStatus
+        ? (mapVolatile(item.fling.volatileStatus) ?? item.fling.volatileStatus)
+        : undefined;
 
     const entry: Record<string, unknown> = {
       id: kebabId,
@@ -1359,6 +1373,8 @@ function buildItemsData() {
       fieldUsable,
       generation: item.gen,
       spriteKey: kebabId,
+      ...(flingPower !== undefined ? { flingPower } : {}),
+      ...(flingEffect ? { flingEffect } : {}),
     };
 
     if (holdEffect) {

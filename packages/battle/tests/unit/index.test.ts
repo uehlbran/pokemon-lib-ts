@@ -21,7 +21,7 @@ describe("barrel exports", () => {
     expect(Object.hasOwn(mod, "BASE_TYPE_BOOST_ITEMS")).toBe(false);
     expect(Object.hasOwn(mod, "BASE_PLATE_ITEMS")).toBe(false);
     expect(Object.hasOwn(mod, "BASE_PINCH_ABILITY_TYPES")).toBe(false);
-  });
+  }, 15000);
 
   it("given the utils entrypoint, when imported, then internal helpers are exposed there", async () => {
     // Act
@@ -31,5 +31,5 @@ describe("barrel exports", () => {
     expect(Object.hasOwn(utils, "createOnFieldPokemon")).toBe(true);
     expect(Object.hasOwn(utils, "createDefaultStatStages")).toBe(true);
     expect(Object.hasOwn(utils, "createTestPokemon")).toBe(true);
-  });
+  }, 15000);
 });

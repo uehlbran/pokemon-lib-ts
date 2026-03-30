@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { Generations } from "@pkmn/data";
 import { Dex } from "@pkmn/dex";
@@ -17,17 +17,29 @@ interface LocalSpecies {
   readonly displayName: string;
   readonly types: readonly string[];
   readonly baseStats: Record<string, number>;
+  readonly abilities: {
+    readonly normal: readonly string[];
+    readonly hidden: string | null;
+    readonly special?: string | null;
+  };
+}
+
+interface LocalItem {
+  readonly id: string;
+  readonly flingPower?: number;
+  readonly flingEffect?: string;
 }
 
 interface LocalMoveEffect {
-  readonly type: string;
+  readonly type?: string;
   readonly target?: string;
 }
 
 interface LocalMove {
   readonly id: string;
-  readonly target: string;
-  readonly effect: LocalMoveEffect | null;
+  readonly target?: string;
+  readonly effect?: LocalMoveEffect | null;
+  readonly critRatio?: number;
 }
 
 /**
@@ -78,8 +90,55 @@ function normalizeSpeciesId(id: string): string {
   return id.toLowerCase().replaceAll(/[^a-z0-9]/g, "");
 }
 
-function normalizeMoveId(id: string): string {
-  return id.toLowerCase().replaceAll(/[^a-z0-9]/g, "");
+function normalizeKebab(value: string): string {
+  return value
+    .replace(/['']/g, "")
+    .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+    .replace(/\s+/g, "-")
+    .toLowerCase();
+}
+
+function normalizeMoveId(value: string): string {
+  const normalized = normalizeSpeciesId(normalizeKebab(value));
+  return normalized === "visegrip" ? "vicegrip" : normalized;
+}
+
+function isLocalStatChangeMove(move: LocalMove): boolean {
+  return move.effect?.type === "stat-change";
+}
+
+function mapExpectedFlingEffect(item: {
+  fling?: { status?: string; volatileStatus?: string };
+}): string | null {
+  if (item.fling?.status) {
+    const statuses: Record<string, string> = {
+      brn: "burn",
+      par: "paralysis",
+      psn: "poison",
+      tox: "badly-poisoned",
+      slp: "sleep",
+      frz: "freeze",
+    };
+    return statuses[item.fling.status] ?? item.fling.status;
+  }
+
+  if (item.fling?.volatileStatus) {
+    const volatiles: Record<string, string> = {
+      confusion: "confusion",
+      flinch: "flinch",
+      attract: "attract",
+      encore: "encore",
+      embargo: "embargo",
+      healblock: "heal-block",
+      ingrain: "ingrain",
+      taunt: "taunt",
+      telekinesis: "telekinesis",
+      torment: "torment",
+    };
+    return volatiles[item.fling.volatileStatus] ?? item.fling.volatileStatus;
+  }
+
+  return null;
 }
 
 function normalizeOracleSpecies(generation: ImplementedGeneration): OracleSpeciesRecord[] {
@@ -114,15 +173,32 @@ export function runDataSuite(
   const localPokemon = JSON.parse(
     readFileSync(join(generation.dataDir, "pokemon.json"), "utf8"),
   ) as LocalSpecies[];
-  const localTypeChart = JSON.parse(
-    readFileSync(join(generation.dataDir, "type-chart.json"), "utf8"),
-  ) as LocalTypeChart;
   const localMoves = JSON.parse(
     readFileSync(join(generation.dataDir, "moves.json"), "utf8"),
   ) as LocalMove[];
-  const localMovesById = new Map(localMoves.map((m) => [normalizeMoveId(m.id), m]));
+  const itemsPath = join(generation.dataDir, "items.json");
+  const localItems = existsSync(itemsPath)
+    ? (JSON.parse(readFileSync(itemsPath, "utf8")) as LocalItem[])
+    : [];
+  const localTypeChart = JSON.parse(
+    readFileSync(join(generation.dataDir, "type-chart.json"), "utf8"),
+  ) as LocalTypeChart;
+  const localMovesById = new Map(
+    localMoves.map((move) => [normalizeMoveId(move.id), move] as const),
+  );
+  const localItemsById = new Map(
+    localItems.map((item) => [normalizeSpeciesId(item.id), item] as const),
+  );
+  const localSpeciesById = new Map(
+    localPokemon.map((species) => [normalizeSpeciesId(species.name), species] as const),
+  );
 
   const oracle = ORACLE_GENERATIONS.get(generation.gen);
+  const oracleMovesById = new Map(
+    [...oracle.moves]
+      .filter((move) => move.exists && !move.isNonstandard && !move.isMax && !move.isZ)
+      .map((move) => [normalizeMoveId(move.name), move] as const),
+  );
   const oracleSpecies = normalizeOracleSpecies(generation);
   const oracleSpeciesById = new Map(
     oracleSpecies.map((species) => [normalizeSpeciesId(species.id), species] as const),
@@ -161,6 +237,102 @@ export function runDataSuite(
       description: `Species ${species.name} types match the oracle`,
       ourValue: localTypes,
       oracleValue: oracleTypes,
+    });
+  }
+
+  for (const move of localMoves) {
+    const moveId = normalizeMoveId(move.id);
+    oracleChecks.push({
+      id: buildCheckId(generation, "moves", moveId, "exists"),
+      suite: DATA_SUITE_NAME,
+      description: `Move ${move.id} exists in the oracle move dataset`,
+      ourValue: true,
+      oracleValue: oracleMovesById.has(moveId),
+    });
+  }
+
+  for (const move of oracle.moves) {
+    if (!move.exists || move.isNonstandard || move.isMax || move.isZ) {
+      continue;
+    }
+
+    const localMove = localMovesById.get(normalizeMoveId(move.name));
+    if (!localMove) {
+      continue;
+    }
+
+    if (move.boosts && !move.basePower && isLocalStatChangeMove(localMove)) {
+      oracleChecks.push({
+        id: buildCheckId(generation, "moves", normalizeSpeciesId(move.name), "stat-change-target"),
+        suite: DATA_SUITE_NAME,
+        description: `Move ${move.name} preserves the correct stat-change target`,
+        ourValue: localMove.effect?.target ?? null,
+        oracleValue: mapStatChangeTarget(move.target),
+      });
+    }
+
+    if (typeof move.critRatio === "number" && move.critRatio > 1) {
+      oracleChecks.push({
+        id: buildCheckId(generation, "moves", normalizeSpeciesId(move.name), "crit-ratio"),
+        suite: DATA_SUITE_NAME,
+        description: `Move ${move.name} preserves high-crit metadata`,
+        ourValue: localMove.critRatio ?? null,
+        oracleValue: move.critRatio - 1,
+      });
+    }
+  }
+
+  for (const item of oracle.items) {
+    if (!item.exists || item.isNonstandard) {
+      continue;
+    }
+
+    if (generation.gen < 4 || !item.fling) {
+      continue;
+    }
+
+    const localItem = localItemsById.get(normalizeSpeciesId(normalizeKebab(item.name)));
+    if (!localItem) {
+      continue;
+    }
+
+    oracleChecks.push({
+      id: buildCheckId(generation, "items", normalizeSpeciesId(item.name), "fling-power"),
+      suite: DATA_SUITE_NAME,
+      description: `Item ${item.name} preserves Fling base power`,
+      ourValue: localItem.flingPower ?? null,
+      oracleValue: item.fling.basePower ?? null,
+    });
+
+    const expectedFlingEffect = mapExpectedFlingEffect(item);
+    if (expectedFlingEffect !== null) {
+      oracleChecks.push({
+        id: buildCheckId(generation, "items", normalizeSpeciesId(item.name), "fling-effect"),
+        suite: DATA_SUITE_NAME,
+        description: `Item ${item.name} preserves Fling side-effect metadata`,
+        ourValue: localItem.flingEffect ?? null,
+        oracleValue: expectedFlingEffect,
+      });
+    }
+  }
+
+  for (const species of oracle.species) {
+    if (!species.exists || species.baseSpecies !== species.name) {
+      continue;
+    }
+
+    const abilities = species.abilities as { S?: string };
+    if (!abilities.S) {
+      continue;
+    }
+
+    const localSpecies = localSpeciesById.get(normalizeSpeciesId(species.id));
+    oracleChecks.push({
+      id: buildCheckId(generation, "species", normalizeSpeciesId(species.name), "special-ability"),
+      suite: DATA_SUITE_NAME,
+      description: `Species ${species.name} preserves special ability-slot metadata`,
+      ourValue: localSpecies?.abilities.special ?? null,
+      oracleValue: normalizeKebab(abilities.S),
     });
   }
 

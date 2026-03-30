@@ -60,6 +60,7 @@ import type { ActivePokemon, BattleSide, VolatileStatusState } from "../state/Ba
 import type { BattlePhase, BattleState } from "../state/BattleState";
 import {
   clonePokemonInstance,
+  consumeHeldItem,
   createDefaultStatStages,
   createOnFieldPokemon,
   createPokemonSnapshot,
@@ -549,7 +550,7 @@ export class BattleEngine implements BattleEventEmitter {
         this.emit({ type: BATTLE_EVENT_TYPES.message, text: message });
       }
       if (survivalResult.consumedItem) {
-        target.pokemon.heldItem = null;
+        consumeHeldItem(target, survivalResult.consumedItem);
         this.emit({
           type: BATTLE_EVENT_TYPES.itemConsumed,
           side: targetSide,
@@ -1270,6 +1271,22 @@ export class BattleEngine implements BattleEventEmitter {
         if (lockedById || lockedByIndex) {
           disabled = true;
           disabledReason = "Locked by Encore";
+        }
+      }
+
+      if (!disabled) {
+        const defender = this.getOpponentActive(side);
+        if (defender) {
+          const preExecutionFailure = this.ruleset.getPreExecutionMoveFailure?.(
+            active,
+            defender,
+            moveData,
+            this.state,
+          );
+          if (preExecutionFailure) {
+            disabled = true;
+            disabledReason = preExecutionFailure.reason;
+          }
         }
       }
 
@@ -2539,7 +2556,7 @@ export class BattleEngine implements BattleEventEmitter {
     let brokeSubstitute = false;
     if (
       effectiveMoveData.category !== CORE_MOVE_CATEGORIES.status &&
-      effectiveMoveData.power !== null
+      (effectiveMoveData.power !== null || effectiveMoveData.id === CORE_MOVE_IDS.spitUp)
     ) {
       const isCrit = this.ruleset.rollCritical({
         attacker: actor,
@@ -2673,7 +2690,7 @@ export class BattleEngine implements BattleEventEmitter {
           // consume the item and emit an item-consumed event.
           // Source: Showdown data/items.ts — Focus Sash is consumed after activation
           if (survivalResult.consumedItem) {
-            defender.pokemon.heldItem = null;
+            consumeHeldItem(defender, survivalResult.consumedItem);
             this.emit({
               type: BATTLE_EVENT_TYPES.itemConsumed,
               side: defenderSide as 0 | 1,
@@ -2921,7 +2938,7 @@ export class BattleEngine implements BattleEventEmitter {
               this.emit({ type: BATTLE_EVENT_TYPES.message, text: msg });
             }
             if (survivalResult.consumedItem) {
-              defender.pokemon.heldItem = null;
+              consumeHeldItem(defender, survivalResult.consumedItem);
               this.emit({
                 type: BATTLE_EVENT_TYPES.itemConsumed,
                 side: defenderSide as 0 | 1,
@@ -3266,7 +3283,7 @@ export class BattleEngine implements BattleEventEmitter {
             this.emit({ type: BATTLE_EVENT_TYPES.message, text: msg });
           }
           if (survivalResult.consumedItem) {
-            defender.pokemon.heldItem = null;
+            consumeHeldItem(defender, survivalResult.consumedItem);
             this.emit({
               type: BATTLE_EVENT_TYPES.itemConsumed,
               side: defenderSide,
@@ -3511,10 +3528,13 @@ export class BattleEngine implements BattleEventEmitter {
   }
 
   private captureBatonPassState(attacker: ActivePokemon): BatonPassState {
+    const preservedVolatiles = new Map(attacker.volatileStatuses);
+    preservedVolatiles.delete(CORE_VOLATILE_IDS.stockpile);
+
     return {
       statStages: structuredClone(attacker.statStages),
       substituteHp: attacker.substituteHp,
-      volatileStatuses: structuredClone(attacker.volatileStatuses),
+      volatileStatuses: structuredClone(preservedVolatiles),
     };
   }
 
@@ -3537,13 +3557,13 @@ export class BattleEngine implements BattleEventEmitter {
     let batonPassState: BatonPassState | null = null;
 
     if (isLiveVoluntarySelfSwitch) {
+      batonPassState = pendingSelfSwitch.batonPass ? this.captureBatonPassState(outgoing) : null;
       this.ruleset.onSwitchOut(outgoing, this.state);
       this.emit({
         type: BATTLE_EVENT_TYPES.switchOut,
         side,
         pokemon: createPokemonSnapshot(outgoing),
       });
-      batonPassState = pendingSelfSwitch.batonPass ? this.captureBatonPassState(outgoing) : null;
       outgoing.statStages = createDefaultStatStages();
       outgoing.consecutiveProtects = 0;
       outgoing.turnsOnField = 0;
@@ -4473,7 +4493,7 @@ export class BattleEngine implements BattleEventEmitter {
     if (result.attackerItemConsumed) {
       const consumedItemId = attacker.pokemon.heldItem;
       if (consumedItemId) {
-        attacker.pokemon.heldItem = null;
+        consumeHeldItem(attacker, consumedItemId);
         this.emit({
           type: BATTLE_EVENT_TYPES.itemConsumed,
           side: attackerSide,
@@ -5921,7 +5941,7 @@ export class BattleEngine implements BattleEventEmitter {
               data: { berryId: consumedItemId },
             });
           }
-          pokemon.pokemon.heldItem = null;
+          consumeHeldItem(pokemon, consumedItemId);
           this.emit({
             type: BATTLE_EVENT_TYPES.itemConsumed,
             side,
@@ -6639,7 +6659,7 @@ export class BattleEngine implements BattleEventEmitter {
       // Restore 5 PP (or 1 for Sketch per decomp, but Sketch is edge-case)
       const restoreAmount = moveSlot.moveId === "sketch" ? 1 : 5;
       moveSlot.currentPP = Math.min(moveSlot.maxPP, moveSlot.currentPP + restoreAmount);
-      active.pokemon.heldItem = null;
+      consumeHeldItem(active, CORE_ITEM_IDS.mysteryBerry);
       this.emit({
         type: BATTLE_EVENT_TYPES.itemConsumed,
         side: side.index,

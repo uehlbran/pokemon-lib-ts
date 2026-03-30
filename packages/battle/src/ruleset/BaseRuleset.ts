@@ -20,6 +20,7 @@ import {
   CORE_ABILITY_TRIGGER_IDS,
   CORE_END_OF_TURN_EFFECT_IDS,
   CORE_ITEM_IDS,
+  CORE_MOVE_IDS,
   CORE_NATURE_IDS,
   CORE_SPECIES_IDS,
   CORE_STAT_IDS,
@@ -35,6 +36,7 @@ import {
   validateFriendship,
   validateIvs,
 } from "@pokemon-lib-ts/core";
+import { BATTLE_EFFECT_TARGETS } from "../constants/effect-protocol";
 import type {
   AbilityContext,
   AbilityResult,
@@ -76,6 +78,50 @@ import { hasGoFirstItemActivated } from "./GoFirstItemActivation";
 const NATURES_BY_ID: ReadonlyMap<NatureData["id"], NatureData> = new Map(
   ALL_NATURES.map((nature) => [nature.id, nature] as const),
 );
+
+function createBaseMoveEffectResult(): MoveEffectResult {
+  return {
+    statusInflicted: null,
+    volatileInflicted: null,
+    statChanges: [],
+    recoilDamage: 0,
+    healAmount: 0,
+    switchOut: false,
+    messages: [],
+  };
+}
+
+function getActivePokemonSideIndex(state: BattleState, activePokemon: ActivePokemon): 0 | 1 | null {
+  const sideIndex = state.sides.findIndex((side) =>
+    side.active.some((candidate) => candidate?.pokemon === activePokemon.pokemon),
+  );
+
+  return sideIndex === 0 || sideIndex === 1 ? sideIndex : null;
+}
+
+function getStockpileState(activePokemon: ActivePokemon): {
+  layers: number;
+  defenseBoostsApplied: number;
+  spDefenseBoostsApplied: number;
+} | null {
+  const stockpileState = activePokemon.volatileStatuses.get(CORE_VOLATILE_IDS.stockpile);
+  if (!stockpileState) {
+    return null;
+  }
+
+  const layers = Number(stockpileState.data?.layers ?? 1);
+  const defenseBoostsApplied = Number(stockpileState.data?.defenseBoostsApplied ?? 0);
+  const spDefenseBoostsApplied = Number(stockpileState.data?.spDefenseBoostsApplied ?? 0);
+  return {
+    layers,
+    defenseBoostsApplied,
+    spDefenseBoostsApplied,
+  };
+}
+
+function getStockpileBoostDelta(currentStage: number): number {
+  return currentStage < 6 ? 1 : 0;
+}
 
 export abstract class BaseRuleset implements GenerationRuleset {
   abstract readonly generation: Generation;
@@ -364,17 +410,262 @@ export abstract class BaseRuleset implements GenerationRuleset {
     return null;
   }
 
-  executeMoveEffect(_context: MoveEffectContext): MoveEffectResult {
-    const result: MoveEffectResult = {
-      statusInflicted: null,
-      volatileInflicted: null,
-      statChanges: [],
-      recoilDamage: 0,
-      healAmount: 0,
-      switchOut: false,
-      messages: [],
-    };
-    return result;
+  executeMoveEffect(context: MoveEffectContext): MoveEffectResult {
+    const attackerName = context.attacker?.pokemon.nickname ?? "The Pokemon";
+    const defenderName = context.defender?.pokemon.nickname ?? "The target";
+
+    switch (context.move?.id) {
+      case CORE_MOVE_IDS.aquaRing:
+        if (context.attacker.volatileStatuses.has(CORE_VOLATILE_IDS.aquaRing)) {
+          return { ...createBaseMoveEffectResult(), messages: ["But it failed!"] };
+        }
+        return {
+          ...createBaseMoveEffectResult(),
+          selfVolatileInflicted: CORE_VOLATILE_IDS.aquaRing,
+          messages: [`${attackerName} surrounded itself with a veil of water!`],
+        };
+      case CORE_MOVE_IDS.ingrain:
+        if (context.attacker.volatileStatuses.has(CORE_VOLATILE_IDS.ingrain)) {
+          return { ...createBaseMoveEffectResult(), messages: ["But it failed!"] };
+        }
+        return {
+          ...createBaseMoveEffectResult(),
+          selfVolatileInflicted: CORE_VOLATILE_IDS.ingrain,
+          messages: [`${attackerName} planted its roots!`],
+        };
+      case CORE_MOVE_IDS.embargo:
+        if (context.defender.volatileStatuses.has(CORE_VOLATILE_IDS.embargo)) {
+          return { ...createBaseMoveEffectResult(), messages: ["But it failed!"] };
+        }
+        return {
+          ...createBaseMoveEffectResult(),
+          volatileInflicted: CORE_VOLATILE_IDS.embargo,
+          volatileData: { turnsLeft: 5 },
+          messages: [`${defenderName} can't use items!`],
+        };
+      case CORE_MOVE_IDS.healBlock:
+        if (context.defender.volatileStatuses.has(CORE_VOLATILE_IDS.healBlock)) {
+          return { ...createBaseMoveEffectResult(), messages: ["But it failed!"] };
+        }
+        return {
+          ...createBaseMoveEffectResult(),
+          volatileInflicted: CORE_VOLATILE_IDS.healBlock,
+          volatileData: { turnsLeft: 5 },
+          messages: [`${defenderName} was prevented from healing!`],
+        };
+      case CORE_MOVE_IDS.stockpile: {
+        const existingStockpile = getStockpileState(context.attacker);
+        if (existingStockpile && existingStockpile.layers >= 3) {
+          return { ...createBaseMoveEffectResult(), messages: ["But it failed!"] };
+        }
+
+        const defenseBoostDelta = getStockpileBoostDelta(context.attacker.statStages.defense);
+        const spDefenseBoostDelta = getStockpileBoostDelta(context.attacker.statStages.spDefense);
+        const nextLayers = (existingStockpile?.layers ?? 0) + 1;
+        const nextState = {
+          layers: nextLayers,
+          defenseBoostsApplied: (existingStockpile?.defenseBoostsApplied ?? 0) + defenseBoostDelta,
+          spDefenseBoostsApplied:
+            (existingStockpile?.spDefenseBoostsApplied ?? 0) + spDefenseBoostDelta,
+        };
+
+        if (existingStockpile) {
+          context.attacker.volatileStatuses.set(CORE_VOLATILE_IDS.stockpile, {
+            turnsLeft: -1,
+            data: nextState,
+          });
+          return {
+            ...createBaseMoveEffectResult(),
+            statChanges: [
+              ...(defenseBoostDelta > 0
+                ? [
+                    {
+                      target: BATTLE_EFFECT_TARGETS.attacker,
+                      stat: CORE_STAT_IDS.defense,
+                      stages: 1,
+                    },
+                  ]
+                : []),
+              ...(spDefenseBoostDelta > 0
+                ? [
+                    {
+                      target: BATTLE_EFFECT_TARGETS.attacker,
+                      stat: CORE_STAT_IDS.spDefense,
+                      stages: 1,
+                    },
+                  ]
+                : []),
+            ],
+            messages: [`${attackerName} stockpiled ${nextLayers}!`],
+          };
+        }
+
+        return {
+          ...createBaseMoveEffectResult(),
+          selfVolatileInflicted: CORE_VOLATILE_IDS.stockpile,
+          selfVolatileData: { turnsLeft: -1, data: nextState },
+          statChanges: [
+            ...(defenseBoostDelta > 0
+              ? [{ target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.defense, stages: 1 }]
+              : []),
+            ...(spDefenseBoostDelta > 0
+              ? [
+                  {
+                    target: BATTLE_EFFECT_TARGETS.attacker,
+                    stat: CORE_STAT_IDS.spDefense,
+                    stages: 1,
+                  },
+                ]
+              : []),
+          ],
+          messages: [`${attackerName} stockpiled 1!`],
+        };
+      }
+      case CORE_MOVE_IDS.spitUp: {
+        const stockpileState = getStockpileState(context.attacker);
+        if (!stockpileState) {
+          return { ...createBaseMoveEffectResult(), messages: ["But it failed!"] };
+        }
+
+        return {
+          ...createBaseMoveEffectResult(),
+          volatilesToClear: [
+            {
+              target: BATTLE_EFFECT_TARGETS.attacker,
+              volatile: CORE_VOLATILE_IDS.stockpile,
+            },
+          ],
+          statChanges: [
+            ...(stockpileState.defenseBoostsApplied > 0
+              ? [
+                  {
+                    target: BATTLE_EFFECT_TARGETS.attacker,
+                    stat: CORE_STAT_IDS.defense,
+                    stages: -stockpileState.defenseBoostsApplied,
+                  },
+                ]
+              : []),
+            ...(stockpileState.spDefenseBoostsApplied > 0
+              ? [
+                  {
+                    target: BATTLE_EFFECT_TARGETS.attacker,
+                    stat: CORE_STAT_IDS.spDefense,
+                    stages: -stockpileState.spDefenseBoostsApplied,
+                  },
+                ]
+              : []),
+          ],
+          messages: [`${attackerName} unleashed its stockpiled power!`],
+        };
+      }
+      case CORE_MOVE_IDS.swallow: {
+        const stockpileState = getStockpileState(context.attacker);
+        if (!stockpileState) {
+          return { ...createBaseMoveEffectResult(), messages: ["But it failed!"] };
+        }
+
+        const maxHp =
+          context.attacker.pokemon.calculatedStats?.hp ?? context.attacker.pokemon.currentHp;
+        const healFractions = [0.25, 0.5, 1];
+        const healFraction = healFractions[stockpileState.layers - 1] ?? 1;
+
+        return {
+          ...createBaseMoveEffectResult(),
+          volatilesToClear: [
+            {
+              target: BATTLE_EFFECT_TARGETS.attacker,
+              volatile: CORE_VOLATILE_IDS.stockpile,
+            },
+          ],
+          healAmount: Math.floor(maxHp * healFraction),
+          statChanges: [
+            ...(stockpileState.defenseBoostsApplied > 0
+              ? [
+                  {
+                    target: BATTLE_EFFECT_TARGETS.attacker,
+                    stat: CORE_STAT_IDS.defense,
+                    stages: -stockpileState.defenseBoostsApplied,
+                  },
+                ]
+              : []),
+            ...(stockpileState.spDefenseBoostsApplied > 0
+              ? [
+                  {
+                    target: BATTLE_EFFECT_TARGETS.attacker,
+                    stat: CORE_STAT_IDS.spDefense,
+                    stages: -stockpileState.spDefenseBoostsApplied,
+                  },
+                ]
+              : []),
+          ],
+          messages: [`${attackerName} swallowed its stockpile!`],
+        };
+      }
+      case CORE_MOVE_IDS.batonPass:
+        return {
+          ...createBaseMoveEffectResult(),
+          switchOut: true,
+          batonPass: true,
+          messages: [`${attackerName} baton passed!`],
+        };
+      case CORE_MOVE_IDS.powerTrick:
+        if (context.attacker.volatileStatuses.has(CORE_VOLATILE_IDS.powerTrick)) {
+          context.attacker.volatileStatuses.delete(CORE_VOLATILE_IDS.powerTrick);
+          return {
+            ...createBaseMoveEffectResult(),
+            messages: [`${attackerName} switched its power back!`],
+          };
+        }
+        return {
+          ...createBaseMoveEffectResult(),
+          selfVolatileInflicted: CORE_VOLATILE_IDS.powerTrick,
+          messages: [`${attackerName} switched its Attack and Defense!`],
+        };
+      case CORE_MOVE_IDS.recycle:
+        if (context.attacker.pokemon.heldItem || !context.attacker.pokemon.lastItem) {
+          return { ...createBaseMoveEffectResult(), messages: ["But it failed!"] };
+        }
+        context.attacker.pokemon.heldItem = context.attacker.pokemon.lastItem;
+        context.attacker.pokemon.lastItem = null;
+        return {
+          ...createBaseMoveEffectResult(),
+          messages: [`${attackerName} recycled its ${context.attacker.pokemon.heldItem}!`],
+        };
+      case CORE_MOVE_IDS.belch:
+        if (!context.attacker.pokemon.ateBerry) {
+          return { ...createBaseMoveEffectResult(), messages: ["But it failed!"] };
+        }
+        return createBaseMoveEffectResult();
+      case CORE_MOVE_IDS.futureSight:
+      case CORE_MOVE_IDS.doomDesire: {
+        const attackerSideIndex = getActivePokemonSideIndex(context.state, context.attacker);
+        if (attackerSideIndex === null) {
+          return { ...createBaseMoveEffectResult(), messages: ["But it failed!"] };
+        }
+
+        const targetSideIndex = attackerSideIndex === 0 ? 1 : 0;
+        if (context.state.sides[targetSideIndex].futureAttack) {
+          return { ...createBaseMoveEffectResult(), messages: ["But it failed!"] };
+        }
+
+        const message =
+          context.move.id === CORE_MOVE_IDS.futureSight
+            ? `${attackerName} foresaw an attack!`
+            : `${attackerName} chose Doom Desire as its destiny!`;
+
+        return {
+          ...createBaseMoveEffectResult(),
+          futureAttack: {
+            moveId: context.move.id,
+            turnsLeft: 3,
+            sourceSide: attackerSideIndex,
+          },
+          messages: [message],
+        };
+      }
+      default:
+        return createBaseMoveEffectResult();
+    }
   }
 
   getPreExecutionMoveFailure(
@@ -383,6 +674,30 @@ export abstract class BaseRuleset implements GenerationRuleset {
     move: MoveData,
     state: BattleState,
   ): PreExecutionMoveFailure | null {
+    switch (move.id) {
+      case CORE_MOVE_IDS.belch:
+        if (!attacker.pokemon.ateBerry) {
+          return { reason: "Requires a Berry to be eaten", messages: ["But it failed!"] };
+        }
+        break;
+      case CORE_MOVE_IDS.recycle:
+        if (attacker.pokemon.heldItem) {
+          return { reason: "Already holding an item", messages: ["But it failed!"] };
+        }
+        if (!attacker.pokemon.lastItem) {
+          return { reason: "No recyclable item", messages: ["But it failed!"] };
+        }
+        break;
+      case CORE_MOVE_IDS.spitUp:
+      case CORE_MOVE_IDS.swallow:
+        if (!attacker.volatileStatuses.has(CORE_VOLATILE_IDS.stockpile)) {
+          return { reason: "No stockpiled energy", messages: ["But it failed!"] };
+        }
+        break;
+      default:
+        break;
+    }
+
     const naturalPriority = move.priority ?? 0;
     if (naturalPriority > 0 && this.shouldBlockPriorityMove(attacker, move, defender, state)) {
       return { reason: "blocked by terrain" };
@@ -986,6 +1301,10 @@ export abstract class BaseRuleset implements GenerationRuleset {
   onSwitchOut(pokemon: ActivePokemon, _state: BattleState): void {
     // Default Gen 3+ behavior: clear all volatile statuses on switch-out.
     // Gen 1-2 override this to handle generation-specific persistence rules.
+    if (pokemon.suppressedAbility !== null) {
+      pokemon.ability = pokemon.suppressedAbility;
+      pokemon.suppressedAbility = null;
+    }
     pokemon.volatileStatuses.clear();
   }
 

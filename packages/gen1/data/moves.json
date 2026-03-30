@@ -63,7 +63,8 @@
     },
     "effect": null,
     "description": "A chopping attack with a high critical-hit ratio.",
-    "generation": 1
+    "generation": 1,
+    "critRatio": 1
   },
   {
     "id": "double-slap",
@@ -2701,7 +2702,8 @@
     },
     "effect": null,
     "description": "Cuts the foe with sharp leaves. High critical-hit ratio.",
-    "generation": 1
+    "generation": 1,
+    "critRatio": 1
   },
   {
     "id": "solar-beam",
@@ -5689,7 +5691,8 @@
     },
     "effect": null,
     "description": "The target is attacked with a slash of claws or blades. Critical hits land more easily.",
-    "generation": 1
+    "generation": 1,
+    "critRatio": 1
   },
   {
     "id": "substitute",
@@ -5940,7 +5943,8 @@
     },
     "effect": null,
     "description": "The target is hammered with a large pincer. Critical hits land more easily.",
-    "generation": 1
+    "generation": 1,
+    "critRatio": 1
   },
   {
     "id": "acid-armor",

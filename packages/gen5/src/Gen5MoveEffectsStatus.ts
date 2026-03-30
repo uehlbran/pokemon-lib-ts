@@ -587,6 +587,21 @@ function handleRound(_ctx: MoveEffectContext): MoveEffectResult {
   });
 }
 
+function handleTelekinesis(ctx: MoveEffectContext): MoveEffectResult {
+  if (
+    ctx.defender.volatileStatuses.has(CORE_VOLATILE_IDS.telekinesis) ||
+    ctx.state.gravity?.active
+  ) {
+    return makeResult({ messages: ["But it failed!"] });
+  }
+
+  return makeResult({
+    volatileInflicted: CORE_VOLATILE_IDS.telekinesis,
+    volatileData: { turnsLeft: 3 },
+    messages: [`${ctx.defender.pokemon.nickname ?? "The target"} was hurled into the air!`],
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -631,6 +646,8 @@ export function handleGen5StatusMove(ctx: MoveEffectContext): MoveEffectResult |
       return handleSkillSwap(ctx);
     case "round":
       return handleRound(ctx);
+    case "telekinesis":
+      return handleTelekinesis(ctx);
     default:
       return null;
   }

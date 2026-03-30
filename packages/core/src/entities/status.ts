@@ -55,6 +55,7 @@ const GEN3_VOLATILE_STATUS_ADDITIONS = [
   "torment",
   "yawn",
   "ingrain",
+  "stockpile",
   "flash-fire",
   "underwater",
   "truant-turn",
@@ -69,6 +70,7 @@ const GEN4_VOLATILE_STATUS_ADDITIONS = [
   "magnet-rise",
   "embargo",
   "heal-block",
+  "power-trick",
   "choice-locked",
   "shadow-force-charging",
   "metronome-count",
@@ -79,6 +81,7 @@ const GEN4_VOLATILE_STATUS_ADDITIONS = [
 const GEN5_VOLATILE_STATUS_ADDITIONS = [
   "gem-used",
   "quick-guard",
+  "telekinesis",
   "wide-guard",
   "illusion",
   "harvest-berry",

@@ -101,21 +101,18 @@ See `.claude/rules/testing-rules.md` and `.claude/rules/test-integrity.md` for d
 
 ## Generation Status
 
-| Package | Status | Tests | Open Bugs |
-|---------|--------|-------|-----------|
-| core | 100% | 399 | 0 |
-| battle | 100% (singles) | 688 | 0 |
-| gen1 | 100% | 787 | 0 |
-| gen2 | 100% | 771 | 0 |
-| gen3 | 100% | 882 | 1 (#141) |
-| gen4 | 100% | 1,231 | 0 |
-| gen5 | 100% | 1,233 | 0 |
-| gen6 | 100% | 1,154 | 0 |
-| gen7 | 100% | 1,219 | 0 |
-| gen8 | 100% | 1,254 | 0 |
-| gen9 | 100% | 1,108 | 0 |
+Generation/package completion status is generated, not hand-maintained.
 
-Full per-gen details: `specs/reference/genN-status.md`
+- Summary artifact: `tools/oracle-validation/results/completeness-status.md`
+- Machine-readable artifact: `tools/oracle-validation/results/completeness-status.json`
+- Full inventory: `tools/oracle-validation/results/completeness-inventory.json`
+
+Allowed generated states:
+- `incomplete`
+- `verified`
+- `compliant`
+
+Full per-gen historical notes remain in `specs/reference/genN-status.md`, but those pages are not the source of truth for completion claims.
 
 ## Package Versioning
 

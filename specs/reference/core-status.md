@@ -1,7 +1,7 @@
 # Core Implementation Status
 
 **Last updated:** 2026-03-27
-**Overall estimate:** Feature-complete for the current core surface, but status docs are not proof of correctness.
+**Generated completeness status:** `tools/oracle-validation/results/completeness-status.md`
 **Architecture:** Zero runtime dependencies. Foundation for all other packages. Implements shared logic used by all gen rulesets.
 
 Status pages are summary documents only. The real correctness bar for core seam behavior is the invariant/regression suite in:

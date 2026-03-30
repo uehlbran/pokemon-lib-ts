@@ -152,7 +152,8 @@
     },
     "effect": null,
     "description": "Has a higher chance for a critical hit.",
-    "generation": 2
+    "generation": 2,
+    "critRatio": 2
   },
   {
     "id": "agility",
@@ -1350,7 +1351,8 @@
     },
     "effect": null,
     "description": "Has a higher chance for a critical hit.",
-    "generation": 1
+    "generation": 1,
+    "critRatio": 2
   },
   {
     "id": "cross-chop",
@@ -1383,7 +1385,8 @@
     },
     "effect": null,
     "description": "Has a higher chance for a critical hit.",
-    "generation": 2
+    "generation": 2,
+    "critRatio": 2
   },
   {
     "id": "crunch",
@@ -4388,7 +4391,8 @@
     },
     "effect": null,
     "description": "Has a higher chance for a critical hit.",
-    "generation": 1
+    "generation": 1,
+    "critRatio": 2
   },
   {
     "id": "kinesis",
@@ -6412,7 +6416,8 @@
     },
     "effect": null,
     "description": "Has a higher chance for a critical hit.",
-    "generation": 1
+    "generation": 1,
+    "critRatio": 2
   },
   {
     "id": "razor-wind",
@@ -6448,7 +6453,8 @@
       "firstTurn": "charge"
     },
     "description": "Has a higher chance for a critical hit. This attack charges on the first turn and executes on the second.",
-    "generation": 1
+    "generation": 1,
+    "critRatio": 2
   },
   {
     "id": "recover",
@@ -7472,7 +7478,8 @@
     },
     "effect": null,
     "description": "Has a higher chance for a critical hit.",
-    "generation": 1
+    "generation": 1,
+    "critRatio": 2
   },
   {
     "id": "sleep-powder",

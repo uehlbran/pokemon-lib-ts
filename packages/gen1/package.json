@@ -24,7 +24,7 @@
   "scripts": {
     "build": "tsup",
     "test": "npm run test:unit && npm run test:integration",
-    "test:unit": "vitest run tests/unit",
+    "test:unit": "node ../../scripts/run-vitest.mjs tests/unit",
     "test:integration": "node ../../scripts/run-package-tier-tests.mjs integration",
     "test:smoke": "node ../../scripts/run-package-tier-tests.mjs smoke",
     "test:e2e": "node ../../scripts/run-package-tier-tests.mjs e2e",

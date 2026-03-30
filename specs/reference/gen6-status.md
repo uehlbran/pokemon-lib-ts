@@ -1,10 +1,10 @@
 # Gen 6 Implementation Status
 
 **Started:** 2026-03-21
-**Last updated:** 2026-03-22 (all waves merged — Gen 6 100% complete)
+**Last updated:** 2026-03-22
 **Target:** Full Gen 6 (X/Y/ORAS) battle mechanics implementation
 **Package:** `@pokemon-lib-ts/gen6`
-**Overall estimate:** ~100% complete (Wave 10 PR #638 merged 2026-03-22)
+**Generated completeness status:** `tools/oracle-validation/results/completeness-status.md`
 
 ## Wave Status
 

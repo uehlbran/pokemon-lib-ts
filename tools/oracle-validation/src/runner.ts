@@ -128,6 +128,22 @@ function expandSuites(suites: SupportedSuite[]): SupportedSuite[] {
   return suites;
 }
 
+function getResultFileNames(requestedSuites: SupportedSuite[]): string[] {
+  if (
+    requestedSuites.includes("all") ||
+    requestedSuites.includes("compliance") ||
+    requestedSuites.includes("nightly")
+  ) {
+    return ["last-run.json", "compliance.json"];
+  }
+
+  if (requestedSuites.length === 1 && requestedSuites[0] === "fast") {
+    return ["last-run.json", "fast-path.json"];
+  }
+
+  return ["last-run.json", `suite-${requestedSuites.join("-")}.json`];
+}
+
 async function main(): Promise<void> {
   const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
   const { suites, gen } = parseArgs(process.argv.slice(2));

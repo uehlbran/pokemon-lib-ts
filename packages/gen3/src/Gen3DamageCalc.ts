@@ -323,9 +323,14 @@ function getDefenseStat(defender: ActivePokemon, moveType: PokemonType, isCrit: 
  */
 export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart): DamageResult {
   const { attacker, defender, move, rng, isCrit } = context;
+  const isSpitUp = move.id === GEN3_MOVE_IDS.spitUp;
 
   // Status moves do no damage
-  if (move.category === CORE_MOVE_CATEGORIES.status || move.power === null || move.power === 0) {
+  if (
+    move.category === CORE_MOVE_CATEGORIES.status ||
+    (!isSpitUp && move.power === null) ||
+    (!isSpitUp && move.power === 0)
+  ) {
     return {
       damage: 0,
       effectiveness: 1,
@@ -335,8 +340,15 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
   }
 
   const level = attacker.pokemon.level;
-  let power = move.power;
+  let power = move.power ?? 0;
   const defenderAbility = defender.ability;
+
+  if (isSpitUp) {
+    const stockpileLayers = Number(
+      attacker.volatileStatuses.get(CORE_VOLATILE_IDS.stockpile)?.data?.layers ?? 0,
+    );
+    power = stockpileLayers > 0 ? stockpileLayers * 100 : 0;
+  }
 
   // Weather (moved before Weather Ball/SolarBeam checks)
   // Source: pret/pokeemerald src/pokemon.c:3330-3363

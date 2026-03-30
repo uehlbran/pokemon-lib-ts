@@ -4,7 +4,7 @@ import type {
   DamageContext,
   DamageResult,
 } from "@pokemon-lib-ts/battle";
-import { getEffectiveStatStage } from "@pokemon-lib-ts/battle";
+import { consumeHeldItem, getEffectiveStatStage } from "@pokemon-lib-ts/battle";
 import type { MoveEffect, PokemonType, TypeChartLookup } from "@pokemon-lib-ts/core";
 import {
   BASE_ABILITY_TYPE_IMMUNITIES,
@@ -39,6 +39,28 @@ const MAROWAK_SPECIES_ID = 105;
 const DIALGA_SPECIES_ID = 483;
 const PALKIA_SPECIES_ID = 484;
 const GIRATINA_SPECIES_ID = 487;
+
+function getPowerTrickAdjustedBaseStat(
+  pokemon: ActivePokemon,
+  statKey: "attack" | "defense" | "spAttack" | "spDefense",
+): number {
+  const stats = pokemon.pokemon.calculatedStats;
+  if (!stats) {
+    return 100;
+  }
+
+  if (!pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.powerTrick)) {
+    return stats[statKey];
+  }
+
+  if (statKey === CORE_STAT_IDS.attack) {
+    return stats.defense;
+  }
+  if (statKey === CORE_STAT_IDS.defense) {
+    return stats.attack;
+  }
+  return stats[statKey];
+}
 
 // ---- Type-Resist Berries ----
 
@@ -164,8 +186,7 @@ function getAttackStat(
   defender?: ActivePokemon,
 ): number {
   const statKey = isPhysical ? CORE_STAT_IDS.attack : CORE_STAT_IDS.spAttack;
-  const stats = attacker.pokemon.calculatedStats;
-  let rawStat = stats ? stats[statKey] : 100;
+  let rawStat = getPowerTrickAdjustedBaseStat(attacker, statKey);
 
   const ability = attacker.ability;
   const attackerItem = attacker.pokemon.heldItem;
@@ -323,8 +344,7 @@ function getDefenseStat(
   ignoreDefenseStages?: boolean,
 ): number {
   const statKey = isPhysical ? CORE_STAT_IDS.defense : CORE_STAT_IDS.spDefense;
-  const stats = defender.pokemon.calculatedStats;
-  let baseStat = stats ? stats[statKey] : 100;
+  let baseStat = getPowerTrickAdjustedBaseStat(defender, statKey);
 
   const defenderItem = defender.pokemon.heldItem;
   const defenderSpecies = defender.pokemon.speciesId;
@@ -451,10 +471,15 @@ export function calculateGen5Damage(
   typeChart: TypeChartLookup,
 ): DamageResult {
   const { attacker, defender, move, rng, isCrit } = context;
+  const isSpitUp = move.id === GEN5_MOVE_IDS.spitUp;
 
   // 1. Status moves / power=0 -> no damage
   // Source: Showdown sim/battle-actions.ts -- status moves skip damage calc
-  if (move.category === CORE_MOVE_CATEGORIES.status || move.power === null || move.power === 0) {
+  if (
+    move.category === CORE_MOVE_CATEGORIES.status ||
+    (!isSpitUp && move.power === null) ||
+    (!isSpitUp && move.power === 0)
+  ) {
     return {
       damage: 0,
       effectiveness: 1,
@@ -464,9 +489,15 @@ export function calculateGen5Damage(
   }
 
   const level = attacker.pokemon.level;
-  let power = move.power;
+  let power = move.power ?? 0;
   const defenderAbility = defender.ability;
   const attackerAbility = attacker.ability;
+  if (isSpitUp) {
+    const stockpileLayers = Number(
+      attacker.volatileStatuses.get(CORE_VOLATILE_IDS.stockpile)?.data?.layers ?? 0,
+    );
+    power = stockpileLayers > 0 ? stockpileLayers * 100 : 0;
+  }
   // Cloud Nine / Air Lock suppress weather for damage calculation purposes.
   // Source: Showdown sim/battle.ts — suppressingWeather() gates all weather-based damage modifiers
   const rawWeather = context.state.weather?.type ?? null;
@@ -1057,7 +1088,7 @@ export function calculateGen5Damage(
   // Source: Showdown data/items.ts -- type-resist berries: consumed after activation
   // Source: Bulbapedia -- Unburden: "Doubles Speed when held item is consumed"
   if (typeResistBerryConsumed) {
-    defender.pokemon.heldItem = null;
+    consumeHeldItem(defender, typeResistBerryConsumed);
     if (
       defender.ability === CORE_ABILITY_IDS.unburden &&
       !defender.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)
@@ -1074,7 +1105,7 @@ export function calculateGen5Damage(
   // Consume gem if activated; trigger Unburden if attacker has the ability
   // Source: Showdown data/abilities.ts -- Unburden: onAfterUseItem speed doubling
   if (gemConsumed) {
-    attacker.pokemon.heldItem = null;
+    consumeHeldItem(attacker, attackerItem);
     if (
       attacker.ability === CORE_ABILITY_IDS.unburden &&
       !attacker.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)

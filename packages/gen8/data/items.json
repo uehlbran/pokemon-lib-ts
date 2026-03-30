@@ -9,7 +9,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 5,
-    "spriteKey": "absorb-bulb"
+    "spriteKey": "absorb-bulb",
+    "flingPower": 30
   },
   {
     "id": "adamant-orb",
@@ -21,7 +22,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "adamant-orb"
+    "spriteKey": "adamant-orb",
+    "flingPower": 60
   },
   {
     "id": "adrenaline-orb",
@@ -33,7 +35,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 7,
-    "spriteKey": "adrenaline-orb"
+    "spriteKey": "adrenaline-orb",
+    "flingPower": 30
   },
   {
     "id": "aguav-berry",
@@ -45,7 +48,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "aguav-berry"
+    "spriteKey": "aguav-berry",
+    "flingPower": 10
   },
   {
     "id": "air-balloon",
@@ -57,7 +61,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 5,
-    "spriteKey": "air-balloon"
+    "spriteKey": "air-balloon",
+    "flingPower": 10
   },
   {
     "id": "apicot-berry",
@@ -69,7 +74,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "apicot-berry"
+    "spriteKey": "apicot-berry",
+    "flingPower": 10
   },
   {
     "id": "aspear-berry",
@@ -81,7 +87,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "aspear-berry"
+    "spriteKey": "aspear-berry",
+    "flingPower": 10
   },
   {
     "id": "assault-vest",
@@ -93,7 +100,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 6,
-    "spriteKey": "assault-vest"
+    "spriteKey": "assault-vest",
+    "flingPower": 80
   },
   {
     "id": "babiri-berry",
@@ -105,7 +113,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "babiri-berry"
+    "spriteKey": "babiri-berry",
+    "flingPower": 10
   },
   {
     "id": "beast-ball",
@@ -133,7 +142,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 2,
-    "spriteKey": "berry-juice"
+    "spriteKey": "berry-juice",
+    "flingPower": 30
   },
   {
     "id": "berry-sweet",
@@ -145,7 +155,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "berry-sweet"
+    "spriteKey": "berry-sweet",
+    "flingPower": 10
   },
   {
     "id": "big-nugget",
@@ -157,7 +168,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 5,
-    "spriteKey": "big-nugget"
+    "spriteKey": "big-nugget",
+    "flingPower": 130
   },
   {
     "id": "big-root",
@@ -169,7 +181,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "big-root"
+    "spriteKey": "big-root",
+    "flingPower": 10
   },
   {
     "id": "binding-band",
@@ -181,7 +194,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 5,
-    "spriteKey": "binding-band"
+    "spriteKey": "binding-band",
+    "flingPower": 30
   },
   {
     "id": "black-belt",
@@ -198,7 +212,8 @@
       "type": "type-boost",
       "moveType": "fighting",
       "multiplier": 1.1
-    }
+    },
+    "flingPower": 30
   },
   {
     "id": "black-glasses",
@@ -215,7 +230,8 @@
       "type": "type-boost",
       "moveType": "dark",
       "multiplier": 1.1
-    }
+    },
+    "flingPower": 30
   },
   {
     "id": "black-sludge",
@@ -227,7 +243,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "black-sludge"
+    "spriteKey": "black-sludge",
+    "flingPower": 30
   },
   {
     "id": "blunder-policy",
@@ -239,7 +256,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "blunder-policy"
+    "spriteKey": "blunder-policy",
+    "flingPower": 80
   },
   {
     "id": "bottle-cap",
@@ -251,7 +269,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 7,
-    "spriteKey": "bottle-cap"
+    "spriteKey": "bottle-cap",
+    "flingPower": 30
   },
   {
     "id": "bright-powder",
@@ -267,7 +286,8 @@
     "holdEffect": {
       "type": "custom",
       "handler": "bright-powder"
-    }
+    },
+    "flingPower": 10
   },
   {
     "id": "bug-memory",
@@ -279,7 +299,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 7,
-    "spriteKey": "bug-memory"
+    "spriteKey": "bug-memory",
+    "flingPower": 50
   },
   {
     "id": "burn-drive",
@@ -291,7 +312,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 5,
-    "spriteKey": "burn-drive"
+    "spriteKey": "burn-drive",
+    "flingPower": 70
   },
   {
     "id": "cell-battery",
@@ -303,7 +325,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 5,
-    "spriteKey": "cell-battery"
+    "spriteKey": "cell-battery",
+    "flingPower": 30
   },
   {
     "id": "charcoal",
@@ -320,7 +343,8 @@
       "type": "type-boost",
       "moveType": "fire",
       "multiplier": 1.1
-    }
+    },
+    "flingPower": 30
   },
   {
     "id": "charti-berry",
@@ -332,7 +356,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "charti-berry"
+    "spriteKey": "charti-berry",
+    "flingPower": 10
   },
   {
     "id": "cheri-berry",
@@ -344,7 +369,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "cheri-berry"
+    "spriteKey": "cheri-berry",
+    "flingPower": 10
   },
   {
     "id": "chesto-berry",
@@ -356,7 +382,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "chesto-berry"
+    "spriteKey": "chesto-berry",
+    "flingPower": 10
   },
   {
     "id": "chilan-berry",
@@ -368,7 +395,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "chilan-berry"
+    "spriteKey": "chilan-berry",
+    "flingPower": 10
   },
   {
     "id": "chill-drive",
@@ -380,7 +408,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 5,
-    "spriteKey": "chill-drive"
+    "spriteKey": "chill-drive",
+    "flingPower": 70
   },
   {
     "id": "chipped-pot",
@@ -392,7 +421,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "chipped-pot"
+    "spriteKey": "chipped-pot",
+    "flingPower": 80
   },
   {
     "id": "choice-band",
@@ -404,7 +434,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "choice-band"
+    "spriteKey": "choice-band",
+    "flingPower": 10
   },
   {
     "id": "choice-scarf",
@@ -416,7 +447,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "choice-scarf"
+    "spriteKey": "choice-scarf",
+    "flingPower": 10
   },
   {
     "id": "choice-specs",
@@ -428,7 +460,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "choice-specs"
+    "spriteKey": "choice-specs",
+    "flingPower": 10
   },
   {
     "id": "chople-berry",
@@ -440,7 +473,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "chople-berry"
+    "spriteKey": "chople-berry",
+    "flingPower": 10
   },
   {
     "id": "clover-sweet",
@@ -452,7 +486,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "clover-sweet"
+    "spriteKey": "clover-sweet",
+    "flingPower": 10
   },
   {
     "id": "coba-berry",
@@ -464,7 +499,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "coba-berry"
+    "spriteKey": "coba-berry",
+    "flingPower": 10
   },
   {
     "id": "colbur-berry",
@@ -476,7 +512,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "colbur-berry"
+    "spriteKey": "colbur-berry",
+    "flingPower": 10
   },
   {
     "id": "cracked-pot",
@@ -488,7 +525,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "cracked-pot"
+    "spriteKey": "cracked-pot",
+    "flingPower": 80
   },
   {
     "id": "custap-berry",
@@ -500,7 +538,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "custap-berry"
+    "spriteKey": "custap-berry",
+    "flingPower": 10
   },
   {
     "id": "damp-rock",
@@ -512,7 +551,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "damp-rock"
+    "spriteKey": "damp-rock",
+    "flingPower": 60
   },
   {
     "id": "dark-memory",
@@ -524,7 +564,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 7,
-    "spriteKey": "dark-memory"
+    "spriteKey": "dark-memory",
+    "flingPower": 50
   },
   {
     "id": "dawn-stone",
@@ -536,7 +577,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "dawn-stone"
+    "spriteKey": "dawn-stone",
+    "flingPower": 80
   },
   {
     "id": "deep-sea-scale",
@@ -548,7 +590,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "deep-sea-scale"
+    "spriteKey": "deep-sea-scale",
+    "flingPower": 30
   },
   {
     "id": "deep-sea-tooth",
@@ -560,7 +603,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "deep-sea-tooth"
+    "spriteKey": "deep-sea-tooth",
+    "flingPower": 90
   },
   {
     "id": "destiny-knot",
@@ -572,7 +616,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "destiny-knot"
+    "spriteKey": "destiny-knot",
+    "flingPower": 10
   },
   {
     "id": "dive-ball",
@@ -600,7 +645,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 5,
-    "spriteKey": "douse-drive"
+    "spriteKey": "douse-drive",
+    "flingPower": 70
   },
   {
     "id": "dragon-fang",
@@ -617,7 +663,8 @@
       "type": "type-boost",
       "moveType": "dragon",
       "multiplier": 1.1
-    }
+    },
+    "flingPower": 70
   },
   {
     "id": "dragon-memory",
@@ -629,7 +676,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 7,
-    "spriteKey": "dragon-memory"
+    "spriteKey": "dragon-memory",
+    "flingPower": 50
   },
   {
     "id": "dragon-scale",
@@ -646,7 +694,8 @@
       "type": "type-boost",
       "moveType": "dragon",
       "multiplier": 1.1
-    }
+    },
+    "flingPower": 30
   },
   {
     "id": "dream-ball",
@@ -674,7 +723,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "dubious-disc"
+    "spriteKey": "dubious-disc",
+    "flingPower": 50
   },
   {
     "id": "dusk-ball",
@@ -702,7 +752,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "dusk-stone"
+    "spriteKey": "dusk-stone",
+    "flingPower": 80
   },
   {
     "id": "eject-button",
@@ -714,7 +765,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 5,
-    "spriteKey": "eject-button"
+    "spriteKey": "eject-button",
+    "flingPower": 30
   },
   {
     "id": "eject-pack",
@@ -726,7 +778,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "eject-pack"
+    "spriteKey": "eject-pack",
+    "flingPower": 50
   },
   {
     "id": "electirizer",
@@ -738,7 +791,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "electirizer"
+    "spriteKey": "electirizer",
+    "flingPower": 80
   },
   {
     "id": "electric-memory",
@@ -750,7 +804,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 7,
-    "spriteKey": "electric-memory"
+    "spriteKey": "electric-memory",
+    "flingPower": 50
   },
   {
     "id": "electric-seed",
@@ -762,7 +817,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 7,
-    "spriteKey": "electric-seed"
+    "spriteKey": "electric-seed",
+    "flingPower": 10
   },
   {
     "id": "enigma-berry",
@@ -774,7 +830,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "enigma-berry"
+    "spriteKey": "enigma-berry",
+    "flingPower": 10
   },
   {
     "id": "eviolite",
@@ -786,7 +843,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 5,
-    "spriteKey": "eviolite"
+    "spriteKey": "eviolite",
+    "flingPower": 40
   },
   {
     "id": "expert-belt",
@@ -798,7 +856,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "expert-belt"
+    "spriteKey": "expert-belt",
+    "flingPower": 10
   },
   {
     "id": "fairy-memory",
@@ -810,7 +869,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 7,
-    "spriteKey": "fairy-memory"
+    "spriteKey": "fairy-memory",
+    "flingPower": 50
   },
   {
     "id": "fast-ball",
@@ -838,7 +898,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 7,
-    "spriteKey": "fighting-memory"
+    "spriteKey": "fighting-memory",
+    "flingPower": 50
   },
   {
     "id": "figy-berry",
@@ -850,7 +911,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "figy-berry"
+    "spriteKey": "figy-berry",
+    "flingPower": 10
   },
   {
     "id": "fire-memory",
@@ -862,7 +924,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 7,
-    "spriteKey": "fire-memory"
+    "spriteKey": "fire-memory",
+    "flingPower": 50
   },
   {
     "id": "fire-stone",
@@ -874,7 +937,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 1,
-    "spriteKey": "fire-stone"
+    "spriteKey": "fire-stone",
+    "flingPower": 30
   },
   {
     "id": "flame-orb",
@@ -886,7 +950,9 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "flame-orb"
+    "spriteKey": "flame-orb",
+    "flingPower": 30,
+    "flingEffect": "burn"
   },
   {
     "id": "float-stone",
@@ -898,7 +964,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 5,
-    "spriteKey": "float-stone"
+    "spriteKey": "float-stone",
+    "flingPower": 30
   },
   {
     "id": "flower-sweet",
@@ -910,7 +977,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "flower-sweet"
+    "spriteKey": "flower-sweet",
+    "flingPower": 0
   },
   {
     "id": "flying-memory",
@@ -922,7 +990,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 7,
-    "spriteKey": "flying-memory"
+    "spriteKey": "flying-memory",
+    "flingPower": 50
   },
   {
     "id": "focus-band",
@@ -938,7 +1007,8 @@
     "holdEffect": {
       "type": "custom",
       "handler": "focus-band"
-    }
+    },
+    "flingPower": 10
   },
   {
     "id": "focus-sash",
@@ -950,7 +1020,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "focus-sash"
+    "spriteKey": "focus-sash",
+    "flingPower": 10
   },
   {
     "id": "fossilized-bird",
@@ -962,7 +1033,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "fossilized-bird"
+    "spriteKey": "fossilized-bird",
+    "flingPower": 100
   },
   {
     "id": "fossilized-dino",
@@ -974,7 +1046,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "fossilized-dino"
+    "spriteKey": "fossilized-dino",
+    "flingPower": 100
   },
   {
     "id": "fossilized-drake",
@@ -986,7 +1059,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "fossilized-drake"
+    "spriteKey": "fossilized-drake",
+    "flingPower": 100
   },
   {
     "id": "fossilized-fish",
@@ -998,7 +1072,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "fossilized-fish"
+    "spriteKey": "fossilized-fish",
+    "flingPower": 100
   },
   {
     "id": "friend-ball",
@@ -1026,7 +1101,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "full-incense"
+    "spriteKey": "full-incense",
+    "flingPower": 10
   },
   {
     "id": "galarica-cuff",
@@ -1038,7 +1114,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "galarica-cuff"
+    "spriteKey": "galarica-cuff",
+    "flingPower": 30
   },
   {
     "id": "galarica-wreath",
@@ -1050,7 +1127,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "galarica-wreath"
+    "spriteKey": "galarica-wreath",
+    "flingPower": 30
   },
   {
     "id": "ganlon-berry",
@@ -1062,7 +1140,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "ganlon-berry"
+    "spriteKey": "ganlon-berry",
+    "flingPower": 10
   },
   {
     "id": "ghost-memory",
@@ -1074,7 +1153,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 7,
-    "spriteKey": "ghost-memory"
+    "spriteKey": "ghost-memory",
+    "flingPower": 50
   },
   {
     "id": "gold-bottle-cap",
@@ -1086,7 +1166,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 7,
-    "spriteKey": "gold-bottle-cap"
+    "spriteKey": "gold-bottle-cap",
+    "flingPower": 30
   },
   {
     "id": "grass-memory",
@@ -1098,7 +1179,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 7,
-    "spriteKey": "grass-memory"
+    "spriteKey": "grass-memory",
+    "flingPower": 50
   },
   {
     "id": "grassy-seed",
@@ -1110,7 +1192,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 7,
-    "spriteKey": "grassy-seed"
+    "spriteKey": "grassy-seed",
+    "flingPower": 10
   },
   {
     "id": "great-ball",
@@ -1138,7 +1221,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "grepa-berry"
+    "spriteKey": "grepa-berry",
+    "flingPower": 10
   },
   {
     "id": "grip-claw",
@@ -1150,7 +1234,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "grip-claw"
+    "spriteKey": "grip-claw",
+    "flingPower": 90
   },
   {
     "id": "griseous-orb",
@@ -1162,7 +1247,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "griseous-orb"
+    "spriteKey": "griseous-orb",
+    "flingPower": 60
   },
   {
     "id": "ground-memory",
@@ -1174,7 +1260,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 7,
-    "spriteKey": "ground-memory"
+    "spriteKey": "ground-memory",
+    "flingPower": 50
   },
   {
     "id": "haban-berry",
@@ -1186,7 +1273,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "haban-berry"
+    "spriteKey": "haban-berry",
+    "flingPower": 10
   },
   {
     "id": "hard-stone",
@@ -1203,7 +1291,8 @@
       "type": "type-boost",
       "moveType": "rock",
       "multiplier": 1.1
-    }
+    },
+    "flingPower": 100
   },
   {
     "id": "heal-ball",
@@ -1231,7 +1320,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "heat-rock"
+    "spriteKey": "heat-rock",
+    "flingPower": 60
   },
   {
     "id": "heavy-ball",
@@ -1259,7 +1349,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "heavy-duty-boots"
+    "spriteKey": "heavy-duty-boots",
+    "flingPower": 80
   },
   {
     "id": "hondew-berry",
@@ -1271,7 +1362,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "hondew-berry"
+    "spriteKey": "hondew-berry",
+    "flingPower": 10
   },
   {
     "id": "iapapa-berry",
@@ -1283,7 +1375,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "iapapa-berry"
+    "spriteKey": "iapapa-berry",
+    "flingPower": 10
   },
   {
     "id": "ice-memory",
@@ -1295,7 +1388,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 7,
-    "spriteKey": "ice-memory"
+    "spriteKey": "ice-memory",
+    "flingPower": 50
   },
   {
     "id": "ice-stone",
@@ -1307,7 +1401,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 7,
-    "spriteKey": "ice-stone"
+    "spriteKey": "ice-stone",
+    "flingPower": 30
   },
   {
     "id": "icy-rock",
@@ -1319,7 +1414,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "icy-rock"
+    "spriteKey": "icy-rock",
+    "flingPower": 40
   },
   {
     "id": "iron-ball",
@@ -1331,7 +1427,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "iron-ball"
+    "spriteKey": "iron-ball",
+    "flingPower": 130
   },
   {
     "id": "jaboca-berry",
@@ -1343,7 +1440,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "jaboca-berry"
+    "spriteKey": "jaboca-berry",
+    "flingPower": 10
   },
   {
     "id": "kasib-berry",
@@ -1355,7 +1453,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "kasib-berry"
+    "spriteKey": "kasib-berry",
+    "flingPower": 10
   },
   {
     "id": "kebia-berry",
@@ -1367,7 +1466,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "kebia-berry"
+    "spriteKey": "kebia-berry",
+    "flingPower": 10
   },
   {
     "id": "kee-berry",
@@ -1379,7 +1479,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 6,
-    "spriteKey": "kee-berry"
+    "spriteKey": "kee-berry",
+    "flingPower": 10
   },
   {
     "id": "kelpsy-berry",
@@ -1391,7 +1492,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "kelpsy-berry"
+    "spriteKey": "kelpsy-berry",
+    "flingPower": 10
   },
   {
     "id": "kings-rock",
@@ -1407,7 +1509,9 @@
     "holdEffect": {
       "type": "custom",
       "handler": "kings-rock"
-    }
+    },
+    "flingPower": 30,
+    "flingEffect": "flinch"
   },
   {
     "id": "lagging-tail",
@@ -1419,7 +1523,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "lagging-tail"
+    "spriteKey": "lagging-tail",
+    "flingPower": 10
   },
   {
     "id": "lansat-berry",
@@ -1431,7 +1536,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "lansat-berry"
+    "spriteKey": "lansat-berry",
+    "flingPower": 10
   },
   {
     "id": "lax-incense",
@@ -1443,7 +1549,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "lax-incense"
+    "spriteKey": "lax-incense",
+    "flingPower": 10
   },
   {
     "id": "leaf-stone",
@@ -1455,7 +1562,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 1,
-    "spriteKey": "leaf-stone"
+    "spriteKey": "leaf-stone",
+    "flingPower": 30
   },
   {
     "id": "leek",
@@ -1467,7 +1575,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "leek"
+    "spriteKey": "leek",
+    "flingPower": 60
   },
   {
     "id": "leftovers",
@@ -1483,7 +1592,8 @@
     "holdEffect": {
       "type": "leftovers",
       "healFraction": 0.0625
-    }
+    },
+    "flingPower": 10
   },
   {
     "id": "leppa-berry",
@@ -1495,7 +1605,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "leppa-berry"
+    "spriteKey": "leppa-berry",
+    "flingPower": 10
   },
   {
     "id": "level-ball",
@@ -1523,7 +1634,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "liechi-berry"
+    "spriteKey": "liechi-berry",
+    "flingPower": 10
   },
   {
     "id": "life-orb",
@@ -1535,7 +1647,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "life-orb"
+    "spriteKey": "life-orb",
+    "flingPower": 30
   },
   {
     "id": "light-ball",
@@ -1551,7 +1664,9 @@
     "holdEffect": {
       "type": "custom",
       "handler": "light-ball"
-    }
+    },
+    "flingPower": 30,
+    "flingEffect": "paralysis"
   },
   {
     "id": "light-clay",
@@ -1563,7 +1678,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "light-clay"
+    "spriteKey": "light-clay",
+    "flingPower": 30
   },
   {
     "id": "love-ball",
@@ -1591,7 +1707,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "love-sweet"
+    "spriteKey": "love-sweet",
+    "flingPower": 10
   },
   {
     "id": "lum-berry",
@@ -1603,7 +1720,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "lum-berry"
+    "spriteKey": "lum-berry",
+    "flingPower": 10
   },
   {
     "id": "luminous-moss",
@@ -1615,7 +1733,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 6,
-    "spriteKey": "luminous-moss"
+    "spriteKey": "luminous-moss",
+    "flingPower": 30
   },
   {
     "id": "lure-ball",
@@ -1643,7 +1762,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "lustrous-orb"
+    "spriteKey": "lustrous-orb",
+    "flingPower": 60
   },
   {
     "id": "luxury-ball",
@@ -1671,7 +1791,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "macho-brace"
+    "spriteKey": "macho-brace",
+    "flingPower": 60
   },
   {
     "id": "magmarizer",
@@ -1683,7 +1804,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "magmarizer"
+    "spriteKey": "magmarizer",
+    "flingPower": 80
   },
   {
     "id": "magnet",
@@ -1700,7 +1822,8 @@
       "type": "type-boost",
       "moveType": "electric",
       "multiplier": 1.1
-    }
+    },
+    "flingPower": 30
   },
   {
     "id": "mago-berry",
@@ -1712,7 +1835,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "mago-berry"
+    "spriteKey": "mago-berry",
+    "flingPower": 10
   },
   {
     "id": "maranga-berry",
@@ -1724,7 +1848,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 6,
-    "spriteKey": "maranga-berry"
+    "spriteKey": "maranga-berry",
+    "flingPower": 10
   },
   {
     "id": "master-ball",
@@ -1752,7 +1877,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "mental-herb"
+    "spriteKey": "mental-herb",
+    "flingPower": 10
   },
   {
     "id": "metal-coat",
@@ -1769,7 +1895,8 @@
       "type": "type-boost",
       "moveType": "steel",
       "multiplier": 1.1
-    }
+    },
+    "flingPower": 30
   },
   {
     "id": "metal-powder",
@@ -1785,7 +1912,8 @@
     "holdEffect": {
       "type": "custom",
       "handler": "metal-powder"
-    }
+    },
+    "flingPower": 10
   },
   {
     "id": "metronome",
@@ -1797,7 +1925,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "metronome"
+    "spriteKey": "metronome",
+    "flingPower": 30
   },
   {
     "id": "micle-berry",
@@ -1809,7 +1938,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "micle-berry"
+    "spriteKey": "micle-berry",
+    "flingPower": 10
   },
   {
     "id": "miracle-seed",
@@ -1826,7 +1956,8 @@
       "type": "type-boost",
       "moveType": "grass",
       "multiplier": 1.1
-    }
+    },
+    "flingPower": 30
   },
   {
     "id": "misty-seed",
@@ -1838,7 +1969,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 7,
-    "spriteKey": "misty-seed"
+    "spriteKey": "misty-seed",
+    "flingPower": 10
   },
   {
     "id": "moon-ball",
@@ -1866,7 +1998,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 1,
-    "spriteKey": "moon-stone"
+    "spriteKey": "moon-stone",
+    "flingPower": 30
   },
   {
     "id": "muscle-band",
@@ -1878,7 +2011,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "muscle-band"
+    "spriteKey": "muscle-band",
+    "flingPower": 10
   },
   {
     "id": "mystic-water",
@@ -1895,7 +2029,8 @@
       "type": "type-boost",
       "moveType": "water",
       "multiplier": 1.1
-    }
+    },
+    "flingPower": 30
   },
   {
     "id": "nest-ball",
@@ -1944,7 +2079,8 @@
       "type": "type-boost",
       "moveType": "ice",
       "multiplier": 1.1
-    }
+    },
+    "flingPower": 30
   },
   {
     "id": "normal-gem",
@@ -1968,7 +2104,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "occa-berry"
+    "spriteKey": "occa-berry",
+    "flingPower": 10
   },
   {
     "id": "odd-incense",
@@ -1980,7 +2117,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "odd-incense"
+    "spriteKey": "odd-incense",
+    "flingPower": 10
   },
   {
     "id": "oran-berry",
@@ -1992,7 +2130,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "oran-berry"
+    "spriteKey": "oran-berry",
+    "flingPower": 10
   },
   {
     "id": "oval-stone",
@@ -2004,7 +2143,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "oval-stone"
+    "spriteKey": "oval-stone",
+    "flingPower": 80
   },
   {
     "id": "passho-berry",
@@ -2016,7 +2156,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "passho-berry"
+    "spriteKey": "passho-berry",
+    "flingPower": 10
   },
   {
     "id": "payapa-berry",
@@ -2028,7 +2169,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "payapa-berry"
+    "spriteKey": "payapa-berry",
+    "flingPower": 10
   },
   {
     "id": "pecha-berry",
@@ -2040,7 +2182,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "pecha-berry"
+    "spriteKey": "pecha-berry",
+    "flingPower": 10
   },
   {
     "id": "persim-berry",
@@ -2052,7 +2195,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "persim-berry"
+    "spriteKey": "persim-berry",
+    "flingPower": 10
   },
   {
     "id": "petaya-berry",
@@ -2064,7 +2208,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "petaya-berry"
+    "spriteKey": "petaya-berry",
+    "flingPower": 10
   },
   {
     "id": "pixie-plate",
@@ -2076,7 +2221,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 6,
-    "spriteKey": "pixie-plate"
+    "spriteKey": "pixie-plate",
+    "flingPower": 90
   },
   {
     "id": "poison-barb",
@@ -2093,7 +2239,9 @@
       "type": "type-boost",
       "moveType": "poison",
       "multiplier": 1.1
-    }
+    },
+    "flingPower": 70,
+    "flingEffect": "poison"
   },
   {
     "id": "poison-memory",
@@ -2105,7 +2253,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 7,
-    "spriteKey": "poison-memory"
+    "spriteKey": "poison-memory",
+    "flingPower": 50
   },
   {
     "id": "poke-ball",
@@ -2133,7 +2282,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "pomeg-berry"
+    "spriteKey": "pomeg-berry",
+    "flingPower": 10
   },
   {
     "id": "power-anklet",
@@ -2145,7 +2295,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "power-anklet"
+    "spriteKey": "power-anklet",
+    "flingPower": 70
   },
   {
     "id": "power-band",
@@ -2157,7 +2308,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "power-band"
+    "spriteKey": "power-band",
+    "flingPower": 70
   },
   {
     "id": "power-belt",
@@ -2169,7 +2321,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "power-belt"
+    "spriteKey": "power-belt",
+    "flingPower": 70
   },
   {
     "id": "power-bracer",
@@ -2181,7 +2334,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "power-bracer"
+    "spriteKey": "power-bracer",
+    "flingPower": 70
   },
   {
     "id": "power-herb",
@@ -2193,7 +2347,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "power-herb"
+    "spriteKey": "power-herb",
+    "flingPower": 10
   },
   {
     "id": "power-lens",
@@ -2205,7 +2360,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "power-lens"
+    "spriteKey": "power-lens",
+    "flingPower": 70
   },
   {
     "id": "power-weight",
@@ -2217,7 +2373,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "power-weight"
+    "spriteKey": "power-weight",
+    "flingPower": 70
   },
   {
     "id": "premier-ball",
@@ -2245,7 +2402,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 5,
-    "spriteKey": "pretty-feather"
+    "spriteKey": "pretty-feather",
+    "flingPower": 20
   },
   {
     "id": "prism-scale",
@@ -2257,7 +2415,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 5,
-    "spriteKey": "prism-scale"
+    "spriteKey": "prism-scale",
+    "flingPower": 30
   },
   {
     "id": "protective-pads",
@@ -2269,7 +2428,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 7,
-    "spriteKey": "protective-pads"
+    "spriteKey": "protective-pads",
+    "flingPower": 30
   },
   {
     "id": "protector",
@@ -2281,7 +2441,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "protector"
+    "spriteKey": "protector",
+    "flingPower": 80
   },
   {
     "id": "psychic-memory",
@@ -2293,7 +2454,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 7,
-    "spriteKey": "psychic-memory"
+    "spriteKey": "psychic-memory",
+    "flingPower": 50
   },
   {
     "id": "psychic-seed",
@@ -2305,7 +2467,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 7,
-    "spriteKey": "psychic-seed"
+    "spriteKey": "psychic-seed",
+    "flingPower": 10
   },
   {
     "id": "qualot-berry",
@@ -2317,7 +2480,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "qualot-berry"
+    "spriteKey": "qualot-berry",
+    "flingPower": 10
   },
   {
     "id": "quick-ball",
@@ -2349,7 +2513,8 @@
     "holdEffect": {
       "type": "custom",
       "handler": "quick-claw"
-    }
+    },
+    "flingPower": 80
   },
   {
     "id": "quick-powder",
@@ -2361,7 +2526,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "quick-powder"
+    "spriteKey": "quick-powder",
+    "flingPower": 10
   },
   {
     "id": "rare-bone",
@@ -2373,7 +2539,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "rare-bone"
+    "spriteKey": "rare-bone",
+    "flingPower": 100
   },
   {
     "id": "rawst-berry",
@@ -2385,7 +2552,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "rawst-berry"
+    "spriteKey": "rawst-berry",
+    "flingPower": 10
   },
   {
     "id": "razor-claw",
@@ -2397,7 +2565,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "razor-claw"
+    "spriteKey": "razor-claw",
+    "flingPower": 80
   },
   {
     "id": "reaper-cloth",
@@ -2409,7 +2578,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "reaper-cloth"
+    "spriteKey": "reaper-cloth",
+    "flingPower": 10
   },
   {
     "id": "red-card",
@@ -2421,7 +2591,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 5,
-    "spriteKey": "red-card"
+    "spriteKey": "red-card",
+    "flingPower": 10
   },
   {
     "id": "repeat-ball",
@@ -2449,7 +2620,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "ribbon-sweet"
+    "spriteKey": "ribbon-sweet",
+    "flingPower": 10
   },
   {
     "id": "rindo-berry",
@@ -2461,7 +2633,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "rindo-berry"
+    "spriteKey": "rindo-berry",
+    "flingPower": 10
   },
   {
     "id": "ring-target",
@@ -2473,7 +2646,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 5,
-    "spriteKey": "ring-target"
+    "spriteKey": "ring-target",
+    "flingPower": 10
   },
   {
     "id": "rock-incense",
@@ -2485,7 +2659,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "rock-incense"
+    "spriteKey": "rock-incense",
+    "flingPower": 10
   },
   {
     "id": "rock-memory",
@@ -2497,7 +2672,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 7,
-    "spriteKey": "rock-memory"
+    "spriteKey": "rock-memory",
+    "flingPower": 50
   },
   {
     "id": "rocky-helmet",
@@ -2509,7 +2685,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 5,
-    "spriteKey": "rocky-helmet"
+    "spriteKey": "rocky-helmet",
+    "flingPower": 60
   },
   {
     "id": "room-service",
@@ -2521,7 +2698,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "room-service"
+    "spriteKey": "room-service",
+    "flingPower": 100
   },
   {
     "id": "rose-incense",
@@ -2533,7 +2711,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "rose-incense"
+    "spriteKey": "rose-incense",
+    "flingPower": 10
   },
   {
     "id": "roseli-berry",
@@ -2545,7 +2724,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 6,
-    "spriteKey": "roseli-berry"
+    "spriteKey": "roseli-berry",
+    "flingPower": 10
   },
   {
     "id": "rowap-berry",
@@ -2557,7 +2737,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "rowap-berry"
+    "spriteKey": "rowap-berry",
+    "flingPower": 10
   },
   {
     "id": "rusted-shield",
@@ -2593,7 +2774,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 6,
-    "spriteKey": "sachet"
+    "spriteKey": "sachet",
+    "flingPower": 80
   },
   {
     "id": "safari-ball",
@@ -2621,7 +2803,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 6,
-    "spriteKey": "safety-goggles"
+    "spriteKey": "safety-goggles",
+    "flingPower": 80
   },
   {
     "id": "salac-berry",
@@ -2633,7 +2816,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "salac-berry"
+    "spriteKey": "salac-berry",
+    "flingPower": 10
   },
   {
     "id": "scope-lens",
@@ -2649,7 +2833,8 @@
     "holdEffect": {
       "type": "custom",
       "handler": "scope-lens"
-    }
+    },
+    "flingPower": 30
   },
   {
     "id": "sea-incense",
@@ -2661,7 +2846,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "sea-incense"
+    "spriteKey": "sea-incense",
+    "flingPower": 10
   },
   {
     "id": "sharp-beak",
@@ -2678,7 +2864,8 @@
       "type": "type-boost",
       "moveType": "flying",
       "multiplier": 1.1
-    }
+    },
+    "flingPower": 50
   },
   {
     "id": "shed-shell",
@@ -2690,7 +2877,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "shed-shell"
+    "spriteKey": "shed-shell",
+    "flingPower": 10
   },
   {
     "id": "shell-bell",
@@ -2702,7 +2890,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "shell-bell"
+    "spriteKey": "shell-bell",
+    "flingPower": 30
   },
   {
     "id": "shiny-stone",
@@ -2714,7 +2903,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "shiny-stone"
+    "spriteKey": "shiny-stone",
+    "flingPower": 80
   },
   {
     "id": "shock-drive",
@@ -2726,7 +2916,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 5,
-    "spriteKey": "shock-drive"
+    "spriteKey": "shock-drive",
+    "flingPower": 70
   },
   {
     "id": "shuca-berry",
@@ -2738,7 +2929,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "shuca-berry"
+    "spriteKey": "shuca-berry",
+    "flingPower": 10
   },
   {
     "id": "silk-scarf",
@@ -2750,7 +2942,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "silk-scarf"
+    "spriteKey": "silk-scarf",
+    "flingPower": 10
   },
   {
     "id": "silver-powder",
@@ -2767,7 +2960,8 @@
       "type": "type-boost",
       "moveType": "bug",
       "multiplier": 1.1
-    }
+    },
+    "flingPower": 10
   },
   {
     "id": "sitrus-berry",
@@ -2779,7 +2973,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "sitrus-berry"
+    "spriteKey": "sitrus-berry",
+    "flingPower": 10
   },
   {
     "id": "smooth-rock",
@@ -2791,7 +2986,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "smooth-rock"
+    "spriteKey": "smooth-rock",
+    "flingPower": 10
   },
   {
     "id": "snowball",
@@ -2803,7 +2999,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 6,
-    "spriteKey": "snowball"
+    "spriteKey": "snowball",
+    "flingPower": 30
   },
   {
     "id": "soft-sand",
@@ -2820,7 +3017,8 @@
       "type": "type-boost",
       "moveType": "ground",
       "multiplier": 1.1
-    }
+    },
+    "flingPower": 10
   },
   {
     "id": "soul-dew",
@@ -2832,7 +3030,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "soul-dew"
+    "spriteKey": "soul-dew",
+    "flingPower": 30
   },
   {
     "id": "spell-tag",
@@ -2849,7 +3048,8 @@
       "type": "type-boost",
       "moveType": "ghost",
       "multiplier": 1.1
-    }
+    },
+    "flingPower": 30
   },
   {
     "id": "sport-ball",
@@ -2877,7 +3077,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "star-sweet"
+    "spriteKey": "star-sweet",
+    "flingPower": 10
   },
   {
     "id": "starf-berry",
@@ -2889,7 +3090,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "starf-berry"
+    "spriteKey": "starf-berry",
+    "flingPower": 10
   },
   {
     "id": "steel-memory",
@@ -2901,7 +3103,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 7,
-    "spriteKey": "steel-memory"
+    "spriteKey": "steel-memory",
+    "flingPower": 50
   },
   {
     "id": "sticky-barb",
@@ -2913,7 +3116,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "sticky-barb"
+    "spriteKey": "sticky-barb",
+    "flingPower": 80
   },
   {
     "id": "strawberry-sweet",
@@ -2925,7 +3129,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "strawberry-sweet"
+    "spriteKey": "strawberry-sweet",
+    "flingPower": 10
   },
   {
     "id": "sun-stone",
@@ -2937,7 +3142,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 2,
-    "spriteKey": "sun-stone"
+    "spriteKey": "sun-stone",
+    "flingPower": 30
   },
   {
     "id": "sweet-apple",
@@ -2949,7 +3155,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "sweet-apple"
+    "spriteKey": "sweet-apple",
+    "flingPower": 30
   },
   {
     "id": "tamato-berry",
@@ -2961,7 +3168,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "tamato-berry"
+    "spriteKey": "tamato-berry",
+    "flingPower": 10
   },
   {
     "id": "tanga-berry",
@@ -2973,7 +3181,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "tanga-berry"
+    "spriteKey": "tanga-berry",
+    "flingPower": 10
   },
   {
     "id": "tart-apple",
@@ -2985,7 +3194,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tart-apple"
+    "spriteKey": "tart-apple",
+    "flingPower": 30
   },
   {
     "id": "terrain-extender",
@@ -2997,7 +3207,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 7,
-    "spriteKey": "terrain-extender"
+    "spriteKey": "terrain-extender",
+    "flingPower": 60
   },
   {
     "id": "thick-club",
@@ -3013,7 +3224,8 @@
     "holdEffect": {
       "type": "custom",
       "handler": "thick-club"
-    }
+    },
+    "flingPower": 90
   },
   {
     "id": "throat-spray",
@@ -3025,7 +3237,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "throat-spray"
+    "spriteKey": "throat-spray",
+    "flingPower": 30
   },
   {
     "id": "thunder-stone",
@@ -3037,7 +3250,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 1,
-    "spriteKey": "thunder-stone"
+    "spriteKey": "thunder-stone",
+    "flingPower": 30
   },
   {
     "id": "timer-ball",
@@ -3065,7 +3279,9 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "toxic-orb"
+    "spriteKey": "toxic-orb",
+    "flingPower": 30,
+    "flingEffect": "badly-poisoned"
   },
   {
     "id": "tr00",
@@ -3077,7 +3293,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr00"
+    "spriteKey": "tr00",
+    "flingPower": 10
   },
   {
     "id": "tr01",
@@ -3089,7 +3306,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr01"
+    "spriteKey": "tr01",
+    "flingPower": 85
   },
   {
     "id": "tr02",
@@ -3101,7 +3319,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr02"
+    "spriteKey": "tr02",
+    "flingPower": 90
   },
   {
     "id": "tr03",
@@ -3113,7 +3332,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr03"
+    "spriteKey": "tr03",
+    "flingPower": 110
   },
   {
     "id": "tr04",
@@ -3125,7 +3345,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr04"
+    "spriteKey": "tr04",
+    "flingPower": 90
   },
   {
     "id": "tr05",
@@ -3137,7 +3358,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr05"
+    "spriteKey": "tr05",
+    "flingPower": 90
   },
   {
     "id": "tr06",
@@ -3149,7 +3371,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr06"
+    "spriteKey": "tr06",
+    "flingPower": 110
   },
   {
     "id": "tr07",
@@ -3161,7 +3384,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr07"
+    "spriteKey": "tr07",
+    "flingPower": 10
   },
   {
     "id": "tr08",
@@ -3173,7 +3397,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr08"
+    "spriteKey": "tr08",
+    "flingPower": 90
   },
   {
     "id": "tr09",
@@ -3185,7 +3410,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr09"
+    "spriteKey": "tr09",
+    "flingPower": 110
   },
   {
     "id": "tr10",
@@ -3197,7 +3423,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr10"
+    "spriteKey": "tr10",
+    "flingPower": 100
   },
   {
     "id": "tr11",
@@ -3209,7 +3436,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr11"
+    "spriteKey": "tr11",
+    "flingPower": 90
   },
   {
     "id": "tr12",
@@ -3221,7 +3449,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr12"
+    "spriteKey": "tr12",
+    "flingPower": 10
   },
   {
     "id": "tr13",
@@ -3233,7 +3462,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr13"
+    "spriteKey": "tr13",
+    "flingPower": 10
   },
   {
     "id": "tr14",
@@ -3245,7 +3475,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr14"
+    "spriteKey": "tr14",
+    "flingPower": 10
   },
   {
     "id": "tr15",
@@ -3257,7 +3488,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr15"
+    "spriteKey": "tr15",
+    "flingPower": 110
   },
   {
     "id": "tr16",
@@ -3269,7 +3501,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr16"
+    "spriteKey": "tr16",
+    "flingPower": 80
   },
   {
     "id": "tr17",
@@ -3281,7 +3514,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr17"
+    "spriteKey": "tr17",
+    "flingPower": 10
   },
   {
     "id": "tr18",
@@ -3293,7 +3527,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr18"
+    "spriteKey": "tr18",
+    "flingPower": 80
   },
   {
     "id": "tr19",
@@ -3305,7 +3540,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr19"
+    "spriteKey": "tr19",
+    "flingPower": 80
   },
   {
     "id": "tr20",
@@ -3317,7 +3553,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr20"
+    "spriteKey": "tr20",
+    "flingPower": 10
   },
   {
     "id": "tr21",
@@ -3329,7 +3566,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr21"
+    "spriteKey": "tr21",
+    "flingPower": 10
   },
   {
     "id": "tr22",
@@ -3341,7 +3579,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr22"
+    "spriteKey": "tr22",
+    "flingPower": 90
   },
   {
     "id": "tr23",
@@ -3353,7 +3592,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr23"
+    "spriteKey": "tr23",
+    "flingPower": 10
   },
   {
     "id": "tr24",
@@ -3365,7 +3605,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr24"
+    "spriteKey": "tr24",
+    "flingPower": 120
   },
   {
     "id": "tr25",
@@ -3377,7 +3618,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr25"
+    "spriteKey": "tr25",
+    "flingPower": 80
   },
   {
     "id": "tr26",
@@ -3389,7 +3631,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr26"
+    "spriteKey": "tr26",
+    "flingPower": 10
   },
   {
     "id": "tr27",
@@ -3401,7 +3644,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr27"
+    "spriteKey": "tr27",
+    "flingPower": 10
   },
   {
     "id": "tr28",
@@ -3413,7 +3657,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr28"
+    "spriteKey": "tr28",
+    "flingPower": 120
   },
   {
     "id": "tr29",
@@ -3425,7 +3670,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr29"
+    "spriteKey": "tr29",
+    "flingPower": 10
   },
   {
     "id": "tr30",
@@ -3437,7 +3683,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr30"
+    "spriteKey": "tr30",
+    "flingPower": 10
   },
   {
     "id": "tr31",
@@ -3449,7 +3696,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr31"
+    "spriteKey": "tr31",
+    "flingPower": 100
   },
   {
     "id": "tr32",
@@ -3461,7 +3709,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr32"
+    "spriteKey": "tr32",
+    "flingPower": 80
   },
   {
     "id": "tr33",
@@ -3473,7 +3722,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr33"
+    "spriteKey": "tr33",
+    "flingPower": 80
   },
   {
     "id": "tr34",
@@ -3485,7 +3735,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr34"
+    "spriteKey": "tr34",
+    "flingPower": 120
   },
   {
     "id": "tr35",
@@ -3497,7 +3748,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr35"
+    "spriteKey": "tr35",
+    "flingPower": 90
   },
   {
     "id": "tr36",
@@ -3509,7 +3761,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr36"
+    "spriteKey": "tr36",
+    "flingPower": 95
   },
   {
     "id": "tr37",
@@ -3521,7 +3774,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr37"
+    "spriteKey": "tr37",
+    "flingPower": 10
   },
   {
     "id": "tr38",
@@ -3533,7 +3787,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr38"
+    "spriteKey": "tr38",
+    "flingPower": 10
   },
   {
     "id": "tr39",
@@ -3545,7 +3800,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr39"
+    "spriteKey": "tr39",
+    "flingPower": 120
   },
   {
     "id": "tr40",
@@ -3557,7 +3813,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr40"
+    "spriteKey": "tr40",
+    "flingPower": 10
   },
   {
     "id": "tr41",
@@ -3569,7 +3826,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr41"
+    "spriteKey": "tr41",
+    "flingPower": 85
   },
   {
     "id": "tr42",
@@ -3581,7 +3839,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr42"
+    "spriteKey": "tr42",
+    "flingPower": 90
   },
   {
     "id": "tr43",
@@ -3593,7 +3852,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr43"
+    "spriteKey": "tr43",
+    "flingPower": 130
   },
   {
     "id": "tr44",
@@ -3605,7 +3865,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr44"
+    "spriteKey": "tr44",
+    "flingPower": 10
   },
   {
     "id": "tr45",
@@ -3617,7 +3878,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr45"
+    "spriteKey": "tr45",
+    "flingPower": 90
   },
   {
     "id": "tr46",
@@ -3629,7 +3891,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr46"
+    "spriteKey": "tr46",
+    "flingPower": 10
   },
   {
     "id": "tr47",
@@ -3641,7 +3904,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr47"
+    "spriteKey": "tr47",
+    "flingPower": 80
   },
   {
     "id": "tr48",
@@ -3653,7 +3917,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr48"
+    "spriteKey": "tr48",
+    "flingPower": 10
   },
   {
     "id": "tr49",
@@ -3665,7 +3930,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr49"
+    "spriteKey": "tr49",
+    "flingPower": 10
   },
   {
     "id": "tr50",
@@ -3677,7 +3943,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr50"
+    "spriteKey": "tr50",
+    "flingPower": 90
   },
   {
     "id": "tr51",
@@ -3689,7 +3956,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr51"
+    "spriteKey": "tr51",
+    "flingPower": 10
   },
   {
     "id": "tr52",
@@ -3701,7 +3969,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr52"
+    "spriteKey": "tr52",
+    "flingPower": 10
   },
   {
     "id": "tr53",
@@ -3713,7 +3982,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr53"
+    "spriteKey": "tr53",
+    "flingPower": 120
   },
   {
     "id": "tr54",
@@ -3725,7 +3995,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr54"
+    "spriteKey": "tr54",
+    "flingPower": 10
   },
   {
     "id": "tr55",
@@ -3737,7 +4008,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr55"
+    "spriteKey": "tr55",
+    "flingPower": 120
   },
   {
     "id": "tr56",
@@ -3749,7 +4021,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr56"
+    "spriteKey": "tr56",
+    "flingPower": 80
   },
   {
     "id": "tr57",
@@ -3761,7 +4034,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr57"
+    "spriteKey": "tr57",
+    "flingPower": 80
   },
   {
     "id": "tr58",
@@ -3773,7 +4047,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr58"
+    "spriteKey": "tr58",
+    "flingPower": 80
   },
   {
     "id": "tr59",
@@ -3785,7 +4060,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr59"
+    "spriteKey": "tr59",
+    "flingPower": 80
   },
   {
     "id": "tr60",
@@ -3797,7 +4073,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr60"
+    "spriteKey": "tr60",
+    "flingPower": 80
   },
   {
     "id": "tr61",
@@ -3809,7 +4086,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr61"
+    "spriteKey": "tr61",
+    "flingPower": 90
   },
   {
     "id": "tr62",
@@ -3821,7 +4099,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr62"
+    "spriteKey": "tr62",
+    "flingPower": 85
   },
   {
     "id": "tr63",
@@ -3833,7 +4112,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr63"
+    "spriteKey": "tr63",
+    "flingPower": 80
   },
   {
     "id": "tr64",
@@ -3845,7 +4125,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr64"
+    "spriteKey": "tr64",
+    "flingPower": 120
   },
   {
     "id": "tr65",
@@ -3857,7 +4138,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr65"
+    "spriteKey": "tr65",
+    "flingPower": 90
   },
   {
     "id": "tr66",
@@ -3869,7 +4151,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr66"
+    "spriteKey": "tr66",
+    "flingPower": 120
   },
   {
     "id": "tr67",
@@ -3881,7 +4164,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr67"
+    "spriteKey": "tr67",
+    "flingPower": 90
   },
   {
     "id": "tr68",
@@ -3893,7 +4177,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr68"
+    "spriteKey": "tr68",
+    "flingPower": 10
   },
   {
     "id": "tr69",
@@ -3905,7 +4190,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr69"
+    "spriteKey": "tr69",
+    "flingPower": 80
   },
   {
     "id": "tr70",
@@ -3917,7 +4203,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr70"
+    "spriteKey": "tr70",
+    "flingPower": 80
   },
   {
     "id": "tr71",
@@ -3929,7 +4216,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr71"
+    "spriteKey": "tr71",
+    "flingPower": 130
   },
   {
     "id": "tr72",
@@ -3941,7 +4229,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr72"
+    "spriteKey": "tr72",
+    "flingPower": 120
   },
   {
     "id": "tr73",
@@ -3953,7 +4242,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr73"
+    "spriteKey": "tr73",
+    "flingPower": 120
   },
   {
     "id": "tr74",
@@ -3965,7 +4255,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr74"
+    "spriteKey": "tr74",
+    "flingPower": 80
   },
   {
     "id": "tr75",
@@ -3977,7 +4268,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr75"
+    "spriteKey": "tr75",
+    "flingPower": 100
   },
   {
     "id": "tr76",
@@ -3989,7 +4281,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr76"
+    "spriteKey": "tr76",
+    "flingPower": 10
   },
   {
     "id": "tr77",
@@ -4001,7 +4294,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr77"
+    "spriteKey": "tr77",
+    "flingPower": 10
   },
   {
     "id": "tr78",
@@ -4013,7 +4307,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr78"
+    "spriteKey": "tr78",
+    "flingPower": 95
   },
   {
     "id": "tr79",
@@ -4025,7 +4320,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr79"
+    "spriteKey": "tr79",
+    "flingPower": 10
   },
   {
     "id": "tr80",
@@ -4037,7 +4333,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr80"
+    "spriteKey": "tr80",
+    "flingPower": 10
   },
   {
     "id": "tr81",
@@ -4049,7 +4346,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr81"
+    "spriteKey": "tr81",
+    "flingPower": 95
   },
   {
     "id": "tr82",
@@ -4061,7 +4359,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr82"
+    "spriteKey": "tr82",
+    "flingPower": 20
   },
   {
     "id": "tr83",
@@ -4073,7 +4372,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr83"
+    "spriteKey": "tr83",
+    "flingPower": 10
   },
   {
     "id": "tr84",
@@ -4085,7 +4385,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr84"
+    "spriteKey": "tr84",
+    "flingPower": 80
   },
   {
     "id": "tr85",
@@ -4097,7 +4398,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr85"
+    "spriteKey": "tr85",
+    "flingPower": 10
   },
   {
     "id": "tr86",
@@ -4109,7 +4411,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr86"
+    "spriteKey": "tr86",
+    "flingPower": 90
   },
   {
     "id": "tr87",
@@ -4121,7 +4424,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr87"
+    "spriteKey": "tr87",
+    "flingPower": 80
   },
   {
     "id": "tr88",
@@ -4133,7 +4437,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr88"
+    "spriteKey": "tr88",
+    "flingPower": 10
   },
   {
     "id": "tr89",
@@ -4145,7 +4450,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr89"
+    "spriteKey": "tr89",
+    "flingPower": 110
   },
   {
     "id": "tr90",
@@ -4157,7 +4463,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr90"
+    "spriteKey": "tr90",
+    "flingPower": 90
   },
   {
     "id": "tr91",
@@ -4169,7 +4476,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr91"
+    "spriteKey": "tr91",
+    "flingPower": 10
   },
   {
     "id": "tr92",
@@ -4181,7 +4489,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr92"
+    "spriteKey": "tr92",
+    "flingPower": 80
   },
   {
     "id": "tr93",
@@ -4193,7 +4502,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr93"
+    "spriteKey": "tr93",
+    "flingPower": 85
   },
   {
     "id": "tr94",
@@ -4205,7 +4515,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr94"
+    "spriteKey": "tr94",
+    "flingPower": 95
   },
   {
     "id": "tr95",
@@ -4217,7 +4528,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr95"
+    "spriteKey": "tr95",
+    "flingPower": 80
   },
   {
     "id": "tr96",
@@ -4229,7 +4541,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr96"
+    "spriteKey": "tr96",
+    "flingPower": 90
   },
   {
     "id": "tr97",
@@ -4241,7 +4554,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr97"
+    "spriteKey": "tr97",
+    "flingPower": 85
   },
   {
     "id": "tr98",
@@ -4253,7 +4567,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr98"
+    "spriteKey": "tr98",
+    "flingPower": 85
   },
   {
     "id": "tr99",
@@ -4265,7 +4580,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "tr99"
+    "spriteKey": "tr99",
+    "flingPower": 80
   },
   {
     "id": "twisted-spoon",
@@ -4282,7 +4598,8 @@
       "type": "type-boost",
       "moveType": "psychic",
       "multiplier": 1.1
-    }
+    },
+    "flingPower": 30
   },
   {
     "id": "ultra-ball",
@@ -4310,7 +4627,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 2,
-    "spriteKey": "up-grade"
+    "spriteKey": "up-grade",
+    "flingPower": 30
   },
   {
     "id": "utility-umbrella",
@@ -4322,7 +4640,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 8,
-    "spriteKey": "utility-umbrella"
+    "spriteKey": "utility-umbrella",
+    "flingPower": 60
   },
   {
     "id": "wacan-berry",
@@ -4334,7 +4653,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "wacan-berry"
+    "spriteKey": "wacan-berry",
+    "flingPower": 10
   },
   {
     "id": "water-memory",
@@ -4346,7 +4666,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 7,
-    "spriteKey": "water-memory"
+    "spriteKey": "water-memory",
+    "flingPower": 50
   },
   {
     "id": "water-stone",
@@ -4358,7 +4679,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 1,
-    "spriteKey": "water-stone"
+    "spriteKey": "water-stone",
+    "flingPower": 30
   },
   {
     "id": "wave-incense",
@@ -4370,7 +4692,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "wave-incense"
+    "spriteKey": "wave-incense",
+    "flingPower": 10
   },
   {
     "id": "weakness-policy",
@@ -4382,7 +4705,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 6,
-    "spriteKey": "weakness-policy"
+    "spriteKey": "weakness-policy",
+    "flingPower": 80
   },
   {
     "id": "whipped-dream",
@@ -4394,7 +4718,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 6,
-    "spriteKey": "whipped-dream"
+    "spriteKey": "whipped-dream",
+    "flingPower": 80
   },
   {
     "id": "white-herb",
@@ -4406,7 +4731,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "white-herb"
+    "spriteKey": "white-herb",
+    "flingPower": 10
   },
   {
     "id": "wide-lens",
@@ -4418,7 +4744,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "wide-lens"
+    "spriteKey": "wide-lens",
+    "flingPower": 10
   },
   {
     "id": "wiki-berry",
@@ -4430,7 +4757,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 3,
-    "spriteKey": "wiki-berry"
+    "spriteKey": "wiki-berry",
+    "flingPower": 10
   },
   {
     "id": "wise-glasses",
@@ -4442,7 +4770,8 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "wise-glasses"
+    "spriteKey": "wise-glasses",
+    "flingPower": 10
   },
   {
     "id": "yache-berry",
@@ -4454,7 +4783,8 @@
     "battleUsable": true,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "yache-berry"
+    "spriteKey": "yache-berry",
+    "flingPower": 10
   },
   {
     "id": "zoom-lens",
@@ -4466,6 +4796,7 @@
     "battleUsable": false,
     "fieldUsable": false,
     "generation": 4,
-    "spriteKey": "zoom-lens"
+    "spriteKey": "zoom-lens",
+    "flingPower": 10
   }
 ]

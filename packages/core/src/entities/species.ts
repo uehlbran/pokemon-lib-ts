@@ -23,6 +23,7 @@ export interface PokemonSpeciesData {
   readonly abilities: {
     readonly normal: readonly string[]; // 1-2 regular ability IDs
     readonly hidden: string | null; // Hidden ability ID, or null
+    readonly special?: string | null; // Special Showdown-only S slot
   };
 
   /** Gender ratio: percentage male. -1 = genderless. */
@@ -223,5 +224,6 @@ export interface RegionalFormData {
   readonly abilities: {
     readonly normal: readonly string[];
     readonly hidden: string | null;
+    readonly special?: string | null;
   };
 }

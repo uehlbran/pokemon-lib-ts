@@ -48,6 +48,7 @@ import {
   type VolatileStatus,
 } from "@pokemon-lib-ts/core";
 import { GEN8_ABILITY_IDS, GEN8_ITEM_IDS, GEN8_MOVE_IDS } from "./data/reference-ids.js";
+import { UNSUPPRESSABLE_ABILITIES } from "./Gen8AbilitiesSwitch.js";
 
 // ---------------------------------------------------------------------------
 // Default empty result
@@ -62,6 +63,24 @@ function createBaseResult(): MoveEffectResult {
     healAmount: 0,
     switchOut: false,
     messages: [],
+  };
+}
+
+function handleCoreEnforcer(ctx: MoveEffectContext): MoveEffectResult {
+  if (
+    !ctx.defender.movedThisTurn ||
+    ctx.defender.suppressedAbility !== null ||
+    UNSUPPRESSABLE_ABILITIES.has(ctx.defender.ability)
+  ) {
+    return createBaseResult();
+  }
+
+  ctx.defender.suppressedAbility = ctx.defender.ability;
+  ctx.defender.ability = "";
+
+  return {
+    ...createBaseResult(),
+    messages: [`${ctx.defender.pokemon.nickname ?? "The target"}'s ability was suppressed!`],
   };
 }
 
@@ -1053,6 +1072,8 @@ export function executeGen8MoveEffect(
 ): MoveEffectResult | null {
   switch (ctx.move.id) {
     // --- Protect variants ---
+    case GEN8_MOVE_IDS.coreEnforcer:
+      return handleCoreEnforcer(ctx);
     case GEN8_MOVE_IDS.obstruct:
       return handleObstruct(ctx, rng, rollProtectSuccess);
     case GEN8_MOVE_IDS.banefulBunker:

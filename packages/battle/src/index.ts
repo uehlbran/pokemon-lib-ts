@@ -160,6 +160,7 @@ export type {
 
 // Utils
 export {
+  consumeHeldItem,
   createBattleSide,
   createBattleState,
   createPokemonSnapshot,

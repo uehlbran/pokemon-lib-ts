@@ -138,6 +138,14 @@ export function handleMakeItRain(ctx: MoveEffectContext): MoveEffectResult {
   };
 }
 
+export function handlePsychicNoise(_ctx: MoveEffectContext): MoveEffectResult {
+  return {
+    ...createBaseResult(),
+    volatileInflicted: CORE_VOLATILE_IDS.healBlock,
+    volatileData: { turnsLeft: 2 },
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Revival Blessing
 // ---------------------------------------------------------------------------
@@ -605,6 +613,9 @@ export function executeGen9MoveEffect(ctx: MoveEffectContext): MoveEffectResult 
 
     case GEN9_MOVE_IDS.makeItRain:
       return handleMakeItRain(ctx);
+
+    case GEN9_MOVE_IDS.psychicNoise:
+      return handlePsychicNoise(ctx);
 
     case GEN9_MOVE_IDS.revivalBlessing:
       return handleRevivalBlessing(ctx);
