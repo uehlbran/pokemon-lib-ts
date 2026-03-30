@@ -1116,7 +1116,7 @@ describe("Gen 2 Damage Calculation", () => {
         heldItem: GEN2_ITEM_IDS.thickClub,
       });
       // speciesId 105 = Marowak
-      (marowakWithClub.pokemon as any).speciesId = 105;
+      (marowakWithClub.pokemon as Record<string, unknown>).speciesId = 105;
 
       const marowakNoItem = createActivePokemon({
         level: 50,
@@ -1127,7 +1127,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: [CORE_TYPE_IDS.ground],
         heldItem: null,
       });
-      (marowakNoItem.pokemon as any).speciesId = 105;
+      (marowakNoItem.pokemon as Record<string, unknown>).speciesId = 105;
 
       const defender = createActivePokemon({
         level: 50,
@@ -1183,7 +1183,7 @@ describe("Gen 2 Damage Calculation", () => {
         heldItem: GEN2_ITEM_IDS.thickClub,
       });
       // speciesId 104 = Cubone
-      (cuboneWithClub.pokemon as any).speciesId = 104;
+      (cuboneWithClub.pokemon as Record<string, unknown>).speciesId = 104;
 
       const cuboneNoItem = createActivePokemon({
         level: 50,
@@ -1194,7 +1194,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: [CORE_TYPE_IDS.ground],
         heldItem: null,
       });
-      (cuboneNoItem.pokemon as any).speciesId = 104;
+      (cuboneNoItem.pokemon as Record<string, unknown>).speciesId = 104;
 
       const defender = createActivePokemon({
         level: 50,
@@ -1249,7 +1249,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: [CORE_TYPE_IDS.rock],
         heldItem: GEN2_ITEM_IDS.thickClub,
       });
-      (onixWithClub.pokemon as any).speciesId = 95;
+      (onixWithClub.pokemon as Record<string, unknown>).speciesId = 95;
 
       const onixNoItem = createActivePokemon({
         level: 50,
@@ -1260,7 +1260,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: [CORE_TYPE_IDS.rock],
         heldItem: null,
       });
-      (onixNoItem.pokemon as any).speciesId = 95;
+      (onixNoItem.pokemon as Record<string, unknown>).speciesId = 95;
 
       const defender = createActivePokemon({
         level: 50,
@@ -1312,7 +1312,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: [CORE_TYPE_IDS.electric],
         heldItem: GEN2_ITEM_IDS.lightBall,
       });
-      (pikachuWithBall.pokemon as any).speciesId = 25;
+      (pikachuWithBall.pokemon as Record<string, unknown>).speciesId = 25;
 
       const pikachuNoBall = createActivePokemon({
         level: 50,
@@ -1323,7 +1323,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: [CORE_TYPE_IDS.electric],
         heldItem: null,
       });
-      (pikachuNoBall.pokemon as any).speciesId = 25;
+      (pikachuNoBall.pokemon as Record<string, unknown>).speciesId = 25;
 
       const defender = createActivePokemon({
         level: 50,
@@ -1379,7 +1379,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: [CORE_TYPE_IDS.electric],
         heldItem: GEN2_ITEM_IDS.lightBall,
       });
-      (raichuWithBall.pokemon as any).speciesId = 26;
+      (raichuWithBall.pokemon as Record<string, unknown>).speciesId = 26;
 
       const raichuNoBall = createActivePokemon({
         level: 50,
@@ -1390,7 +1390,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: [CORE_TYPE_IDS.electric],
         heldItem: null,
       });
-      (raichuNoBall.pokemon as any).speciesId = 26;
+      (raichuNoBall.pokemon as Record<string, unknown>).speciesId = 26;
 
       const defender = createActivePokemon({
         level: 50,
@@ -1440,7 +1440,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: [CORE_TYPE_IDS.electric],
         heldItem: GEN2_ITEM_IDS.lightBall,
       });
-      (pikachuWithBall.pokemon as any).speciesId = 25;
+      (pikachuWithBall.pokemon as Record<string, unknown>).speciesId = 25;
 
       const pikachuNoBall = createActivePokemon({
         level: 50,
@@ -1451,7 +1451,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: [CORE_TYPE_IDS.electric],
         heldItem: null,
       });
-      (pikachuNoBall.pokemon as any).speciesId = 25;
+      (pikachuNoBall.pokemon as Record<string, unknown>).speciesId = 25;
 
       const defender = createActivePokemon({
         level: 50,
@@ -1512,7 +1512,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: [CORE_TYPE_IDS.normal],
         heldItem: GEN2_ITEM_IDS.metalPowder,
       });
-      (dittoWithPowder.pokemon as any).speciesId = 132;
+      (dittoWithPowder.pokemon as Record<string, unknown>).speciesId = 132;
 
       const dittoNoPowder = createActivePokemon({
         level: 50,
@@ -1523,7 +1523,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: [CORE_TYPE_IDS.normal],
         heldItem: null,
       });
-      (dittoNoPowder.pokemon as any).speciesId = 132;
+      (dittoNoPowder.pokemon as Record<string, unknown>).speciesId = 132;
 
       const move = createMove(CORE_TYPE_IDS.normal, 80);
       const chart = createNeutralTypeChart();
@@ -1578,7 +1578,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: [CORE_TYPE_IDS.normal],
         heldItem: GEN2_ITEM_IDS.metalPowder,
       });
-      (dittoWithPowder.pokemon as any).speciesId = 132;
+      (dittoWithPowder.pokemon as Record<string, unknown>).speciesId = 132;
 
       const dittoNoPowder = createActivePokemon({
         level: 50,
@@ -1589,7 +1589,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: [CORE_TYPE_IDS.normal],
         heldItem: null,
       });
-      (dittoNoPowder.pokemon as any).speciesId = 132;
+      (dittoNoPowder.pokemon as Record<string, unknown>).speciesId = 132;
 
       // Special move (fire type is special in Gen 2)
       const move = createMove(CORE_TYPE_IDS.fire, 80, CORE_MOVE_CATEGORIES.special);
@@ -1696,7 +1696,7 @@ describe("Gen 2 Damage Calculation", () => {
         heldItem: GEN2_ITEM_IDS.thickClub,
       });
       // speciesId 105 = Marowak
-      (marowakWithClub.pokemon as any).speciesId = 105;
+      (marowakWithClub.pokemon as Record<string, unknown>).speciesId = 105;
 
       const marowakNoItem = createActivePokemon({
         level: 50,
@@ -1707,7 +1707,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: [CORE_TYPE_IDS.ground],
         heldItem: null,
       });
-      (marowakNoItem.pokemon as any).speciesId = 105;
+      (marowakNoItem.pokemon as Record<string, unknown>).speciesId = 105;
 
       const defender = createActivePokemon({
         level: 50,
@@ -1762,7 +1762,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: [CORE_TYPE_IDS.electric],
         heldItem: GEN2_ITEM_IDS.lightBall,
       });
-      (pikachuWithBall.pokemon as any).speciesId = 25;
+      (pikachuWithBall.pokemon as Record<string, unknown>).speciesId = 25;
 
       const pikachuNoBall = createActivePokemon({
         level: 50,
@@ -1773,7 +1773,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: [CORE_TYPE_IDS.electric],
         heldItem: null,
       });
-      (pikachuNoBall.pokemon as any).speciesId = 25;
+      (pikachuNoBall.pokemon as Record<string, unknown>).speciesId = 25;
 
       const defender = createActivePokemon({
         level: 50,
@@ -1837,7 +1837,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: [CORE_TYPE_IDS.normal],
         heldItem: GEN2_ITEM_IDS.metalPowder,
       });
-      (dittoWithPowder.pokemon as any).speciesId = 132;
+      (dittoWithPowder.pokemon as Record<string, unknown>).speciesId = 132;
 
       const dittoNoPowder = createActivePokemon({
         level: 50,
@@ -1848,7 +1848,7 @@ describe("Gen 2 Damage Calculation", () => {
         types: [CORE_TYPE_IDS.normal],
         heldItem: null,
       });
-      (dittoNoPowder.pokemon as any).speciesId = 132;
+      (dittoNoPowder.pokemon as Record<string, unknown>).speciesId = 132;
 
       const move = createMove(CORE_TYPE_IDS.normal, 80);
       const chart = createNeutralTypeChart();

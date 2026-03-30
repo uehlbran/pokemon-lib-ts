@@ -2,6 +2,7 @@ import type {
   ActivePokemon,
   BattleSide,
   BattleState,
+  EndOfTurnEffect,
   MoveEffectContext,
 } from "@pokemon-lib-ts/battle";
 import type {
@@ -119,7 +120,7 @@ function createSyntheticActivePokemon(overrides: {
     turnsOnField: overrides.turnsOnField ?? 0,
     substituteHp: overrides.substituteHp ?? 0,
     isTerastallized: overrides.isTerastallized ?? false,
-    teraType: (overrides.teraType ?? null) as any,
+    teraType: (overrides.teraType ?? null) as PokemonType | null,
     teamSlot: overrides.teamSlot ?? 0,
     statStages: {
       attack: 0,
@@ -767,8 +768,8 @@ describe("Gen9 Shed Tail -- handleShedTail", () => {
     // Result should indicate switch-out
     expect(result.switchOut).toBe(true);
     // Should have a shed-tail-sub volatile for the incoming Pokemon
-    expect(attacker.volatileStatuses.has(VOLATILES.shedTailSub as any)).toBe(true);
-    const subData = attacker.volatileStatuses.get(VOLATILES.shedTailSub as any);
+    expect(attacker.volatileStatuses.has(VOLATILES.shedTailSub)).toBe(true);
+    const subData = attacker.volatileStatuses.get(VOLATILES.shedTailSub);
     // Sub HP should be floor(400/4) = 100
     expect(subData?.data?.substituteHp).toBe(100);
   });
@@ -970,7 +971,9 @@ describe("Gen9 Salt Cure -- processSaltCureDamage via Gen9Ruleset", () => {
       maxHp: 400,
       currentHp: 400,
       types: [TYPES.normal],
-      volatileStatuses: new Map([[VOLATILES.saltCure, { turnsLeft: -1 }]]) as any,
+      volatileStatuses: new Map<VolatileStatus, { turnsLeft: number }>([
+        [VOLATILES.saltCure, { turnsLeft: -1 }],
+      ]),
     });
 
     const damage = ruleset.processSaltCureDamage(active);
@@ -985,7 +988,9 @@ describe("Gen9 Salt Cure -- processSaltCureDamage via Gen9Ruleset", () => {
       maxHp: 400,
       currentHp: 400,
       types: [TYPES.water],
-      volatileStatuses: new Map([[VOLATILES.saltCure, { turnsLeft: -1 }]]) as any,
+      volatileStatuses: new Map<VolatileStatus, { turnsLeft: number }>([
+        [VOLATILES.saltCure, { turnsLeft: -1 }],
+      ]),
     });
 
     const damage = ruleset.processSaltCureDamage(active);
@@ -1013,7 +1018,9 @@ describe("Gen9 Salt Cure -- processSaltCureDamage via Gen9Ruleset", () => {
     const active = createSyntheticActivePokemon({
       maxHp: 400,
       currentHp: 0,
-      volatileStatuses: new Map([[VOLATILES.saltCure, { turnsLeft: -1 }]]) as any,
+      volatileStatuses: new Map<VolatileStatus, { turnsLeft: number }>([
+        [VOLATILES.saltCure, { turnsLeft: -1 }],
+      ]),
     });
 
     const damage = ruleset.processSaltCureDamage(active);
@@ -1181,7 +1188,7 @@ describe("Gen9Ruleset -- getEndOfTurnOrder includes salt-cure", () => {
     const order = ruleset.getEndOfTurnOrder();
 
     const bindIndex = order.indexOf(MOVES.bind);
-    const saltCureIndex = order.indexOf(MOVES.saltCure as any);
+    const saltCureIndex = order.indexOf(MOVES.saltCure as EndOfTurnEffect);
 
     expect(bindIndex).toBeGreaterThan(-1);
     expect(saltCureIndex).toBeGreaterThan(-1);

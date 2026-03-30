@@ -256,7 +256,7 @@ describe("#214 — Metal Powder should not apply when Ditto is Transformed", () 
         isCrit: false,
       } as DamageContext,
       typeChart,
-      createSpecies() as any,
+      createSpecies(),
     );
 
     // With Metal Powder: defense 80 * 2 = 160
@@ -303,7 +303,7 @@ describe("#214 — Metal Powder should not apply when Ditto is Transformed", () 
         isCrit: false,
       } as DamageContext,
       typeChart,
-      createSpecies() as any,
+      createSpecies(),
     );
 
     // Without Metal Powder effect: defense stays at 80 (Ditto is Transformed)
@@ -879,7 +879,7 @@ describe("#330 — SolarBeam halved in rain/sandstorm; Thunder always-hit in rai
         isCrit: false,
       } as DamageContext,
       typeChart,
-      species as any,
+      species,
     );
     const damageNone = calculateGen2Damage(
       {
@@ -891,7 +891,7 @@ describe("#330 — SolarBeam halved in rain/sandstorm; Thunder always-hit in rai
         isCrit: false,
       } as DamageContext,
       typeChart,
-      species as any,
+      species,
     );
 
     // Rain halves SolarBeam power (120 -> 60) AND rain halves Grass damage (0.5x weather mod)
@@ -942,7 +942,7 @@ describe("#330 — SolarBeam halved in rain/sandstorm; Thunder always-hit in rai
         isCrit: false,
       } as DamageContext,
       typeChart,
-      species as any,
+      species,
     );
     const damageNone = calculateGen2Damage(
       {
@@ -954,7 +954,7 @@ describe("#330 — SolarBeam halved in rain/sandstorm; Thunder always-hit in rai
         isCrit: false,
       } as DamageContext,
       typeChart,
-      species as any,
+      species,
     );
 
     // Sandstorm halves SolarBeam power (120 -> 60)

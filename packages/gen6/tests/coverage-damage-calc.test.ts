@@ -4,6 +4,7 @@ import type {
   MoveData,
   MoveEffect,
   PokemonType,
+  PrimaryStatus,
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
 import {
@@ -119,7 +120,7 @@ function createSyntheticActivePokemon(overrides: {
       ability: overrides.ability ?? GEN6_ABILITY_IDS.none,
       abilitySlot: CORE_ABILITY_SLOTS.normal1,
       heldItem: overrides.heldItem ?? null,
-      status: (overrides.status ?? null) as any,
+      status: (overrides.status ?? null) as PrimaryStatus | null,
       friendship: 0,
       gender: overrides.gender ?? CORE_GENDERS.male,
       isShiny: false,
