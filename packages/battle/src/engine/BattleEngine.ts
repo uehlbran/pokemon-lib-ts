@@ -2563,6 +2563,22 @@ export class BattleEngine implements BattleEventEmitter {
 
       damage = result.damage;
 
+      // Type immunity guard: effectiveness=0 means the move has no effect at all.
+      // Emit "It doesn't affect..." and return — no effectiveness/damage events.
+      // Source: pokered engine/battle/core.asm CheckTypeMatchup — 0× immunity exits
+      //   battle_calc entirely; no damage is subtracted or recorded.
+      // Source: Showdown sim/battle-actions.ts — "It doesn't affect..." emitted and
+      //   move execution terminates before any damage path when typeEffectiveness===0.
+      if (damage === 0 && result.effectiveness === 0) {
+        this.emit({
+          type: "message",
+          text: `It doesn't affect ${getPokemonName(defender)}!`,
+        });
+        actor.lastMoveUsed = moveData.id;
+        actor.movedThisTurn = true;
+        return;
+      }
+
       // Effectiveness and crit events fire regardless of substitute — emit before
       // the damage is applied so the ordering matches real cartridge behaviour.
       if (result.effectiveness !== 1) {
@@ -3141,6 +3157,19 @@ export class BattleEngine implements BattleEventEmitter {
       }
 
       damage = result.damage;
+
+      // Type immunity guard: same contract as executeMove — no events when effectiveness=0.
+      // Source: pokered engine/battle/core.asm CheckTypeMatchup — applies to recursive moves
+      //   (Mirror Move, Metronome chains) exactly as to primary attacks.
+      if (damage === 0 && result.effectiveness === 0) {
+        this.emit({
+          type: "message",
+          text: `It doesn't affect ${getPokemonName(defender)}!`,
+        });
+        actor.lastMoveUsed = moveId;
+        actor.movedThisTurn = true;
+        return;
+      }
 
       if (result.effectiveness !== 1) {
         this.emit({ type: "effectiveness", multiplier: result.effectiveness });

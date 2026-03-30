@@ -314,9 +314,12 @@ describe("passive-immunity ability hook", () => {
     expect(charizard!.lastMoveUsed).toBe(CORE_MOVE_IDS.tackle);
   });
 
-  it("given damage calc returns 0 damage and 0 effectiveness, when passive-immunity handler returns NOT activated (type immunity), then move proceeds normally with no early-return", () => {
-    // Source: Showdown — type immunities (Normal -> Ghost) return activated: false
-    // from the passive-immunity handler, so the move proceeds normally
+  it("given damage calc returns 0 damage and 0 effectiveness, when passive-immunity handler returns NOT activated (type immunity), then engine emits doesn't-affect message and early-returns (fix #1161)", () => {
+    // Source: Showdown — type immunities (e.g. Normal -> Ghost) reach the passiveImmunity
+    //   handler which returns activated: false (no ability absorbed the move). The engine
+    //   then applies the type-immunity guard: emits "It doesn't affect..." and returns early.
+    //   No effectiveness event or damage event is emitted.
+    // Fix #1161: engine no longer emits DamageEvent with amount=0 for type-immune attacks.
     const { engine, ruleset, events } = createTestEngine();
 
     // Make damage calc return 0 damage and 0 effectiveness (type immunity)
@@ -349,10 +352,20 @@ describe("passive-immunity ability hook", () => {
     );
     expect(immunityTriggers).not.toHaveLength(0);
 
-    // Assert: the effectiveness event should still be emitted (0 !== 1)
-    // since the move did NOT early-return
+    // Assert: "doesn't affect" message is emitted (type immunity early-return path)
+    const immunityMessages = events.filter(
+      (e) =>
+        e.type === "message" &&
+        (e as { type: "message"; text: string }).text.includes("doesn't affect"),
+    );
+    expect(immunityMessages).not.toHaveLength(0);
+
+    // Assert: no effectiveness event or damage event (immunity guard returns before those)
+    // Source: pokered engine/battle/core.asm CheckTypeMatchup — exits battle_calc entirely; no events
     const effectivenessEvents = events.filter((e) => e.type === "effectiveness");
-    expect(effectivenessEvents).not.toHaveLength(0);
+    expect(effectivenessEvents).toHaveLength(0);
+    const damageEvents = events.filter((e) => e.type === "damage");
+    expect(damageEvents).toHaveLength(0);
   });
 
   it("given passive-immunity activates, when move is fully absorbed, then subsequent move effects are skipped", () => {

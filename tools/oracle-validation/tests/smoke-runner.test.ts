@@ -280,8 +280,11 @@ describe("smoke-runner checkBattleInvariants — invariant detection", () => {
     expect(violations).toHaveLength(0);
   });
 
-  it("given damage event with amount 0, when checking invariants, then no violation (engine allows 0-damage; see #1161)", () => {
-    // Source: engine currently emits amount=0 for type-immunity edge cases (#1161); 0 is allowed, negative is not
+  it("given damage event with amount 0, when checking invariants, then violation reported (fixes #1161)", () => {
+    // Source: DamageEvent.amount must be a positive integer (> 0).
+    // Engine fix #1161: type-immune moves (effectiveness=0) no longer emit DamageEvent at all;
+    // they emit a "doesn't affect" message and return early.
+    // So amount=0 is now an engine contract violation, just like amount < 0.
     const events = [
       {
         type: "damage",
@@ -294,7 +297,8 @@ describe("smoke-runner checkBattleInvariants — invariant detection", () => {
       },
     ] as const;
     const violations = checkBattleInvariants(events as never);
-    expect(violations).toHaveLength(0);
+    expect(violations).toHaveLength(1);
+    expect(violations[0]?.description).toContain("positive");
   });
 
   it("given damage event with negative amount, when checking invariants, then violation reported", () => {

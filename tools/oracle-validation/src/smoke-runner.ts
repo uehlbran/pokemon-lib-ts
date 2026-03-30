@@ -267,10 +267,10 @@ export function checkBattleInvariants(events: readonly BattleEvent[]): SmokeInva
           description: `${e.side}:${e.pokemon} HP exceeded max (${e.currentHp}/${e.maxHp}) in damage event`,
         });
       }
-      if (e.amount < 0) {
+      if (e.amount <= 0) {
         violations.push({
           eventIndex: i,
-          description: `${e.side}:${e.pokemon} damage amount must not be negative, got ${e.amount}`,
+          description: `${e.side}:${e.pokemon} damage amount must be positive (> 0), got ${e.amount}`,
         });
       }
     } else if (event.type === BATTLE_EVENT_TYPES.heal) {
