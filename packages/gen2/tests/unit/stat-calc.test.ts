@@ -85,6 +85,7 @@ describe("Gen2StatCalc", () => {
       const stats = calculateGen2Stats(pokemon, species);
 
       // Assert
+      // Source: pokecrystal engine/pokemon/move_mon.asm CalcMonStatC — stat = floor(((base+DV)*2 + floor(ceil(sqrt(StatExp))/4)) * L/100) + 5; HP adds L+10 instead of +5
       // HP = floor(((100+15) * 2 + floor(ceil(sqrt(65535)) / 4)) * 50/100) + 50 + 10
       // sqrt(65535) = 255.998..., ceil = 256, /4 = 64
       // ((100+15)*2 + 64) * 50/100 = (230+64)*50/100 = 294*50/100 = 147
@@ -113,6 +114,7 @@ describe("Gen2StatCalc", () => {
       const stats = calculateGen2Stats(pokemon, species);
 
       // Assert
+      // Source: pokecrystal engine/pokemon/move_mon.asm CalcMonStatC — stat = floor(((base+DV)*2 + floor(ceil(sqrt(StatExp))/4)) * L/100) + 5; HP adds L+10 instead of +5
       // Atk = floor(((134+15)*2 + 64) * 50/100) + 5
       // (149*2 + 64)*50/100 = 362*50/100 = 181
       // 181 + 5 = 186
@@ -140,6 +142,7 @@ describe("Gen2StatCalc", () => {
       const stats = calculateGen2Stats(pokemon, species);
 
       // Assert
+      // Source: pokecrystal engine/pokemon/move_mon.asm CalcMonStatC — stat = floor(((base+DV)*2 + floor(ceil(sqrt(StatExp))/4)) * L/100) + 5; HP adds L+10 instead of +5
       // SpAtk = floor(((135+15)*2 + 64) * 100/100) + 5 = (300+64) + 5 = 364 + 5 = 369
       // SpDef = floor(((95+15)*2 + 64) * 100/100) + 5 = (220+64) + 5 = 284 + 5 = 289
       expect(stats.spAttack).toBe(369);
@@ -161,6 +164,7 @@ describe("Gen2StatCalc", () => {
       const stats = calculateGen2Stats(pokemon, species);
 
       // Assert
+      // Source: pokecrystal engine/pokemon/move_mon.asm CalcMonStatC — stat = floor(((base+DV)*2 + floor(ceil(sqrt(StatExp))/4)) * L/100) + 5; HP adds L+10 instead of +5
       // HP = floor(((160+0) * 2 + floor(ceil(sqrt(0)) / 4)) * 50/100) + 50 + 10
       // sqrt(0) = 0, ceil(0) = 0, 0/4 = 0
       // (320 + 0) * 50/100 = 160
@@ -196,12 +200,14 @@ describe("Gen2StatCalc", () => {
       const stats = calculateGen2Stats(pokemon, species);
 
       // Assert
+      // Source: pokecrystal engine/pokemon/move_mon.asm CalcMonStatC — stat = floor(((base+DV)*2 + floor(ceil(sqrt(StatExp))/4)) * L/100) + 5; HP adds L+10 instead of +5
       // Speed = floor(((90+15)*2 + 64) * 100/100) + 5 = (210+64) + 5 = 274 + 5 = 279
       expect(stats.speed).toBe(279);
     });
   });
 
   describe("Given well-known Gen 2 Pokemon at level 100 with max DVs and max StatExp", () => {
+    // Source: pokecrystal engine/pokemon/move_mon.asm CalcMonStatC — stat = floor(((base+DV)*2 + floor(ceil(sqrt(StatExp))/4)) * L/100) + 5; HP adds L+10 instead of +5
     // At L100, DV=15, StatExp=65535:
     //   StatExp bonus = floor(ceil(sqrt(65535)) / 4) = floor(256 / 4) = 64
     //   HP  = (Base + 15) * 2 + 64 + 100 + 10 = Base * 2 + 204
@@ -460,6 +466,7 @@ describe("Gen2StatCalc", () => {
   describe("Given Pikachu at level 50 with max DVs and no StatExp", () => {
     it("given Pikachu at level 50 with max DVs and zero StatExp, when calculating stats, then returns expected values", () => {
       // Arrange
+      // Source: pokecrystal engine/pokemon/move_mon.asm CalcMonStatC — stat = floor(((base+DV)*2 + floor(ceil(sqrt(StatExp))/4)) * L/100) + 5; HP adds L+10 instead of +5
       // StatExp bonus = floor(ceil(sqrt(0)) / 4) = 0
       // Non-HP: floor(((Base + 15) * 2 + 0) * 50 / 100) + 5 = (Base + 15) + 5 = Base + 20
       // HP:     floor(((Base + 15) * 2 + 0) * 50 / 100) + 50 + 10 = (Base + 15) + 60 = Base + 75

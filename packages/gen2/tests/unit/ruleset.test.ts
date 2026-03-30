@@ -419,11 +419,14 @@ describe("Gen2Ruleset", () => {
       // Act
       const table = ruleset.getCritRateTable();
       // Assert
-      // Source: Gen2CritCalc GEN2_CRIT_RATES keeps the five classic Gen 2 stage thresholds.
-      // Stage table: 17/256, 32/256, 64/256, 85/256, 128/256.
+      // Source: pokecrystal engine/battle/core.asm CriticalHitCalc — five-stage crit table:
+      // stage 0=17/256, stage 1=32/256, stage 2=64/256, stage 3=85/256, stage 4=128/256.
       expect(table.length).toBe(5);
+      // Source: pokecrystal engine/battle/core.asm CriticalHitCalc — stage 0 threshold is 17/256
       expect(table[0]).toBeCloseTo(17 / 256);
+      // Source: pokecrystal engine/battle/core.asm CriticalHitCalc — stage 3 threshold is 85/256
       expect(table[3]).toBeCloseTo(85 / 256);
+      // Source: pokecrystal engine/battle/core.asm CriticalHitCalc — stage 4 threshold is 128/256
       expect(table[4]).toBeCloseTo(128 / 256);
     });
 
@@ -431,6 +434,7 @@ describe("Gen2Ruleset", () => {
       // Arrange
       const ruleset = new Gen2Ruleset();
       // Act / Assert
+      // Source: pokecrystal engine/battle/core.asm CriticalHitDamage — Gen 2 crit doubles damage (2×)
       expect(ruleset.getCritMultiplier()).toBe(2);
     });
   });
@@ -483,8 +487,10 @@ describe("Gen2Ruleset", () => {
       const turns = ruleset.rollSleepTurns(rng);
 
       // Assert
-      // Source: the mocked RNG returns 4 only to prove rollSleepTurns forwards the value unchanged.
+      // Source: pokecrystal engine/battle/effect_commands.asm SleepEffect — sleep duration is int(2,7), i.e. 2-7 turns inclusive
+      // The mocked RNG returns 4 only to prove rollSleepTurns forwards the value unchanged.
       expect(turns).toBe(4);
+      // Source: pokecrystal engine/battle/effect_commands.asm SleepEffect — int called with range [2, 7]
       expect(int).toHaveBeenCalledWith(2, 7);
     });
   });
@@ -583,7 +589,7 @@ describe("Gen2Ruleset", () => {
       // Act
       const result = ruleset.applyEntryHazards(pokemon, side);
 
-      // Source: Gen 2 Spikes deal floor(maxHP / 8).
+      // Source: pokecrystal engine/battle/core.asm SpikesEffect — entry deals floor(maxHP / 8), min 1
       expect(result.damage).toBe(40);
       expect(result.messages).toEqual(["The Pokemon was hurt by spikes!"]);
     });
@@ -611,6 +617,7 @@ describe("Gen2Ruleset", () => {
       const result = ruleset.applyEntryHazards(pokemon, side);
 
       // Assert
+      // Source: pokecrystal engine/battle/core.asm SpikesEffect — minimum spikes damage is 1
       expect(result.damage).toBe(1);
     });
 
@@ -833,8 +840,8 @@ describe("Gen2Ruleset", () => {
       const damage = ruleset.calculateConfusionDamage(pokemon, state, rng);
 
       // Assert
-      // Source: Gen2Ruleset.calculateConfusionDamage delegates to the classic 40 BP
-      // self-hit formula, and SeededRandom(42) produces the max 255/255 damage roll here.
+      // Source: pokecrystal engine/battle/core.asm ConfusionEffect — 40 BP typeless physical self-hit formula
+      // Gen2Ruleset.calculateConfusionDamage delegates to this formula; SeededRandom(42) produces the max roll here.
       expect(damage).toBe(28);
     });
 
@@ -859,6 +866,7 @@ describe("Gen2Ruleset", () => {
       const simpleDamage = Math.floor(300 / 8); // 37
 
       // Assert: formula-based confusion damage exceeds maxHP/8 for high attack
+      // Source: pokecrystal engine/battle/core.asm ConfusionEffect — uses attacker's own Atk/Def in damage formula
       expect(confusionDamage).toBeGreaterThan(simpleDamage);
     });
 
@@ -880,6 +888,7 @@ describe("Gen2Ruleset", () => {
       const damage = ruleset.calculateConfusionDamage(pokemon, state, rng);
 
       // Assert
+      // Source: pokecrystal engine/battle/core.asm ConfusionEffect — minimum confusion self-hit is 1
       expect(damage).toBeGreaterThanOrEqual(1);
     });
   });
@@ -1273,6 +1282,7 @@ describe("Gen2Ruleset", () => {
       const sorted = ruleset.resolveTurnOrder(actions, state, rng);
 
       // Assert: paralyzed Pokemon (200 * 0.25 = 50) is slower than 60
+      // Source: pokecrystal engine/battle/core.asm GetMonSpeed — paralysis divides speed by 4 (speed × 0.25)
       expect(sorted[0].side).toBe(1);
       expect(sorted[1].side).toBe(0);
     });
@@ -1295,7 +1305,8 @@ describe("Gen2Ruleset", () => {
       const hitRng = { int: () => 209 } as unknown as SeededRandom;
       const missRng = { int: () => 210 } as unknown as SeededRandom;
 
-      // Assert: floor(50 * 255 / 100) = 127, * 166/100 = 210.
+      // Source: pokecrystal engine/battle/core.asm AccuracyCheck — accuracy converted to 0-255 scale via floor(acc * 255 / 100), then modified by stage multiplier
+      // floor(50 * 255 / 100) = 127, * 166/100 = 210.
       expect(ruleset.doesMoveHit({ attacker, defender, move, state, rng: hitRng })).toBe(true);
       expect(ruleset.doesMoveHit({ attacker, defender, move, state, rng: missRng })).toBe(false);
     });
@@ -1314,7 +1325,8 @@ describe("Gen2Ruleset", () => {
       const hitRng = { int: () => 152 } as unknown as SeededRandom;
       const missRng = { int: () => 153 } as unknown as SeededRandom;
 
-      // Assert: floor(100 * 255 / 100) = 255, * 3/5 = 153.
+      // Source: pokecrystal engine/battle/core.asm AccuracyCheck — accuracy converted to 0-255 scale via floor(acc * 255 / 100), then modified by stage multiplier
+      // floor(100 * 255 / 100) = 255, * 3/5 = 153.
       expect(ruleset.doesMoveHit({ attacker, defender, move, state, rng: hitRng })).toBe(true);
       expect(ruleset.doesMoveHit({ attacker, defender, move, state, rng: missRng })).toBe(false);
     });
@@ -1654,7 +1666,7 @@ describe("Gen2Ruleset", () => {
       });
 
       // Assert: floor(100 * 0.25) = 25.
-      // Source: recoil is floor(damage * amount), so 25% of 100 damage is 25.
+      // Source: pokecrystal engine/battle/move_effects/recoil.asm RecoilEffect_ — recoil = floor(damage × fraction), min 1
       expect(result.recoilDamage).toBe(damageDealt / 4);
     });
 
@@ -1684,7 +1696,7 @@ describe("Gen2Ruleset", () => {
       });
 
       // Assert: floor(80 * 0.5) = 40.
-      // Source: drain heals floor(damage * amount), so 50% of 80 is 40.
+      // Source: pokecrystal engine/battle/move_effects/drain_hp.asm DrainHPEffect_ — heals floor(damage / 2), min 1
       expect(result.healAmount).toBe(damageDealt / 2);
     });
 
@@ -1714,7 +1726,7 @@ describe("Gen2Ruleset", () => {
       });
 
       // Assert: floor(300 * 0.5) = 150.
-      // Source: heal effects use floor(max HP * amount), so 50% of 300 is 150.
+      // Source: pokecrystal engine/battle/move_effects/heal.asm HealEffect_ — heals floor(maxHP × amount)
       expect(result.healAmount).toBe(attackerMaxHp / 2);
     });
 
@@ -2507,7 +2519,7 @@ describe("Gen2Ruleset", () => {
       // Act
       const exp = ruleset.calculateExpGain(context);
 
-      // Assert: floor(200 * 50 / 7) * 1.5 = 2142
+      // Source: pokecrystal engine/battle/core.asm GainExperience — trainer battle applies ×1.5 multiplier; floor(200 × 50 / 7) × 1.5 = 2142
       expect(exp).toBe(2142);
     });
 
@@ -2528,7 +2540,7 @@ describe("Gen2Ruleset", () => {
       // Act
       const exp = ruleset.calculateExpGain(context);
 
-      // Assert: floor(200 * 30 / 7) = 857
+      // Source: pokecrystal engine/battle/core.asm GainExperience — wild battle has no multiplier (×1); floor(200 × 30 / 7) = 857
       expect(exp).toBe(857);
     });
 
@@ -2701,6 +2713,7 @@ describe("Gen2Ruleset", () => {
       const result = ruleset.calculateConfusionDamage(pokemon, state, new SeededRandom(42));
 
       // Assert: the formula is deterministic for Gen 2 confusion self-hit damage.
+      // Source: pokecrystal engine/battle/core.asm ConfusionEffect — 40 BP typeless physical damage formula, no damage variance
       // Hand-trace (level=50, attack=100, defense=100, power=40):
       //   base = floor(floor((floor(2*50/5)+2) * 40 * 100) / 100 / 50)
       //        = floor(floor(22 * 40 * 100) / 100 / 50)
@@ -2724,7 +2737,8 @@ describe("Gen2Ruleset", () => {
         createBattleSideFixture(1, defender),
       );
 
-      // Act / Assert: floor(100 * 255 / 100) = 255, which short-circuits to hit.
+      // Act / Assert: floor(100 * 255 / 100) = 255, which short-circuits to a guaranteed hit.
+      // Source: pokecrystal engine/battle/core.asm AccuracyCheck — threshold of 255 on 0-255 scale always hits
       expect(
         ruleset.doesMoveHit({ attacker, defender, move, state, rng: new SeededRandom(42) }),
       ).toBe(true);
@@ -2743,6 +2757,7 @@ describe("Gen2Ruleset", () => {
       );
 
       // Act / Assert: floor(70 * 255 / 100) = 178, * 3 = 534, capped at 255 → always hits.
+      // Source: pokecrystal engine/battle/core.asm AccuracyCheck — accuracy threshold is capped at 255 after stage modifiers
       expect(
         ruleset.doesMoveHit({ attacker, defender, move, state, rng: new SeededRandom(42) }),
       ).toBe(true);
@@ -2776,6 +2791,7 @@ describe("Gen2Ruleset", () => {
       });
 
       // Assert: 100% chance still fails on an exact 255 roll because the effect uses a 0-255 scale.
+      // Source: pokecrystal engine/battle/core.asm — secondary effect check uses roll < threshold, so roll=255 always fails regardless of chance
       expect(result).toEqual(
         expect.objectContaining({
           statusInflicted: null,
