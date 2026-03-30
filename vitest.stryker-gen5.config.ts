@@ -46,7 +46,8 @@ export default defineConfig({
     globals: true,
     environment: "node",
     root: "packages/gen5",
-    // Focus on unit + integration tests for damage calc coverage; smoke/e2e/stress are not needed
-    include: ["tests/unit/**/*.test.ts", "tests/integration/**/*.test.ts"],
+    // Include all unit/integration tests; exclude slow smoke/e2e/stress that don't add damage calc coverage
+    include: ["tests/*.test.ts", "tests/unit/**/*.test.ts", "tests/integration/**/*.test.ts"],
+    exclude: ["tests/e2e/**", "tests/smoke/**", "tests/stress/**"],
   },
 });
