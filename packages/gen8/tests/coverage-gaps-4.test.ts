@@ -270,6 +270,7 @@ describe("ATE abilities and Normalize", () => {
     // Pixilate adds 1.2x power boost (4915/4096 ≈ 1.2x): 22 * 1.2 ≈ 26
     // Source: Showdown data/abilities.ts -- Pixilate chainModify([4915,4096])
     expect(withPixilate).toBe(21);
+    // Source: Showdown data/abilities.ts -- baseline damage without Pixilate ability
     expect(withoutAbility).toBe(17);
   });
 
@@ -290,7 +291,9 @@ describe("ATE abilities and Normalize", () => {
     });
     // Normalize converts Fire→Normal, so Normal-type attacker gains STAB (1.5x) + Normalize 1.2x = 1.8x
     // vs without: Fire move with Normal attacker = 1x (no STAB). 34 * 1.8 ≈ 61
+    // Source: Showdown data/abilities.ts -- Normalize: 1.2x boost + type conversion to Normal
     expect(withNormalize).toBe(61);
+    // Source: Showdown data/abilities.ts -- baseline damage without Normalize ability
     expect(withoutNormalize).toBe(34);
   });
 
@@ -302,7 +305,7 @@ describe("ATE abilities and Normalize", () => {
       defender: createOnFieldPokemon({ types: [TYPES.ghost], defense: 100 }),
       move: createCanonicalMove(MOVES.firePledge),
     });
-    // Normal vs Ghost = 0 damage. Normalize does not bypass Ghost immunity.
+    // Source: Showdown data/abilities.ts -- Normalize: Normal vs Ghost = 0 damage, no Scrappy-like bypass
     expect(withNormalize).toBe(0);
   });
 });
@@ -328,7 +331,9 @@ describe("SolarBeam half power in non-sun weather", () => {
       state: createBattleState(),
       seed: 42,
     });
+    // Source: Showdown -- SolarBeam power halved in rain weather
     expect(inRain).toBe(26);
+    // Source: Showdown -- SolarBeam baseline power without weather halving
     expect(noWeather).toBe(50);
   });
 
@@ -348,7 +353,9 @@ describe("SolarBeam half power in non-sun weather", () => {
       state: createBattleState(),
       seed: 42,
     });
+    // Source: Showdown -- SolarBeam power halved in sand weather
     expect(inSand).toBe(26);
+    // Source: Showdown -- SolarBeam baseline power without weather halving
     expect(noWeather).toBe(50);
   });
 });
@@ -372,7 +379,9 @@ describe("Type-boost items (Charcoal, Pixie Plate, Soul Dew)", () => {
       move: fireMove,
       seed: 42,
     });
+    // Source: Showdown data/items.ts -- Charcoal: ~1.2x boost for Fire moves
     expect(withCharcoal).toBe(41);
+    // Source: Showdown data/items.ts -- baseline damage without Charcoal
     expect(withoutItem).toBe(34);
   });
 
@@ -395,7 +404,9 @@ describe("Type-boost items (Charcoal, Pixie Plate, Soul Dew)", () => {
       move: fairyMove,
       seed: 42,
     });
+    // Source: Showdown data/items.ts -- Pixie Plate: ~1.2x boost for Fairy moves
     expect(withPixiePlate).toBe(61);
+    // Source: Showdown data/items.ts -- baseline damage without Pixie Plate
     expect(withoutItem).toBe(51);
   });
 
@@ -414,7 +425,9 @@ describe("Type-boost items (Charcoal, Pixie Plate, Soul Dew)", () => {
       move: dragonMove,
       seed: 42,
     });
+    // Source: Showdown data/items.ts -- Soul Dew Gen 7+: ~1.2x boost for Dragon/Psychic on Latios (381)
     expect(withSoulDew).toBe(43);
+    // Source: Showdown data/items.ts -- baseline damage without Soul Dew on Latios
     expect(withoutItem).toBe(36);
   });
 
@@ -432,7 +445,9 @@ describe("Type-boost items (Charcoal, Pixie Plate, Soul Dew)", () => {
       move: psychicMove,
       seed: 42,
     });
+    // Source: Showdown data/items.ts -- Soul Dew Gen 7+: ~1.2x boost for Dragon/Psychic on Latias (380)
     expect(withSoulDew).toBe(46);
+    // Source: Showdown data/items.ts -- baseline damage without Soul Dew on Latias
     expect(withoutItem).toBe(38);
   });
 });
@@ -451,7 +466,9 @@ describe("Knock Off: 1.5x power when target holds removable item", () => {
     const defenderNoItem = createOnFieldPokemon({ heldItem: null, defense: 100 });
     const withItem = dmg({ move: knockOff, defender: defenderWithItem, seed: 42 });
     const noItem = dmg({ move: knockOff, defender: defenderNoItem, seed: 42 });
+    // Source: Showdown data/moves.ts -- Knock Off 1.5x when target has removable item
     expect(withItem).toBe(41);
+    // Source: Showdown data/moves.ts -- Knock Off baseline without target item
     expect(noItem).toBe(28);
   });
 
@@ -464,7 +481,9 @@ describe("Knock Off: 1.5x power when target holds removable item", () => {
     const defenderNoItem = createOnFieldPokemon({ heldItem: null, defense: 100 });
     const withSitrus = dmg({ move: knockOff, defender: defenderWithSitrus, seed: 42 });
     const noItem = dmg({ move: knockOff, defender: defenderNoItem, seed: 42 });
+    // Source: Showdown data/moves.ts -- Knock Off 1.5x when target holds Sitrus Berry (removable)
     expect(withSitrus).toBe(41);
+    // Source: Showdown data/moves.ts -- Knock Off baseline without target item
     expect(noItem).toBe(28);
   });
 });
@@ -501,7 +520,9 @@ describe("Pinch abilities: 1.5x power at or below 1/3 HP", () => {
       move: fireMove,
       seed: 42,
     });
+    // Source: Bulbapedia "Blaze" -- 1.5x power for Fire moves when HP <= 1/3 max HP
     expect(lowHpDmg).toBe(50);
+    // Source: Bulbapedia "Blaze" -- Blaze does not activate at full HP
     expect(fullHpDmg).toBe(34);
   });
 
@@ -532,7 +553,9 @@ describe("Pinch abilities: 1.5x power at or below 1/3 HP", () => {
       move: waterMove,
       seed: 42,
     });
+    // Source: Bulbapedia "Torrent" -- 1.5x power for Water moves when HP <= 1/3 max HP
     expect(lowHpDmg).toBe(50);
+    // Source: Bulbapedia "Torrent" -- Torrent does not activate at full HP
     expect(fullHpDmg).toBe(34);
   });
 });
@@ -557,7 +580,9 @@ describe("Flash Fire volatile: 1.5x power for Fire moves", () => {
       move: fireMove,
       seed: 42,
     });
+    // Source: Showdown data/abilities.ts -- Flash Fire: 1.5x boost for Fire moves with volatile active
     expect(withFlashFire).toBe(50);
+    // Source: Showdown data/abilities.ts -- baseline Fire damage without Flash Fire volatile
     expect(withoutFlashFire).toBe(34);
   });
 
@@ -576,7 +601,9 @@ describe("Flash Fire volatile: 1.5x power for Fire moves", () => {
       move: fireMove100,
       seed: 42,
     });
+    // Source: Showdown data/abilities.ts -- Flash Fire: 1.5x boost for higher base power Fire moves
     expect(withFlashFire100).toBe(63);
+    // Source: Showdown data/abilities.ts -- baseline Fire damage without Flash Fire volatile (100BP)
     expect(withoutFlashFire100).toBe(43);
   });
 });
@@ -602,7 +629,9 @@ describe("Dry Skin: 1.25x power for incoming fire moves", () => {
       move: fireMove,
       seed: 42,
     });
+    // Source: Showdown data/abilities.ts -- Dry Skin: 1.25x for incoming Fire moves
     expect(withDrySkin).toBe(43);
+    // Source: Showdown data/abilities.ts -- baseline Fire damage without Dry Skin
     expect(withoutDrySkin).toBe(34);
   });
 
@@ -622,7 +651,9 @@ describe("Dry Skin: 1.25x power for incoming fire moves", () => {
       move: fireMove100,
       seed: 42,
     });
+    // Source: Showdown data/abilities.ts -- Dry Skin: 1.25x for incoming Fire moves (100BP)
     expect(withDrySkin100).toBe(53);
+    // Source: Showdown data/abilities.ts -- baseline Fire damage without Dry Skin (100BP)
     expect(withoutDrySkin100).toBe(43);
   });
 });
@@ -649,7 +680,9 @@ describe("Technician: 1.5x power for moves with base power <= 60", () => {
       move: highPowerMove,
       seed: 42,
     });
+    // Source: Showdown data/abilities.ts -- Technician: 1.5x for moves with base power <= 60
     expect(techLow).toBe(48);
+    // Source: Showdown data/abilities.ts -- Technician: no boost for moves with base power > 60
     expect(techHigh).toBe(45);
   });
 
@@ -669,7 +702,9 @@ describe("Technician: 1.5x power for moves with base power <= 60", () => {
       move: highPowerMove2,
       seed: 42,
     });
+    // Source: Showdown data/abilities.ts -- Technician: 1.5x for 40BP moves (effective 60BP)
     expect(techLow2).toBe(39);
+    // Source: Showdown data/abilities.ts -- Technician: no boost for 70BP moves
     expect(techHigh2).toBe(45);
   });
 });
@@ -693,7 +728,9 @@ describe("Iron Fist: 1.2x power for punching moves", () => {
       move: punchMove,
       seed: 42,
     });
+    // Source: Showdown data/abilities.ts -- Iron Fist: 1.2x boost for punching moves
     expect(withIronFist).toBe(61);
+    // Source: Showdown data/abilities.ts -- baseline damage without Iron Fist
     expect(withoutAbility).toBe(51);
   });
 
@@ -711,7 +748,9 @@ describe("Iron Fist: 1.2x power for punching moves", () => {
       move: punchMove60,
       seed: 42,
     });
+    // Source: Showdown data/abilities.ts -- Iron Fist: 1.2x boost for punching moves (60BP)
     expect(withIronFist60).toBe(31);
+    // Source: Showdown data/abilities.ts -- baseline damage without Iron Fist (60BP)
     expect(withoutAbility60).toBe(26);
   });
 });
@@ -732,7 +771,9 @@ describe("Tough Claws: ~1.3x power for contact moves", () => {
       move: nonContactMove,
       seed: 42,
     });
+    // Source: Showdown data/abilities.ts -- Tough Claws: ~1.3x boost for contact moves
     expect(withContact).toBe(66);
+    // Source: Showdown data/abilities.ts -- Tough Claws: no boost for non-contact moves
     expect(withoutContact).toBe(51);
   });
 
@@ -751,7 +792,9 @@ describe("Tough Claws: ~1.3x power for contact moves", () => {
       move: nonContactMove60,
       seed: 42,
     });
+    // Source: Showdown data/abilities.ts -- Tough Claws: ~1.3x boost for contact moves (60BP)
     expect(withContact60).toBe(49);
+    // Source: Showdown data/abilities.ts -- Tough Claws: no boost for non-contact moves (60BP)
     expect(withoutContact60).toBe(39);
   });
 });
@@ -771,7 +814,9 @@ describe("Strong Jaw: 1.5x power for bite moves", () => {
       move: biteMove,
       seed: 42,
     });
+    // Source: Showdown data/abilities.ts -- Strong Jaw: 1.5x boost for bite moves (60BP)
     expect(withStrongJaw).toBe(38);
+    // Source: Showdown data/abilities.ts -- baseline damage without Strong Jaw (60BP)
     expect(withoutAbility).toBe(26);
   });
 
@@ -789,7 +834,9 @@ describe("Strong Jaw: 1.5x power for bite moves", () => {
       move: biteMove80,
       seed: 42,
     });
+    // Source: Showdown data/abilities.ts -- Strong Jaw: 1.5x boost for bite moves (80BP)
     expect(withStrongJaw80).toBe(50);
+    // Source: Showdown data/abilities.ts -- baseline damage without Strong Jaw (80BP)
     expect(withoutAbility80).toBe(34);
   });
 });
@@ -809,7 +856,9 @@ describe("Mega Launcher: 1.5x power for pulse moves", () => {
       move: pulseMove,
       seed: 42,
     });
+    // Source: Showdown data/abilities.ts -- Mega Launcher: 1.5x boost for pulse moves (80BP)
     expect(withMegaLauncher).toBe(100);
+    // Source: Showdown data/abilities.ts -- baseline damage without Mega Launcher (80BP)
     expect(withoutAbility).toBe(68);
   });
 
@@ -827,7 +876,9 @@ describe("Mega Launcher: 1.5x power for pulse moves", () => {
       move: pulseMove90,
       seed: 42,
     });
+    // Source: Showdown data/abilities.ts -- Mega Launcher: 1.5x boost for pulse moves (90BP)
     expect(withMegaLauncher90).toBe(53);
+    // Source: Showdown data/abilities.ts -- baseline damage without Mega Launcher (90BP)
     expect(withoutAbility90).toBe(36);
   });
 });
@@ -852,7 +903,9 @@ describe("Reckless: 1.2x power for moves with recoil/crash", () => {
       move: nonCrashControl,
       seed: 42,
     });
+    // Source: Showdown data/abilities.ts -- Reckless: 1.2x boost for crash-damage moves
     expect(withCrash).toBe(130);
+    // Source: Showdown data/abilities.ts -- Reckless: no boost when crash-damage flag is absent
     expect(withoutCrash).toBe(110);
   });
 
@@ -870,7 +923,9 @@ describe("Reckless: 1.2x power for moves with recoil/crash", () => {
       move: recoilMove,
       seed: 42,
     });
+    // Source: Showdown data/abilities.ts -- Reckless: 1.2x boost for recoil moves (90BP)
     expect(withReckless).toBe(91);
+    // Source: Showdown data/abilities.ts -- baseline damage without Reckless (90BP)
     expect(withoutReckless).toBe(75);
   });
 });
@@ -890,7 +945,9 @@ describe("Sheer Force: ~1.3x power for moves with secondary effects", () => {
       move: statusChanceMove,
       seed: 42,
     });
+    // Source: Showdown data/abilities.ts -- Sheer Force: ~1.3x boost for moves with secondary effects
     expect(withSheerForce).toBe(49);
+    // Source: Showdown data/abilities.ts -- baseline damage without Sheer Force
     expect(withoutAbility).toBe(38);
   });
 });
@@ -918,7 +975,9 @@ describe("Venoshock: doubles power when target is poisoned", () => {
       move: venoshock,
       seed: 42,
     });
+    // Source: Showdown data/moves.ts -- Venoshock: 2x power when target is poisoned
     expect(poisonedDmg).toBe(55);
+    // Source: Showdown data/moves.ts -- Venoshock baseline without poison status
     expect(healthyDmg).toBe(28);
   });
 
@@ -940,7 +999,9 @@ describe("Venoshock: doubles power when target is poisoned", () => {
       move: venoshock,
       seed: 42,
     });
+    // Source: Showdown data/moves.ts -- Venoshock: 2x power when target is badly poisoned
     expect(badlyPoisonedDmg).toBe(55);
+    // Source: Showdown data/moves.ts -- Venoshock baseline without badly-poisoned status
     expect(healthyDmg).toBe(28);
   });
 });
@@ -965,7 +1026,9 @@ describe("Hex: doubles power when target has any status condition", () => {
       move: hex,
       seed: 42,
     });
+    // Source: Showdown data/moves.ts -- Hex: 2x power when target has any status condition
     expect(sleepDmg).toBe(110);
+    // Source: Showdown data/moves.ts -- Hex baseline without status condition
     expect(healthyDmg).toBe(56);
   });
 });
@@ -993,8 +1056,9 @@ describe("Acrobatics: doubles power when attacker has no held item", () => {
       move: acrobatics,
       seed: 42,
     });
-    // No item → 2x power → significantly more damage
+    // Source: Showdown data/moves.ts -- Acrobatics: 2x power when user has no held item
     expect(noItemDmg).toBe(70);
+    // Source: Showdown data/moves.ts -- Acrobatics baseline when user holds an item
     expect(hasItemDmg).toBe(36);
   });
 });
@@ -1024,8 +1088,9 @@ describe("Rivalry: gender-dependent power modifier", () => {
       move: rivalryMove,
       seed: 42,
     });
-    // Same gender → 1.25x boost vs no boost
+    // Source: Showdown data/abilities.ts -- Rivalry: 1.25x boost when same gender
     expect(sameGenderDmg).toBe(64);
+    // Source: Showdown data/abilities.ts -- Rivalry: no modifier when both genderless
     expect(genderlessDmg).toBe(51);
   });
 
@@ -1048,8 +1113,9 @@ describe("Rivalry: gender-dependent power modifier", () => {
       move: rivalryMove,
       seed: 42,
     });
-    // Opposite gender → 0.75x penalty vs no modifier
+    // Source: Showdown data/abilities.ts -- Rivalry: 0.75x penalty when opposite gender
     expect(oppositeGenderDmg).toBe(39);
+    // Source: Showdown data/abilities.ts -- Rivalry: no modifier when both genderless
     expect(genderlessDmg).toBe(51);
   });
 });
@@ -1073,7 +1139,9 @@ describe("Adamant / Lustrous / Griseous Orbs: ~1.2x power for specific types on 
       move: steelMove,
       seed: 42,
     });
+    // Source: Showdown data/items.ts -- Adamant Orb: ~1.2x boost for Dragon/Steel on Dialga
     expect(withAdamantOrb).toBe(41);
+    // Source: Showdown data/items.ts -- baseline damage without Adamant Orb
     expect(withoutItem).toBe(34);
   });
 
@@ -1096,7 +1164,9 @@ describe("Adamant / Lustrous / Griseous Orbs: ~1.2x power for specific types on 
       move: dragonMove,
       seed: 42,
     });
+    // Source: Showdown data/items.ts -- Lustrous Orb: ~1.2x boost for Water/Dragon on Palkia
     expect(withLustrousOrb).toBe(43);
+    // Source: Showdown data/items.ts -- baseline damage without Lustrous Orb
     expect(withoutItem).toBe(36);
   });
 
@@ -1117,7 +1187,9 @@ describe("Adamant / Lustrous / Griseous Orbs: ~1.2x power for specific types on 
       move: ghostMove,
       seed: 42,
     });
+    // Source: Showdown data/items.ts -- Griseous Orb: ~1.2x boost for Ghost/Dragon on Giratina
     expect(withGriseousOrb).toBe(66);
+    // Source: Showdown data/items.ts -- baseline damage without Griseous Orb
     expect(withoutItem).toBe(56);
   });
 });
@@ -1147,7 +1219,9 @@ describe("Terrain power modifiers", () => {
       state: createBattleState(),
       seed: 42,
     });
+    // Source: Showdown data/mods/gen8/scripts.ts -- Electric Terrain 1.3x boost for grounded attacker
     expect(withTerrain).toBe(49);
+    // Source: Showdown Gen 8 -- baseline electric damage without terrain
     expect(noTerrain).toBe(38);
   });
 
@@ -1172,7 +1246,9 @@ describe("Terrain power modifiers", () => {
       state: createBattleState(),
       seed: 42,
     });
+    // Source: Showdown data/conditions.ts -- Grassy Terrain halves Earthquake/Bulldoze/Magnitude damage
     expect(withTerrain).toBe(22);
+    // Source: Showdown Gen 8 -- baseline Earthquake damage without Grassy Terrain
     expect(noTerrain).toBe(43);
   });
 });
@@ -1191,6 +1267,7 @@ describe("Heavy-rain and Harsh-sun weather extremes", () => {
         weather: { type: WEATHER.heavyRain, turnsLeft: 255, source: ABILITIES.drizzle },
       }),
     });
+    // Source: Showdown sim/battle-actions.ts -- heavy-rain completely suppresses Fire moves
     expect(result).toBe(0);
   });
 
@@ -1203,6 +1280,7 @@ describe("Heavy-rain and Harsh-sun weather extremes", () => {
         weather: { type: WEATHER.harshSun, turnsLeft: 255, source: ABILITIES.drought },
       }),
     });
+    // Source: Showdown sim/battle-actions.ts -- harsh-sun completely suppresses Water moves
     expect(result).toBe(0);
   });
 });
@@ -1229,8 +1307,9 @@ describe("Gravity: Ground moves hit Flying-type Pokemon", () => {
       defender: flyingDefender,
       state: createBattleState({ gravity: { active: false, turnsLeft: 0 } }),
     });
-    // Exact seeded value: withGravity=43
+    // Source: Showdown sim/battle-actions.ts -- Ground vs Flying = 0 when Gravity is not active
     expect(noGravity).toBe(0);
+    // Source: Showdown sim/battle-actions.ts -- Gravity allows Ground to hit Flying types
     expect(withGravity).toBe(43);
   });
 });
@@ -1255,8 +1334,9 @@ describe("Scrappy: Normal and Fighting types hit Ghost-type Pokemon", () => {
       defender: ghostDefender,
       move: normalMove,
     });
-    // Exact seeded value: withScrappy=51
+    // Source: Showdown data/abilities.ts -- Normal vs Ghost = 0 without Scrappy
     expect(withoutScrappy).toBe(0);
+    // Source: Showdown data/abilities.ts -- Scrappy: Normal/Fighting can hit Ghost types
     expect(withScrappy).toBe(51);
   });
 });
@@ -1279,6 +1359,7 @@ describe("Wonder Guard: only super-effective moves deal damage", () => {
       defender: wonderGuardDef,
       move: normalMove,
     });
+    // Source: Showdown data/abilities.ts -- Wonder Guard blocks neutral effectiveness moves
     expect(result).toBe(0);
   });
 
@@ -1297,6 +1378,7 @@ describe("Wonder Guard: only super-effective moves deal damage", () => {
       move: fireMove,
       seed: 42,
     });
+    // Source: Showdown data/abilities.ts -- Wonder Guard allows super-effective moves through
     expect(result).toBe(68);
   });
 });
@@ -1318,6 +1400,7 @@ describe("Levitate: immune to Ground-type moves", () => {
       defender: levitateDefender,
       move: groundMove,
     });
+    // Source: Showdown data/abilities.ts -- Levitate grants immunity to Ground-type moves
     expect(result).toBe(0);
   });
 
@@ -1336,6 +1419,7 @@ describe("Levitate: immune to Ground-type moves", () => {
       move: groundMove,
       seed: 42,
     });
+    // Source: Showdown data/abilities.ts -- Mold Breaker bypasses Levitate, Ground hits normally
     expect(result).toBe(43);
   });
 });
@@ -1359,7 +1443,9 @@ describe("Thick Fat: halves attacker's effective attack for Fire/Ice moves", () 
       move: fireMove,
       seed: 42,
     });
+    // Source: Showdown data/abilities.ts -- Thick Fat: halves attacker's effective attack for Fire/Ice
     expect(withThickFat).toBe(17);
+    // Source: Showdown data/abilities.ts -- baseline Fire damage without Thick Fat
     expect(withoutThickFat).toBe(34);
   });
 });
@@ -1379,7 +1465,9 @@ describe("Heatproof: halves power for incoming fire moves", () => {
       move: fireMove,
       seed: 42,
     });
+    // Source: Showdown data/abilities.ts -- Heatproof: halves power for incoming Fire moves
     expect(withHeatproof).toBe(17);
+    // Source: Showdown data/abilities.ts -- baseline Fire damage without Heatproof
     expect(withoutHeatproof).toBe(34);
   });
 });
@@ -1406,8 +1494,9 @@ describe("Tinted Lens: doubles not-very-effective damage", () => {
       move: waterMove,
       seed: 42,
     });
-    // With Tinted Lens: NVE becomes 2x of NVE = neutral. Without: 0.5x penalty.
+    // Source: Showdown data/abilities.ts -- Tinted Lens: doubles NVE damage (0.5x → 1x effectively)
     expect(withTintedLens).toBe(34);
+    // Source: Showdown data/abilities.ts -- NVE damage without Tinted Lens (0.5x penalty)
     expect(withoutAbility).toBe(17);
   });
 });
@@ -1437,7 +1526,9 @@ describe("Filter / Solid Rock: 0.75x SE damage (bypassed by Mold Breaker)", () =
       move: fireMove,
       seed: 42,
     });
+    // Source: Showdown data/abilities.ts -- Filter: 0.75x for SE moves (breakable by Mold Breaker)
     expect(withFilter).toBe(51);
+    // Source: Showdown data/abilities.ts -- SE damage without Filter
     expect(withoutFilter).toBe(68);
   });
 
@@ -1464,7 +1555,7 @@ describe("Filter / Solid Rock: 0.75x SE damage (bypassed by Mold Breaker)", () =
       move: fireMove,
       seed: 42,
     });
-    // Mold Breaker bypasses Filter → same damage as no-ability
+    // Source: Showdown data/abilities.ts -- Filter has breakable:1, Mold Breaker bypasses it
     expect(moldBreakerVsFilter).toBe(moldBreakerVsNone);
   });
 });
@@ -1494,7 +1585,9 @@ describe("Prism Armor: 0.75x SE damage (NOT bypassed by Mold Breaker)", () => {
       move: fireMove,
       seed: 42,
     });
+    // Source: Showdown data/abilities.ts -- Prism Armor: 0.75x for SE moves, no breakable flag
     expect(withPrismArmor).toBe(51);
+    // Source: Showdown data/abilities.ts -- SE damage without Prism Armor
     expect(withoutPrismArmor).toBe(68);
   });
 
@@ -1522,8 +1615,9 @@ describe("Prism Armor: 0.75x SE damage (NOT bypassed by Mold Breaker)", () => {
       move: fireMove,
       seed: 42,
     });
-    // Prism Armor is not bypassed → damage is still reduced vs no-ability
+    // Source: Showdown data/abilities.ts -- Prism Armor not bypassed by Mold Breaker (no breakable flag)
     expect(moldBreakerVsPrismArmor).toBe(51);
+    // Source: Showdown data/abilities.ts -- SE damage with Mold Breaker but no Prism Armor
     expect(moldBreakerVsNone).toBe(68);
   });
 });
@@ -1575,7 +1669,7 @@ describe("Screens: bypassed on critical hits", () => {
       seed: 42,
     });
 
-    // On a crit, screen should be bypassed → same damage
+    // Source: Showdown sim/battle-actions.ts -- screens do not apply on critical hits
     expect(critWithScreen).toBe(critNoScreen);
   });
 
@@ -1620,8 +1714,9 @@ describe("Screens: bypassed on critical hits", () => {
     });
 
     // Screen halves damage on non-crit
-    // Exact seeded values: noCritWithScreen=25, noCritNoScreen=51 (screen halves physical damage)
+    // Source: Showdown sim/battle-actions.ts -- Reflect halves physical damage on non-crit
     expect(noCritWithScreen).toBe(25);
+    // Source: Showdown sim/battle-actions.ts -- baseline physical damage without screen
     expect(noCritNoScreen).toBe(51);
   });
 });
@@ -1647,7 +1742,9 @@ describe("Expert Belt: 1.2x for super-effective moves", () => {
       move: fireMove,
       seed: 42,
     });
+    // Source: Showdown data/items.ts -- Expert Belt: ~1.2x boost for SE moves
     expect(withExpertBelt).toBe(82);
+    // Source: Showdown data/items.ts -- SE damage without Expert Belt
     expect(withoutItem).toBe(68);
   });
 
@@ -1666,7 +1763,7 @@ describe("Expert Belt: 1.2x for super-effective moves", () => {
       move: normalMove,
       seed: 42,
     });
-    // No SE, Expert Belt does nothing → equal damage
+    // Source: Showdown data/items.ts -- Expert Belt: no boost for neutral effectiveness moves
     expect(withExpertBelt).toBe(withoutItem);
   });
 });
@@ -1686,7 +1783,9 @@ describe("Muscle Band: 1.1x for physical moves", () => {
       move: physicalMove,
       seed: 42,
     });
+    // Source: Showdown data/items.ts -- Muscle Band: ~1.1x boost for physical moves
     expect(withMuscleBand).toBe(56);
+    // Source: Showdown data/items.ts -- baseline damage without Muscle Band
     expect(withoutItem).toBe(51);
   });
 
@@ -1703,7 +1802,7 @@ describe("Muscle Band: 1.1x for physical moves", () => {
       move: specialMove,
       seed: 42,
     });
-    // Muscle Band gives no boost to special moves → equal
+    // Source: Showdown data/items.ts -- Muscle Band: no boost for special moves
     expect(withMuscleBand).toBe(withoutItem);
   });
 });
