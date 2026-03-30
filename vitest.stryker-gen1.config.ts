@@ -8,7 +8,9 @@ export default defineConfig({
     alias: [
       {
         find: "@pokemon-lib-ts/battle/utils",
-        replacement: fileURLToPath(new URL("./packages/battle/src/utils/index.ts", import.meta.url)),
+        replacement: fileURLToPath(
+          new URL("./packages/battle/src/utils/index.ts", import.meta.url),
+        ),
       },
       {
         find: "@pokemon-lib-ts/core",
