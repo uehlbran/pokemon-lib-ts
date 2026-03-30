@@ -663,6 +663,7 @@ describe("Gen 3 Abilities — Damage Calc", () => {
     });
 
     it("given Thick Fat defender, when breakdown is checked, then abilityMultiplier is 0.5 for Fire/Ice", () => {
+      // Source: pret/pokeemerald ABILITY_THICK_FAT — halves SpAtk from Fire/Ice; reported as 0.5 in breakdown
       // Verify the breakdown correctly reports the ability multiplier
       const attacker = createOnFieldPokemon({
         level: 50,
@@ -1171,6 +1172,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
 
   describe("Tier 2 abilities — implemented trigger handlers", () => {
     it("given Static holder and contact move, when on-contact fires, then attacker is paralyzed", () => {
+      // Source: pret/pokeemerald ABILITY_STATIC — 1/3 chance to paralyze attacker on contact move (Random() % 3 == 0)
       const ctx = createAbilityContext({
         pokemonAbility: GEN3_ABILITY_IDS.static,
       });
@@ -1187,6 +1189,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
     });
 
     it("given Flame Body holder and contact move, when on-contact fires, then attacker is burned", () => {
+      // Source: pret/pokeemerald ABILITY_FLAME_BODY — 1/3 chance to burn attacker on contact move (Random() % 3 == 0)
       const ctx = createAbilityContext({
         pokemonAbility: GEN3_ABILITY_IDS.flameBody,
       });
@@ -1203,6 +1206,8 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
     });
 
     it("given Rough Skin holder and contact move, when on-contact fires, then attacker takes 1/16 max HP chip damage", () => {
+      // Source: pret/pokeemerald ABILITY_ROUGH_SKIN — inflicts floor(maxHP / 16) chip damage on attacker contact
+      // With test helper HP=200: floor(200/16) = 12
       const ctx = createAbilityContext({
         pokemonAbility: GEN3_ABILITY_IDS.roughSkin,
       });
@@ -1217,6 +1222,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
     });
 
     it("given Poison Point holder and contact move, when on-contact fires, then attacker is poisoned", () => {
+      // Source: pret/pokeemerald ABILITY_POISON_POINT — 1/3 chance to poison attacker on contact move (Random() % 3 == 0)
       const ctx = createAbilityContext({
         pokemonAbility: GEN3_ABILITY_IDS.poisonPoint,
       });
@@ -1233,6 +1239,8 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
     });
 
     it("given Natural Cure holder switches out, when switch-out fires, then status is cured and volatiles clear", () => {
+      // Source: pret/pokeemerald ABILITY_NATURAL_CURE — clears status1 (primary status) on switch-out
+      // Library design: also clears volatile statuses on switch-out (not in pokeemerald source)
       const pokemon = createOnFieldPokemon({
         level: 50,
         attack: 100,
@@ -1253,6 +1261,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
     });
 
     it("given Shed Skin holder at turn end and a successful roll, then status is cured", () => {
+      // Source: pret/pokeemerald ABILITY_SHED_SKIN — 1/3 chance to cure primary status at end of each turn (Random() % 3 == 0)
       const ctx = createAbilityContext({
         pokemonAbility: GEN3_ABILITY_IDS.shedSkin,
       });
@@ -1268,6 +1277,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
     });
 
     it("given Speed Boost holder at turn end after the switch-in turn, then Speed rises by 1 stage", () => {
+      // Source: pret/pokeemerald ABILITY_SPEED_BOOST — raises Speed +1 stage at end of each turn after switch-in
       const ctx = createAbilityContext({
         pokemonAbility: GEN3_ABILITY_IDS.speedBoost,
       });
@@ -1289,6 +1299,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
 
   describe("Tier 3 abilities — status and volatile immunity helpers", () => {
     it("given Immunity holder, when poison is checked, then poison is blocked", () => {
+      // Source: pret/pokeemerald ABILITY_IMMUNITY — prevents poison and bad poison infliction
       const target = createOnFieldPokemon({
         level: 50,
         attack: 100,
@@ -1303,6 +1314,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
     });
 
     it("given Limber holder, when paralysis is checked, then paralysis is blocked", () => {
+      // Source: pret/pokeemerald ABILITY_LIMBER — prevents paralysis infliction
       const target = createOnFieldPokemon({
         level: 50,
         attack: 100,
@@ -1317,6 +1329,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
     });
 
     it("given Insomnia holder, when sleep is checked, then sleep is blocked", () => {
+      // Source: pret/pokeemerald ABILITY_INSOMNIA — prevents sleep infliction
       const target = createOnFieldPokemon({
         level: 50,
         attack: 100,
@@ -1331,6 +1344,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
     });
 
     it("given Vital Spirit holder, when sleep is checked, then sleep is blocked", () => {
+      // Source: pret/pokeemerald ABILITY_VITAL_SPIRIT — prevents sleep infliction (same as Insomnia)
       const target = createOnFieldPokemon({
         level: 50,
         attack: 100,
@@ -1345,6 +1359,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
     });
 
     it("given Magma Armor holder, when freeze is checked, then freeze is blocked", () => {
+      // Source: pret/pokeemerald ABILITY_MAGMA_ARMOR — prevents freeze infliction
       const target = createOnFieldPokemon({
         level: 50,
         attack: 100,
@@ -1359,6 +1374,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
     });
 
     it("given Water Veil holder, when burn is checked, then burn is blocked", () => {
+      // Source: pret/pokeemerald ABILITY_WATER_VEIL — prevents burn infliction
       const target = createOnFieldPokemon({
         level: 50,
         attack: 100,
@@ -1373,12 +1389,14 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
     });
 
     it("given Own Tempo holder, when confusion is checked, then confusion is blocked", () => {
+      // Source: pret/pokeemerald ABILITY_OWN_TEMPO — prevents confusion volatile infliction
       expect(
         isGen3VolatileBlockedByAbility(GEN3_ABILITY_IDS.ownTempo, CORE_VOLATILE_IDS.confusion),
       ).toBe(true);
     });
 
     it("given Oblivious holder, when infatuation is checked, then infatuation is blocked", () => {
+      // Source: pret/pokeemerald ABILITY_OBLIVIOUS — prevents infatuation (Attract) volatile infliction
       expect(
         isGen3VolatileBlockedByAbility(GEN3_ABILITY_IDS.oblivious, CORE_VOLATILE_IDS.infatuation),
       ).toBe(true);
@@ -1387,6 +1405,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
 
   describe("Unimplemented abilities", () => {
     it("given an ability with no switch-in effect (e.g., static), when switching in, then returns activated=false", () => {
+      // Source: pret/pokeemerald ABILITY_STATIC — Static has no on-switch-in effect; only on-contact trigger
       // Static is a contact ability, not a switch-in ability
       const ctx = createAbilityContext({
         pokemonAbility: GEN3_ABILITY_IDS.static,
@@ -1398,6 +1417,7 @@ describe("Gen 3 Abilities — Switch-in Triggers", () => {
     });
 
     it("given an unsupported trigger (e.g., on-flinch), when dispatched, then returns activated=false", () => {
+      // Source: pret/pokeemerald — Gen 3 has no on-flinch ability hook; dispatch falls through to default
       // Gen 3 ability dispatch does not define an on-flinch handler.
       const ctx = createAbilityContext({
         pokemonAbility: GEN3_ABILITY_IDS.static,

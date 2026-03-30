@@ -1253,6 +1253,7 @@ describe("Gen 3 Held Items", () => {
     });
 
     it("given Gen3Ruleset, when calling applyHeldItem with Leftovers, then delegates to Gen3Items correctly", () => {
+      // Source: pret/pokeemerald HOLD_EFFECT_LEFTOVERS — heals floor(maxHP / 16) per turn; floor(200/16) = 12
       const ruleset = new Gen3Ruleset(createGen3DataManager());
       const context = createHeldItemContext({
         heldItem: GEN3_ITEM_IDS.leftovers,
