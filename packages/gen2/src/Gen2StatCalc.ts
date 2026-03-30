@@ -1,5 +1,5 @@
 import type { PokemonInstance, PokemonSpeciesData, StatBlock } from "@pokemon-lib-ts/core";
-import { calculateStatExpContribution } from "@pokemon-lib-ts/core";
+import { calculateStatExpContribution, MAX_DV } from "@pokemon-lib-ts/core";
 
 /**
  * Calculate a Gen 2 HP stat.
@@ -87,10 +87,10 @@ export function calculateGen2Stats(
   // HP DV is derived from the LSBs of the other 4 DVs, not stored independently.
   // HP_DV = ((Atk & 1) << 3) | ((Def & 1) << 2) | ((Spe & 1) << 1) | (Spc & 1)
   // Same DV system as Gen 1 — the unified Special DV is in ivs.spAttack.
-  const atkDv = Math.max(0, Math.min(15, Math.floor(pokemon.ivs.attack)));
-  const defDv = Math.max(0, Math.min(15, Math.floor(pokemon.ivs.defense)));
-  const speDv = Math.max(0, Math.min(15, Math.floor(pokemon.ivs.speed)));
-  const spcDv = Math.max(0, Math.min(15, Math.floor(pokemon.ivs.spAttack)));
+  const atkDv = Math.max(0, Math.min(MAX_DV, Math.floor(pokemon.ivs.attack)));
+  const defDv = Math.max(0, Math.min(MAX_DV, Math.floor(pokemon.ivs.defense)));
+  const speDv = Math.max(0, Math.min(MAX_DV, Math.floor(pokemon.ivs.speed)));
+  const spcDv = Math.max(0, Math.min(MAX_DV, Math.floor(pokemon.ivs.spAttack)));
   const hpDv = ((atkDv & 1) << 3) | ((defDv & 1) << 2) | ((speDv & 1) << 1) | (spcDv & 1);
 
   // Use clamped DV variables for all stats for consistency with the HP derivation above.
