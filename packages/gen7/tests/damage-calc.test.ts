@@ -1,5 +1,13 @@
 import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
-import type { Gender, MoveData, PokemonType, TerrainType, WeatherType } from "@pokemon-lib-ts/core";
+import type {
+  Gender,
+  MoveData,
+  MoveEffect,
+  PokemonType,
+  PrimaryStatus,
+  TerrainType,
+  WeatherType,
+} from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
@@ -129,7 +137,7 @@ function createOnFieldPokemon(overrides: {
   });
 
   pokemon.currentHp = overrides.currentHp ?? hp;
-  pokemon.status = (overrides.status ?? null) as any;
+  pokemon.status = (overrides.status ?? null) as PrimaryStatus | null;
   pokemon.heldItem = overrides.heldItem ?? null;
   pokemon.ability = overrides.ability ?? ABILITY_IDS.none;
   pokemon.moves = [createMoveSlot(DEFAULT_MOVE.id, DEFAULT_MOVE.pp)];
@@ -3504,7 +3512,7 @@ describe("Gen 7 isGen7Grounded coverage", () => {
         }),
         // Source: Showdown Gen 7 — Gravity grounds all Pokemon (terrain boost applies)
         gravity: { active: true, turnsLeft: 5 },
-      } as any,
+      } as BattleState,
     });
     const airborne = calculateGen7Damage(airborneCtx, typeChart);
     const result = calculateGen7Damage(ctx, typeChart);
@@ -3732,7 +3740,7 @@ describe("Gen 7 getEffectiveStatStage coverage", () => {
   it("given attacker with Simple ability and +2 attack, when calculating, then effective stage is +4", () => {
     // Source: Showdown data/abilities.ts -- Simple: doubles stat stages
     const atk = createOnFieldPokemon({ attack: 100, ability: ABILITY_IDS.simple });
-    (atk.statStages as any).attack = 2;
+    atk.statStages.attack = 2;
     const ctx = createDamageContext({
       attacker: atk,
       defender: createOnFieldPokemon({}),
@@ -3743,7 +3751,7 @@ describe("Gen 7 getEffectiveStatStage coverage", () => {
     const result = calculateGen7Damage(ctx, typeChart);
     // Compare vs no Simple at +2
     const atk2 = createOnFieldPokemon({ attack: 100, ability: ABILITY_IDS.none });
-    (atk2.statStages as any).attack = 2;
+    atk2.statStages.attack = 2;
     const ctx2 = createDamageContext({
       // Source: Showdown Gen 7 — Simple doubles stat stages
       attacker: atk2,
@@ -3758,7 +3766,7 @@ describe("Gen 7 getEffectiveStatStage coverage", () => {
   it("given defender with Unaware, when attacker has +6 attack, then stat stages ignored", () => {
     // Source: Showdown data/abilities.ts -- Unaware: ignores opponent's stat stages
     const atk = createOnFieldPokemon({ attack: 100 });
-    (atk.statStages as any).attack = 6;
+    atk.statStages.attack = 6;
     const ctxUnaware = createDamageContext({
       attacker: atk,
       defender: createOnFieldPokemon({ ability: ABILITY_IDS.unaware }),
@@ -3957,14 +3965,14 @@ describe("Gen 7 crit stat stage interaction", () => {
   it("given attacker with -2 attack and crit, then negative stages ignored (treated as 0)", () => {
     // Source: Showdown sim/battle-actions.ts -- crit ignores negative attack stages
     const atk = createOnFieldPokemon({ attack: 100 });
-    (atk.statStages as any).attack = -2;
+    atk.statStages.attack = -2;
     const ctxCrit = createDamageContext({
       attacker: atk,
       move: createSyntheticMove({ power: 50, category: MOVE_CATEGORIES.physical }),
       isCrit: true,
     });
     const atk2 = createOnFieldPokemon({ attack: 100 });
-    (atk2.statStages as any).attack = -2;
+    atk2.statStages.attack = -2;
     const ctxNoCrit = createDamageContext({
       attacker: atk2,
       move: createSyntheticMove({ power: 50, category: MOVE_CATEGORIES.physical }),
@@ -3981,14 +3989,14 @@ describe("Gen 7 crit stat stage interaction", () => {
   it("given defender with +2 defense and crit, then positive def stages ignored (treated as 0)", () => {
     // Source: Showdown sim/battle-actions.ts -- crit ignores positive def stages
     const def_ = createOnFieldPokemon({ defense: 100 });
-    (def_.statStages as any).defense = 2;
+    def_.statStages.defense = 2;
     const ctxCrit = createDamageContext({
       defender: def_,
       move: createSyntheticMove({ power: 50, category: MOVE_CATEGORIES.physical }),
       isCrit: true,
     });
     const def2 = createOnFieldPokemon({ defense: 100 });
-    (def2.statStages as any).defense = 2;
+    def2.statStages.defense = 2;
     const ctxNoCrit = createDamageContext({
       defender: def2,
       move: createSyntheticMove({ power: 50, category: MOVE_CATEGORIES.physical }),
@@ -4373,7 +4381,7 @@ describe("Gen 7 Gravity + Ground vs Flying", () => {
         ...createBattleState(),
         // Source: Showdown Gen 7 — without Gravity, Ground is immune to Flying
         gravity: { active: true, turnsLeft: 5 },
-      } as any,
+      } as BattleState,
     });
     const control = calculateGen7Damage(controlCtx, typeChart);
     const result = calculateGen7Damage(ctx, typeChart);
@@ -4484,7 +4492,7 @@ describe("Gen 7 Magic Room", () => {
       state: {
         ...createBattleState(),
         magicRoom: { active: true, turnsLeft: 3 },
-      } as any,
+      } as BattleState,
     });
     const ctxNoRoom = createDamageContext({
       attacker: createOnFieldPokemon({ types: [TYPE_IDS.fire] }),
@@ -4555,7 +4563,7 @@ describe("Gen 7 hasSheerForceEligibleEffect branches", () => {
           chance: 30,
           stats: { defense: -1 },
           fromSecondary: false,
-        } as any,
+        } as unknown as MoveEffect,
       }),
     });
     const ctxNo = createDamageContext({
@@ -4571,7 +4579,7 @@ describe("Gen 7 hasSheerForceEligibleEffect branches", () => {
           stats: { defense: -1 },
           fromSecondary: false,
           // Source: Showdown Gen 7 — Sheer Force ~1.3× stat-change targeting foe
-        } as any,
+        } as unknown as MoveEffect,
       }),
     });
     const with_ = calculateGen7Damage(ctx, typeChart);
@@ -4592,7 +4600,7 @@ describe("Gen 7 hasSheerForceEligibleEffect branches", () => {
           type: "volatile-status",
           volatileStatus: VOLATILE_IDS.flinch,
           chance: 30,
-        } as any,
+        } as unknown as MoveEffect,
       }),
     });
     const ctxNo = createDamageContext({
@@ -4606,7 +4614,7 @@ describe("Gen 7 hasSheerForceEligibleEffect branches", () => {
           volatileStatus: VOLATILE_IDS.flinch,
           chance: 30,
           // Source: Showdown Gen 7 — Sheer Force ~1.3× volatile-status secondaries
-        } as any,
+        } as unknown as MoveEffect,
       }),
     });
     const with_ = calculateGen7Damage(ctx, typeChart);
@@ -4629,7 +4637,7 @@ describe("Gen 7 hasSheerForceEligibleEffect branches", () => {
           chance: 100,
           stats: { attack: 1 },
           fromSecondary: true,
-        } as any,
+        } as unknown as MoveEffect,
       }),
     });
     const ctxNo = createDamageContext({
@@ -4645,7 +4653,7 @@ describe("Gen 7 hasSheerForceEligibleEffect branches", () => {
           stats: { attack: 1 },
           fromSecondary: true,
           // Source: Showdown Gen 7 — Sheer Force ~1.3× self stat-change from secondary
-        } as any,
+        } as unknown as MoveEffect,
       }),
     });
     const with_ = calculateGen7Damage(ctx, typeChart);
@@ -4665,7 +4673,7 @@ describe("Gen 7 hasSheerForceEligibleEffect branches", () => {
         effect: {
           type: "multi",
           effects: [{ type: "status-chance", status: "burn", chance: 10 }],
-        } as any,
+        } as unknown as MoveEffect,
       }),
     });
     const ctxNo = createDamageContext({
@@ -4678,7 +4686,7 @@ describe("Gen 7 hasSheerForceEligibleEffect branches", () => {
           type: "multi",
           effects: [{ type: "status-chance", status: "burn", chance: 10 }],
           // Source: Showdown Gen 7 — Sheer Force ~1.3× multi effects with status-chance
-        } as any,
+        } as unknown as MoveEffect,
       }),
     });
     const with_ = calculateGen7Damage(ctx, typeChart);
@@ -5069,14 +5077,16 @@ describe("Z-Move through Protect (hitThroughProtect)", () => {
 
     const attacker = createOnFieldPokemon({ attack: 100, types: [TYPE_IDS.psychic] });
     const defender = createOnFieldPokemon({ defense: 100, types: [TYPE_IDS.psychic] });
-    const zMove = createSyntheticMove({
-      id: "breakneck-blitz",
-      type: TYPE_IDS.normal,
-      power: 100,
-      category: MOVE_CATEGORIES.physical,
-    });
     // Mark as a Z-Move via the zMovePower field (set by Gen7ZMove.modifyMove)
-    (zMove as any).zMovePower = 100;
+    const zMove = {
+      ...createSyntheticMove({
+        id: "breakneck-blitz",
+        type: TYPE_IDS.normal,
+        power: 100,
+        category: MOVE_CATEGORIES.physical,
+      }),
+      zMovePower: 100,
+    } as MoveData;
 
     // Calculate normal damage (no Protect)
     const normalCtx = createDamageContext({
@@ -5092,12 +5102,10 @@ describe("Z-Move through Protect (hitThroughProtect)", () => {
     const protectCtx = createDamageContext({
       attacker: createOnFieldPokemon({ attack: 100, types: [TYPE_IDS.psychic] }),
       defender: createOnFieldPokemon({ defense: 100, types: [TYPE_IDS.psychic] }),
-      move: { ...zMove },
+      move: { ...zMove, zMovePower: 100 } as MoveData,
       seed: 42,
       hitThroughProtect: true,
     });
-    // Re-set zMovePower on the cloned move
-    (protectCtx.move as any).zMovePower = 100;
     const protectResult = calculateGen7Damage(protectCtx, typeChart);
     // Source: Showdown Gen 7 — Z-Move through Protect deals ≥1 damage
 
@@ -5120,13 +5128,15 @@ describe("Z-Move through Protect (hitThroughProtect)", () => {
 
     const attacker = createOnFieldPokemon({ attack: 100, types: [TYPE_IDS.fire] });
     const defender = createOnFieldPokemon({ defense: 100, types: [TYPE_IDS.normal] });
-    const zMove = createSyntheticMove({
-      id: "inferno-overdrive",
-      type: TYPE_IDS.fire,
-      power: 175,
-      category: MOVE_CATEGORIES.physical,
-    });
-    (zMove as any).zMovePower = 175;
+    const zMove = {
+      ...createSyntheticMove({
+        id: "inferno-overdrive",
+        type: TYPE_IDS.fire,
+        power: 175,
+        category: MOVE_CATEGORIES.physical,
+      }),
+      zMovePower: 175,
+    } as MoveData;
 
     const ctx = createDamageContext({
       attacker,
@@ -5152,12 +5162,11 @@ describe("Z-Move through Protect (hitThroughProtect)", () => {
     const protectCtx = createDamageContext({
       attacker: createOnFieldPokemon({ attack: 100, types: [TYPE_IDS.fire] }),
       defender: createOnFieldPokemon({ defense: 100, types: [TYPE_IDS.normal] }),
-      move: { ...zMove },
+      move: { ...zMove, zMovePower: 175 } as MoveData,
       seed: 42,
       hitThroughProtect: true,
       // Source: Showdown Gen 7 — Z-Move through Protect < full damage
     });
-    (protectCtx.move as any).zMovePower = 175;
     const protectResult = calculateGen7Damage(protectCtx, typeChart);
     // Source: Showdown Gen 7 — Z-Move through Protect exact via pokeRound(damage, 1024)
 
@@ -5230,13 +5239,15 @@ describe("Z-Move through Protect (hitThroughProtect)", () => {
 
     const attacker = createOnFieldPokemon({ level: 100, attack: 200, types: [TYPE_IDS.dragon] });
     const defender = createOnFieldPokemon({ level: 100, defense: 100, types: [TYPE_IDS.normal] });
-    const zMove = createSyntheticMove({
-      id: "devastating-drake",
-      type: TYPE_IDS.dragon,
-      power: 200,
-      category: MOVE_CATEGORIES.physical,
-    });
-    (zMove as any).zMovePower = 200;
+    const zMove = {
+      ...createSyntheticMove({
+        id: "devastating-drake",
+        type: TYPE_IDS.dragon,
+        power: 200,
+        category: MOVE_CATEGORIES.physical,
+      }),
+      zMovePower: 200,
+    } as MoveData;
 
     const normalCtx = createDamageContext({
       attacker,
@@ -5246,15 +5257,14 @@ describe("Z-Move through Protect (hitThroughProtect)", () => {
     });
     const normalResult = calculateGen7Damage(normalCtx, typeChart);
 
+    // Source: Showdown Gen 7 — Z-Move through Protect exact calculation
     const protectCtx = createDamageContext({
       attacker: createOnFieldPokemon({ level: 100, attack: 200, types: [TYPE_IDS.dragon] }),
       defender: createOnFieldPokemon({ level: 100, defense: 100, types: [TYPE_IDS.normal] }),
-      move: { ...zMove },
+      move: { ...zMove, zMovePower: 200 } as MoveData,
       seed: 42,
       hitThroughProtect: true,
     });
-    // Source: Showdown Gen 7 — Z-Move through Protect exact calculation
-    (protectCtx.move as any).zMovePower = 200;
     const protectResult = calculateGen7Damage(protectCtx, typeChart);
 
     // Source: Showdown Gen 7 — high-power Z-Move deals substantial damage

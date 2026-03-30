@@ -11,7 +11,17 @@
  *
  * Source: Showdown sim/pokemon.ts, sim/battle.ts, Bulbapedia ability/item pages
  */
-import type { ActivePokemon, BattleAction, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
+import type {
+  AbilityContext,
+  ActivePokemon,
+  BattleAction,
+  BattleSide,
+  BattleState,
+  CritContext,
+  ItemContext,
+  MoveEffectContext,
+} from "@pokemon-lib-ts/battle";
+import type { MoveData, PokemonType, TwoTurnMoveVolatile } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
@@ -118,7 +128,7 @@ function createSyntheticActive(
       accuracy: 0,
       evasion: 0,
     },
-    types: (overrides.types ?? DEFAULT_SPECIES.types) as any,
+    types: (overrides.types ?? DEFAULT_SPECIES.types) as PokemonType[],
     volatileStatuses: new Map(
       (overrides.volatiles ?? []).map(([k, v]) => [k, v] as [string, unknown]),
     ),
@@ -780,13 +790,13 @@ describe("Gen7Ruleset — capLethalDamage (Sturdy)", () => {
       ability: ABILITY_IDS.sturdy,
       hp: 200,
       currentHp: 200,
-    }) as any;
+    });
     const attacker = createSyntheticActive();
     const result = ruleset.capLethalDamage(
       300,
       defender,
       attacker,
-      DEFAULT_MOVE as any,
+      DEFAULT_MOVE,
       {} as BattleState,
     );
     // Source: Showdown Gen 7 — Sturdy caps lethal damage to maxHp-1 at full HP
@@ -803,13 +813,13 @@ describe("Gen7Ruleset — capLethalDamage (Sturdy)", () => {
       ability: ABILITY_IDS.sturdy,
       hp: 200,
       currentHp: 150,
-    }) as any;
+    });
     const attacker = createSyntheticActive();
     const result = ruleset.capLethalDamage(
       200,
       defender,
       attacker,
-      DEFAULT_MOVE as any,
+      DEFAULT_MOVE,
       {} as BattleState,
     );
     // Source: Showdown Gen 7 — Sturdy only works at full HP, damage is uncapped
@@ -820,13 +830,13 @@ describe("Gen7Ruleset — capLethalDamage (Sturdy)", () => {
 
   it("given defender without Sturdy at full HP and lethal damage, when capping, then does NOT cap", () => {
     // Source: Showdown data/abilities.ts -- only Sturdy triggers this
-    const defender = createSyntheticActive({ hp: 200, currentHp: 200 }) as any;
+    const defender = createSyntheticActive({ hp: 200, currentHp: 200 });
     const attacker = createSyntheticActive();
     const result = ruleset.capLethalDamage(
       300,
       defender,
       attacker,
-      DEFAULT_MOVE as any,
+      DEFAULT_MOVE,
       {} as BattleState,
     );
     // Source: Showdown Gen 7 — without Sturdy, lethal damage is not capped
@@ -841,13 +851,13 @@ describe("Gen7Ruleset — capLethalDamage (Sturdy)", () => {
       ability: ABILITY_IDS.sturdy,
       hp: 200,
       currentHp: 200,
-    }) as any;
+    });
     const attacker = createSyntheticActive();
     const result = ruleset.capLethalDamage(
       100,
       defender,
       attacker,
-      DEFAULT_MOVE as any,
+      DEFAULT_MOVE,
       {} as BattleState,
     );
     // Source: Showdown Gen 7 — Sturdy only caps lethal damage, not non-lethal
@@ -862,13 +872,13 @@ describe("Gen7Ruleset — capLethalDamage (Sturdy)", () => {
       ability: ABILITY_IDS.sturdy,
       hp: 200,
       currentHp: 200,
-    }) as any;
+    });
     const attacker = createSyntheticActive();
     const result = ruleset.capLethalDamage(
       300,
       defender,
       attacker,
-      SUNSTEEL_STRIKE_MOVE as any,
+      SUNSTEEL_STRIKE_MOVE,
       {} as BattleState,
     );
     // Source: Showdown Gen 7 — Sunsteel Strike ignores Sturdy ability
@@ -883,13 +893,13 @@ describe("Gen7Ruleset — capLethalDamage (Sturdy)", () => {
       ability: ABILITY_IDS.sturdy,
       hp: 200,
       currentHp: 200,
-    }) as any;
+    });
     const attacker = createSyntheticActive();
     const result = ruleset.capLethalDamage(
       300,
       defender,
       attacker,
-      MOONGEIST_BEAM_MOVE as any,
+      MOONGEIST_BEAM_MOVE,
       {} as BattleState,
     );
     // Source: Showdown Gen 7 — Moongeist Beam ignores Sturdy ability
@@ -910,13 +920,13 @@ describe("Gen7Ruleset — capLethalDamage (Disguise bypass)", () => {
       ability: ABILITY_IDS.disguise,
       hp: 200,
       currentHp: 200,
-    }) as any;
+    });
     const attacker = createSyntheticActive();
     const result = ruleset.capLethalDamage(
       120,
       defender,
       attacker,
-      SUNSTEEL_STRIKE_MOVE as any,
+      SUNSTEEL_STRIKE_MOVE,
       {} as BattleState,
     );
     // Source: Showdown Gen 7 — Sunsteel Strike ignores Disguise ability
@@ -933,13 +943,13 @@ describe("Gen7Ruleset — capLethalDamage (Disguise bypass)", () => {
       ability: ABILITY_IDS.disguise,
       hp: 200,
       currentHp: 200,
-    }) as any;
+    });
     const attacker = createSyntheticActive();
     const result = ruleset.capLethalDamage(
       120,
       defender,
       attacker,
-      MOONGEIST_BEAM_MOVE as any,
+      MOONGEIST_BEAM_MOVE,
       {} as BattleState,
     );
     // Source: Showdown Gen 7 — Moongeist Beam ignores Disguise ability
@@ -963,13 +973,13 @@ describe("Gen7Ruleset — capLethalDamage (Focus Sash)", () => {
       heldItem: ITEM_IDS.focusSash,
       hp: 200,
       currentHp: 200,
-    }) as any;
+    });
     const attacker = createSyntheticActive();
     const result = ruleset.capLethalDamage(
       300,
       defender,
       attacker,
-      DEFAULT_MOVE as any,
+      DEFAULT_MOVE,
       {} as BattleState,
     );
     // Source: Showdown Gen 7 — Focus Sash caps lethal damage to maxHp-1 at full HP
@@ -988,13 +998,13 @@ describe("Gen7Ruleset — capLethalDamage (Focus Sash)", () => {
       heldItem: ITEM_IDS.focusSash,
       hp: 200,
       currentHp: 150,
-    }) as any;
+    });
     const attacker = createSyntheticActive();
     const result = ruleset.capLethalDamage(
       200,
       defender,
       attacker,
-      DEFAULT_MOVE as any,
+      DEFAULT_MOVE,
       {} as BattleState,
     );
     // Source: Showdown Gen 7 — Focus Sash requires full HP to activate
@@ -1013,13 +1023,13 @@ describe("Gen7Ruleset — capLethalDamage (Focus Sash)", () => {
       heldItem: ITEM_IDS.focusSash,
       hp: 200,
       currentHp: 200,
-    }) as any;
+    });
     const attacker = createSyntheticActive();
     const result = ruleset.capLethalDamage(
       300,
       defender,
       attacker,
-      DEFAULT_MOVE as any,
+      DEFAULT_MOVE,
       {} as BattleState,
     );
     // Source: Showdown Gen 7 — Klutz suppresses Focus Sash activation
@@ -1038,13 +1048,13 @@ describe("Gen7Ruleset — capLethalDamage (Focus Sash)", () => {
       hp: 200,
       currentHp: 200,
       volatiles: [[VOLATILE_IDS.embargo, { turnsLeft: 5 }]],
-    }) as any;
+    });
     const attacker = createSyntheticActive();
     const result = ruleset.capLethalDamage(
       300,
       defender,
       attacker,
-      DEFAULT_MOVE as any,
+      DEFAULT_MOVE,
       {} as BattleState,
     );
     // Source: Showdown Gen 7 — Embargo suppresses Focus Sash activation
@@ -1062,10 +1072,10 @@ describe("Gen7Ruleset — capLethalDamage (Focus Sash)", () => {
       heldItem: ITEM_IDS.focusSash,
       hp: 200,
       currentHp: 200,
-    }) as any;
+    });
     const attacker = createSyntheticActive();
     const state = { magicRoom: { active: true, turnsLeft: 3 } } as BattleState;
-    const result = ruleset.capLethalDamage(300, defender, attacker, DEFAULT_MOVE as any, state);
+    const result = ruleset.capLethalDamage(300, defender, attacker, DEFAULT_MOVE, state);
     // Source: Showdown Gen 7 — Magic Room suppresses Focus Sash activation
     expect(result.damage).toBe(300);
     // Source: Showdown Gen 7 — Pokemon faints when Focus Sash is suppressed by Magic Room
@@ -1082,59 +1092,52 @@ describe("Gen7Ruleset — capLethalDamage (Focus Sash)", () => {
 describe("Gen7Ruleset — canHitSemiInvulnerable", () => {
   it("given thousand-arrows vs flying, when checking semi-invulnerable bypass, then returns true", () => {
     // Source: Showdown data/moves.ts -- thousandarrows hits Flying semi-invulnerable state
-    expect(
-      ruleset.canHitSemiInvulnerable(MOVE_IDS.thousandArrows, VOLATILE_IDS.flying as any),
-    ).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(MOVE_IDS.thousandArrows, VOLATILE_IDS.flying)).toBe(true);
   });
 
   it("given hurricane vs flying, when checking semi-invulnerable bypass, then returns true", () => {
     // Source: Showdown -- Hurricane hits Fly/Bounce targets
-    expect(ruleset.canHitSemiInvulnerable(MOVE_IDS.hurricane, VOLATILE_IDS.flying as any)).toBe(
-      true,
-    );
+    expect(ruleset.canHitSemiInvulnerable(MOVE_IDS.hurricane, VOLATILE_IDS.flying)).toBe(true);
   });
 
   it("given flamethrower vs flying, when checking semi-invulnerable bypass, then returns false", () => {
     // Source: Showdown -- normal moves cannot hit Fly targets
-    expect(ruleset.canHitSemiInvulnerable(MOVE_IDS.flamethrower, VOLATILE_IDS.flying as any)).toBe(
-      false,
-    );
+    expect(ruleset.canHitSemiInvulnerable(MOVE_IDS.flamethrower, VOLATILE_IDS.flying)).toBe(false);
   });
 
   it("given earthquake vs underground, when checking semi-invulnerable bypass, then returns true", () => {
     // Source: Showdown -- Earthquake hits Dig targets
-    expect(
-      ruleset.canHitSemiInvulnerable(MOVE_IDS.earthquake, VOLATILE_IDS.underground as any),
-    ).toBe(true);
+    expect(ruleset.canHitSemiInvulnerable(MOVE_IDS.earthquake, VOLATILE_IDS.underground)).toBe(
+      true,
+    );
   });
 
   it("given surf vs underwater, when checking semi-invulnerable bypass, then returns true", () => {
     // Source: Showdown -- Surf hits Dive targets
-    expect(ruleset.canHitSemiInvulnerable(MOVE_IDS.surf, VOLATILE_IDS.underwater as any)).toBe(
-      true,
-    );
+    expect(ruleset.canHitSemiInvulnerable(MOVE_IDS.surf, VOLATILE_IDS.underwater)).toBe(true);
   });
 
   it("given any move vs shadow-force-charging, when checking semi-invulnerable bypass, then returns false", () => {
     // Source: Showdown -- nothing bypasses Shadow Force / Phantom Force
     expect(
-      ruleset.canHitSemiInvulnerable(MOVE_IDS.earthquake, VOLATILE_IDS.shadowForceCharging as any),
+      ruleset.canHitSemiInvulnerable(MOVE_IDS.earthquake, VOLATILE_IDS.shadowForceCharging),
     ).toBe(false);
   });
 
   it("given any move vs charging, when checking semi-invulnerable bypass, then returns true (not semi-invulnerable)", () => {
     // Source: Showdown -- charging moves (SolarBeam) are not semi-invulnerable
-    expect(ruleset.canHitSemiInvulnerable(MOVE_IDS.tackle, VOLATILE_IDS.charging as any)).toBe(
-      true,
-    );
+    expect(ruleset.canHitSemiInvulnerable(MOVE_IDS.tackle, VOLATILE_IDS.charging)).toBe(true);
   });
 
   it("given any move vs unknown volatile, when checking semi-invulnerable bypass, then returns false", () => {
     // Default branch
     // Source: Showdown Gen 7 — unknown volatiles are not semi-invulnerable states
-    expect(ruleset.canHitSemiInvulnerable(MOVE_IDS.tackle, VOLATILE_IDS.confusion as any)).toBe(
-      false,
-    );
+    expect(
+      ruleset.canHitSemiInvulnerable(
+        MOVE_IDS.tackle,
+        VOLATILE_IDS.confusion as unknown as TwoTurnMoveVolatile,
+      ),
+    ).toBe(false);
   });
 });
 
@@ -1145,31 +1148,33 @@ describe("Gen7Ruleset — canHitSemiInvulnerable", () => {
 describe("Gen7Ruleset — rollCritical (ability immunity)", () => {
   it("given defender with battle-armor, when rolling crit, then always returns false", () => {
     // Source: Showdown sim/battle-actions.ts -- Battle Armor prevents crits
-    const context = {
+    const context: CritContext = {
       attacker: createSyntheticActive(),
       defender: createSyntheticActive({ ability: ABILITY_IDS.battleArmor }),
-      move: { critRatio: 0 } as any,
+      move: { critRatio: 0 } as unknown as MoveData,
       rng: { int: () => 1 } as unknown as SeededRandom,
+      state: {} as BattleState,
     };
     // Source: Showdown Gen 7 — Battle Armor prevents critical hits
-    expect(ruleset.rollCritical(context as any)).toBe(false);
+    expect(ruleset.rollCritical(context)).toBe(false);
   });
 
   it("given defender with shell-armor, when rolling crit, then always returns false", () => {
     // Source: Showdown sim/battle-actions.ts -- Shell Armor prevents crits
-    const context = {
+    const context: CritContext = {
       attacker: createSyntheticActive(),
       defender: createSyntheticActive({ ability: ABILITY_IDS.shellArmor }),
-      move: { critRatio: 0 } as any,
+      move: { critRatio: 0 } as unknown as MoveData,
       rng: { int: () => 1 } as unknown as SeededRandom,
+      state: {} as BattleState,
     };
     // Source: Showdown Gen 7 — Shell Armor prevents critical hits
-    expect(ruleset.rollCritical(context as any)).toBe(false);
+    expect(ruleset.rollCritical(context)).toBe(false);
   });
 
   it("given Moongeist Beam against Battle Armor with guaranteed crit stage, when rolling crit, then Battle Armor is ignored", () => {
     // Source: Showdown data/moves.ts -- moongeist-beam: ignoreAbility
-    const context = {
+    const context: CritContext = {
       attacker: createSyntheticActive({
         ability: ABILITY_IDS.superLuck,
         heldItem: ITEM_IDS.scopeLens,
@@ -1178,15 +1183,16 @@ describe("Gen7Ruleset — rollCritical (ability immunity)", () => {
       defender: createSyntheticActive({ ability: ABILITY_IDS.battleArmor }),
       move: MOONGEIST_BEAM_MOVE,
       rng: { int: () => 1 } as unknown as SeededRandom,
+      state: {} as BattleState,
     };
 
     // Source: Showdown Gen 7 — Moongeist Beam ignores Battle Armor
-    expect(ruleset.rollCritical(context as any)).toBe(true);
+    expect(ruleset.rollCritical(context)).toBe(true);
   });
 
   it("given Sunsteel Strike against Shell Armor with guaranteed crit stage, when rolling crit, then Shell Armor is ignored", () => {
     // Source: Showdown data/moves.ts -- sunsteel-strike: ignoreAbility
-    const context = {
+    const context: CritContext = {
       attacker: createSyntheticActive({
         ability: ABILITY_IDS.superLuck,
         heldItem: ITEM_IDS.scopeLens,
@@ -1195,15 +1201,16 @@ describe("Gen7Ruleset — rollCritical (ability immunity)", () => {
       defender: createSyntheticActive({ ability: ABILITY_IDS.shellArmor }),
       move: SUNSTEEL_STRIKE_MOVE,
       rng: { int: () => 1 } as unknown as SeededRandom,
+      state: {} as BattleState,
     };
 
     // Source: Showdown Gen 7 — Sunsteel Strike ignores Shell Armor
-    expect(ruleset.rollCritical(context as any)).toBe(true);
+    expect(ruleset.rollCritical(context)).toBe(true);
   });
 
   it("given Photon Geyser against Battle Armor with guaranteed crit stage, when rolling crit, then Battle Armor is ignored", () => {
     // Source: Showdown data/moves.ts -- photongeyser: ignoreAbility
-    const context = {
+    const context: CritContext = {
       attacker: createSyntheticActive({
         ability: ABILITY_IDS.superLuck,
         heldItem: ITEM_IDS.scopeLens,
@@ -1212,10 +1219,11 @@ describe("Gen7Ruleset — rollCritical (ability immunity)", () => {
       defender: createSyntheticActive({ ability: ABILITY_IDS.battleArmor }),
       move: PHOTON_GEYSER_MOVE,
       rng: { int: () => 1 } as unknown as SeededRandom,
+      state: {} as BattleState,
     };
 
     // Source: Showdown Gen 7 — Photon Geyser ignores Battle Armor
-    expect(ruleset.rollCritical(context as any)).toBe(true);
+    expect(ruleset.rollCritical(context)).toBe(true);
   });
 });
 
@@ -1288,13 +1296,13 @@ describe("Gen7Ruleset — stub methods return defaults", () => {
     // Source: Showdown Gen 7 — executeMoveEffect delegates to BaseRuleset without throwing
     expect(() => {
       ruleset.executeMoveEffect({
-        move: DEFAULT_MOVE as any,
+        move: DEFAULT_MOVE,
         attacker: createSyntheticActive(),
         defender: createSyntheticActive(),
         state: createBattleState(),
         rng: createTestRng(),
         damage: 0,
-      } as any);
+      } as unknown as MoveEffectContext);
     }).not.toThrow();
   });
 
@@ -1345,7 +1353,7 @@ describe("Gen7Ruleset — stub methods return defaults", () => {
       },
       state: {},
       rng: {},
-    } as any;
+    } as unknown as ItemContext;
     const result = ruleset.applyHeldItem("on-damage", mockContext);
     // Source: Showdown Gen 7 — no held item means item trigger is not activated
     expect(result.activated).toBe(false);
@@ -1363,7 +1371,7 @@ describe("Gen7Ruleset — stub methods return defaults", () => {
       state: {},
       rng: {},
       trigger: CORE_ABILITY_TRIGGER_IDS.onSwitchIn,
-    } as any;
+    } as unknown as AbilityContext;
     const result = ruleset.applyAbility(CORE_ABILITY_TRIGGER_IDS.onSwitchIn, mockContext);
     // Source: Showdown Gen 7 — non-surge abilities return not activated on switch-in (stub)
     expect(result.activated).toBe(false);

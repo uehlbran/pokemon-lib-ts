@@ -1,5 +1,11 @@
 import type { AbilityContext, BattleSide, BattleState } from "@pokemon-lib-ts/battle";
-import type { Gender, MoveData, PokemonType, WeatherType } from "@pokemon-lib-ts/core";
+import type {
+  AbilityTrigger,
+  Gender,
+  MoveData,
+  PokemonType,
+  WeatherType,
+} from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
@@ -277,7 +283,7 @@ function createAbilityContext(opts: {
 }): AbilityContext {
   const state = createBattleState();
   if (opts.rng) {
-    (state as any).rng = { ...state.rng, ...opts.rng };
+    (state as Record<string, unknown>).rng = { ...state.rng, ...opts.rng };
   }
   const pokemon = createOnFieldPokemon({
     ability: opts.ability,
@@ -296,8 +302,8 @@ function createAbilityContext(opts: {
     pokemon,
     opponent: opts.opponent,
     state,
-    rng: (opts.rng ?? state.rng) as any,
-    trigger: opts.trigger as any,
+    rng: (opts.rng ?? state.rng) as unknown as SeededRandom,
+    trigger: opts.trigger as AbilityTrigger,
     move: opts.move,
   };
 }

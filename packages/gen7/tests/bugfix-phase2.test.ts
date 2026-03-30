@@ -1,9 +1,11 @@
 import type {
   AbilityContext,
+  AbilityEffect,
   ActivePokemon,
   BattleSide,
   BattleState,
   ItemContext,
+  MegaEvolveEvent,
 } from "@pokemon-lib-ts/battle";
 import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_ITEM_EFFECT_TYPES } from "@pokemon-lib-ts/battle";
 import type { MoveData, MoveSlot, PokemonType } from "@pokemon-lib-ts/core";
@@ -348,7 +350,7 @@ describe("#701 — Rayquaza Mega Evolution via Dragon Ascent", () => {
     // Should emit a mega-evolve event
     expect(events.length).toBe(1);
     expect(events[0].type).toBe("mega-evolve");
-    expect((events[0] as any).form).toBe("mega-rayquaza");
+    expect((events[0] as MegaEvolveEvent).form).toBe("mega-rayquaza");
 
     // Types should be updated
     expect(pokemon.types).toEqual([TYPES.dragon, TYPES.flying]);
@@ -498,8 +500,12 @@ describe("#688 — Beast Boost raises highest stat after KO", () => {
     expect(result.activated).toBe(true);
     expect(result.effects.length).toBe(1);
     expect(result.effects[0].effectType).toBe(ABILITY_EFFECT_TYPES.statChange);
-    expect((result.effects[0] as any).stat).toBe(STATS.attack);
-    expect((result.effects[0] as any).stages).toBe(1);
+    expect((result.effects[0] as Extract<AbilityEffect, { effectType: "stat-change" }>).stat).toBe(
+      STATS.attack,
+    );
+    expect(
+      (result.effects[0] as Extract<AbilityEffect, { effectType: "stat-change" }>).stages,
+    ).toBe(1);
   });
 
   it("given Pokemon with beast-boost and highest stat = spAttack, when opponent faints, then +1 Sp. Atk boost effect returned", () => {
@@ -522,7 +528,9 @@ describe("#688 — Beast Boost raises highest stat after KO", () => {
 
     expect(result.activated).toBe(true);
     expect(result.effects[0].effectType).toBe(ABILITY_EFFECT_TYPES.statChange);
-    expect((result.effects[0] as any).stat).toBe(STATS.spAttack);
+    expect((result.effects[0] as Extract<AbilityEffect, { effectType: "stat-change" }>).stat).toBe(
+      STATS.spAttack,
+    );
   });
 
   it("given Pokemon with beast-boost, when opponent is still alive, then no activation", () => {
@@ -561,8 +569,12 @@ describe("#688 — Moxie raises Attack after KO", () => {
     expect(result.activated).toBe(true);
     expect(result.effects.length).toBe(1);
     expect(result.effects[0].effectType).toBe(ABILITY_EFFECT_TYPES.statChange);
-    expect((result.effects[0] as any).stat).toBe(STATS.attack);
-    expect((result.effects[0] as any).stages).toBe(1);
+    expect((result.effects[0] as Extract<AbilityEffect, { effectType: "stat-change" }>).stat).toBe(
+      STATS.attack,
+    );
+    expect(
+      (result.effects[0] as Extract<AbilityEffect, { effectType: "stat-change" }>).stages,
+    ).toBe(1);
   });
 
   it("given Pokemon with moxie, when opponent survives, then no activation", () => {
@@ -606,7 +618,9 @@ describe("#688 — Battle Bond transforms Greninja after KO", () => {
     });
 
     const firstResult = handleGen7NewAbility(firstCtx);
-    const transformedVolatile = (firstResult.effects[0] as any).volatile;
+    const transformedVolatile = (
+      firstResult.effects[0] as Extract<AbilityEffect, { effectType: "volatile-inflict" }>
+    ).volatile;
     const ctx = createAbilityContext({
       trigger: ABILITY_TRIGGERS.onAfterMoveUsed,
       ability: ABILITIES.battleBond,

@@ -1,3 +1,4 @@
+import type { CritContext } from "@pokemon-lib-ts/battle";
 import {
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
@@ -149,7 +150,7 @@ describe("Gen 7 critical hit roll behavior", () => {
         critRatio: overrides.moveCritRatio ?? 0,
       },
       rng: fakeRng,
-    } as any;
+    } as unknown as CritContext;
   }
 
   it("given defender has Battle Armor ability, when rolling crit, then crit is prevented", () => {

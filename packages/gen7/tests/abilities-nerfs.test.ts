@@ -16,6 +16,7 @@ import {
   type MoveCategory,
   type MoveData,
   type PokemonType,
+  type PrimaryStatus,
   SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
@@ -116,7 +117,7 @@ function createSyntheticOnFieldPokemon(overrides: {
   pokemon.currentHp = overrides.currentHp ?? hp;
   pokemon.ability = overrides.ability ?? NONE_ABILITY;
   pokemon.heldItem = overrides.heldItem ?? null;
-  pokemon.status = (overrides.status ?? null) as any;
+  pokemon.status = (overrides.status ?? null) as PrimaryStatus | null;
   pokemon.nickname = overrides.nickname ?? DEFAULT_NICKNAME;
   pokemon.calculatedStats = { hp, attack, defense, spAttack, spDefense, speed };
 
