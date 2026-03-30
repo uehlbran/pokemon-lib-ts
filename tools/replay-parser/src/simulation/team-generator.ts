@@ -16,6 +16,7 @@ import {
   createFriendship,
   createIvs,
   createStatExp,
+  GEN_NUMBERS,
   MAX_DV,
   MAX_IV,
   MIN_DV,
@@ -51,7 +52,7 @@ function createGenerationStatInputs(
   generation: number,
   rng: SeededRandom,
 ): Pick<PokemonInstance, "ivs" | "evs"> {
-  if (generation <= 2) {
+  if (generation <= GEN_NUMBERS.gen2) {
     const specialDv = rng.int(MIN_DV, MAX_DV);
     return {
       ivs: createDvs({
@@ -83,7 +84,7 @@ function determineAbilitySlot(
   species: PokemonSpeciesData,
   rng: SeededRandom,
 ): PokemonInstance["abilitySlot"] {
-  if (generation < 3) {
+  if (generation < GEN_NUMBERS.gen3) {
     return CORE_ABILITY_SLOTS.normal1;
   }
 
@@ -165,13 +166,14 @@ export function generateRandomTeam(
     const { ivs, evs } = createGenerationStatInputs(generation, rng);
     const abilitySlot = determineAbilitySlot(generation, species, rng);
     const ability =
-      generation >= 3
+      generation >= GEN_NUMBERS.gen3
         ? abilitySlot === CORE_ABILITY_SLOTS.normal2 && species.abilities.normal[1] != null
           ? species.abilities.normal[1]
           : (species.abilities.normal[0] ?? "")
         : "";
     const gender = determineGender(species, rng);
-    const nature = generation <= 2 ? rng.pick(NEUTRAL_NATURES) : rng.pick(ALL_NATURE_IDS);
+    const nature =
+      generation <= GEN_NUMBERS.gen2 ? rng.pick(NEUTRAL_NATURES) : rng.pick(ALL_NATURE_IDS);
 
     const pokemon: PokemonInstance = {
       uid: `${opts.uidPrefix}-${++nextUidIndex}`,

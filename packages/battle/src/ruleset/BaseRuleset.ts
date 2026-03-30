@@ -28,6 +28,7 @@ import {
   calculateModifiedCatchRate,
   calculateShakeChecks,
   DataManager,
+  GEN_NUMBERS,
   getStatStageMultiplier,
   validateEvs,
   validateFriendship,
@@ -753,8 +754,9 @@ export abstract class BaseRuleset implements GenerationRuleset {
   }
 
   getExpRecipients(context: ExpRecipientSelectionContext): readonly ExpRecipient[] {
-    const usesHeldExpShare = this.generation >= 2 && this.generation <= 5;
-    const hasAlwaysOnExpShare = this.generation >= 6;
+    const usesHeldExpShare =
+      this.generation >= GEN_NUMBERS.gen2 && this.generation <= GEN_NUMBERS.gen5;
+    const hasAlwaysOnExpShare = this.generation >= GEN_NUMBERS.gen6;
     const recipients: ExpRecipient[] = [];
 
     for (const pokemon of context.winnerTeam) {

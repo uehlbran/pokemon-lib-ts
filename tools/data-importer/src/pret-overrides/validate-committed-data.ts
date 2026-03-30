@@ -18,6 +18,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as url from "node:url";
+import { GEN_NUMBERS } from "@pokemon-lib-ts/core";
 import { getOverridesForGen } from "./index";
 import type { MoveOverride, PokemonOverride } from "./types";
 
@@ -181,7 +182,7 @@ function validateGen(gen: number): ValidationError[] {
   }
 
   const moveOverrides = overrides.filter((o): o is MoveOverride => o.target === "move");
-  if (moveOverrides.length === 0 && gen !== 2) {
+  if (moveOverrides.length === 0 && gen !== GEN_NUMBERS.gen2) {
     // No explicit move overrides for this gen — nothing to validate
     return errors;
   }
@@ -208,7 +209,7 @@ function validateGen(gen: number): ValidationError[] {
   const moveById = new Map(moves.map((m) => [m.id, m]));
 
   // ── For Gen 2: validate bulk priority scale (all normal moves should be 1) ──
-  if (gen === 2) {
+  if (gen === GEN_NUMBERS.gen2) {
     // Only skip moves that have an explicit priority override (not overrides for other fields).
     // Skipping all overridden moves would hide priority regressions on moves that have
     // non-priority overrides (e.g., a future power override on a move with wrong priority).

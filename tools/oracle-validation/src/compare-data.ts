@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { Generations } from "@pkmn/data";
 import { Dex } from "@pkmn/dex";
+import { GEN_NUMBERS } from "@pokemon-lib-ts/core";
 import {
   type KnownDisagreement,
   type OracleCheck,
@@ -112,7 +113,8 @@ export function runDataSuite(
   }
 
   const localTypes = Object.keys(localTypeChart).sort();
-  const expectedTypeCount = generation.gen === 1 ? 15 : generation.gen <= 5 ? 17 : 18;
+  const expectedTypeCount =
+    generation.gen === GEN_NUMBERS.gen1 ? 15 : generation.gen <= GEN_NUMBERS.gen5 ? 17 : 18;
   if (localTypes.length !== expectedTypeCount) {
     failures.push(
       `Gen ${generation.gen}: type count mismatch (ours=${localTypes.length}, expected=${expectedTypeCount})`,

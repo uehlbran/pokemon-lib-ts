@@ -10,6 +10,7 @@
  * - showdownValue mismatch: warning (Showdown may have been updated)
  */
 
+import { GEN_NUMBERS } from "@pokemon-lib-ts/core";
 import type { MoveOverride, PokemonOverride, PretOverride } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -60,7 +61,8 @@ export function applyMoveOverrides(
   overrides: readonly PretOverride[],
 ): ImportedMove[] {
   // For Gen 2, first apply the bulk priority scale shift: all priority=0 → 1
-  const result = gen === 2 ? applyGen2PriorityScale(moves) : moves.map((m) => ({ ...m }));
+  const result =
+    gen === GEN_NUMBERS.gen2 ? applyGen2PriorityScale(moves) : moves.map((m) => ({ ...m }));
 
   const moveOverrides = overrides.filter((o): o is MoveOverride => o.target === "move");
 

@@ -8,6 +8,7 @@ import {
   CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_NATURE_IDS,
+  GEN_NUMBERS,
 } from "../../../packages/core/src/constants/index.js";
 import type { PokemonInstance } from "../../../packages/core/src/entities/pokemon.js";
 import type { PokemonType } from "../../../packages/core/src/entities/types.js";
@@ -509,7 +510,7 @@ export function runGroundTruthSuite(
     if (testCase.kind === "typeChart") {
       failure = evaluateTypeChartCase(testCase, typeChart);
     } else if (testCase.kind === "derivedStat") {
-      if (gen !== 1) {
+      if (gen !== GEN_NUMBERS.gen1) {
         deferredCases += 1;
         continue;
       }
@@ -518,7 +519,7 @@ export function runGroundTruthSuite(
       }
       failure = evaluateDerivedStatCase(testCase, gen1DataManager);
     } else if (testCase.kind === "critRate") {
-      if (gen !== 1) {
+      if (gen !== GEN_NUMBERS.gen1) {
         deferredCases += 1;
         continue;
       }
@@ -551,7 +552,7 @@ export function runGroundTruthSuite(
     notes.push(`${deferredCases} documentation-only or engine-deferred case(s) skipped`);
   }
 
-  if (gen === 1) {
+  if (gen === GEN_NUMBERS.gen1) {
     notes.push(
       "Gen 1 suite uses cartridge-authoritative data; later Gen 1-4 suites treat Showdown as a differential cross-check.",
     );

@@ -17,7 +17,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { DataManager, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
-import { CORE_TYPE_IDS, getTypeEffectiveness } from "@pokemon-lib-ts/core";
+import { CORE_TYPE_IDS, GEN_NUMBERS, getTypeEffectiveness } from "@pokemon-lib-ts/core";
 import { createGen1DataManager } from "@pokemon-lib-ts/gen1";
 import { createGen2DataManager } from "@pokemon-lib-ts/gen2";
 import { createGen3DataManager } from "@pokemon-lib-ts/gen3";
@@ -107,8 +107,10 @@ function getStatusImmuneTypes(statusId: string, gen: number): string[] {
   ) {
     return [CORE_TYPE_IDS.poison, CORE_TYPE_IDS.steel];
   }
-  if (statusId === SHOWDOWN_STATUS_CODES.freeze && gen >= 2) return [CORE_TYPE_IDS.ice];
-  if (statusId === SHOWDOWN_STATUS_CODES.paralysis && gen >= 6) return [CORE_TYPE_IDS.electric];
+  if (statusId === SHOWDOWN_STATUS_CODES.freeze && gen >= GEN_NUMBERS.gen2)
+    return [CORE_TYPE_IDS.ice];
+  if (statusId === SHOWDOWN_STATUS_CODES.paralysis && gen >= GEN_NUMBERS.gen6)
+    return [CORE_TYPE_IDS.electric];
   return [];
 }
 

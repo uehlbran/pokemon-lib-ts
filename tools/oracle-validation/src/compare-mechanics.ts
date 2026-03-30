@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { Generations } from "@pkmn/data";
 import { Dex } from "@pkmn/dex";
+import { GEN_NUMBERS } from "@pokemon-lib-ts/core";
 import {
   type KnownDisagreement,
   type OracleCheck,
@@ -128,7 +129,7 @@ export function runMechanicsSuite(
     // A "neutral" Gen 2 move has our priority=1 and oracle priority=0.
     // Skip these normal moves — the scale difference is intentional and documented.
     // Source: pret/pokecrystal data/moves/effects_priorities.asm
-    const basePriority = generation.gen === 2 ? 1 : 0;
+    const basePriority = generation.gen === GEN_NUMBERS.gen2 ? 1 : 0;
     if (ourPriority === basePriority && oraclePriority === 0) {
       continue;
     }
@@ -150,7 +151,7 @@ export function runMechanicsSuite(
 
   // ── 2. Ability Assignment (Gen 3+ only) ────────────────────────────────────
 
-  if (generation.gen >= 3) {
+  if (generation.gen >= GEN_NUMBERS.gen3) {
     const localPokemon = JSON.parse(
       readFileSync(join(generation.dataDir, "pokemon.json"), "utf8"),
     ) as LocalSpecies[];

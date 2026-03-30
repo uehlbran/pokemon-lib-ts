@@ -34,6 +34,7 @@ import {
   createEvs,
   createIvs,
   createStatExp,
+  GEN_NUMBERS,
   MAX_DV,
   MAX_IV,
   SeededRandom,
@@ -117,7 +118,7 @@ function generateTeam(gen: number, dataManager: DataManager, rng: SeededRandom, 
     if (moves.length === 0) continue;
 
     const ivs =
-      gen <= 2
+      gen <= GEN_NUMBERS.gen2
         ? createDvs({
             attack: MAX_DV,
             defense: MAX_DV,
@@ -133,11 +134,11 @@ function generateTeam(gen: number, dataManager: DataManager, rng: SeededRandom, 
             spDefense: MAX_IV,
             speed: MAX_IV,
           });
-    const evs = gen <= 2 ? createStatExp() : createEvs();
+    const evs = gen <= GEN_NUMBERS.gen2 ? createStatExp() : createEvs();
 
     const abilitySlot = CORE_ABILITY_SLOTS.normal1;
     let ability = "";
-    if (gen >= 3) {
+    if (gen >= GEN_NUMBERS.gen3) {
       const candidate = species.abilities.normal[0] ?? "";
       if (!candidate) continue;
       try {
@@ -154,7 +155,7 @@ function generateTeam(gen: number, dataManager: DataManager, rng: SeededRandom, 
       nickname: null,
       level: 50,
       experience: 0,
-      nature: gen <= 2 ? CORE_NATURE_IDS.serious : CORE_NATURE_IDS.hardy,
+      nature: gen <= GEN_NUMBERS.gen2 ? CORE_NATURE_IDS.serious : CORE_NATURE_IDS.hardy,
       ivs,
       evs,
       currentHp: 1,

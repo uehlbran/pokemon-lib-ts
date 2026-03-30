@@ -11,6 +11,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { Generations } from "@pkmn/data";
 import { Dex } from "@pkmn/dex";
+import { GEN_NUMBERS } from "@pokemon-lib-ts/core";
 import { readGen1Data } from "./gen1-reader";
 import { readGen2Data } from "./gen2-reader";
 import { readGen3Data } from "./gen3-reader";
@@ -221,7 +222,11 @@ export function diffMoves(gen: number, pretData: PretGenData, repoRoot: string):
     }
 
     // Compare category (Gen 4 only — Gen 1-3 derive from type split)
-    if (gen === 4 && pretMove.category !== undefined && pretMove.category !== ours.category) {
+    if (
+      gen === GEN_NUMBERS.gen4 &&
+      pretMove.category !== undefined &&
+      pretMove.category !== ours.category
+    ) {
       diffs.push({
         gen,
         kind: "move",
@@ -309,7 +314,7 @@ export function diffPokemon(gen: number, pretData: PretGenData, repoRoot: string
 
 export function diffTypeChart(gen: number, pretData: PretGenData, repoRoot: string): DiffRecord[] {
   // Gen 4 type chart is in C code, not data files — skip
-  if (gen === 4 || pretData.typeChart.length === 0) return [];
+  if (gen === GEN_NUMBERS.gen4 || pretData.typeChart.length === 0) return [];
 
   const committed = loadCommittedTypeChart(repoRoot, gen);
   const diffs: DiffRecord[] = [];

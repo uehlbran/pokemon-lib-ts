@@ -20,6 +20,7 @@ import {
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
+  GEN_NUMBERS,
   getExpForLevel,
   getStatStageMultiplier,
   SeededRandom,
@@ -331,7 +332,11 @@ export class BattleEngine implements BattleEventEmitter {
         // battle generation supports them, the pokemon carries a nature field, and the
         // DataManager has natures loaded. Skip the check when the DataManager has no natures
         // (e.g. Gen 1-2 data managers or minimal test fixtures that omit natures intentionally).
-        if (config.generation >= 3 && pokemon.nature && dataManager.getAllNatures().length > 0) {
+        if (
+          config.generation >= GEN_NUMBERS.gen3 &&
+          pokemon.nature &&
+          dataManager.getAllNatures().length > 0
+        ) {
           try {
             dataManager.getNature(pokemon.nature);
           } catch {
