@@ -1,4 +1,9 @@
-import type { AbilityContext, ActivePokemon, BattleState } from "@pokemon-lib-ts/battle";
+import type {
+  AbilityContext,
+  AbilityEffect,
+  ActivePokemon,
+  BattleState,
+} from "@pokemon-lib-ts/battle";
 import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
 import type { MoveData, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
@@ -214,7 +219,7 @@ function createAbilityContext(overrides: {
     rng: createTestRng(overrides.seed ?? 42),
     trigger: overrides.trigger,
     move: overrides.move,
-    statChange: overrides.statChange as any,
+    statChange: overrides.statChange as unknown as AbilityContext["statChange"],
   };
 }
 
@@ -850,9 +855,13 @@ describe("Gen 8 Moody — accuracy/evasion excluded from stat pool", () => {
 
     expect(result.activated).toBe(true);
     const raiseEffect = result.effects.find(
-      (e) => e.effectType === BATTLE_ABILITY_EFFECT_TYPES.statChange && (e as any).stages === 2,
+      (e) =>
+        e.effectType === BATTLE_ABILITY_EFFECT_TYPES.statChange &&
+        (e as Extract<AbilityEffect, { effectType: "stat-change" }>).stages === 2,
     );
-    const raisedStat = (raiseEffect as any)?.stat;
+    const raisedStat = (
+      raiseEffect as Extract<AbilityEffect, { effectType: "stat-change" }> | undefined
+    )?.stat;
     expect(ELIGIBLE_STATS).toContain(raisedStat);
     // Accuracy and evasion must NOT be raised by Gen 8 Moody
     expect(raisedStat).not.toBe(CORE_STAT_IDS.accuracy);
@@ -870,9 +879,13 @@ describe("Gen 8 Moody — accuracy/evasion excluded from stat pool", () => {
 
     expect(result.activated).toBe(true);
     const lowerEffect = result.effects.find(
-      (e) => e.effectType === BATTLE_ABILITY_EFFECT_TYPES.statChange && (e as any).stages === -1,
+      (e) =>
+        e.effectType === BATTLE_ABILITY_EFFECT_TYPES.statChange &&
+        (e as Extract<AbilityEffect, { effectType: "stat-change" }>).stages === -1,
     );
-    const loweredStat = (lowerEffect as any)?.stat;
+    const loweredStat = (
+      lowerEffect as Extract<AbilityEffect, { effectType: "stat-change" }> | undefined
+    )?.stat;
     expect(ELIGIBLE_STATS).toContain(loweredStat);
     // Accuracy and evasion must NOT be lowered by Gen 8 Moody either
     expect(loweredStat).not.toBe(CORE_STAT_IDS.accuracy);
@@ -889,12 +902,20 @@ describe("Gen 8 Moody — accuracy/evasion excluded from stat pool", () => {
     const result = handleGen8StatAbility(ctx);
 
     const raiseEffect = result.effects.find(
-      (e) => e.effectType === BATTLE_ABILITY_EFFECT_TYPES.statChange && (e as any).stages === 2,
+      (e) =>
+        e.effectType === BATTLE_ABILITY_EFFECT_TYPES.statChange &&
+        (e as Extract<AbilityEffect, { effectType: "stat-change" }>).stages === 2,
     );
     const lowerEffect = result.effects.find(
-      (e) => e.effectType === BATTLE_ABILITY_EFFECT_TYPES.statChange && (e as any).stages === -1,
+      (e) =>
+        e.effectType === BATTLE_ABILITY_EFFECT_TYPES.statChange &&
+        (e as Extract<AbilityEffect, { effectType: "stat-change" }>).stages === -1,
     );
-    expect((raiseEffect as any)?.stat).not.toBe((lowerEffect as any)?.stat);
+    expect(
+      (raiseEffect as Extract<AbilityEffect, { effectType: "stat-change" }> | undefined)?.stat,
+    ).not.toBe(
+      (lowerEffect as Extract<AbilityEffect, { effectType: "stat-change" }> | undefined)?.stat,
+    );
   });
 
   it("given Moody in Gen 8, when a stat is already at +6, then that stat is excluded from the raise pool", () => {
@@ -915,10 +936,14 @@ describe("Gen 8 Moody — accuracy/evasion excluded from stat pool", () => {
     const result = handleGen8StatAbility(ctx);
     if (result.activated) {
       const raiseEffect = result.effects.find(
-        (e) => e.effectType === BATTLE_ABILITY_EFFECT_TYPES.statChange && (e as any).stages === 2,
+        (e) =>
+          e.effectType === BATTLE_ABILITY_EFFECT_TYPES.statChange &&
+          (e as Extract<AbilityEffect, { effectType: "stat-change" }>).stages === 2,
       );
       if (raiseEffect) {
-        expect((raiseEffect as any).stat).toBe(CORE_STAT_IDS.speed);
+        expect((raiseEffect as Extract<AbilityEffect, { effectType: "stat-change" }>).stat).toBe(
+          CORE_STAT_IDS.speed,
+        );
       }
     }
   });
@@ -939,7 +964,7 @@ describe("Gen 8 Moody — accuracy/evasion excluded from stat pool", () => {
       const result = handleGen8StatAbility(ctx);
       for (const effect of result.effects) {
         if (effect.effectType === BATTLE_ABILITY_EFFECT_TYPES.statChange) {
-          const stat = (effect as any).stat as string;
+          const stat = (effect as Extract<AbilityEffect, { effectType: "stat-change" }>).stat;
           expect(INELIGIBLE_STATS).not.toContain(stat);
         }
       }

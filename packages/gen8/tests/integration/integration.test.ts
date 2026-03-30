@@ -310,7 +310,7 @@ function createAbilityContext(opts: {
     pokemon,
     opponent: opts.opponent,
     state,
-    rng: state.rng as any,
+    rng: state.rng,
     trigger: opts.trigger,
     move: opts.move,
   };
@@ -582,7 +582,7 @@ describe("Gen8AbilitiesSwitch handleTurnEnd dispatch", () => {
       nickname: "Morpeko",
     });
 
-    const result = handleGen8SwitchAbility(TRIGGERS.onTurnEnd as any, ctx);
+    const result = handleGen8SwitchAbility(TRIGGERS.onTurnEnd, ctx);
     expect(result.activated).toBe(true);
     expect(result.messages).toEqual(["Morpeko transformed!"]);
   });
@@ -596,7 +596,7 @@ describe("Gen8AbilitiesSwitch handleTurnEnd dispatch", () => {
       nickname: "Pikachu",
     });
 
-    const result = handleGen8SwitchAbility(TRIGGERS.onTurnEnd as any, ctx);
+    const result = handleGen8SwitchAbility(TRIGGERS.onTurnEnd, ctx);
     expect(result.activated).toBe(false);
   });
 
@@ -608,7 +608,7 @@ describe("Gen8AbilitiesSwitch handleTurnEnd dispatch", () => {
       speciesId: SPECIES.morpeko,
     });
 
-    const result = handleGen8SwitchAbility(TRIGGERS.onTurnEnd as any, ctx);
+    const result = handleGen8SwitchAbility(TRIGGERS.onTurnEnd, ctx);
     expect(result.activated).toBe(false);
   });
 });
@@ -635,7 +635,7 @@ describe("Gen8AbilitiesSwitch Gulp Missile on-contact dispatch", () => {
       move: createMove(MOVES.waterfall),
     });
 
-    const result = handleGen8SwitchAbility(TRIGGERS.onContact as any, ctx);
+    const result = handleGen8SwitchAbility(TRIGGERS.onContact, ctx);
     expect(result.activated).toBe(true);
     expect(result.messages).toEqual(["Cramorant spat out its catch!"]);
 
@@ -644,15 +644,15 @@ describe("Gen8AbilitiesSwitch Gulp Missile on-contact dispatch", () => {
     const chipEffect = result.effects.find(
       (e) => e.effectType === BATTLE_ABILITY_EFFECT_TYPES.chipDamage,
     );
-    expect((chipEffect as any)?.value).toBe(50);
+    expect((chipEffect as { value?: number })?.value).toBe(50);
 
     // Should have defense drop
     const statEffect = result.effects.find(
       (e) =>
         e.effectType === BATTLE_ABILITY_EFFECT_TYPES.statChange &&
-        (e as any).stat === CORE_STAT_IDS.defense,
+        (e as { stat?: string }).stat === CORE_STAT_IDS.defense,
     );
-    expect((statEffect as any)?.stages).toBe(-1);
+    expect((statEffect as { stages?: number })?.stages).toBe(-1);
   });
 
   it("given Cramorant (845) with gulp-missile and gulp-missile-gorging volatile, when hit on contact and opponent has no status, then returns chip damage and paralysis", () => {
@@ -672,16 +672,16 @@ describe("Gen8AbilitiesSwitch Gulp Missile on-contact dispatch", () => {
       move: createMove(MOVES.waterfall),
     });
 
-    const result = handleGen8SwitchAbility(TRIGGERS.onContact as any, ctx);
+    const result = handleGen8SwitchAbility(TRIGGERS.onContact, ctx);
     expect(result.activated).toBe(true);
 
     // Should have chip-damage effect: floor(160 / 4) = 40
     const chipEffect = result.effects.find((e) => e.effectType === "chip-damage");
-    expect((chipEffect as any)?.value).toBe(40);
+    expect((chipEffect as { value?: number })?.value).toBe(40);
 
     // Should have paralysis
     const statusEffect = result.effects.find((e) => e.effectType === "status-inflict");
-    expect((statusEffect as any)?.status).toBe(STATUS.paralysis);
+    expect((statusEffect as { status?: string })?.status).toBe(STATUS.paralysis);
   });
 
   it("given Cramorant with gulp-missile-gorging volatile but opponent already has a status, when hit, then returns chip damage but no paralysis", () => {
@@ -700,7 +700,7 @@ describe("Gen8AbilitiesSwitch Gulp Missile on-contact dispatch", () => {
       move: createMove(MOVES.waterfall),
     });
 
-    const result = handleGen8SwitchAbility(TRIGGERS.onContact as any, ctx);
+    const result = handleGen8SwitchAbility(TRIGGERS.onContact, ctx);
     expect(result.activated).toBe(true);
 
     // Chip damage still applies
@@ -727,7 +727,7 @@ describe("Gen8AbilitiesSwitch Gulp Missile on-contact dispatch", () => {
       move: createMove(MOVES.waterfall),
     });
 
-    const result = handleGen8SwitchAbility(TRIGGERS.onContact as any, ctx);
+    const result = handleGen8SwitchAbility(TRIGGERS.onContact, ctx);
     expect(result.activated).toBe(false);
   });
 
@@ -742,7 +742,7 @@ describe("Gen8AbilitiesSwitch Gulp Missile on-contact dispatch", () => {
       move: createMove(MOVES.waterfall),
     });
 
-    const result = handleGen8SwitchAbility(TRIGGERS.onContact as any, ctx);
+    const result = handleGen8SwitchAbility(TRIGGERS.onContact, ctx);
     expect(result.activated).toBe(false);
   });
 });
@@ -784,8 +784,8 @@ describe("Gen8AbilitiesStat formatStatName via Beast Boost", () => {
       } as unknown as ActivePokemon,
       opponent: faintedOpponent,
       state: createBattleState(),
-      rng: createBattleState().rng as any,
-      trigger: TRIGGERS.onAfterMoveUsed as any,
+      rng: createBattleState().rng,
+      trigger: TRIGGERS.onAfterMoveUsed,
     };
 
     const result = handleGen8StatAbility(ctx);
@@ -835,8 +835,8 @@ describe("Gen8AbilitiesStat formatStatName via Beast Boost", () => {
       } as unknown as ActivePokemon,
       opponent: faintedOpponent,
       state: createBattleState(),
-      rng: createBattleState().rng as any,
-      trigger: TRIGGERS.onAfterMoveUsed as any,
+      rng: createBattleState().rng,
+      trigger: TRIGGERS.onAfterMoveUsed,
     };
 
     const result = handleGen8StatAbility(ctx);
@@ -886,8 +886,8 @@ describe("Gen8AbilitiesStat formatStatName via Beast Boost", () => {
       } as unknown as ActivePokemon,
       opponent: faintedOpponent,
       state: createBattleState(),
-      rng: createBattleState().rng as any,
-      trigger: TRIGGERS.onAfterMoveUsed as any,
+      rng: createBattleState().rng,
+      trigger: TRIGGERS.onAfterMoveUsed,
     };
 
     const result = handleGen8StatAbility(ctx);

@@ -22,7 +22,13 @@ import type {
 } from "@pokemon-lib-ts/battle";
 import { BATTLE_ABILITY_EFFECT_TYPES, BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import { createOnFieldPokemon as createBattleOnFieldPokemon } from "@pokemon-lib-ts/battle/utils";
-import type { MoveData, PokemonInstance, PokemonType, PrimaryStatus } from "@pokemon-lib-ts/core";
+import type {
+  MoveData,
+  PokemonInstance,
+  PokemonType,
+  PrimaryStatus,
+  TwoTurnMoveVolatile,
+} from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
@@ -229,7 +235,7 @@ function createAbilityContext(opts: {
     state,
     rng: state.rng,
     trigger: opts.trigger,
-    statChange: opts.statChange as any,
+    statChange: opts.statChange as unknown as AbilityContext["statChange"],
     move: opts.move,
   };
 }
@@ -265,8 +271,8 @@ describe("Gen 8 Abilities Dispatcher -- handleGen8SwitchInAbility", () => {
   it("given handleGen8SwitchInAbility with correct trigger (on-switch-in) and screen-cleaner ability, when called, then delegates and activates", () => {
     // Source: Showdown data/abilities.ts -- Screen Cleaner removes screens on switch-in
     const state = createBattleState();
-    state.sides[0].screens = [{ type: CORE_SCREEN_IDS.reflect, turnsLeft: 5 }] as any;
-    state.sides[1].screens = [{ type: CORE_SCREEN_IDS.lightScreen, turnsLeft: 3 }] as any;
+    state.sides[0].screens = [{ type: CORE_SCREEN_IDS.reflect, turnsLeft: 5 }];
+    state.sides[1].screens = [{ type: CORE_SCREEN_IDS.lightScreen, turnsLeft: 3 }];
     const pokemon = createOnFieldPokemon({ ability: abilityIds.screenCleaner });
     const ctx: AbilityContext = {
       pokemon,
@@ -383,7 +389,7 @@ describe("Gen 8 Abilities Dispatcher -- handleGen8FieldAbility", () => {
     const healEffect = result.effects.find(
       (e: any) => e.effectType === BATTLE_ABILITY_EFFECT_TYPES.heal,
     );
-    expect((healEffect as any)?.value).toBe(100);
+    expect((healEffect as { value?: number })?.value).toBe(100);
   });
 
   it("given handleGen8FieldAbility with on-before-move trigger and libero, when called, then delegates to switch handler", () => {
@@ -641,14 +647,20 @@ describe("Gen8Ruleset -- canHitSemiInvulnerable", () => {
 
   it("given unknown volatile (confusion) and any move, when canHitSemiInvulnerable, then returns false", () => {
     // confusion is not a semi-invulnerable state
-    expect(ruleset.canHitSemiInvulnerable(moveIds.tackle, volatileIds.confusion as any)).toBe(
-      false,
-    );
+    expect(
+      ruleset.canHitSemiInvulnerable(
+        moveIds.tackle,
+        volatileIds.confusion as unknown as TwoTurnMoveVolatile,
+      ),
+    ).toBe(false);
   });
 
   it("given unknown volatile (substitute) and any move, when canHitSemiInvulnerable, then returns false", () => {
-    expect(ruleset.canHitSemiInvulnerable(moveIds.earthquake, volatileIds.substitute as any)).toBe(
-      false,
-    );
+    expect(
+      ruleset.canHitSemiInvulnerable(
+        moveIds.earthquake,
+        volatileIds.substitute as unknown as TwoTurnMoveVolatile,
+      ),
+    ).toBe(false);
   });
 });

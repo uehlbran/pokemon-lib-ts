@@ -666,7 +666,7 @@ describe("#277 Future Sight fails when future attack is already pending", () => 
       turnsLeft: 2,
       damage: 100,
       sourceSide: 0,
-    } as any;
+    };
     const move = createCanonicalMove(MOVES.futureSight);
     const context: MoveEffectContext = {
       attacker,

@@ -1,6 +1,12 @@
 import type { ActivePokemon, BattleState, MoveEffectContext } from "@pokemon-lib-ts/battle";
 import { createDefaultStatStages } from "@pokemon-lib-ts/battle/utils";
-import type { MoveData, PokemonInstance, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
+import type {
+  MoveData,
+  MoveEffect,
+  PokemonInstance,
+  PokemonType,
+  StatBlock,
+} from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_SLOTS,
   CORE_GENDERS,
@@ -505,7 +511,7 @@ describe("Heal Block", () => {
     });
     const defender = createActivePokemon({ types: [TYPES.normal] });
     const move = createMove(TEST_IDS.moves.recover, {
-      effect: { type: "heal", amount: 0.5 } as any,
+      effect: { type: "heal", amount: 0.5 } as MoveEffect,
     });
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
@@ -530,7 +536,7 @@ describe("Heal Block", () => {
     });
     const defender = createActivePokemon({ types: [TYPES.normal] });
     const move = createMove(TEST_IDS.moves.roost, {
-      effect: { type: "heal", amount: 0.5 } as any,
+      effect: { type: "heal", amount: 0.5 } as MoveEffect,
     });
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
@@ -553,7 +559,7 @@ describe("Heal Block", () => {
     });
     const defender = createActivePokemon({ types: [TYPES.normal] });
     const move = createMove(TEST_IDS.moves.recover, {
-      effect: { type: "heal", amount: 0.5 } as any,
+      effect: { type: "heal", amount: 0.5 } as MoveEffect,
     });
     const rng = createMockRng(0);
     const ctx = createContext(attacker, defender, move, rng);
@@ -623,7 +629,7 @@ describe("Embargo", () => {
 
     const result = applyGen4HeldItem(CORE_ITEM_TRIGGER_IDS.endOfTurn, {
       pokemon,
-      state: {} as any,
+      state: {} as unknown as BattleState,
       rng: createMockRng(0),
     });
 
@@ -643,7 +649,7 @@ describe("Embargo", () => {
 
     const result = applyGen4HeldItem(CORE_ITEM_TRIGGER_IDS.endOfTurn, {
       pokemon,
-      state: {} as any,
+      state: {} as unknown as BattleState,
       rng: createMockRng(0),
     });
 

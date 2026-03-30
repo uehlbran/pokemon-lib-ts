@@ -426,7 +426,7 @@ describe("applyGen4HeldItem on hit — Razor Fang (NEW in Gen 4)", () => {
     // Source: Showdown Gen 4 mod — Razor Fang trigger with KINGS_ROCK_ELIGIBLE_MOVES whitelist
     const ctx = createHeldItemContext({ heldItem: itemIds.razorFang, damage: 50, rngChance: true });
     // Need to add move with eligible ID to context
-    (ctx as any).move = dataManager.getMove(moveIds.aerialAce);
+    (ctx as unknown as { move: MoveData }).move = dataManager.getMove(moveIds.aerialAce);
     const result = applyGen4HeldItem(itemTriggers.onHit, ctx);
 
     expect(result.activated).toBe(true);
@@ -441,7 +441,7 @@ describe("applyGen4HeldItem on hit — Razor Fang (NEW in Gen 4)", () => {
       damage: 50,
       rngChance: false,
     });
-    (ctx as any).move = dataManager.getMove(moveIds.aerialAce);
+    (ctx as unknown as { move: MoveData }).move = dataManager.getMove(moveIds.aerialAce);
     const result = applyGen4HeldItem(itemTriggers.onHit, ctx);
 
     expect(result.activated).toBe(false);
@@ -451,7 +451,7 @@ describe("applyGen4HeldItem on hit — Razor Fang (NEW in Gen 4)", () => {
     // Source: Showdown Gen 4 mod — King's Rock/Razor Fang only work on ~200 whitelisted moves
     // "thunderbolt" is NOT in the whitelist (it has a 10% paralysis secondary effect)
     const ctx = createHeldItemContext({ heldItem: itemIds.razorFang, damage: 50, rngChance: true });
-    (ctx as any).move = dataManager.getMove(CORE_MOVE_IDS.thunderbolt);
+    (ctx as unknown as { move: MoveData }).move = dataManager.getMove(CORE_MOVE_IDS.thunderbolt);
     const result = applyGen4HeldItem(itemTriggers.onHit, ctx);
 
     expect(result.activated).toBe(false);
@@ -501,7 +501,7 @@ describe("applyGen4HeldItem on hit — King's Rock", () => {
     // Source: Showdown Gen 4 mod — King's Rock 10% flinch, only on eligible moves (whitelist)
     // "tackle" is in the KINGS_ROCK_ELIGIBLE_MOVES whitelist
     const ctx = createHeldItemContext({ heldItem: itemIds.kingsRock, damage: 50, rngChance: true });
-    (ctx as any).move = dataManager.getMove(CORE_MOVE_IDS.tackle);
+    (ctx as unknown as { move: MoveData }).move = dataManager.getMove(CORE_MOVE_IDS.tackle);
     const result = applyGen4HeldItem(itemTriggers.onHit, ctx);
 
     expect(result.activated).toBe(true);
@@ -512,7 +512,7 @@ describe("applyGen4HeldItem on hit — King's Rock", () => {
     // Source: Showdown Gen 4 mod — King's Rock only works on ~200 whitelisted moves
     // "ice-beam" is NOT in the whitelist (it has a 10% freeze secondary effect)
     const ctx = createHeldItemContext({ heldItem: itemIds.kingsRock, damage: 50, rngChance: true });
-    (ctx as any).move = dataManager.getMove(moveIds.iceBeam);
+    (ctx as unknown as { move: MoveData }).move = dataManager.getMove(moveIds.iceBeam);
     const result = applyGen4HeldItem(itemTriggers.onHit, ctx);
 
     expect(result.activated).toBe(false);

@@ -388,7 +388,7 @@ describe("BattleEngine.getAvailableMoves with Gravity active", () => {
     const engine = createGravityTestEngine();
 
     // Activate gravity on the engine's state
-    (engine as any).state.gravity = { active: true, turnsLeft: 5 };
+    (engine as unknown as { state: BattleState }).state.gravity = { active: true, turnsLeft: 5 };
 
     const moves = engine.getAvailableMoves(0);
     const flyMove = moves.find((m) => m.moveId === MOVES.fly);
@@ -402,7 +402,7 @@ describe("BattleEngine.getAvailableMoves with Gravity active", () => {
     // Source: Bulbapedia — "Bounce cannot be selected while Gravity is in effect"
     const engine = createGravityTestEngine();
 
-    (engine as any).state.gravity = { active: true, turnsLeft: 5 };
+    (engine as unknown as { state: BattleState }).state.gravity = { active: true, turnsLeft: 5 };
 
     const moves = engine.getAvailableMoves(0);
     const bounceMove = moves.find((m) => m.moveId === MOVES.bounce);
@@ -415,7 +415,7 @@ describe("BattleEngine.getAvailableMoves with Gravity active", () => {
     // Source: Showdown Gen 4 mod — non-gravity moves are unaffected by Gravity
     const engine = createGravityTestEngine();
 
-    (engine as any).state.gravity = { active: true, turnsLeft: 5 };
+    (engine as unknown as { state: BattleState }).state.gravity = { active: true, turnsLeft: 5 };
 
     const moves = engine.getAvailableMoves(0);
     const tackleMove = moves.find((m) => m.moveId === MOVES.tackle);
@@ -460,7 +460,7 @@ describe("Gravity grounds in-flight Pokemon", () => {
       volatiles: new Map([[VOLATILE_IDS.flying, { turnsLeft: 1 }]]),
     });
     // Set forcedMove on the defender
-    (defender as any).forcedMove = { moveIndex: 1, moveId: MOVES.fly };
+    defender.forcedMove = { moveIndex: 1, moveId: MOVES.fly };
 
     const state = createBattleState();
     const gravityMove = DATA_MANAGER.getMove(MOVES.gravity);
@@ -531,8 +531,8 @@ describe("BattleEngine.getAvailableMoves with Encore volatile", () => {
     const engine = createEncoreTestEngine();
 
     // Set encore volatile with moveId "tackle"
-    const active = (engine as any).state.sides[0].active[0];
-    active.volatileStatuses.set(VOLATILE_IDS.encore, {
+    const active = (engine as unknown as { state: BattleState }).state.sides[0].active[0];
+    active?.volatileStatuses.set(VOLATILE_IDS.encore, {
       turnsLeft: 3,
       data: { moveId: MOVES.tackle },
     });
@@ -555,8 +555,8 @@ describe("BattleEngine.getAvailableMoves with Encore volatile", () => {
     // Source: Showdown Gen 4 mod — Encore restricts to the specific encored move
     const engine = createEncoreTestEngine();
 
-    const active = (engine as any).state.sides[0].active[0];
-    active.volatileStatuses.set(VOLATILE_IDS.encore, {
+    const active = (engine as unknown as { state: BattleState }).state.sides[0].active[0];
+    active?.volatileStatuses.set(VOLATILE_IDS.encore, {
       turnsLeft: 5,
       data: { moveId: MOVES.thunderbolt },
     });

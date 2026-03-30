@@ -1,4 +1,4 @@
-import type { ActivePokemon, DamageContext } from "@pokemon-lib-ts/battle";
+import type { ActivePokemon, BattleState, DamageContext } from "@pokemon-lib-ts/battle";
 import type { Gender, PokemonInstance, PokemonType } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
@@ -9,6 +9,7 @@ import {
   CORE_WEATHER_IDS,
   createMoveSlot,
   DataManager,
+  type SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
 import {
@@ -963,7 +964,11 @@ describe("Gen4 Slow Start — halve Speed for 5 turns (via getEffectiveSpeed)", 
 
     const rng = createMockRng(100);
 
-    const ordered = ruleset.resolveTurnOrder(actions, state as any, rng as any);
+    const ordered = ruleset.resolveTurnOrder(
+      actions,
+      state as unknown as BattleState,
+      rng as unknown as SeededRandom,
+    );
 
     // Fast Pokemon (speed 101) should go first because Slow Start halves
     // the slow Pokemon's speed (200 → 100, which is less than 101)
@@ -1043,7 +1048,11 @@ describe("Gen4 Slow Start — halve Speed for 5 turns (via getEffectiveSpeed)", 
 
     const rng = createMockRng(100);
 
-    const ordered = ruleset.resolveTurnOrder(actions, state as any, rng as any);
+    const ordered = ruleset.resolveTurnOrder(
+      actions,
+      state as unknown as BattleState,
+      rng as unknown as SeededRandom,
+    );
 
     // Without slow-start volatile, full speed 200 is used — side 0 goes first
     expect(ordered[0].side).toBe(0);
@@ -1144,9 +1153,9 @@ describe("Gen4 Download — compare foe Def/SpDef on switch-in", () => {
     const ctx = {
       pokemon,
       opponent,
-      state: createMockState() as any,
+      state: createMockState() as BattleState,
       trigger: CORE_ABILITY_TRIGGER_IDS.onSwitchIn,
-      rng: createMockRng(100) as any,
+      rng: createMockRng(100) as unknown as SeededRandom,
     };
 
     const result = applyGen4Ability(CORE_ABILITY_TRIGGER_IDS.onSwitchIn, ctx);
@@ -1169,9 +1178,9 @@ describe("Gen4 Download — compare foe Def/SpDef on switch-in", () => {
     const ctx = {
       pokemon,
       opponent,
-      state: createMockState() as any,
+      state: createMockState() as BattleState,
       trigger: CORE_ABILITY_TRIGGER_IDS.onSwitchIn,
-      rng: createMockRng(100) as any,
+      rng: createMockRng(100) as unknown as SeededRandom,
     };
 
     const result = applyGen4Ability(CORE_ABILITY_TRIGGER_IDS.onSwitchIn, ctx);
@@ -1195,9 +1204,9 @@ describe("Gen4 Download — compare foe Def/SpDef on switch-in", () => {
     const ctx = {
       pokemon,
       opponent,
-      state: createMockState() as any,
+      state: createMockState() as BattleState,
       trigger: CORE_ABILITY_TRIGGER_IDS.onSwitchIn,
-      rng: createMockRng(100) as any,
+      rng: createMockRng(100) as unknown as SeededRandom,
     };
 
     const result = applyGen4Ability(CORE_ABILITY_TRIGGER_IDS.onSwitchIn, ctx);
@@ -1217,9 +1226,9 @@ describe("Gen4 Download — compare foe Def/SpDef on switch-in", () => {
 
     const ctx = {
       pokemon,
-      state: createMockState() as any,
+      state: createMockState() as BattleState,
       trigger: CORE_ABILITY_TRIGGER_IDS.onSwitchIn,
-      rng: createMockRng(100) as any,
+      rng: createMockRng(100) as unknown as SeededRandom,
     };
 
     const result = applyGen4Ability(CORE_ABILITY_TRIGGER_IDS.onSwitchIn, ctx);

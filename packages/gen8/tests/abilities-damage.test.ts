@@ -127,7 +127,7 @@ function createOnFieldPokemon(overrides: {
   pokemon.currentHp = overrides.currentHp ?? maxHp;
   pokemon.ability = overrides.ability ?? abilityIds.none;
   pokemon.heldItem = overrides.heldItem ?? null;
-  pokemon.status = (overrides.status ?? null) as any;
+  pokemon.status = overrides.status ?? null;
   pokemon.calculatedStats = {
     hp: maxHp,
     attack: overrides.attack ?? defaultCalculatedStats.attack,

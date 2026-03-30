@@ -856,7 +856,7 @@ describe("Suppressed Surge ability", () => {
       nickname: "Pincurchin",
     });
     // Simulate suppressed ability via suppressedAbility field
-    (pokemon as any).suppressedAbility = abilityIds.electricSurge;
+    pokemon.suppressedAbility = abilityIds.electricSurge;
     const state = createBattleState();
     const context = createAbilityContext({ pokemon, state });
 
