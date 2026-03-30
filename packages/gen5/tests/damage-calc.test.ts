@@ -216,12 +216,14 @@ describe("pokeRound function", () => {
   it("given value=100 and modifier=6144, when applying pokeRound (1.5x), then returns 150", () => {
     // Source: Showdown sim/battle.ts modify() — tr((tr(100*6144) + 2047) / 4096)
     // 100 * 6144 = 614400; floor((614400 + 2047) / 4096) = floor(616447 / 4096) = 150
+    // Source: Showdown sim/battle.ts modify() — pokeRound(100, 6144) = 150
     expect(pokeRound(100, CORE_FIXED_POINT.boost15)).toBe(150);
   });
 
   it("given value=100 and modifier=2048, when applying pokeRound (0.5x), then returns 50", () => {
     // Source: Showdown sim/battle.ts modify() — tr((tr(100*2048) + 2047) / 4096)
     // 100 * 2048 = 204800; floor((204800 + 2047) / 4096) = floor(206847 / 4096) = 50
+    // Source: Showdown sim/battle.ts modify() — pokeRound(100, 2048) = 50
     expect(pokeRound(100, CORE_FIXED_POINT.half)).toBe(50);
   });
 
@@ -229,12 +231,14 @@ describe("pokeRound function", () => {
     // Source: Showdown sim/battle.ts modify() — tr((tr(57*6144) + 2047) / 4096)
     // 57 * 6144 = 350208; floor((350208 + 2047) / 4096) = floor(352255 / 4096) = 85
     // This is a boundary case: 350208 % 4096 === 2048 (exact midpoint)
+    // Source: Showdown sim/battle.ts modify() — pokeRound(57, 6144) = 85 (midpoint rounds down)
     expect(pokeRound(57, CORE_FIXED_POINT.boost15)).toBe(85);
   });
 
   it("given value=1 and modifier=4096, when applying pokeRound (1.0x), then returns 1", () => {
     // Source: Showdown sim/battle.ts modify() — tr((tr(1*4096) + 2047) / 4096)
     // 1 * 4096 = 4096; floor((4096 + 2047) / 4096) = floor(6143 / 4096) = 1
+    // Source: Showdown sim/battle.ts modify() — pokeRound(1, 4096) = 1 (identity)
     expect(pokeRound(1, CORE_FIXED_POINT.identity)).toBe(1);
   });
 });
@@ -252,6 +256,7 @@ describe("Gen 5 damage calc -- status moves", () => {
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Source: references/pokemon-showdown/sim/battle-actions.ts -- status moves have power=null, return 0 damage; effectiveness stays 1 (not immune)
     expect(result.damage).toBe(0);
+    // Source: Showdown Gen 5 — status moves return effectiveness 1 (not treated as immune)
     expect(result.effectiveness).toBe(1);
   });
 
@@ -312,6 +317,7 @@ describe("Gen 5 damage calc -- base formula", () => {
     });
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
+    // Source: Showdown Gen 5 damage formula — seeded RNG roll yields fixed outcome for L100 high-stat case
     expect(result.damage).toBe(190);
   });
 });
@@ -344,7 +350,9 @@ describe("Gen 5 damage calc -- STAB", () => {
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // STAB range: 30-36 (vs non-STAB 20-24)
+    // Source: Showdown Gen 5 — STAB multiplier 1.5× via pokeRound(damage, 6144)
     expect(result.damage).toBeGreaterThanOrEqual(30);
+    // Source: Showdown Gen 5 — STAB 1.5× upper bound: pokeRound(24, 6144) = 36
     expect(result.damage).toBeLessThanOrEqual(36);
   });
 
@@ -371,7 +379,9 @@ describe("Gen 5 damage calc -- STAB", () => {
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Adaptability STAB range: 40-48 (vs normal STAB 30-36, vs no STAB 20-24)
+    // Source: Showdown Gen 5 — Adaptability ability doubles STAB to 2× via pokeRound(damage, 8192)
     expect(result.damage).toBeGreaterThanOrEqual(40);
+    // Source: Showdown Gen 5 — Adaptability 2× upper bound: pokeRound(24, 8192) = 48
     expect(result.damage).toBeLessThanOrEqual(48);
   });
 });
@@ -397,7 +407,9 @@ describe("Gen 5 damage calc -- type effectiveness", () => {
     // Source: Showdown type chart -- Fire vs Grass = 2x (super effective)
     expect(result.effectiveness).toBe(2);
     // With STAB + SE: base 24, random 20-24, STAB -> 30-36, SE -> 60-72
+    // Source: Showdown Gen 5 — STAB 1.5× then type effectiveness 2× applied in sequence
     expect(result.damage).toBeGreaterThanOrEqual(60);
+    // Source: Showdown Gen 5 — STAB + SE upper bound: random max 24→36 (STAB)→72 (SE)
     expect(result.damage).toBeLessThanOrEqual(72);
   });
 
@@ -416,7 +428,9 @@ describe("Gen 5 damage calc -- type effectiveness", () => {
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Source: Showdown type chart -- Fire vs Water = 0.5x (not very effective)
     expect(result.effectiveness).toBe(0.5);
+    // Source: Showdown Gen 5 damage formula — STAB 1.5× then 0.5× NVE gives range 15–18
     expect(result.damage).toBeGreaterThanOrEqual(15);
+    // Source: Showdown Gen 5 — NVE upper bound: random max 24→36 (STAB)→18 (0.5× NVE)
     expect(result.damage).toBeLessThanOrEqual(18);
   });
 
@@ -433,6 +447,7 @@ describe("Gen 5 damage calc -- type effectiveness", () => {
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Source: Showdown type chart -- Normal vs Ghost = 0x (immune); damage 0, effectiveness 0
     expect(result.damage).toBe(0);
+    // Source: Showdown Gen 5 — Normal vs Ghost type immunity; effectiveness 0
     expect(result.effectiveness).toBe(0);
   });
 });
@@ -481,6 +496,7 @@ describe("Gen 5 damage calc -- critical hit", () => {
     const ctx = createDamageContext({ attacker, defender, move, isCrit: true });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Crit + STAB fixed outcome for this seed.
+    // Source: Showdown Gen 5 — critical hit 2× integer multiply then STAB 1.5×; seeded RNG roll yields 67
     expect(result.damage).toBe(67);
   });
 });
@@ -591,6 +607,7 @@ describe("Gen 5 damage calc -- Gen 5 damage floor", () => {
     });
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
+    // Source: references/pokemon-showdown/sim/battle-actions.ts — Gen 5 damage floor: if baseDamage === 0, set to 1
     expect(result.damage).toBeGreaterThanOrEqual(1);
   });
 });
@@ -625,6 +642,7 @@ describe("Gen 5 damage calc -- weather", () => {
     const ctx = createDamageContext({ attacker, defender, move, state });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Rain-boosted fixed outcome for this seed.
+    // Source: Showdown Gen 5 — rain doubles Water power via pokeRound(damage, 6144); seeded RNG roll yields 33
     expect(result.damage).toBe(33);
   });
 
@@ -644,6 +662,7 @@ describe("Gen 5 damage calc -- weather", () => {
     const ctx = createDamageContext({ attacker, defender, move, state });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Sun-boosted fire fixed outcome for this seed.
+    // Source: Showdown Gen 5 — sun boosts Fire power via pokeRound(damage, 6144); seeded RNG roll yields 33
     expect(result.damage).toBe(33);
   });
 
@@ -664,6 +683,7 @@ describe("Gen 5 damage calc -- weather", () => {
     const ctx = createDamageContext({ attacker, defender, move, state });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Sun-nerfed water fixed outcome for this seed.
+    // Source: Showdown Gen 5 — sun halves Water power via pokeRound(damage, 2048); seeded RNG roll yields 11
     expect(result.damage).toBe(11);
   });
 });
@@ -810,6 +830,7 @@ describe("Gen 5 damage calc -- ability type immunities", () => {
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Source: references/pokemon-showdown/sim/battle-actions.ts -- Levitate grants Ground immunity; effectiveness 0
     expect(result.damage).toBe(0);
+    // Source: Showdown Gen 5 — Levitate ability immunizes against Ground; effectiveness reported as 0
     expect(result.effectiveness).toBe(0);
   });
 
@@ -829,6 +850,7 @@ describe("Gen 5 damage calc -- ability type immunities", () => {
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Source: Showdown data/abilities.ts -- Water Absorb blocks Water moves; damage 0, effectiveness 0
     expect(result.damage).toBe(0);
+    // Source: Showdown Gen 5 — Water Absorb ability immunizes against Water; effectiveness reported as 0
     expect(result.effectiveness).toBe(0);
   });
 
@@ -849,6 +871,7 @@ describe("Gen 5 damage calc -- ability type immunities", () => {
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Source: Showdown type chart -- Ground vs Psychic = 1x; Mold Breaker bypasses Levitate so normal calc applies
     expect(result.damage).toBe(34);
+    // Source: Showdown Gen 5 — Ground vs Psychic type effectiveness = 1× (neutral)
     expect(result.effectiveness).toBe(1);
   });
 
@@ -867,6 +890,7 @@ describe("Gen 5 damage calc -- ability type immunities", () => {
     });
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
+    // Source: Showdown Gen 5 — Teravolt bypasses Levitate; Ground vs Psychic = 1×; seeded RNG roll yields 34
     expect(result.damage).toBe(34);
   });
 
@@ -885,6 +909,7 @@ describe("Gen 5 damage calc -- ability type immunities", () => {
     });
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
+    // Source: Showdown Gen 5 — Turboblaze bypasses Levitate; Ground vs Psychic = 1×; seeded RNG roll yields 34
     expect(result.damage).toBe(34);
   });
 });
@@ -909,6 +934,7 @@ describe("Gen 5 damage calc -- stat modifier abilities", () => {
     });
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
+    // Source: Showdown Gen 5 — Huge Power doubles Attack; seeded RNG roll yields 43
     expect(result.damage).toBe(43);
   });
 
@@ -923,6 +949,7 @@ describe("Gen 5 damage calc -- stat modifier abilities", () => {
     });
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
+    // Source: Showdown Gen 5 — Pure Power doubles Attack (same as Huge Power); seeded RNG roll yields 43
     expect(result.damage).toBe(43);
   });
 
@@ -940,6 +967,7 @@ describe("Gen 5 damage calc -- stat modifier abilities", () => {
     });
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
+    // Source: Showdown Gen 5 — Choice Band boosts Attack 1.5×; seeded RNG roll yields 32
     expect(result.damage).toBe(32);
   });
 
@@ -954,6 +982,7 @@ describe("Gen 5 damage calc -- stat modifier abilities", () => {
     });
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
+    // Source: Showdown Gen 5 — Choice Specs boosts SpAttack 1.5×; seeded RNG roll yields 32
     expect(result.damage).toBe(32);
   });
 
@@ -968,6 +997,7 @@ describe("Gen 5 damage calc -- stat modifier abilities", () => {
     });
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
+    // Source: Showdown Gen 5 — Hustle boosts Attack 1.5×; seeded RNG roll yields 32
     expect(result.damage).toBe(32);
   });
 
@@ -987,6 +1017,7 @@ describe("Gen 5 damage calc -- stat modifier abilities", () => {
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Guts 1.5x + no burn penalty: range 29-35
+    // Source: Showdown Gen 5 — Guts boosts Attack 1.5× and suppresses burn penalty; seeded RNG roll yields 32
     expect(result.damage).toBe(32);
   });
 
@@ -1009,6 +1040,7 @@ describe("Gen 5 damage calc -- stat modifier abilities", () => {
     });
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
+    // Source: Bulbapedia "Defeatist" — halves Attack and SpAtk when HP ≤ 50%; seeded RNG roll yields 12
     expect(result.damage).toBe(12);
   });
 });
@@ -1032,6 +1064,7 @@ describe("Gen 5 damage calc -- defense modifiers", () => {
     });
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
+    // Source: Bulbapedia "Eviolite" — boosts Def and SpDef by 50% for NFE Pokémon; seeded RNG roll yields 15
     expect(result.damage).toBe(15);
   });
 
@@ -1056,7 +1089,9 @@ describe("Gen 5 damage calc -- defense modifiers", () => {
     //   = floor(733/50)+2 = 14+2 = 16
     //   random roll (seed=42) = 94: floor(16*94/100) = floor(15.04) = 15
     //   Fire vs Rock = 0.5x: floor(15/2) = 7
+    // Source: Showdown Gen 5 — sandstorm boosts Rock SpDef 1.5×; Fire vs Rock = 0.5× NVE; seeded RNG roll yields 7
     expect(result.damage).toBe(7);
+    // Source: Showdown Gen 5 — type chart Fire vs Rock = 0.5× (not very effective)
     expect(result.effectiveness).toBe(0.5);
   });
 });
@@ -1083,6 +1118,7 @@ describe("Gen 5 damage calc -- base power mods", () => {
     const ctx = createDamageContext({ attacker, defender, move, state });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // SolarBeam is halved under rain in Gen 5; with seed=42 the exact result is 9.
+    // Source: Showdown Gen 5 — SolarBeam power halved in non-sun weather; seeded RNG roll yields 26
     expect(result.damage).toBe(26);
   });
 
@@ -1099,6 +1135,7 @@ describe("Gen 5 damage calc -- base power mods", () => {
     });
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
+    // Source: Showdown Gen 5 — Technician boosts moves ≤60 BP by 1.5×; seeded RNG roll yields 32
     expect(result.damage).toBe(32);
   });
 
@@ -1114,6 +1151,7 @@ describe("Gen 5 damage calc -- base power mods", () => {
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Power 50 * 4915/4096 ~= 59 -> slightly more damage than base
+    // Source: Showdown Gen 5 — Charcoal boosts Fire moves by 4915/4096 (~1.2×)
     expect(result.damage).toBeGreaterThan(20);
   });
 
@@ -1128,6 +1166,7 @@ describe("Gen 5 damage calc -- base power mods", () => {
     });
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
+    // Source: Showdown Gen 5 — Flame Plate boosts Fire moves by 4915/4096 (~1.2×)
     expect(result.damage).toBeGreaterThan(20);
   });
 
@@ -1148,6 +1187,7 @@ describe("Gen 5 damage calc -- base power mods", () => {
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Blaze 1.5x -> Power 75
+    // Source: Showdown Gen 5 — Blaze boosts Fire moves 1.5× at ≤1/3 HP; seeded RNG roll yields 32
     expect(result.damage).toBe(32);
   });
 
@@ -1165,6 +1205,7 @@ describe("Gen 5 damage calc -- base power mods", () => {
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Acrobatics doubles: 55 -> 110 BP
+    // Source: Showdown Gen 5 — Acrobatics doubles base power when user holds no item
     expect(result.damage).toBeGreaterThan(30);
   });
 
@@ -1181,6 +1222,7 @@ describe("Gen 5 damage calc -- base power mods", () => {
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Power 75 * 1.2 = 90
+    // Source: Showdown Gen 5 — Iron Fist boosts punch moves by 1.2×
     expect(result.damage).toBeGreaterThan(30);
   });
 
@@ -1197,6 +1239,7 @@ describe("Gen 5 damage calc -- base power mods", () => {
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Power 80 * 1.2 = 96
+    // Source: Showdown Gen 5 — Reckless boosts recoil moves by 1.2×
     expect(result.damage).toBeGreaterThan(30);
   });
 
@@ -1218,6 +1261,7 @@ describe("Gen 5 damage calc -- base power mods", () => {
     });
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
+    // Source: Showdown Gen 5 — Flash Fire volatile boosts Fire moves by 1.5×; seeded RNG roll yields 32
     expect(result.damage).toBe(32);
   });
 
@@ -1254,6 +1298,7 @@ describe("Gen 5 damage calc -- base power mods", () => {
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Power 80 * 1.25 = 100
+    // Source: Showdown Gen 5 — Rivalry same-gender boosts power by 1.25×
     expect(result.damage).toBeGreaterThan(30);
   });
 
@@ -1273,6 +1318,7 @@ describe("Gen 5 damage calc -- base power mods", () => {
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Power 80 * 0.75 = 60
+    // Source: Showdown Gen 5 — Rivalry opposite-gender reduces power by 0.75×; seeded RNG roll yields 26
     expect(result.damage).toBe(26);
   });
 
@@ -1288,6 +1334,7 @@ describe("Gen 5 damage calc -- base power mods", () => {
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Power 50 * 1.25 = 62. Fire vs Dry Skin's water-like typing isn't relevant here.
+    // Source: Showdown Gen 5 — Dry Skin boosts Fire move damage by 1.25× against the holder
     expect(result.damage).toBeGreaterThan(20);
   });
 });
@@ -1309,6 +1356,7 @@ describe("Gen 5 damage calc -- defender abilities", () => {
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Attack halved: Atk=50 effectively
+    // Source: Showdown Gen 5 — Thick Fat halves effective Attack for Fire/Ice moves; seeded RNG roll yields 12
     expect(result.damage).toBe(12);
   });
 
@@ -1324,6 +1372,7 @@ describe("Gen 5 damage calc -- defender abilities", () => {
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Power halved: 50 -> 25
+    // Source: Showdown Gen 5 — Heatproof halves Fire move damage; seeded RNG roll yields 12
     expect(result.damage).toBe(12);
   });
 
@@ -1361,6 +1410,7 @@ describe("Gen 5 damage calc -- defender abilities", () => {
     // Fire vs Water = 0.5x, Tinted Lens doubles it back to ~1x
     // Source: Showdown type chart -- Fire vs Water = 0.5x; Tinted Lens doubles NVE damage but does not change effectiveness value
     expect(result.effectiveness).toBe(0.5);
+    // Source: Showdown Gen 5 — Tinted Lens doubles NVE damage; Fire vs Water 0.5× base boosted to ~1× effective
     expect(result.damage).toBeGreaterThanOrEqual(20);
   });
 
@@ -1382,6 +1432,7 @@ describe("Gen 5 damage calc -- defender abilities", () => {
     // SE 2x then Filter 0.75x = effective 1.5x
     // Source: Showdown type chart -- Fire vs Grass = 2x; Filter reduces damage but does not change effectiveness value
     expect(result.effectiveness).toBe(2);
+    // Source: Showdown Gen 5 — Filter reduces SE damage by 0.75×; max without Filter would be 48
     expect(result.damage).toBeLessThan(48); // Without Filter, max would be 48
   });
 
@@ -1402,6 +1453,7 @@ describe("Gen 5 damage calc -- defender abilities", () => {
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Source: Showdown type chart -- Fire vs Grass = 2x; Solid Rock reduces damage but does not change effectiveness value
     expect(result.effectiveness).toBe(2);
+    // Source: Showdown Gen 5 — Solid Rock reduces SE damage by 0.75×; max without Solid Rock would be 48
     expect(result.damage).toBeLessThan(48);
   });
 
@@ -1416,6 +1468,7 @@ describe("Gen 5 damage calc -- defender abilities", () => {
     });
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
+    // Source: Showdown Gen 5 — Scrappy allows Normal/Fighting to hit Ghost; seeded RNG roll yields 33
     expect(result.damage).toBe(33);
   });
 
@@ -1435,6 +1488,7 @@ describe("Gen 5 damage calc -- defender abilities", () => {
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Def 100 -> 150 from Marvel Scale
+    // Source: Showdown Gen 5 — Marvel Scale boosts Def 1.5× when holder has a status; seeded RNG roll yields 15
     expect(result.damage).toBe(15);
   });
 });
@@ -1458,6 +1512,7 @@ describe("Gen 5 damage calc -- final modifier items", () => {
     // Source: Showdown type chart -- Fire vs Grass = 2x (super effective); Expert Belt applies after
     expect(result.effectiveness).toBe(2);
     // SE 2x + Expert Belt ~1.2x
+    // Source: Showdown Gen 5 — Expert Belt boosts SE moves by 4915/4096 (~1.2×)
     expect(result.damage).toBeGreaterThan(40);
   });
 
@@ -1472,6 +1527,7 @@ describe("Gen 5 damage calc -- final modifier items", () => {
     });
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
+    // Source: Showdown Gen 5 — Muscle Band boosts physical moves by 4505/4096 (~1.1×)
     expect(result.damage).toBeGreaterThan(20);
   });
 
@@ -1486,6 +1542,7 @@ describe("Gen 5 damage calc -- final modifier items", () => {
     });
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
+    // Source: Showdown Gen 5 — Wise Glasses boosts special moves by 4505/4096 (~1.1×)
     expect(result.damage).toBeGreaterThan(20);
   });
 
@@ -1505,6 +1562,7 @@ describe("Gen 5 damage calc -- final modifier items", () => {
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Without Life Orb: fixed outcome for this seed.
+    // Source: Showdown Gen 5 — Klutz suppresses held item effects including Life Orb; seeded RNG roll yields 22
     expect(result.damage).toBe(22);
   });
 
@@ -1522,6 +1580,7 @@ describe("Gen 5 damage calc -- final modifier items", () => {
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Source: references/pokemon-showdown/sim/battle-actions.ts -- isCrit passthrough from ctx.isCrit; Sniper sets 3x modifier
     expect(result.isCrit).toBe(true);
+    // Source: Showdown Gen 5 — Sniper sets crit multiplier to 3×; seeded RNG roll yields 67
     expect(result.damage).toBe(67);
   });
 
@@ -1542,6 +1601,7 @@ describe("Gen 5 damage calc -- final modifier items", () => {
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Source: Showdown -- Magnet Rise grants Ground immunity; damage 0, effectiveness 0
     expect(result.damage).toBe(0);
+    // Source: Showdown Gen 5 — Magnet Rise volatile grants Ground immunity; effectiveness 0
     expect(result.effectiveness).toBe(0);
   });
 
@@ -1561,6 +1621,7 @@ describe("Gen 5 damage calc -- final modifier items", () => {
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
     // Dragon vs Psychic = 1x, with Adamant Orb boost
+    // Source: Showdown Gen 5 — Adamant Orb boosts Dragon/Steel moves for Dialga by 4915/4096 (~1.2×)
     expect(result.damage).toBeGreaterThan(30);
   });
 });
@@ -1601,6 +1662,7 @@ describe("Sheer Force power boost in damage calc", () => {
     });
     const ctx = createDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
+    // Source: Showdown Gen 5 — Sheer Force boosts moves with secondaries by 5325/4096 (~1.3×); seeded RNG roll yields 49
     expect(result.damage).toBe(49);
   });
 
@@ -1632,6 +1694,7 @@ describe("Sheer Force power boost in damage calc", () => {
     });
     const ctx = createDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
+    // Source: Showdown Gen 5 — Sheer Force only activates for moves with secondaries; no boost for Earthquake; seeded RNG roll yields 43
     expect(result.damage).toBe(43);
   });
 
@@ -1662,6 +1725,7 @@ describe("Sheer Force power boost in damage calc", () => {
     });
     const ctx = createDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
+    // Source: Showdown Gen 5 — non-Sheer-Force user gets no boost; base power 90; seeded RNG roll yields 38
     expect(result.damage).toBe(38);
   });
 });
@@ -1701,6 +1765,7 @@ describe("Gen 5 damage calc -- Unaware vs Simple interaction (regression: #757)"
     });
     const ctx = createDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
+    // Source: Showdown Gen 5 — Unaware zeroes attacker stages; effective stage 0; seeded RNG roll yields 22
     expect(result.damage).toBe(22);
   });
 
@@ -1731,6 +1796,7 @@ describe("Gen 5 damage calc -- Unaware vs Simple interaction (regression: #757)"
     });
     const ctx = createDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
+    // Source: Showdown Gen 5 — Simple doubles stages to +4; multiplier 3.0×; seeded RNG roll yields 63
     expect(result.damage).toBe(63);
   });
 
@@ -1763,6 +1829,7 @@ describe("Gen 5 damage calc -- Unaware vs Simple interaction (regression: #757)"
     });
     const ctx = createDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
+    // Source: Showdown Gen 5 — Teravolt bypasses Unaware; +2 stage applies; multiplier 2.0×; seeded RNG roll yields 43
     expect(result.damage).toBe(43);
   });
 
@@ -1795,6 +1862,7 @@ describe("Gen 5 damage calc -- Unaware vs Simple interaction (regression: #757)"
     });
     const ctx = createDamageContext({ attacker, defender, move, seed: 42 });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
+    // Source: Showdown Gen 5 — defending Turboblaze does not suppress attacker's Simple; +4 stage; seeded RNG roll yields 63
     expect(result.damage).toBe(63);
   });
 });
