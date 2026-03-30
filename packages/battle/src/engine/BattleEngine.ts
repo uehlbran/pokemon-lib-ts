@@ -2574,6 +2574,11 @@ export class BattleEngine implements BattleEventEmitter {
           type: "message",
           text: `It doesn't affect ${getPokemonName(defender)}!`,
         });
+        // Delegate self-faint moves (Self-Destruct / Explosion) to onMoveMiss, which
+        // handles the user fainting even when the target is immune.
+        // Source: pokered engine/battle/move_effects/explosion.asm — user HP set to 0
+        //   before the type check, so user faints even against immune targets.
+        this.ruleset.onMoveMiss(actor, moveData, this.state);
         actor.lastMoveUsed = moveData.id;
         actor.movedThisTurn = true;
         return;
@@ -3166,6 +3171,9 @@ export class BattleEngine implements BattleEventEmitter {
           type: "message",
           text: `It doesn't affect ${getPokemonName(defender)}!`,
         });
+        // Delegate self-faint moves to onMoveMiss (same as the miss path).
+        // Source: pokered engine/battle/move_effects/explosion.asm — user faints even if immune.
+        this.ruleset.onMoveMiss(actor, moveData, this.state);
         actor.lastMoveUsed = moveId;
         actor.movedThisTurn = true;
         return;

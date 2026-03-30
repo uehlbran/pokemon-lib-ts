@@ -41,18 +41,37 @@ class ImmunityRuleset extends MockRuleset {
 }
 
 // ---------------------------------------------------------------------------
-// Stateful MockRuleset that returns a recursiveMove on the first call only,
-// to exercise the executeMoveById code path without infinite recursion.
-// Source: BattleEngine.ts — executeMoveById is called when effectResult.recursiveMove is set
+// MockRuleset variant where the OUTER move is effective (so executeMoveEffect runs
+// post-damage and can return recursiveMove), but the RECURSIVE call (via executeMoveById)
+// is immune (effectiveness=0, damage=0).
+//
+// Design rationale: ImmunityRuleset cannot be used here because effectiveness=0 triggers
+// the immunity guard in executeMove *before* executeMoveEffect is called, so recursiveMove
+// is never returned and executeMoveById is never exercised.
+//
+// Source: BattleEngine.ts line ~2927 — "if (resolvedEffectResult.recursiveMove) executeMoveById(...)"
+//   The executeMoveById path is exercised by Mirror Move, Metronome, Copycat chains.
 // ---------------------------------------------------------------------------
-class RecursiveOnceImmunityRuleset extends ImmunityRuleset {
-  private recursiveCallCount = 0;
+class RecursiveOnceImmunityRuleset extends MockRuleset {
+  private damageCallCount = 0;
+  private moveEffectCallCount = 0;
+
+  override calculateDamage(context: DamageContext): DamageResult {
+    this.damageCallCount++;
+    if (this.damageCallCount === 1) {
+      // Outer move: effective — allows post-damage executeMoveEffect to run
+      return { damage: 10, effectiveness: 1, isCrit: context.isCrit, randomFactor: 1 };
+    }
+    // Recursive/subsequent call: immune — triggers the executeMoveById immunity guard
+    // Source: pokered engine/battle/core.asm CheckTypeMatchup — 0× immunity on recursive moves
+    return { damage: 0, effectiveness: 0, isCrit: context.isCrit, randomFactor: 1 };
+  }
 
   override executeMoveEffect(_context: MoveEffectContext): MoveEffectResult {
-    this.recursiveCallCount++;
-    if (this.recursiveCallCount === 1) {
-      // First call: trigger a recursive tackle (also immune via calculateDamage override)
-      // Source: BattleEngine.ts line 3307 — "if (effectResult.recursiveMove) executeMoveById(...)"
+    this.moveEffectCallCount++;
+    if (this.moveEffectCallCount === 1) {
+      // First post-damage call: trigger a recursive tackle (immune via calculateDamage)
+      // Source: BattleEngine.ts line ~2927 — "if (resolvedEffectResult.recursiveMove) executeMoveById(...)"
       return {
         statusInflicted: null,
         volatileInflicted: null,
@@ -64,7 +83,7 @@ class RecursiveOnceImmunityRuleset extends ImmunityRuleset {
         recursiveMove: CORE_MOVE_IDS.tackle,
       };
     }
-    // Subsequent calls: no recursive move (prevents infinite loop)
+    // Subsequent calls: no recursive move (prevents infinite recursion)
     return {
       statusInflicted: null,
       volatileInflicted: null,
@@ -200,18 +219,23 @@ describe("BattleEngine — type immunity: no DamageEvent with amount=0 (#1161)",
 
   // --- executeMoveById path (recursive moves: Mirror Move, Metronome chains) ---
 
-  it("given a recursive move via executeMoveById with effectiveness=0, when it executes, then no DamageEvent is emitted", () => {
-    // Arrange — the move effect triggers a recursive tackle which is also immune
+  it("given a recursive move via executeMoveById with effectiveness=0, when it executes, then no DamageEvent with amount=0 is emitted for the recursive call", () => {
+    // Arrange — outer move is effective (damage=10, effectiveness=1) so executeMoveEffect runs
+    // post-damage and returns recursiveMove=tackle. The recursive tackle has effectiveness=0,
+    // damage=0, triggering the executeMoveById immunity guard.
     // Source: BattleEngine.ts executeMoveById — secondary code path used by Mirror Move,
-    //   Metronome, and other recursive attacks; must apply same immunity guard
+    //   Metronome, and other recursive attacks; must apply the same immunity guard as executeMove
     const ruleset = new RecursiveOnceImmunityRuleset();
     const { engine, events } = createEngine(ruleset);
     // Act
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
-    // Assert: no DamageEvent with amount=0 from either primary or recursive immune hit
-    const damageEvents = events.filter((e) => e.type === "damage");
-    expect(damageEvents).toHaveLength(0);
+    // Assert: no DamageEvent with amount=0 from the recursive immune tackle.
+    // The outer move's DamageEvent (amount=10) is expected and correct.
+    const zeroAmountDamageEvents = events.filter(
+      (e) => e.type === "damage" && (e as { type: "damage"; amount: number }).amount === 0,
+    );
+    expect(zeroAmountDamageEvents).toHaveLength(0);
   });
 
   // --- Smoke: every DamageEvent.amount must be > 0 regardless of immunities ---
