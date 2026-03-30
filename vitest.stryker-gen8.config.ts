@@ -21,6 +21,10 @@ export default defineConfig({
         replacement: fileURLToPath(new URL("./packages/battle/src/index.ts", import.meta.url)),
       },
       {
+        find: "@pokemon-lib-ts/gen7",
+        replacement: fileURLToPath(new URL("./packages/gen7/src/index.ts", import.meta.url)),
+      },
+      {
         find: "@pokemon-lib-ts/gen8",
         replacement: fileURLToPath(new URL("./packages/gen8/src/index.ts", import.meta.url)),
       },
