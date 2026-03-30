@@ -1377,7 +1377,10 @@ export function calculateGen9Damage(
       baseDamage = baseDamage * 2;
       typeMod /= 2;
     }
-  } else if (effectiveness < TYPE_EFFECTIVENESS_MULTIPLIERS.neutral && effectiveness > TYPE_EFFECTIVENESS_MULTIPLIERS.immune) {
+  } else if (
+    effectiveness < TYPE_EFFECTIVENESS_MULTIPLIERS.neutral &&
+    effectiveness > TYPE_EFFECTIVENESS_MULTIPLIERS.immune
+  ) {
     let typeMod = effectiveness;
     while (typeMod <= 0.5) {
       baseDamage = Math.floor(baseDamage / 2);
@@ -1499,7 +1502,11 @@ export function calculateGen9Damage(
 
   // Expert Belt: 1.2x for super-effective moves
   // Source: Showdown data/items.ts -- Expert Belt
-  if (!attackerHasKlutz && attackerItem === "expert-belt" && effectiveness > TYPE_EFFECTIVENESS_MULTIPLIERS.neutral) {
+  if (
+    !attackerHasKlutz &&
+    attackerItem === "expert-belt" &&
+    effectiveness > TYPE_EFFECTIVENESS_MULTIPLIERS.neutral
+  ) {
     baseDamage = pokeRound(baseDamage, 4915); // ~1.2x
     itemMultiplier = 4915 / 4096;
   }
@@ -1549,7 +1556,10 @@ export function calculateGen9Damage(
     if (resistType && resistType === effectiveMoveType) {
       // Chilan Berry activates on any Normal-type hit; others require SE
       // Source: Showdown data/items.ts -- Chilan Berry: onSourceModifyDamage (no SE check)
-      if (resistType === CORE_TYPE_IDS.normal || effectiveness > TYPE_EFFECTIVENESS_MULTIPLIERS.neutral) {
+      if (
+        resistType === CORE_TYPE_IDS.normal ||
+        effectiveness > TYPE_EFFECTIVENESS_MULTIPLIERS.neutral
+      ) {
         baseDamage = pokeRound(baseDamage, 2048); // 0.5x via pokeRound
         typeResistBerryConsumed = defenderItemForBerry;
       }
