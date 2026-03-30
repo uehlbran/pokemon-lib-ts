@@ -59,7 +59,10 @@
     "test:mutant:gen3": "stryker run stryker.gen3.config.mjs",
     "test:mutant:gen4": "stryker run stryker.gen4.config.mjs",
     "test:mutant:gen5": "stryker run stryker.gen5.config.mjs",
-    "test:mutant:gen6": "stryker run stryker.gen6.config.mjs"
+    "test:mutant:gen6": "stryker run stryker.gen6.config.mjs",
+    "test:mutant:gen7": "stryker run stryker.gen7.config.mjs",
+    "test:mutant:gen8": "stryker run stryker.gen8.config.mjs",
+    "test:mutant:gen9": "stryker run stryker.gen9.config.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.0",

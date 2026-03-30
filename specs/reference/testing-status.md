@@ -186,24 +186,31 @@ Planned initial slice:
 
 ## Mutation-Testing Rollout Status
 
-Current status:
-- not yet implemented
+Current status: **Implemented for core + gen1-9 damage calcs.**
 
-First target scope:
-- `packages/core/src/logic/*`
-- `packages/core/src/data/*` where validation/lookups matter
-- `packages/battle/src/engine/*`
+### Runnable targets
+
+| Script | Config | Mutates |
+|--------|--------|---------|
+| `npm run test:mutant` / `test:mutant:core` | `stryker.config.mjs` | `packages/core/src/logic/damage-utils.ts` |
+| `npm run test:mutant:gen1` | `stryker.gen1.config.mjs` | `packages/gen1/src/Gen1DamageCalc.ts` |
+| `npm run test:mutant:gen2` | `stryker.gen2.config.mjs` | `packages/gen2/src/Gen2DamageCalc.ts` |
+| `npm run test:mutant:gen3` | `stryker.gen3.config.mjs` | `packages/gen3/src/Gen3DamageCalc.ts` |
+| `npm run test:mutant:gen4` | `stryker.gen4.config.mjs` | `packages/gen4/src/Gen4DamageCalc.ts` |
+| `npm run test:mutant:gen5` | `stryker.gen5.config.mjs` | `packages/gen5/src/Gen5DamageCalc.ts` |
+| `npm run test:mutant:gen6` | `stryker.gen6.config.mjs` | `packages/gen6/src/Gen6DamageCalc.ts` |
+| `npm run test:mutant:gen7` | `stryker.gen7.config.mjs` | `packages/gen7/src/Gen7DamageCalc.ts` |
+| `npm run test:mutant:gen8` | `stryker.gen8.config.mjs` | `packages/gen8/src/Gen8DamageCalc.ts` |
+| `npm run test:mutant:gen9` | `stryker.gen9.config.mjs` | `packages/gen9/src/Gen9DamageCalc.ts` |
+
+Reports written to `reports/mutation/mutation-{core,gen1-9}.json`.
+
+### Not yet covered
+
+- `packages/battle/src/engine/*` — highest-value next target
 - `packages/battle/src/utils/*`
-
-First concrete targets:
-- `packages/core/src/logic/stat-stages.ts` — do formula and stage-bounds tests kill the obvious branch mutations?
-- `packages/core/src/logic/stat-inputs.ts` — do invalid-state constructors/validators actually reject malformed inputs?
-- `packages/core/src/logic/pokemon-factory.ts` — do Pokemon creation paths reject contradictory runtime identity/state?
-- `packages/core/src/data/data-manager.ts` — do canonical lookup invariants hold when ids or packages drift?
-- `packages/core/src/logic/experience.ts`
-- `packages/battle/src/ruleset/BaseRuleset.ts` — do shared ordering/helper branches have real falsification coverage?
-- `packages/battle/src/ruleset/GenerationRegistry.ts` — does ruleset lookup/wiring fail loudly on bad registrations?
-- `packages/battle/src/ruleset/cloneGenerationRuleset.ts` — does generation cloning preserve the expected ruleset identity/behavior?
+- Individual move-effect handlers (gen1-9)
+- Entry hazard and status logic
 
 ## Default Next PR Sequence
 
