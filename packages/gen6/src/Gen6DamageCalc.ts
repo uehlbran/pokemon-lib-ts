@@ -610,6 +610,21 @@ export function calculateGen6Damage(
     power = Math.floor(power / 2);
   }
 
+  // Facade: doubles base power (70 → 140) when the user has a major status condition
+  // (burn, paralysis, poison, or badly-poisoned). Sleep does NOT trigger the doubling.
+  // Source: pret/pokeemerald data/battle_scripts_1.s BattleScript_EffectFacade —
+  //   jumpifstatus BS_ATTACKER, STATUS1_POISON|STATUS1_BURN|STATUS1_PARALYSIS|STATUS1_TOXIC_POISON,
+  //   BattleScript_FacadeDoubleDmg; then setbyte sDMG_MULTIPLIER, 2
+  // Source: Showdown data/moves.ts facade.onBasePower —
+  //   if (pokemon.status && pokemon.status !== 'slp') { return this.chainModify(2); }
+  if (
+    move.id === GEN6_MOVE_IDS.facade &&
+    attacker.pokemon.status !== null &&
+    attacker.pokemon.status !== CORE_STATUS_IDS.sleep
+  ) {
+    power = power * 2;
+  }
+
   // Gem boost: 1.3x base power in Gen 6 (consumed before damage)
   // Source: Showdown data/items.ts -- gem: chainModify([5325, 4096]) in Gen 6+
   // Source: Bulbapedia "Gem" Gen 6 -- gem boost nerfed from 1.5x to 1.3x

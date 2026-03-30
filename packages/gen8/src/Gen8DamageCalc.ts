@@ -68,6 +68,7 @@ import {
   getTypeEffectiveness,
   pokeRound,
 } from "@pokemon-lib-ts/core";
+import { GEN8_MOVE_IDS } from "./data/reference-ids.js";
 import { isWeatherSuppressedGen8 } from "./Gen8Weather.js";
 
 // Re-exported for backwards compatibility; canonical implementation lives in core.
@@ -748,6 +749,21 @@ export function calculateGen8Damage(
     weather !== "harsh-sun"
   ) {
     power = Math.floor(power / 2);
+  }
+
+  // Facade: doubles base power (70 → 140) when the user has a major status condition
+  // (burn, paralysis, poison, or badly-poisoned). Sleep does NOT trigger the doubling.
+  // Source: pret/pokeemerald data/battle_scripts_1.s BattleScript_EffectFacade —
+  //   jumpifstatus BS_ATTACKER, STATUS1_POISON|STATUS1_BURN|STATUS1_PARALYSIS|STATUS1_TOXIC_POISON,
+  //   BattleScript_FacadeDoubleDmg; then setbyte sDMG_MULTIPLIER, 2
+  // Source: Showdown data/moves.ts facade.onBasePower —
+  //   if (pokemon.status && pokemon.status !== 'slp') { return this.chainModify(2); }
+  if (
+    move.id === GEN8_MOVE_IDS.facade &&
+    attacker.pokemon.status !== null &&
+    attacker.pokemon.status !== CORE_STATUS_IDS.sleep
+  ) {
+    power = power * 2;
   }
 
   // Gem boost: only Normal Gem available in Gen 8, 1.3x via pokeRound

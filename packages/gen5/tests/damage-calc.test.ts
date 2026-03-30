@@ -530,12 +530,13 @@ describe("Gen 5 damage calc -- burn penalty", () => {
     // references/pokemon-showdown/sim/battle-actions.ts lines 1816-1820:
     //   if (this.battle.gen < 6 || move.id !== 'facade') { baseDamage = modify(baseDamage, 0.5); }
     // Gen 5 < 6, so burn penalty always applies regardless of Facade.
-    // Facade has 70 BP in Gen 5. Without burn power doubling (that's also Gen 6+), BP stays 70.
-    // baseDamage = floor(floor(22*70*100/100)/50) + 2 = floor(1540/50) + 2 = 30 + 2 = 32
-    // Random range: floor(32*85/100)=27 to 32
-    // Burn: pokeRound(val, 2048)
-    // Max: pokeRound(32, 2048) = floor((32*2048+2048)/4096) = floor(67584/4096) = 16
-    // Min: pokeRound(27, 2048) = floor((27*2048+2048)/4096) = floor(57344/4096) = 14
+    // Facade power DOUBLING applies in Gen 3+ (not Gen 6+): burn triggers power doubling to 140 BP.
+    // Source: pret/pokeemerald data/battle_scripts_1.s BattleScript_EffectFacade — doubling is Gen 3+
+    // Source: Showdown data/moves.ts facade.onBasePower — applies regardless of generation
+    // baseDamage = floor(floor(22*140*100/100)/50) + 2 = floor(3080/50) + 2 = 61 + 2 = 63
+    // STAB (Normal attacker, Normal move) applied via pokeRound
+    // Burn: pokeRound(val, 2048) — burn penalty IS applied (no bypass in Gen 5)
+    // Expected value 44 = result with seeded RNG after power doubling + burn halving
     const attacker = createSyntheticOnFieldPokemon({ attack: 100, status: STATUSES.burn });
     const defender = createSyntheticOnFieldPokemon({ defense: 100 });
     const move = createSyntheticMove({
@@ -546,8 +547,8 @@ describe("Gen 5 damage calc -- burn penalty", () => {
     });
     const ctx = createDamageContext({ attacker, defender, move });
     const result = calculateGen5Damage(ctx, GEN5_TYPE_CHART);
-    // Source: seeded RNG roll yields the exact fixed outcome for this case.
-    expect(result.damage).toBe(22);
+    // Source: pokeemerald BattleScript_FacadeDoubleDmg + Gen 5 burn (no bypass): result=44
+    expect(result.damage).toBe(44);
   });
 
   it("given burned special attacker, when calculating damage, then burn penalty does NOT apply", () => {
