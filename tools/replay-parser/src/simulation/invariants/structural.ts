@@ -1,4 +1,5 @@
 import type { BattleEvent } from "@pokemon-lib-ts/battle";
+import { BATTLE_EVENT_TYPES } from "@pokemon-lib-ts/battle";
 import type { Invariant, InvariantViolation } from "../types.js";
 
 // Helper
@@ -21,7 +22,7 @@ export const eventFraming: Invariant = {
       violations.push(violation("event-framing", "Event stream is empty", 0));
       return violations;
     }
-    if (events[0]?.type !== "battle-start") {
+    if (events[0]?.type !== BATTLE_EVENT_TYPES.battleStart) {
       violations.push(
         violation(
           "event-framing",
@@ -30,7 +31,7 @@ export const eventFraming: Invariant = {
         ),
       );
     }
-    if (events[events.length - 1]?.type !== "battle-end") {
+    if (events[events.length - 1]?.type !== BATTLE_EVENT_TYPES.battleEnd) {
       violations.push(
         violation(
           "event-framing",
@@ -48,7 +49,7 @@ export const singleBattleEnd: Invariant = {
   name: "single-battle-end",
   description: "Exactly one battle-end event must appear in the stream",
   check(events, _config) {
-    const count = events.filter((e) => e.type === "battle-end").length;
+    const count = events.filter((e) => e.type === BATTLE_EVENT_TYPES.battleEnd).length;
     if (count !== 1) {
       return [
         violation(
@@ -71,7 +72,7 @@ export const sequentialTurns: Invariant = {
     let expectedTurn = 1;
     for (let i = 0; i < events.length; i++) {
       const event = events[i];
-      if (event?.type === "turn-start") {
+      if (event?.type === BATTLE_EVENT_TYPES.turnStart) {
         const e = event as Extract<BattleEvent, { type: "turn-start" }>;
         if (e.turnNumber !== expectedTurn) {
           violations.push(
@@ -95,8 +96,8 @@ export const noTimeout: Invariant = {
   name: "no-timeout",
   description: "Battle must end within maxTurns turns",
   check(events, config) {
-    const turnStarts = events.filter((e) => e.type === "turn-start").length;
-    const battleEnded = events.some((e) => e.type === "battle-end");
+    const turnStarts = events.filter((e) => e.type === BATTLE_EVENT_TYPES.turnStart).length;
+    const battleEnded = events.some((e) => e.type === BATTLE_EVENT_TYPES.battleEnd);
     if (!battleEnded && turnStarts >= config.maxTurns) {
       return [
         {

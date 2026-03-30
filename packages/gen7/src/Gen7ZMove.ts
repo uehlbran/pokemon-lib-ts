@@ -22,6 +22,7 @@ import type {
   BattleSide,
   BattleState,
 } from "@pokemon-lib-ts/battle";
+import { BATTLE_EVENT_TYPES } from "@pokemon-lib-ts/battle";
 import type { MoveData } from "@pokemon-lib-ts/core";
 import { CORE_MOVE_CATEGORIES } from "@pokemon-lib-ts/core";
 
@@ -358,7 +359,7 @@ export class Gen7ZMove implements BattleGimmick {
     }
 
     const event: BattleEvent = {
-      type: "z-move",
+      type: BATTLE_EVENT_TYPES.zMove,
       side: side.index,
       pokemon: pokemonId,
       move: zMoveName,

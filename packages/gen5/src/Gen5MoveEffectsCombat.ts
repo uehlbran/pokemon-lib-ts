@@ -37,7 +37,7 @@ import type {
   MoveEffectContext,
   MoveEffectResult,
 } from "@pokemon-lib-ts/battle";
-import { BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
+import { BATTLE_EFFECT_TARGETS, BATTLE_EVENT_TYPES } from "@pokemon-lib-ts/battle";
 import {
   type BattleStat,
   CORE_STAT_IDS,
@@ -218,7 +218,7 @@ export function didAllyFaintLastTurn(state: BattleState, attacker: ActivePokemon
   if (!prevTurn) return false;
 
   for (const event of prevTurn.events) {
-    if (event.type === "faint" && event.side === attackerSide) {
+    if (event.type === BATTLE_EVENT_TYPES.faint && event.side === attackerSide) {
       return true;
     }
   }

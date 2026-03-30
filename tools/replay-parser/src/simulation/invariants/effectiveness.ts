@@ -1,4 +1,5 @@
 import type { BattleEvent } from "@pokemon-lib-ts/battle";
+import { BATTLE_EVENT_TYPES } from "@pokemon-lib-ts/battle";
 import type { Invariant, InvariantViolation } from "../types.js";
 
 const VALID_MULTIPLIERS = new Set([0, 0.25, 0.5, 1, 2, 4]);
@@ -13,11 +14,11 @@ export const effectivenessBounds: Invariant = {
     for (let i = 0; i < events.length; i++) {
       const event = events[i];
       if (!event) continue;
-      if (event.type === "turn-start") {
+      if (event.type === BATTLE_EVENT_TYPES.turnStart) {
         const e = event as Extract<BattleEvent, { type: "turn-start" }>;
         currentTurn = e.turnNumber;
       }
-      if (event.type === "effectiveness") {
+      if (event.type === BATTLE_EVENT_TYPES.effectiveness) {
         const e = event as Extract<BattleEvent, { type: "effectiveness" }>;
         if (!VALID_MULTIPLIERS.has(e.multiplier)) {
           violations.push({

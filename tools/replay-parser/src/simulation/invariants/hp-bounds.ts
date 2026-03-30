@@ -1,4 +1,5 @@
 import type { BattleEvent } from "@pokemon-lib-ts/battle";
+import { BATTLE_EVENT_TYPES } from "@pokemon-lib-ts/battle";
 import type { Invariant, InvariantViolation } from "../types.js";
 
 function violation(
@@ -20,11 +21,11 @@ export const hpBounds: Invariant = {
     for (let i = 0; i < events.length; i++) {
       const event = events[i];
       if (!event) continue;
-      if (event.type === "turn-start") {
+      if (event.type === BATTLE_EVENT_TYPES.turnStart) {
         const e = event as Extract<BattleEvent, { type: "turn-start" }>;
         currentTurn = e.turnNumber;
       }
-      if (event.type === "damage" || event.type === "heal") {
+      if (event.type === BATTLE_EVENT_TYPES.damage || event.type === BATTLE_EVENT_TYPES.heal) {
         const e = event as
           | Extract<BattleEvent, { type: "damage" }>
           | Extract<BattleEvent, { type: "heal" }>;
@@ -65,11 +66,11 @@ export const positiveDamage: Invariant = {
     for (let i = 0; i < events.length; i++) {
       const event = events[i];
       if (!event) continue;
-      if (event.type === "turn-start") {
+      if (event.type === BATTLE_EVENT_TYPES.turnStart) {
         const e = event as Extract<BattleEvent, { type: "turn-start" }>;
         currentTurn = e.turnNumber;
       }
-      if (event.type === "damage") {
+      if (event.type === BATTLE_EVENT_TYPES.damage) {
         const e = event as Extract<BattleEvent, { type: "damage" }>;
         if (e.amount < 0) {
           violations.push(
@@ -101,11 +102,11 @@ export const hpDeltaConsistency: Invariant = {
     for (let i = 0; i < events.length; i++) {
       const event = events[i];
       if (!event) continue;
-      if (event.type === "turn-start") {
+      if (event.type === BATTLE_EVENT_TYPES.turnStart) {
         const e = event as Extract<BattleEvent, { type: "turn-start" }>;
         currentTurn = e.turnNumber;
       }
-      if (event.type === "damage") {
+      if (event.type === BATTLE_EVENT_TYPES.damage) {
         const e = event as Extract<BattleEvent, { type: "damage" }>;
         const key = `${e.side}:${e.pokemon}`;
         const prev = lastHp.get(key);
@@ -136,12 +137,12 @@ export const hpDeltaConsistency: Invariant = {
         }
         lastHp.set(key, e.currentHp);
       }
-      if (event.type === "heal") {
+      if (event.type === BATTLE_EVENT_TYPES.heal) {
         const e = event as Extract<BattleEvent, { type: "heal" }>;
         const key = `${e.side}:${e.pokemon}`;
         lastHp.set(key, e.currentHp);
       }
-      if (event.type === "faint") {
+      if (event.type === BATTLE_EVENT_TYPES.faint) {
         const e = event as Extract<BattleEvent, { type: "faint" }>;
         lastHp.delete(`${e.side}:${e.pokemon}`);
       }

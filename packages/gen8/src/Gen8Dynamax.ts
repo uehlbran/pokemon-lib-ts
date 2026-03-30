@@ -19,6 +19,7 @@ import type {
   BattleSide,
   BattleState,
 } from "@pokemon-lib-ts/battle";
+import { BATTLE_EVENT_TYPES } from "@pokemon-lib-ts/battle";
 import type { MoveData } from "@pokemon-lib-ts/core";
 import { CORE_MOVE_EFFECT_TYPES, CORE_PROTECT_EFFECT_VARIANTS } from "@pokemon-lib-ts/core";
 
@@ -208,7 +209,7 @@ export class Gen8Dynamax implements BattleGimmick {
     side.gimmickUsed = true;
 
     const event: BattleEvent = {
-      type: "dynamax",
+      type: BATTLE_EVENT_TYPES.dynamax,
       side: side.index,
       pokemon: pokemon.pokemon.uid,
     };
@@ -271,7 +272,7 @@ export class Gen8Dynamax implements BattleGimmick {
     pokemon.preDynamaxMaxHp = undefined;
 
     const event: BattleEvent = {
-      type: "dynamax-end",
+      type: BATTLE_EVENT_TYPES.dynamaxEnd,
       side: sideIndex as 0 | 1,
       pokemon: pokemon.pokemon.uid,
     };

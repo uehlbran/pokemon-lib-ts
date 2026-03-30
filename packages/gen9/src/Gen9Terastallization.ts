@@ -22,6 +22,7 @@ import type {
   BattleState,
   TerastallizeEvent,
 } from "@pokemon-lib-ts/battle";
+import { BATTLE_EVENT_TYPES } from "@pokemon-lib-ts/battle";
 import type { MoveData, PokemonType } from "@pokemon-lib-ts/core";
 import { GEN9_SPECIAL_TERA_TYPE_IDS } from "./constants/mechanics.js";
 
@@ -116,7 +117,7 @@ export class Gen9Terastallization implements BattleGimmick {
     const pokemonId = pokemon.pokemon.uid;
 
     const event: TerastallizeEvent = {
-      type: "terastallize",
+      type: BATTLE_EVENT_TYPES.terastallize,
       side: side.index,
       pokemon: pokemonId,
       teraType,

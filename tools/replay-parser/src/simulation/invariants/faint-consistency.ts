@@ -1,4 +1,5 @@
 import type { BattleEvent } from "@pokemon-lib-ts/battle";
+import { BATTLE_EVENT_TYPES } from "@pokemon-lib-ts/battle";
 import type { Invariant, InvariantViolation } from "../types.js";
 
 /** Invariant 11: if HP reaches 0 from a damage event, a faint must follow */
@@ -17,13 +18,13 @@ export const faintAtZero: Invariant = {
     for (let i = 0; i < events.length; i++) {
       const event = events[i];
       if (!event) continue;
-      if (event.type === "damage") {
+      if (event.type === BATTLE_EVENT_TYPES.damage) {
         const e = event as Extract<BattleEvent, { type: "damage" }>;
         if (e.currentHp === 0) {
           zeroHpPokemon.add(`${e.side}:${e.pokemon}`);
         }
       }
-      if (event.type === "faint") {
+      if (event.type === BATTLE_EVENT_TYPES.faint) {
         const e = event as Extract<BattleEvent, { type: "faint" }>;
         faintedPokemon.add(`${e.side}:${e.pokemon}`);
       }
@@ -57,15 +58,15 @@ export const noPostFaintAction: Invariant = {
     for (let i = 0; i < events.length; i++) {
       const event = events[i];
       if (!event) continue;
-      if (event.type === "turn-start") {
+      if (event.type === BATTLE_EVENT_TYPES.turnStart) {
         const e = event as Extract<BattleEvent, { type: "turn-start" }>;
         currentTurn = e.turnNumber;
       }
-      if (event.type === "faint") {
+      if (event.type === BATTLE_EVENT_TYPES.faint) {
         const e = event as Extract<BattleEvent, { type: "faint" }>;
         fainted.add(`${e.side}:${e.pokemon}`);
       }
-      if (event.type === "switch-in") {
+      if (event.type === BATTLE_EVENT_TYPES.switchIn) {
         // Switching in a new Pokemon on the same side clears all faint flags for that side
         // (we can't correlate slot to pokemon name, so clear by side)
         const e = event as Extract<BattleEvent, { type: "switch-in" }>;
@@ -75,7 +76,7 @@ export const noPostFaintAction: Invariant = {
           }
         }
       }
-      if (event.type === "move-start") {
+      if (event.type === BATTLE_EVENT_TYPES.moveStart) {
         const e = event as Extract<BattleEvent, { type: "move-start" }>;
         const key = `${e.side}:${e.pokemon}`;
         if (fainted.has(key)) {
@@ -108,16 +109,16 @@ export const switchAfterFaint: Invariant = {
     for (let i = 0; i < events.length; i++) {
       const event = events[i];
       if (!event) continue;
-      if (event.type === "turn-start") {
+      if (event.type === BATTLE_EVENT_TYPES.turnStart) {
         const e = event as Extract<BattleEvent, { type: "turn-start" }>;
         _currentTurn = e.turnNumber;
         pendingFaints.clear();
       }
-      if (event.type === "faint") {
+      if (event.type === BATTLE_EVENT_TYPES.faint) {
         const e = event as Extract<BattleEvent, { type: "faint" }>;
         pendingFaints.add(`${e.side}:${e.pokemon}`);
       }
-      if (event.type === "switch-in") {
+      if (event.type === BATTLE_EVENT_TYPES.switchIn) {
         // A switch-in on a side clears pending faints for that side
         const e = event as Extract<BattleEvent, { type: "switch-in" }>;
         for (const key of pendingFaints) {
@@ -126,7 +127,7 @@ export const switchAfterFaint: Invariant = {
           }
         }
       }
-      if (event.type === "battle-end") {
+      if (event.type === BATTLE_EVENT_TYPES.battleEnd) {
         pendingFaints.clear();
       }
     }
