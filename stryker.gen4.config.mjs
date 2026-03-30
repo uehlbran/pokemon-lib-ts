@@ -11,7 +11,7 @@ export default {
   tempDirName: ".stryker-tmp",
   mutate: ["packages/gen4/src/Gen4MoveEffectsBehavior.ts"],
   vitest: {
-    dir: "packages/gen4",
+    configFile: "packages/gen4/vitest.config.ts",
   },
   ignoreStatic: true,
 };
