@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "clusters": [
+    {
+      "cluster": "workflow-integrity",
+      "operations": ["changed-mechanics-report", "versioned-artifact-write"],
+      "supportedTopologies": ["singles"],
+      "engineOwner": "oracle:tooling:runner"
+    },
+    {
+      "cluster": "protocol-completeness",
+      "operations": [
+        "partyRevive",
+        "benchRevive",
+        "teamStatusCure",
+        "sideHeal",
+        "allyActiveHeal",
+        "itemRemove",
+        "itemSwap",
+        "itemSteal",
+        "itemDestroy",
+        "abilitySuppress",
+        "abilityRestore",
+        "abilitySwap",
+        "abilityReplace",
+        "formChange",
+        "speciesStateChange",
+        "setTypes",
+        "addType",
+        "removeTypeUntilTurnEnd",
+        "statStageInvert",
+        "statStageSwap",
+        "statStageTransfer",
+        "statStageReset",
+        "attackerMoveRewrite",
+        "targetNextMoveRewrite",
+        "pseudoFieldMoveRewrite",
+        "fieldRoomSetClear",
+        "reactiveSwitch",
+        "forcedSwitchBlock",
+        "splitTargetMultiHit",
+        "scalingMultiHit"
+      ],
+      "supportedTopologies": ["singles", "bench", "serialization"],
+      "engineOwner": "battle:contract:move-effect-result"
+    },
+    {
+      "cluster": "switch-legality",
+      "operations": ["switchLegalityCheck", "reactiveSwitch", "forcedSwitchBlock"],
+      "supportedTopologies": ["singles", "switch-legality"],
+      "engineOwner": "battle:shared-seam:engine"
+    },
+    {
+      "cluster": "effective-speed-order",
+      "operations": ["effectiveSpeed", "turnOrder", "preMoveOrdering"],
+      "supportedTopologies": ["singles"],
+      "engineOwner": "battle:shared-seam:engine"
+    },
+    {
+      "cluster": "move-effect-ownership",
+      "operations": ["moveEffectDispatch", "itemTriggerDispatch", "abilityTriggerDispatch"],
+      "supportedTopologies": ["singles"],
+      "engineOwner": "gen8:leaf-mechanic:ruleset-and-handlers"
+    }
+  ]
+}

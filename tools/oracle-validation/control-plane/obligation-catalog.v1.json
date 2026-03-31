@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "clusters": [
+    {
+      "cluster": "workflow-integrity",
+      "requiredProofs": ["source", "semantic", "runtime"],
+      "requiredSuites": ["proof-preview", "workflow-contract"]
+    },
+    {
+      "cluster": "protocol-completeness",
+      "requiredProofs": ["source", "semantic", "runtime"],
+      "requiredSuites": ["typecheck:contracts"]
+    },
+    {
+      "cluster": "switch-legality",
+      "requiredProofs": ["source", "semantic", "runtime", "behavior"],
+      "requiredSuites": ["test", "oracle-fast"]
+    },
+    {
+      "cluster": "effective-speed-order",
+      "requiredProofs": ["source", "semantic", "runtime", "behavior"],
+      "requiredSuites": ["test", "oracle-fast"]
+    },
+    {
+      "cluster": "move-effect-ownership",
+      "requiredProofs": ["source", "semantic", "runtime", "behavior"],
+      "requiredSuites": ["test", "oracle-fast"]
+    }
+  ]
+}

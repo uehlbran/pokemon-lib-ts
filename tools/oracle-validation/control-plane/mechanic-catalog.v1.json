@@ -1,0 +1,192 @@
+{
+  "version": 1,
+  "mechanics": [
+    {
+      "mechanicId": "shared.tooling.changed-mechanics.reporting",
+      "cluster": "workflow-integrity",
+      "topologies": ["singles"],
+      "orderingSensitive": false,
+      "persistent": false,
+      "proofStatus": "proved",
+      "authorityKey": "shared.control-plane",
+      "requiredSuites": ["proof-preview"],
+      "obligationSeed": "changed-mechanics"
+    },
+    {
+      "mechanicId": "shared.tooling.oracle-runner.artifacts",
+      "cluster": "workflow-integrity",
+      "topologies": ["singles"],
+      "orderingSensitive": false,
+      "persistent": true,
+      "proofStatus": "proved",
+      "authorityKey": "shared.control-plane",
+      "requiredSuites": ["oracle-runner"],
+      "obligationSeed": "artifacts"
+    },
+    {
+      "mechanicId": "shared.tooling.workflow.compliance",
+      "cluster": "workflow-integrity",
+      "topologies": ["singles"],
+      "orderingSensitive": false,
+      "persistent": true,
+      "proofStatus": "proved",
+      "authorityKey": "shared.workflow",
+      "requiredSuites": ["workflow-contract"],
+      "obligationSeed": "workflow"
+    },
+    {
+      "mechanicId": "shared.contract.damage-context",
+      "cluster": "protocol-completeness",
+      "topologies": ["singles"],
+      "orderingSensitive": false,
+      "persistent": false,
+      "proofStatus": "legacy-unproven",
+      "authorityKey": "shared.engine-contracts",
+      "requiredSuites": ["typecheck:contracts"],
+      "obligationSeed": "contract"
+    },
+    {
+      "mechanicId": "shared.contract.move-effect-result",
+      "cluster": "protocol-completeness",
+      "topologies": ["singles", "bench", "serialization"],
+      "orderingSensitive": false,
+      "persistent": true,
+      "proofStatus": "legacy-unproven",
+      "authorityKey": "shared.engine-contracts",
+      "requiredSuites": ["typecheck:contracts"],
+      "obligationSeed": "contract"
+    },
+    {
+      "mechanicId": "shared.engine.switch-legality",
+      "cluster": "switch-legality",
+      "topologies": ["singles", "switch-legality"],
+      "orderingSensitive": true,
+      "persistent": false,
+      "proofStatus": "legacy-unproven",
+      "authorityKey": "shared.engine-contracts",
+      "requiredSuites": ["test"],
+      "obligationSeed": "switch"
+    },
+    {
+      "mechanicId": "shared.engine.support-utils",
+      "cluster": "workflow-integrity",
+      "topologies": ["singles"],
+      "orderingSensitive": false,
+      "persistent": false,
+      "proofStatus": "legacy-partial",
+      "authorityKey": "shared.engine-contracts",
+      "requiredSuites": ["test"],
+      "obligationSeed": "utils"
+    },
+    {
+      "mechanicId": "shared.engine.turn-order",
+      "cluster": "effective-speed-order",
+      "topologies": ["singles"],
+      "orderingSensitive": true,
+      "persistent": false,
+      "proofStatus": "legacy-unproven",
+      "authorityKey": "shared.engine-contracts",
+      "requiredSuites": ["test"],
+      "obligationSeed": "turn-order"
+    },
+    {
+      "mechanicId": "gen1.runtime.ruleset",
+      "cluster": "move-effect-ownership",
+      "topologies": ["singles"],
+      "orderingSensitive": true,
+      "persistent": true,
+      "proofStatus": "legacy-unproven",
+      "authorityKey": "gen1.pret-runtime",
+      "requiredSuites": ["test", "oracle-fast"],
+      "obligationSeed": "ruleset"
+    },
+    {
+      "mechanicId": "gen2.runtime.ruleset",
+      "cluster": "move-effect-ownership",
+      "topologies": ["singles"],
+      "orderingSensitive": true,
+      "persistent": true,
+      "proofStatus": "legacy-unproven",
+      "authorityKey": "gen2.pret-runtime",
+      "requiredSuites": ["test", "oracle-fast"],
+      "obligationSeed": "ruleset"
+    },
+    {
+      "mechanicId": "gen3.runtime.ruleset",
+      "cluster": "move-effect-ownership",
+      "topologies": ["singles"],
+      "orderingSensitive": true,
+      "persistent": true,
+      "proofStatus": "legacy-unproven",
+      "authorityKey": "gen3.pret-runtime",
+      "requiredSuites": ["test", "oracle-fast"],
+      "obligationSeed": "ruleset"
+    },
+    {
+      "mechanicId": "gen4.runtime.ruleset",
+      "cluster": "move-effect-ownership",
+      "topologies": ["singles"],
+      "orderingSensitive": true,
+      "persistent": true,
+      "proofStatus": "legacy-unproven",
+      "authorityKey": "gen4.mixed-runtime",
+      "requiredSuites": ["test", "oracle-fast"],
+      "obligationSeed": "ruleset"
+    },
+    {
+      "mechanicId": "gen5.runtime.ruleset",
+      "cluster": "move-effect-ownership",
+      "topologies": ["singles"],
+      "orderingSensitive": true,
+      "persistent": true,
+      "proofStatus": "legacy-unproven",
+      "authorityKey": "gen5.showdown-runtime",
+      "requiredSuites": ["test", "oracle-fast"],
+      "obligationSeed": "ruleset"
+    },
+    {
+      "mechanicId": "gen6.runtime.ruleset",
+      "cluster": "move-effect-ownership",
+      "topologies": ["singles"],
+      "orderingSensitive": true,
+      "persistent": true,
+      "proofStatus": "legacy-unproven",
+      "authorityKey": "gen6.showdown-runtime",
+      "requiredSuites": ["test", "oracle-fast"],
+      "obligationSeed": "ruleset"
+    },
+    {
+      "mechanicId": "gen7.runtime.ruleset",
+      "cluster": "move-effect-ownership",
+      "topologies": ["singles"],
+      "orderingSensitive": true,
+      "persistent": true,
+      "proofStatus": "legacy-unproven",
+      "authorityKey": "gen7.showdown-runtime",
+      "requiredSuites": ["test", "oracle-fast"],
+      "obligationSeed": "ruleset"
+    },
+    {
+      "mechanicId": "gen8.runtime.ruleset",
+      "cluster": "move-effect-ownership",
+      "topologies": ["singles"],
+      "orderingSensitive": true,
+      "persistent": true,
+      "proofStatus": "legacy-unproven",
+      "authorityKey": "gen8.showdown-runtime",
+      "requiredSuites": ["test", "oracle-fast"],
+      "obligationSeed": "ruleset"
+    },
+    {
+      "mechanicId": "gen9.runtime.ruleset",
+      "cluster": "move-effect-ownership",
+      "topologies": ["singles"],
+      "orderingSensitive": true,
+      "persistent": true,
+      "proofStatus": "legacy-unproven",
+      "authorityKey": "gen9.showdown-runtime",
+      "requiredSuites": ["test", "oracle-fast"],
+      "obligationSeed": "ruleset"
+    }
+  ]
+}

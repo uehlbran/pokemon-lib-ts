@@ -1,0 +1,101 @@
+{
+  "version": 1,
+  "authorities": [
+    {
+      "authorityKey": "shared.control-plane",
+      "sourceRepo": "local",
+      "referenceCommit": "workspace",
+      "sourcePath": "tools/oracle-validation/control-plane",
+      "symbolOrRoutine": "control-plane",
+      "sourceRole": "authoritative"
+    },
+    {
+      "authorityKey": "shared.workflow",
+      "sourceRepo": "local",
+      "referenceCommit": "workspace",
+      "sourcePath": ".github/workflows",
+      "symbolOrRoutine": "workflow-contract",
+      "sourceRole": "authoritative"
+    },
+    {
+      "authorityKey": "shared.engine-contracts",
+      "sourceRepo": "local",
+      "referenceCommit": "workspace",
+      "sourcePath": "packages/battle/src/context/types.ts",
+      "symbolOrRoutine": "engine-contracts",
+      "sourceRole": "authoritative"
+    },
+    {
+      "authorityKey": "gen1.pret-runtime",
+      "sourceRepo": "pret/pokered",
+      "referenceCommit": "vendored",
+      "sourcePath": "references/pokered-master",
+      "symbolOrRoutine": "runtime",
+      "sourceRole": "authoritative"
+    },
+    {
+      "authorityKey": "gen2.pret-runtime",
+      "sourceRepo": "pret/pokecrystal",
+      "referenceCommit": "vendored",
+      "sourcePath": "references/pokecrystal-master",
+      "symbolOrRoutine": "runtime",
+      "sourceRole": "authoritative"
+    },
+    {
+      "authorityKey": "gen3.pret-runtime",
+      "sourceRepo": "pret/pokeemerald",
+      "referenceCommit": "vendored",
+      "sourcePath": "references/pokeemerald-master",
+      "symbolOrRoutine": "runtime",
+      "sourceRole": "authoritative"
+    },
+    {
+      "authorityKey": "gen4.mixed-runtime",
+      "sourceRepo": "pret/pokeplatinum+pokeheartgold",
+      "referenceCommit": "vendored",
+      "sourcePath": "references/pokeplatinum-master",
+      "symbolOrRoutine": "mixed-runtime",
+      "sourceRole": "authoritative"
+    },
+    {
+      "authorityKey": "gen5.showdown-runtime",
+      "sourceRepo": "smogon/pokemon-showdown",
+      "referenceCommit": "vendored",
+      "sourcePath": "references/pokemon-showdown",
+      "symbolOrRoutine": "gen5-runtime",
+      "sourceRole": "authoritative"
+    },
+    {
+      "authorityKey": "gen6.showdown-runtime",
+      "sourceRepo": "smogon/pokemon-showdown",
+      "referenceCommit": "vendored",
+      "sourcePath": "references/pokemon-showdown",
+      "symbolOrRoutine": "gen6-runtime",
+      "sourceRole": "authoritative"
+    },
+    {
+      "authorityKey": "gen7.showdown-runtime",
+      "sourceRepo": "smogon/pokemon-showdown",
+      "referenceCommit": "vendored",
+      "sourcePath": "references/pokemon-showdown",
+      "symbolOrRoutine": "gen7-runtime",
+      "sourceRole": "authoritative"
+    },
+    {
+      "authorityKey": "gen8.showdown-runtime",
+      "sourceRepo": "smogon/pokemon-showdown",
+      "referenceCommit": "vendored",
+      "sourcePath": "references/pokemon-showdown",
+      "symbolOrRoutine": "gen8-runtime",
+      "sourceRole": "authoritative"
+    },
+    {
+      "authorityKey": "gen9.showdown-runtime",
+      "sourceRepo": "smogon/pokemon-showdown",
+      "referenceCommit": "vendored",
+      "sourcePath": "references/pokemon-showdown",
+      "symbolOrRoutine": "gen9-runtime",
+      "sourceRole": "authoritative"
+    }
+  ]
+}

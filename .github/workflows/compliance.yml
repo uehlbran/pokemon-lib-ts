@@ -3,20 +3,11 @@ name: Compliance Oracle
 on:
   push:
     branches: [main]
-    paths:
-      - "tools/oracle-validation/**"
-      - "tools/data-importer/src/pret-overrides/**"
-      - "packages/*/src/**"
-      - "packages/*/data/**"
   pull_request:
     branches: [main]
-    paths:
-      - "tools/oracle-validation/**"
-      - "tools/data-importer/src/pret-overrides/**"
-      - "packages/*/src/**"
-      - "packages/*/data/**"
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, edited]
   schedule:
-    - cron: "0 4 * * *" # 4am UTC nightly
+    - cron: "0 4 * * *"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
@@ -24,7 +15,7 @@ concurrency:
 
 jobs:
   oracle-fast:
-    name: oracle (fast-path)
+    name: oracle (fast)
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -36,52 +27,47 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - name: Run oracle fast-path
+      - name: Generate changed-mechanics preview
+        run: npm run proof:preview -- --mode fast
+      - name: Run direct mutation audit
+        run: npm run proof:audit:mutation -- --mode fast
+      - name: Run oracle fast
         run: npm run oracle:fast
       - name: Post fast compliance summary
         if: github.event_name == 'pull_request'
         continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           node -e "
             const fs = require('fs');
-            const path = require('path');
-            const resultsPath = 'tools/oracle-validation/results/fast-path.json';
+            const resultsPath = 'tools/oracle-validation/results/' + process.env.GITHUB_SHA + '/fast/summary.v1.json';
             if (!fs.existsSync(resultsPath)) process.exit(0);
             const output = JSON.parse(fs.readFileSync(resultsPath, 'utf8'));
-            const gens = output.generations ?? [];
-            let summary = '## Fast Compliance Check (data + stats + ground truth + damage + mechanics + terrain + gimmicks)\n\n';
-            summary += '| Gen | Data | Stats | GT | Damage | Mechanics | Terrain | Gimmicks |\n';
-            summary += '|-----|------|-------|----|--------|-----------|---------|----------|\n';
-            for (const g of gens) {
-              const s = g.suites;
-              const icon = (suite) => {
-                if (!s[suite]) return '⬜';
-                if (s[suite].status === 'pass') return '✅';
-                if (s[suite].status === 'skip') return '⬜';
-                return '❌';
-              };
-              summary += '| Gen ' + g.gen + ' | ' + icon('data') + ' | ' + icon('stats') + ' | ' + icon('groundTruth') + ' | ' + icon('damage') + ' | ' + icon('mechanics') + ' | ' + icon('terrain') + ' | ' + icon('gimmicks') + ' |\n';
+            let summary = '## Fast Compliance Check\\n\\n';
+            summary += '| Gen | Conclusion | Data | Stats | GT | Damage | Mechanics | Terrain | Gimmicks | Edge Cases |\\n';
+            summary += '|-----|------------|------|-------|----|--------|-----------|---------|----------|------------|\\n';
+            for (const generation of output.generations ?? []) {
+              const suites = generation.suites ?? {};
+              const icon = (suite) => suites[suite] ? suites[suite].status : 'missing';
+              summary += '| Gen ' + generation.gen + ' | ' + generation.conclusion + ' | ' + icon('data') + ' | ' + icon('stats') + ' | ' + icon('groundTruth') + ' | ' + icon('damage') + ' | ' + icon('mechanics') + ' | ' + icon('terrain') + ' | ' + icon('gimmicks') + ' | ' + icon('edgeCases') + ' |\\n';
             }
-            fs.writeFileSync('/tmp/compliance-comment.md', summary);
+            fs.writeFileSync('/tmp/compliance-fast-comment.md', summary);
           "
-          gh pr comment ${{ github.event.pull_request.number }} --body-file /tmp/compliance-comment.md
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Upload results artifact
+          gh pr comment ${{ github.event.pull_request.number }} --body-file /tmp/compliance-fast-comment.md
+      - name: Upload fast artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: oracle-results-fast
-          path: tools/oracle-validation/results/fast-path.json
+          path: tools/oracle-validation/results/${{ github.sha }}/fast
           retention-days: 7
 
   oracle-full:
-    name: oracle (full-path)
+    name: oracle (full)
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    # Runs on schedule (nightly) OR on any PR that triggers this workflow
-    # (workflow-level path filter already ensures it only runs on relevant changes)
-    if: github.event_name == 'schedule' || github.event_name == 'pull_request'
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     permissions:
       pull-requests: write
     steps:
@@ -92,43 +78,40 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - name: Run full compliance suite
+      - name: Generate changed-mechanics preview
+        run: npm run proof:preview -- --mode full
+      - name: Run direct mutation audit
+        run: npm run proof:audit:mutation -- --mode full
+      - name: Run oracle full
         run: npm run compliance
       - name: Post full compliance summary
         if: github.event_name == 'pull_request'
         continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           node -e "
             const fs = require('fs');
-            const path = require('path');
-            const resultsPath = 'tools/oracle-validation/results/fast-path.json';
+            const resultsPath = 'tools/oracle-validation/results/' + process.env.GITHUB_SHA + '/full/summary.v1.json';
             if (!fs.existsSync(resultsPath)) process.exit(0);
             const output = JSON.parse(fs.readFileSync(resultsPath, 'utf8'));
-            const gens = output.generations ?? [];
-            let summary = '## Full Compliance Check (all suites)\n\n';
-            summary += '| Gen | Data | Stats | GT | Damage | Mechanics | Terrain | Gimmicks | Replay | Trace | Smoke |\n';
-            summary += '|-----|------|-------|----|--------|-----------|---------|----------|--------|-------|-------|\n';
-            for (const g of gens) {
-              const s = g.suites;
-              const icon = (suite) => {
-                if (!s[suite]) return '⬜';
-                if (s[suite].status === 'pass') return '✅';
-                if (s[suite].status === 'skip') return '⬜';
-                return '❌';
-              };
-              summary += '| Gen ' + g.gen + ' | ' + icon('data') + ' | ' + icon('stats') + ' | ' + icon('groundTruth') + ' | ' + icon('damage') + ' | ' + icon('mechanics') + ' | ' + icon('terrain') + ' | ' + icon('gimmicks') + ' | ' + icon('replay') + ' | ' + icon('damageTrace') + ' | ' + icon('smoke') + ' |\n';
+            let summary = '## Full Compliance Check\\n\\n';
+            summary += '| Gen | Conclusion | Data | Stats | GT | Damage | Mechanics | Terrain | Gimmicks | Edge Cases | Replay | Trace | Smoke |\\n';
+            summary += '|-----|------------|------|-------|----|--------|-----------|---------|----------|------------|--------|-------|-------|\\n';
+            for (const generation of output.generations ?? []) {
+              const suites = generation.suites ?? {};
+              const icon = (suite) => suites[suite] ? suites[suite].status : 'missing';
+              summary += '| Gen ' + generation.gen + ' | ' + generation.conclusion + ' | ' + icon('data') + ' | ' + icon('stats') + ' | ' + icon('groundTruth') + ' | ' + icon('damage') + ' | ' + icon('mechanics') + ' | ' + icon('terrain') + ' | ' + icon('gimmicks') + ' | ' + icon('edgeCases') + ' | ' + icon('replay') + ' | ' + icon('damageTrace') + ' | ' + icon('smoke') + ' |\\n';
             }
             fs.writeFileSync('/tmp/compliance-full-comment.md', summary);
           "
           gh pr comment ${{ github.event.pull_request.number }} --body-file /tmp/compliance-full-comment.md
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Upload full results artifact
+      - name: Upload full artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: oracle-results-full
-          path: tools/oracle-validation/results/fast-path.json
+          path: tools/oracle-validation/results/${{ github.sha }}/full
           retention-days: 30
 
   pret-validate:

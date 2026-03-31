@@ -1,20 +1,21 @@
-import type { RunnerOutput, SuiteResult } from "./result-schema.js";
+import type { ProofSuiteResult, ProofSummary } from "./proof-artifact-schema.js";
 
-export function formatRunnerOutput(output: RunnerOutput): string {
+export function formatRunnerOutput(output: ProofSummary): string {
   const lines: string[] = [];
   lines.push(`Oracle validation run at ${output.timestamp}`);
-  lines.push(`Suites: ${output.suitesRequested.join(", ")}`);
+  lines.push(
+    `Mode: ${output.runMode} — conclusion=${output.conclusion} — suites=${output.suitesRequested.join(", ")}`,
+  );
 
   for (const generation of output.generations) {
-    lines.push(`Gen ${generation.gen} (${generation.packageName})`);
-    lines.push(
-      `  registry: knownDisagreements=${generation.registry.knownDisagreements.length}, knownOracleBugs=${generation.registry.knownOracleBugs.length}, staleDisagreements=${generation.staleDisagreements.length}`,
-    );
+    lines.push(`Gen ${generation.gen} (${generation.packageName}) — ${generation.conclusion}`);
 
-    for (const [suite, result] of Object.entries(generation.suites) as [string, SuiteResult][]) {
-      const suffix = result.skipReason ? ` — ${result.skipReason}` : "";
+    for (const [suite, result] of Object.entries(generation.suites) as [
+      string,
+      ProofSuiteResult,
+    ][]) {
       lines.push(
-        `  ${suite}: ${result.status} (suitePassed=${result.suitePassed}, failed=${result.failed}, skipped=${result.skipped})${suffix}`,
+        `  ${suite}: ${result.status} (${result.enforcement}, required=${result.requiredCounts.executed}, advisory=${result.advisoryCounts.executed})`,
       );
 
       for (const knownDisagreement of result.matchedKnownDisagreements) {
