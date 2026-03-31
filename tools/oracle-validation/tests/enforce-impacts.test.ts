@@ -203,6 +203,29 @@ describe("evaluateImpactsEnforcement", () => {
     );
   });
 
+  it("fails when touched mechanics only have non-pass required oracle-fast checks", () => {
+    const result = evaluateImpactsEnforcement(
+      createImpactsReport({ requiredSuites: ["oracle-fast"] }),
+      ["oracle-fast"],
+      new Set([...knownSuites, "oracle-fast"]),
+      [],
+      ["gen5.runtime.ruleset"],
+      {
+        summary: createProofSummary({ conclusion: "interrupted" }),
+        checks: [
+          createProofCheck({
+            mechanicIds: ["gen5.runtime.ruleset"],
+            status: "deferred",
+          }),
+        ],
+      },
+    );
+
+    expect(result.errors).toContain(
+      "Touched mechanic gen5.runtime.ruleset has no required oracle-fast proof checks in checks.v1.jsonl.",
+    );
+  });
+
   it("passes when oracle-fast artifacts include required proof checks for touched mechanics", () => {
     const result = evaluateImpactsEnforcement(
       createImpactsReport({ requiredSuites: ["oracle-fast"] }),

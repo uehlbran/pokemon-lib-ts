@@ -143,7 +143,7 @@ export function evaluateImpactsEnforcement(
 
       const evidencedMechanicIds = new Set(
         oracleFastEvidence.checks
-          .filter((check) => check.enforcement === "required" && check.status !== "skip")
+          .filter((check) => check.enforcement === "required" && check.status === "pass")
           .flatMap((check) => check.mechanicIds),
       );
 

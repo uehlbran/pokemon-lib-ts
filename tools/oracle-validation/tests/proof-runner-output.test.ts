@@ -178,6 +178,43 @@ describe("buildProofSummary", () => {
     expect(suite.requiredCounts.executed).toBe(1);
   });
 
+  it("marks required suites incomplete when their only required checks are skipped", () => {
+    const suite = summarizeSuite(
+      "mechanics",
+      {
+        status: "pass",
+        suitePassed: true,
+        failed: 0,
+        skipped: 0,
+        failures: [],
+        notes: [],
+        matchedKnownDisagreements: [],
+        staleDisagreements: [],
+        oracleChecks: [],
+      },
+      [
+        {
+          checkId: "gen5:mechanics:oracle:skip-only",
+          generation: 5,
+          suite: "mechanics",
+          status: "skip",
+          enforcement: "required",
+          description: "No executable checkpoint reached",
+          mechanicIds: [],
+          authorityKeys: [],
+          clusters: [],
+          topologies: [],
+          sourceRole: "authoritative",
+          normalizationIds: [],
+        },
+      ],
+    );
+
+    expect(suite.status).toBe("incomplete");
+    expect(suite.requiredCounts.executed).toBe(1);
+    expect(suite.requiredCounts.skipped).toBe(1);
+  });
+
   it("attaches runtime mechanic metadata to runtime evidence suites when provided", () => {
     const { checks } = buildProofSummary(
       "abc123",

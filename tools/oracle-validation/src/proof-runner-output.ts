@@ -169,6 +169,7 @@ export function summarizeSuite(
   }
 
   const hasProofChecks = requiredCounts.executed > 0 || advisoryCounts.executed > 0;
+  const requiredNonSkippedChecks = requiredCounts.executed - requiredCounts.skipped;
 
   let status: ProofSuiteResult["status"];
   if (suiteResult.status === "skip") {
@@ -181,9 +182,10 @@ export function summarizeSuite(
     status = "incomplete";
   } else if (requiredCounts.deferred > 0) {
     status = "deferred";
-  } else if (enforcement === "required" && requiredCounts.executed === 0) {
+  } else if (enforcement === "required" && requiredNonSkippedChecks === 0) {
     // Required suites are fail-closed once the proof pipeline is active. A legacy
-    // pass result without required proof checks is missing evidence, not success.
+    // pass result without non-skipped required proof checks is missing evidence,
+    // not success.
     status = "incomplete";
   } else if (!hasProofChecks) {
     status = "advisory";
