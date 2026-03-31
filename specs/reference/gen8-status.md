@@ -1,6 +1,6 @@
 # Gen 8 (Sword/Shield) Implementation Status
 
-**Last updated:** 2026-03-22
+**Last updated:** 2026-03-31
 **Overall estimate:** 100% complete (Waves 0–9 merged; Wave 10 docs)
 **Architecture:** Extends `BaseRuleset`
 **Spec:** `specs/battle/09-gen8.md`
@@ -80,6 +80,7 @@
 - New: Heavy-Duty Boots, Room Service, Eject Pack, Blunder Policy, Throat Spray, Utility Umbrella
 - No Z-Crystals, no Mega Stones (removed in Gen 8)
 - Choice item lock suppressed during Dynamax
+- `Adrenaline Orb` and `Eject Pack` now route through the shared held-item stat-change seam, while `Red Card` / `Eject Button` stay on the real switch seam even when the replacement fails
 
 ### Move Effects (Wave 7 — PR #709)
 - **Rapid Spin**: 50 BP (was 20) + **+1 Speed on hit**
@@ -117,17 +118,17 @@
 
 ## Test Coverage
 
-28 test files, **1,208 tests** (as of PR #786 — `fix/remaining-issues-684-756-757`).
-**Branch coverage: 82.27%** (threshold: 80%).
-Statement: 87.05% | Functions: 87.87% | Lines: 87.05%
+32 test files, **1,267 tests** (as of PR #1797).
+**Last recorded branch coverage baseline: 82.27%** (threshold: 80%).
+Last recorded statement baseline: 87.05% | functions: 87.87% | lines: 87.05%
 
-Test files: `abilities-damage.test.ts`, `abilities-dispatcher.test.ts`, `abilities-routing.test.ts`, `abilities-stat.test.ts`, `abilities-switch.test.ts`, `coverage-gaps.test.ts`, `coverage-gaps-2.test.ts`, `coverage-gaps-3.test.ts`, `coverage-gaps-4.test.ts`, `coverage-gaps-5.test.ts`, `crit-calc.test.ts`, `damage-calc.test.ts`, `data-loading.test.ts`, `dynamax.test.ts`, `entry-hazards.test.ts`, `exp-formula.test.ts`, `gmax-moves.test.ts`, `integration.test.ts`, `items.test.ts`, `max-moves.test.ts`, `move-effects.test.ts`, `ruleset.test.ts`, `smoke.test.ts`, `status.test.ts`, `terrain.test.ts`, `type-chart.test.ts`, `weather.test.ts`
+Test files: `abilities-damage.test.ts`, `abilities-dispatcher.test.ts`, `abilities-routing.test.ts`, `abilities-stat.test.ts`, `abilities-switch.test.ts`, `bugfix-phase2.test.ts`, `cloud-nine-suppression.test.ts`, `coverage-gaps.test.ts`, `coverage-gaps-2.test.ts`, `coverage-gaps-3.test.ts`, `coverage-gaps-4.test.ts`, `coverage-gaps-5.test.ts`, `crit-calc.test.ts`, `damage-calc.test.ts`, `data-loading.test.ts`, `dynamax.test.ts`, `entry-hazards.test.ts`, `exp-formula.test.ts`, `facade-power-doubling.test.ts`, `gmax-moves.test.ts`, `integration/integration.test.ts`, `items.test.ts`, `max-moves.test.ts`, `move-effects.test.ts`, `priority-boost.test.ts`, `public-api.test.ts`, `ruleset.test.ts`, `smoke/smoke.test.ts`, `status.test.ts`, `terrain.test.ts`, `type-chart.test.ts`, `weather.test.ts`
 
 ---
 
 ## OPEN BUGS
 
-None. All tracked bugs closed.
+- `#1746` remains open: `Blunder Policy`, `Throat Spray`, and `Room Service` still have helper definitions but no engine trigger surfaces for move-miss, sound-move, or room-activation dispatch.
 
 ## CLOSED BUGS
 
@@ -139,6 +140,8 @@ None. All tracked bugs closed.
 | #713 | #785 | Choice lock applied during Dynamax (should be suppressed) |
 | #694 | #785 | Gen 8 package.json exports missing ./data entry |
 | #757 | #786 | Unaware/Simple priority + Mold Breaker bypass directionality in getEffectiveStatStage |
+| #1709 | #1797 | Adrenaline Orb now activates through the shared held-item stat-change seam, using the holder's active ability state for Contrary's +6 cap check |
+| #1739 | #1797 | Eject Pack, Red Card, and Eject Button now stay on the real engine stat-change / reactive-switch seams, including no-replacement failure handling |
 
 ---
 
@@ -161,3 +164,4 @@ None. All tracked bugs closed.
 | #752 | fix/gen5-8-bughunt | Deep bughunt: applyAbility routing (C1), getEndOfTurnOrder (C2), capLethalDamage (C3), canBypassProtect delegation, Dynamax revert fixes, closes #732 #733 #734 #735 #736 #739 #740 #741 #742 #746 #747 |
 | #785 | fix/gen5-8-bughunt-status | Bughunt wave 2: Disguise non-lethal + 1/8 chip via capLethalDamage, Choice lock Dynamax suppression, package.json exports (closes #687 #738 #713 #694) |
 | #786 | fix/gen5-9-unaware-simple-priority | fix: Unaware/Simple priority and Mold Breaker-family bypass directionality (closes #757) |
+| #1797 | feat/trigger-surface-routing | Shared held-item stat-change seam for Adrenaline Orb / Eject Pack and reactive-switch seam hardening for Red Card / Eject Button (closes #1709 #1739) |
