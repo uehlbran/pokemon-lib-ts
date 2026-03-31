@@ -1,7 +1,7 @@
 # Gen 8 (Sword/Shield) Implementation Status
 
 **Last updated:** 2026-03-31
-**Overall estimate:** 100% complete (Waves 0–9 merged; Wave 10 docs)
+**Historical wave summary:** All planned implementation waves were merged; use the generated completeness artifact for current status.
 **Generated completeness status:** `tools/oracle-validation/results/completeness-status.md`
 **Architecture:** Extends `BaseRuleset`
 **Spec:** `specs/battle/09-gen8.md`

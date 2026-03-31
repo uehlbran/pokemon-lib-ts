@@ -14,6 +14,7 @@ interface ShowdownAbilities {
 
 interface LocalMove {
   id: string;
+  target?: string;
   effect?: {
     type?: string;
     target?: string;
@@ -38,10 +39,6 @@ interface LocalSpecies {
 
 const gens = new Generations(Dex);
 const repoRoot = resolve(import.meta.dirname ?? __dirname, "../../..");
-
-function isLocalStatChangeMove(move: LocalMove): boolean {
-  return move.effect?.type === "stat-change";
-}
 
 function parseGenerations(argv: string[]): number[] {
   const genArg = argv.find((arg) => arg.startsWith("--gen="));
@@ -94,8 +91,34 @@ function mapTarget(sdTarget: string): string {
     adjacentAlly: "adjacent-ally",
     adjacentAllyOrSelf: "self",
     adjacentFoe: "adjacent-foe",
+    allies: "user-and-allies",
   };
   return targetMap[sdTarget] ?? "adjacent-foe";
+}
+
+function mapStatChangeTarget(localTarget: string, moveId: string, showdownTarget: string): string {
+  const targetMap: Record<string, string> = {
+    self: CORE_MOVE_EFFECT_TARGETS.self,
+    "adjacent-ally": CORE_MOVE_EFFECT_TARGETS.ally,
+    "adjacent-foe": CORE_MOVE_EFFECT_TARGETS.foe,
+    "all-adjacent-foes": CORE_MOVE_EFFECT_TARGETS.foe,
+    "all-adjacent": CORE_MOVE_EFFECT_TARGETS.foe,
+    "user-field": CORE_MOVE_EFFECT_TARGETS.foe,
+    "user-and-allies": CORE_MOVE_EFFECT_TARGETS.self,
+    "foe-field": CORE_MOVE_EFFECT_TARGETS.foe,
+    "entire-field": CORE_MOVE_EFFECT_TARGETS.foe,
+    "random-foe": CORE_MOVE_EFFECT_TARGETS.foe,
+    any: CORE_MOVE_EFFECT_TARGETS.foe,
+  };
+
+  const mapped = targetMap[localTarget];
+  if (!mapped) {
+    throw new Error(
+      `Unknown move target for stat-change effect mapping: "${localTarget}" (move: ${moveId}, Showdown target: ${showdownTarget})`,
+    );
+  }
+
+  return mapped;
 }
 
 function mapStatus(sdStatus: string): string | null {
@@ -166,12 +189,9 @@ function syncMoves(genNum: number, filePath: string): void {
     }
 
     const localEffect = localMove.effect;
+    localMove.target = mapTarget(move.target);
     if (move.boosts && !move.basePower && localEffect?.type === "stat-change") {
-      const mappedTarget = mapTarget(move.target);
-      localEffect.target =
-        mappedTarget === CORE_MOVE_EFFECT_TARGETS.self
-          ? CORE_MOVE_EFFECT_TARGETS.self
-          : CORE_MOVE_EFFECT_TARGETS.foe;
+      localEffect.target = mapStatChangeTarget(localMove.target, move.id, move.target);
     }
 
     if (typeof move.critRatio === "number" && move.critRatio > 1) {

@@ -10,6 +10,7 @@ import { createGen6DataManager, GEN6_MOVE_IDS, Gen6Ruleset } from "@pokemon-lib-
 import { Gen7Ruleset } from "@pokemon-lib-ts/gen7";
 import { Gen9Ruleset } from "@pokemon-lib-ts/gen9";
 import { describe, expect, it } from "vitest";
+import { GEN5_ABILITY_IDS } from "../../../../gen5/src/data/reference-ids";
 import { createGen7DataManager } from "../../../../gen7/src/data/index";
 import { GEN7_MOVE_IDS } from "../../../../gen7/src/data/reference-ids";
 import { createGen9DataManager } from "../../../../gen9/src/data/index";
@@ -171,6 +172,15 @@ describe("later-gen runtime dispatch regressions", () => {
         uid: "blastoise-1",
         nickname: "Blastoise",
         ability: CORE_ABILITY_IDS.torrent,
+        calculatedStats: {
+          hp: 420,
+          attack: 80,
+          defense: 140,
+          spAttack: 90,
+          spDefense: 140,
+          speed: 60,
+        },
+        currentHp: 420,
         moves: [createKnownMoveSlot(dataManager, GEN5_MOVE_IDS.tackle)],
       }),
     ];
@@ -219,7 +229,7 @@ describe("later-gen runtime dispatch regressions", () => {
         moves: [
           createKnownMoveSlot(dataManager, GEN5_MOVE_IDS.futureSight),
           createKnownMoveSlot(dataManager, GEN5_MOVE_IDS.doomDesire),
-          createKnownMoveSlot(dataManager, GEN5_MOVE_IDS.tackle),
+          createKnownMoveSlot(dataManager, GEN5_MOVE_IDS.splash),
         ],
       }),
     ];
@@ -264,6 +274,19 @@ describe("later-gen runtime dispatch regressions", () => {
 
     expect(engine.state.sides[1].futureAttack?.moveId).toBe(GEN5_MOVE_IDS.doomDesire);
     expect(engine.state.sides[1].futureAttack?.turnsLeft).toBe(2);
+
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 2 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 2 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    expect(
+      events.some(
+        (event) =>
+          event.type === "damage" && event.side === 1 && event.source === GEN5_MOVE_IDS.doomDesire,
+      ),
+    ).toBe(true);
+    expect(engine.state.sides[1].futureAttack).toBeNull();
   });
 
   it("given Gen 5 Gastro Acid, when the suppressed target switches out, then its original ability is restored instead of persisting blank", () => {
@@ -406,6 +429,7 @@ describe("later-gen runtime dispatch regressions", () => {
         moves: [
           createKnownMoveSlot(dataManager, GEN5_MOVE_IDS.stockpile),
           createKnownMoveSlot(dataManager, GEN5_MOVE_IDS.swallow),
+          createKnownMoveSlot(dataManager, GEN5_MOVE_IDS.splash),
         ],
         calculatedStats: {
           hp: 220,
@@ -464,6 +488,220 @@ describe("later-gen runtime dispatch regressions", () => {
     expect(
       events.some(
         (event) => event.type === "heal" && event.side === 0 && event.source === "move-effect",
+      ),
+    ).toBe(true);
+  });
+
+  it("given Gen 5 Heal Block on a stockpiled target, when Swallow is selected, then the move fails without spending the stockpile", () => {
+    const dataManager = createGen5DataManager();
+    const ruleset = new Gen5Ruleset(dataManager);
+    const team1 = [
+      createTestPokemon(6, 50, {
+        uid: "charizard-1",
+        nickname: "Charizard",
+        ability: CORE_ABILITY_IDS.blaze,
+        moves: [
+          createKnownMoveSlot(dataManager, GEN5_MOVE_IDS.stockpile),
+          createKnownMoveSlot(dataManager, GEN5_MOVE_IDS.swallow),
+          createKnownMoveSlot(dataManager, GEN5_MOVE_IDS.tackle),
+        ],
+        calculatedStats: {
+          hp: 220,
+          attack: 90,
+          defense: 100,
+          spAttack: 100,
+          spDefense: 100,
+          speed: 120,
+        },
+        currentHp: 220,
+      }),
+    ];
+    const team2 = [
+      createTestPokemon(9, 50, {
+        uid: "blastoise-1",
+        nickname: "Blastoise",
+        ability: CORE_ABILITY_IDS.torrent,
+        moves: [
+          createKnownMoveSlot(dataManager, GEN5_MOVE_IDS.healBlock),
+          createKnownMoveSlot(dataManager, GEN5_MOVE_IDS.tackle),
+        ],
+      }),
+    ];
+
+    const { engine, events } = createEngine({
+      generation: 5,
+      ruleset,
+      dataManager,
+      team1,
+      team2,
+    });
+
+    const attacker = engine.state.sides[0].active[0]!;
+
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 1 });
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 2 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 1 });
+
+    attacker.pokemon.currentHp = 60;
+
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 1 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    expect(attacker.volatileStatuses.get(CORE_VOLATILE_IDS.stockpile)?.data?.layers).toBe(2);
+    expect(attacker.volatileStatuses.has(CORE_VOLATILE_IDS.healBlock)).toBe(true);
+    expect(
+      events.some(
+        (event) => event.type === "message" && event.text.includes("can't use healing moves"),
+      ),
+    ).toBe(true);
+    expect(
+      events.some(
+        (event) => event.type === "heal" && event.side === 0 && event.source === "move-effect",
+      ),
+    ).toBe(false);
+  });
+
+  it("given Gen 5 Stockpile at full HP, when Swallow is selected, then the move fails without clearing Stockpile or defensive stages", () => {
+    const dataManager = createGen5DataManager();
+    const ruleset = new Gen5Ruleset(dataManager);
+    const team1 = [
+      createTestPokemon(6, 50, {
+        uid: "charizard-1",
+        nickname: "Charizard",
+        ability: CORE_ABILITY_IDS.blaze,
+        moves: [
+          createKnownMoveSlot(dataManager, GEN5_MOVE_IDS.stockpile),
+          createKnownMoveSlot(dataManager, GEN5_MOVE_IDS.swallow),
+        ],
+        calculatedStats: {
+          hp: 220,
+          attack: 90,
+          defense: 100,
+          spAttack: 100,
+          spDefense: 100,
+          speed: 120,
+        },
+        currentHp: 220,
+      }),
+    ];
+    const team2 = [
+      createTestPokemon(9, 50, {
+        uid: "blastoise-1",
+        nickname: "Blastoise",
+        ability: CORE_ABILITY_IDS.torrent,
+        moves: [createKnownMoveSlot(dataManager, GEN5_MOVE_IDS.tackle)],
+      }),
+    ];
+
+    const { engine, events } = createEngine({
+      generation: 5,
+      ruleset,
+      dataManager,
+      team1,
+      team2,
+    });
+
+    const attacker = engine.state.sides[0].active[0]!;
+
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    expect(attacker.volatileStatuses.get(CORE_VOLATILE_IDS.stockpile)?.data?.layers).toBe(1);
+    expect(attacker.statStages.defense).toBe(1);
+    expect(attacker.statStages.spDefense).toBe(1);
+    attacker.pokemon.currentHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
+
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 1 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    expect(attacker.volatileStatuses.get(CORE_VOLATILE_IDS.stockpile)?.data?.layers).toBe(1);
+    expect(attacker.statStages.defense).toBe(1);
+    expect(attacker.statStages.spDefense).toBe(1);
+    expect(
+      events.some((event) => event.type === "message" && event.text === "But it failed!"),
+    ).toBe(true);
+    expect(
+      events.some(
+        (event) => event.type === "heal" && event.side === 0 && event.source === "move-effect",
+      ),
+    ).toBe(false);
+  });
+
+  it("given Gen 5 Contrary Stockpile into Spit Up, when the user releases stored energy, then the runtime restores the Contrary-applied drops back to neutral", () => {
+    const dataManager = createGen5DataManager();
+    const ruleset = new Gen5Ruleset(dataManager);
+    const team1 = [
+      createTestPokemon(6, 50, {
+        uid: "charizard-1",
+        nickname: "Charizard",
+        ability: CORE_ABILITY_IDS.blaze,
+        moves: [
+          createKnownMoveSlot(dataManager, GEN5_MOVE_IDS.stockpile),
+          createKnownMoveSlot(dataManager, GEN5_MOVE_IDS.spitUp),
+        ],
+        calculatedStats: {
+          hp: 220,
+          attack: 100,
+          defense: 100,
+          spAttack: 100,
+          spDefense: 100,
+          speed: 120,
+        },
+        currentHp: 220,
+      }),
+    ];
+    const team2 = [
+      createTestPokemon(9, 50, {
+        uid: "blastoise-1",
+        nickname: "Blastoise",
+        ability: CORE_ABILITY_IDS.torrent,
+        moves: [createKnownMoveSlot(dataManager, GEN5_MOVE_IDS.tackle)],
+        calculatedStats: {
+          hp: 240,
+          attack: 90,
+          defense: 100,
+          spAttack: 90,
+          spDefense: 100,
+          speed: 60,
+        },
+        currentHp: 240,
+      }),
+    ];
+
+    const { engine, events } = createEngine({
+      generation: 5,
+      ruleset,
+      dataManager,
+      team1,
+      team2,
+    });
+
+    const attacker = engine.state.sides[0].active[0]!;
+    const defender = engine.state.sides[1].active[0]!;
+    attacker.ability = GEN5_ABILITY_IDS.contrary;
+
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    expect(attacker.volatileStatuses.get(CORE_VOLATILE_IDS.stockpile)?.data?.layers).toBe(1);
+    expect(attacker.statStages.defense).toBe(-1);
+    expect(attacker.statStages.spDefense).toBe(-1);
+
+    const defenderHpBeforeSpitUp = defender.pokemon.currentHp;
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 1 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    expect(attacker.volatileStatuses.has(CORE_VOLATILE_IDS.stockpile)).toBe(false);
+    expect(attacker.statStages.defense).toBe(0);
+    expect(attacker.statStages.spDefense).toBe(0);
+    expect(defender.pokemon.currentHp).toBeLessThan(defenderHpBeforeSpitUp);
+    expect(
+      events.some(
+        (event) =>
+          event.type === "damage" && event.side === 1 && event.source === GEN5_MOVE_IDS.spitUp,
       ),
     ).toBe(true);
   });
@@ -536,8 +774,11 @@ describe("later-gen runtime dispatch regressions", () => {
       false,
     );
     expect(updatedChoices.find((move) => move.moveId === GEN9_MOVE_IDS.swallow)?.disabled).toBe(
-      false,
+      true,
     );
+    expect(
+      updatedChoices.find((move) => move.moveId === GEN9_MOVE_IDS.swallow)?.disabledReason,
+    ).toBe("Already at full HP");
   });
 
   it("given Gen 6 Telekinesis, when the move resolves and subsequent turns pass, then the volatile is applied with the expected duration and expires through the end-of-turn countdown", () => {
@@ -800,6 +1041,7 @@ describe("later-gen runtime dispatch regressions", () => {
           moves: [
             createKnownMoveSlot(dataManager, GEN9_MOVE_IDS.powerTrick),
             createKnownMoveSlot(dataManager, GEN9_MOVE_IDS.batonPass),
+            createKnownMoveSlot(dataManager, GEN9_MOVE_IDS.splash),
           ],
           calculatedStats: {
             hp: 180,
@@ -811,20 +1053,11 @@ describe("later-gen runtime dispatch regressions", () => {
           },
           currentHp: 180,
         }),
-        createTestPokemon(25, 50, {
-          uid: "pikachu-2",
-          nickname: "Pikachu",
-          ability: CORE_ABILITY_IDS.static,
+        createTestPokemon(411, 50, {
+          uid: "bastiodon-2",
+          nickname: "Bastiodon",
+          ability: CORE_ABILITY_IDS.sturdy,
           moves: [createKnownMoveSlot(dataManager, GEN9_MOVE_IDS.tackle)],
-          calculatedStats: {
-            hp: 180,
-            attack: 50,
-            defense: 180,
-            spAttack: 80,
-            spDefense: 80,
-            speed: 110,
-          },
-          currentHp: 180,
         }),
       ];
       const team2 = [
@@ -862,29 +1095,43 @@ describe("later-gen runtime dispatch regressions", () => {
         engine.submitAction(0, { type: "move", side: 0, moveIndex: 1 });
         engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
       } else {
+        engine.submitAction(0, { type: "move", side: 0, moveIndex: 2 });
+        engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
         engine.submitAction(0, { type: "move", side: 0, moveIndex: 1 });
         engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
       }
+      engine.state.sides[0].active[0]?.volatileStatuses.set(CORE_VOLATILE_IDS.disable, {
+        turnsLeft: 3,
+        data: { moveId: GEN9_MOVE_IDS.batonPass },
+      });
       engine.submitSwitch(0, 1);
 
       const replacement = engine.state.sides[0].active[0]!;
-      const defender = engine.state.sides[1].active[0]!;
-      const defenderHpBeforeAttack = defender.pokemon.currentHp;
-
-      engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
-      engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+      const damageRngState = engine.state.rng.getState();
+      const damagePreview = ruleset.calculateDamage({
+        attacker: replacement,
+        defender: engine.state.sides[1].active[0]!,
+        move: dataManager.getMove(GEN9_MOVE_IDS.tackle),
+        rng: engine.state.rng,
+        state: engine.state,
+      }).damage;
+      engine.state.rng.setState(damageRngState);
 
       return {
         replacement,
-        damageDealt: defenderHpBeforeAttack - defender.pokemon.currentHp,
+        damagePreview,
       };
     }
 
     const baseline = runScenario(false);
     const powered = runScenario(true);
 
+    expect(baseline.replacement.pokemon.uid).toBe("bastiodon-2");
+    expect(powered.replacement.pokemon.uid).toBe("bastiodon-2");
     expect(powered.replacement.volatileStatuses.has(CORE_VOLATILE_IDS.powerTrick)).toBe(true);
     expect(baseline.replacement.volatileStatuses.has(CORE_VOLATILE_IDS.powerTrick)).toBe(false);
-    expect(powered.damageDealt).toBeGreaterThan(0);
+    expect(powered.replacement.volatileStatuses.has(CORE_VOLATILE_IDS.disable)).toBe(false);
+    expect(baseline.replacement.volatileStatuses.has(CORE_VOLATILE_IDS.disable)).toBe(false);
+    expect(powered.damagePreview).toBeGreaterThan(baseline.damagePreview);
   });
 });

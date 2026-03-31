@@ -347,6 +347,14 @@ export function calculateGen3Damage(context: DamageContext, typeChart: TypeChart
     const stockpileLayers = Number(
       attacker.volatileStatuses.get(CORE_VOLATILE_IDS.stockpile)?.data?.layers ?? 0,
     );
+    if (stockpileLayers <= 0) {
+      return {
+        damage: 0,
+        effectiveness: 1,
+        isCrit: false,
+        randomFactor: 1,
+      };
+    }
     power = stockpileLayers > 0 ? stockpileLayers * 100 : 0;
   }
 

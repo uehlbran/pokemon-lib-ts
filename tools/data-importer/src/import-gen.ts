@@ -216,7 +216,7 @@ function mapTarget(sdTarget: string): string {
     adjacentAlly: "adjacent-ally",
     adjacentAllyOrSelf: "self",
     adjacentFoe: "adjacent-foe",
-    allies: "self", // Gen 8+ Howl: affects user + allies; collapses to self in singles
+    allies: "user-and-allies",
   };
   return TARGET_MAP[sdTarget] ?? "adjacent-foe";
 }

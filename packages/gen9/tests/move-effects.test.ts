@@ -763,8 +763,7 @@ describe("Gen9 Shed Tail -- handleShedTail", () => {
 
     const result = handleShedTail(ctx);
 
-    // User should lose ceil(400/2) = 200 HP
-    expect(attacker.pokemon.currentHp).toBe(100); // 300 - 200 = 100
+    expect(result.recoilDamage).toBe(200);
     // Result should indicate switch-out
     expect(result.switchOut).toBe(true);
     // Should have a shed-tail-sub volatile for the incoming Pokemon

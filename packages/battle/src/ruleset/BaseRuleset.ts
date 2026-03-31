@@ -123,6 +123,20 @@ function getStockpileBoostDelta(currentStage: number): number {
   return currentStage < 6 ? 1 : 0;
 }
 
+function getStockpileAppliedDelta(
+  activePokemon: ActivePokemon,
+  stat: typeof CORE_STAT_IDS.defense | typeof CORE_STAT_IDS.spDefense,
+): number {
+  const currentStage = activePokemon.statStages[stat];
+  if (activePokemon.ability === "contrary") {
+    // Source: Showdown data/moves.ts -- Stockpile records the actual per-stat
+    // delta applied so Swallow / Spit Up can unwind Contrary-adjusted drops.
+    return currentStage > -6 ? -1 : 0;
+  }
+
+  return getStockpileBoostDelta(currentStage);
+}
+
 export abstract class BaseRuleset implements GenerationRuleset {
   abstract readonly generation: Generation;
   abstract readonly name: string;
@@ -154,6 +168,16 @@ export abstract class BaseRuleset implements GenerationRuleset {
   }
 
   abstract calculateDamage(context: DamageContext): DamageResult;
+
+  isMoveDamaging(move: MoveData): boolean {
+    if (move.category === "status") {
+      return false;
+    }
+
+    // Source: Showdown data/moves.ts -- Spit Up derives base power from the
+    // live Stockpile volatile even though the shipped move data has basePower 0.
+    return move.power !== null || move.id === CORE_MOVE_IDS.spitUp;
+  }
 
   /**
    * Whether future attacks (Future Sight, Doom Desire) recalculate damage at hit time.
@@ -459,8 +483,11 @@ export abstract class BaseRuleset implements GenerationRuleset {
           return { ...createBaseMoveEffectResult(), messages: ["But it failed!"] };
         }
 
-        const defenseBoostDelta = getStockpileBoostDelta(context.attacker.statStages.defense);
-        const spDefenseBoostDelta = getStockpileBoostDelta(context.attacker.statStages.spDefense);
+        const defenseBoostDelta = getStockpileAppliedDelta(context.attacker, CORE_STAT_IDS.defense);
+        const spDefenseBoostDelta = getStockpileAppliedDelta(
+          context.attacker,
+          CORE_STAT_IDS.spDefense,
+        );
         const nextLayers = (existingStockpile?.layers ?? 0) + 1;
         const nextState = {
           layers: nextLayers,
@@ -477,21 +504,21 @@ export abstract class BaseRuleset implements GenerationRuleset {
           return {
             ...createBaseMoveEffectResult(),
             statChanges: [
-              ...(defenseBoostDelta > 0
+              ...(defenseBoostDelta !== 0
                 ? [
                     {
                       target: BATTLE_EFFECT_TARGETS.attacker,
                       stat: CORE_STAT_IDS.defense,
-                      stages: 1,
+                      stages: defenseBoostDelta,
                     },
                   ]
                 : []),
-              ...(spDefenseBoostDelta > 0
+              ...(spDefenseBoostDelta !== 0
                 ? [
                     {
                       target: BATTLE_EFFECT_TARGETS.attacker,
                       stat: CORE_STAT_IDS.spDefense,
-                      stages: 1,
+                      stages: spDefenseBoostDelta,
                     },
                   ]
                 : []),
@@ -505,15 +532,21 @@ export abstract class BaseRuleset implements GenerationRuleset {
           selfVolatileInflicted: CORE_VOLATILE_IDS.stockpile,
           selfVolatileData: { turnsLeft: -1, data: nextState },
           statChanges: [
-            ...(defenseBoostDelta > 0
-              ? [{ target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.defense, stages: 1 }]
+            ...(defenseBoostDelta !== 0
+              ? [
+                  {
+                    target: BATTLE_EFFECT_TARGETS.attacker,
+                    stat: CORE_STAT_IDS.defense,
+                    stages: defenseBoostDelta,
+                  },
+                ]
               : []),
-            ...(spDefenseBoostDelta > 0
+            ...(spDefenseBoostDelta !== 0
               ? [
                   {
                     target: BATTLE_EFFECT_TARGETS.attacker,
                     stat: CORE_STAT_IDS.spDefense,
-                    stages: 1,
+                    stages: spDefenseBoostDelta,
                   },
                 ]
               : []),
@@ -536,7 +569,7 @@ export abstract class BaseRuleset implements GenerationRuleset {
             },
           ],
           statChanges: [
-            ...(stockpileState.defenseBoostsApplied > 0
+            ...(stockpileState.defenseBoostsApplied !== 0
               ? [
                   {
                     target: BATTLE_EFFECT_TARGETS.attacker,
@@ -545,7 +578,7 @@ export abstract class BaseRuleset implements GenerationRuleset {
                   },
                 ]
               : []),
-            ...(stockpileState.spDefenseBoostsApplied > 0
+            ...(stockpileState.spDefenseBoostsApplied !== 0
               ? [
                   {
                     target: BATTLE_EFFECT_TARGETS.attacker,
@@ -566,6 +599,15 @@ export abstract class BaseRuleset implements GenerationRuleset {
 
         const maxHp =
           context.attacker.pokemon.calculatedStats?.hp ?? context.attacker.pokemon.currentHp;
+        if (context.attacker.volatileStatuses.has(CORE_VOLATILE_IDS.healBlock)) {
+          return {
+            ...createBaseMoveEffectResult(),
+            messages: [`${attackerName} can't use healing moves!`],
+          };
+        }
+        if (context.attacker.pokemon.currentHp >= maxHp) {
+          return { ...createBaseMoveEffectResult(), messages: ["But it failed!"] };
+        }
         // Source: Showdown data/moves.ts — Swallow heals 1/4, 1/2, or full HP
         // for Stockpile layers 1, 2, and 3 respectively.
         const healFractions = [0.25, 0.5, 1];
@@ -581,7 +623,7 @@ export abstract class BaseRuleset implements GenerationRuleset {
           ],
           healAmount: Math.floor(maxHp * healFraction),
           statChanges: [
-            ...(stockpileState.defenseBoostsApplied > 0
+            ...(stockpileState.defenseBoostsApplied !== 0
               ? [
                   {
                     target: BATTLE_EFFECT_TARGETS.attacker,
@@ -590,7 +632,7 @@ export abstract class BaseRuleset implements GenerationRuleset {
                   },
                 ]
               : []),
-            ...(stockpileState.spDefenseBoostsApplied > 0
+            ...(stockpileState.spDefenseBoostsApplied !== 0
               ? [
                   {
                     target: BATTLE_EFFECT_TARGETS.attacker,
@@ -694,6 +736,22 @@ export abstract class BaseRuleset implements GenerationRuleset {
       case CORE_MOVE_IDS.swallow:
         if (!attacker.volatileStatuses.has(CORE_VOLATILE_IDS.stockpile)) {
           return { reason: "No stockpiled energy", messages: ["But it failed!"] };
+        }
+        if (
+          move.id === CORE_MOVE_IDS.swallow &&
+          attacker.volatileStatuses.has(CORE_VOLATILE_IDS.healBlock)
+        ) {
+          const attackerName = attacker.pokemon.nickname ?? "The Pokemon";
+          return {
+            reason: "Blocked by Heal Block",
+            messages: [`${attackerName} can't use healing moves!`],
+          };
+        }
+        if (move.id === CORE_MOVE_IDS.swallow) {
+          const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
+          if (attacker.pokemon.currentHp >= maxHp) {
+            return { reason: "Already at full HP", messages: ["But it failed!"] };
+          }
         }
         break;
       default:
@@ -1303,7 +1361,7 @@ export abstract class BaseRuleset implements GenerationRuleset {
   onSwitchOut(pokemon: ActivePokemon, _state: BattleState): void {
     // Default Gen 3+ behavior: clear all volatile statuses on switch-out.
     // Gen 1-2 override this to handle generation-specific persistence rules.
-    if (pokemon.suppressedAbility !== null) {
+    if (pokemon.suppressedAbility != null) {
       pokemon.ability = pokemon.suppressedAbility;
       pokemon.suppressedAbility = null;
     }

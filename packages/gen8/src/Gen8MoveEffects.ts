@@ -75,11 +75,9 @@ function handleCoreEnforcer(ctx: MoveEffectContext): MoveEffectResult {
     return createBaseResult();
   }
 
-  ctx.defender.suppressedAbility = ctx.defender.ability;
-  ctx.defender.ability = "";
-
   return {
     ...createBaseResult(),
+    abilitySuppress: { target: BATTLE_EFFECT_TARGETS.defender },
     messages: [`${ctx.defender.pokemon.nickname ?? "The target"}'s ability was suppressed!`],
   };
 }

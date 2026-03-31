@@ -1,7 +1,7 @@
 # Gen7 Implementation Status
 
 **Last updated:** 2026-03-31
-**Overall estimate:** 100% complete (all waves merged — PR #703 final)
+**Historical wave summary:** All planned implementation waves were merged; use the generated completeness artifact for current status.
 **Generated completeness status:** `tools/oracle-validation/results/completeness-status.md`
 **Architecture:** Extends `BaseRuleset`
 **Spec:** `specs/battle/08-gen7.md`

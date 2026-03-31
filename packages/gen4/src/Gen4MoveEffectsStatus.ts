@@ -390,6 +390,15 @@ function handleStockpileRelease(ctx: MoveEffectContext, moveId: string): MoveEff
     return makeResult({ messages: ["But it failed!"] });
   }
 
+  if (
+    moveId === GEN4_MOVE_IDS.swallow &&
+    ctx.attacker.volatileStatuses.has(CORE_VOLATILE_IDS.healBlock)
+  ) {
+    // Source: Showdown Gen 4 mod — Heal Block prevents healing moves from being used.
+    // Full-HP Swallow still consumes Stockpile on hit, so only Heal Block fails here.
+    return makeResult({ messages: [`${attackerName} can't use healing moves!`] });
+  }
+
   const defenseBoostsApplied = Number(stockpile?.data?.defenseBoostsApplied ?? 0);
   const spDefenseBoostsApplied = Number(stockpile?.data?.spDefenseBoostsApplied ?? 0);
 
@@ -449,10 +458,14 @@ function handleRecycle(ctx: MoveEffectContext): MoveEffectResult {
   if (ctx.attacker.pokemon.heldItem || !ctx.attacker.pokemon.lastItem) {
     return makeResult({ messages: ["But it failed!"] });
   }
-  ctx.attacker.pokemon.heldItem = ctx.attacker.pokemon.lastItem;
-  ctx.attacker.pokemon.lastItem = null;
+  const recycledItem = ctx.attacker.pokemon.lastItem;
   return makeResult({
-    messages: [`${attackerName} recycled its ${ctx.attacker.pokemon.heldItem}!`],
+    itemChange: {
+      target: BATTLE_EFFECT_TARGETS.attacker,
+      item: recycledItem,
+      clearLastItem: true,
+    },
+    messages: [`${attackerName} recycled its ${recycledItem}!`],
   });
 }
 

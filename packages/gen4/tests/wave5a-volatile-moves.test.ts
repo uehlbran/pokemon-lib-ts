@@ -549,6 +549,38 @@ describe("Heal Block", () => {
     });
   });
 
+  it("given a stockpiled attacker under Heal Block, when Swallow is used, then it fails without clearing Stockpile", () => {
+    // Source: Showdown Gen 4 mod — Heal Block prevents healing moves from being used.
+    // Source: Showdown data/moves.ts — full-HP Swallow still consumes Stockpile, so Heal Block is the failure guard here.
+    const attacker = createActivePokemon({
+      types: [TYPES.normal],
+      nickname: "Snorlax",
+      currentHp: 100,
+      maxHp: 200,
+      volatiles: new Map([
+        [
+          CORE_VOLATILE_IDS.stockpile,
+          {
+            turnsLeft: -1,
+            data: { layers: 2, defenseBoostsApplied: 2, spDefenseBoostsApplied: 2 },
+          },
+        ],
+        [CORE_VOLATILE_IDS.healBlock, { turnsLeft: 3 }],
+      ]),
+    });
+    const defender = createActivePokemon({ types: [TYPES.normal] });
+    const move = createMove(GEN4_MOVE_IDS.swallow);
+    const rng = createMockRng(0);
+    const ctx = createContext(attacker, defender, move, rng);
+
+    const result = executeGen4MoveEffect(ctx);
+
+    expect(result.healAmount).toBe(0);
+    expect(result.volatilesToClear ?? []).toHaveLength(0);
+    expect(result.statChanges).toHaveLength(0);
+    expect(result.messages).toEqual(["Snorlax can't use healing moves!"]);
+  });
+
   it("given attacker without heal-block, when Recover is used, then healAmount is 100 (50% of 200)", () => {
     // Source: Showdown Gen 4 — Recover heals 50% of max HP
     // Derivation: floor(200 * 0.5) = 100

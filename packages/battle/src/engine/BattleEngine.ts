@@ -139,6 +139,9 @@ interface PendingSelfSwitchState {
   readonly batonPass: boolean;
 }
 
+type ActiveVolatileId =
+  ActivePokemon["volatileStatuses"] extends Map<infer V, VolatileStatusState> ? V : never;
+
 interface PreDamageResolutionParams {
   readonly attacker: ActivePokemon;
   readonly defender: ActivePokemon;
@@ -151,6 +154,36 @@ interface PreDamageResolutionParams {
   readonly hitThroughProtect?: boolean;
   readonly defenderSelectedMove?: { id: string; category: MoveData["category"] } | null;
 }
+
+/**
+ * Showdown's Baton Pass handoff copies volatiles except those whose condition is marked
+ * `noCopy` in `copyVolatileFrom()`. Our engine does not carry a per-volatile `noCopy`
+ * flag yet, so keep an explicit denylist for the currently modeled non-transferables
+ * instead of cloning the entire outgoing volatile map.
+ *
+ * Source: Showdown sim/pokemon.ts copyVolatileFrom() — skips conditions with `noCopy`
+ * Source: Showdown data/moves.ts / data/conditions.ts — attract, destinybond, disable,
+ * encore, nightmare, stockpile, torment, yawn, trapped, and similar switch-
+ * scoped volatiles declare `noCopy: true`
+ */
+const BATON_PASS_NO_COPY_VOLATILES: ReadonlySet<ActiveVolatileId> = new Set([
+  CORE_VOLATILE_IDS.bound,
+  CORE_VOLATILE_IDS.choiceLocked,
+  CORE_VOLATILE_IDS.destinyBond,
+  CORE_VOLATILE_IDS.disable,
+  CORE_VOLATILE_IDS.encore,
+  CORE_VOLATILE_IDS.flinch,
+  CORE_VOLATILE_IDS.infatuation,
+  CORE_VOLATILE_IDS.nightmare,
+  CORE_VOLATILE_IDS.saltCure,
+  CORE_VOLATILE_IDS.sleepCounter,
+  CORE_VOLATILE_IDS.stockpile,
+  CORE_VOLATILE_IDS.taunt,
+  CORE_VOLATILE_IDS.torment,
+  CORE_VOLATILE_IDS.toxicCounter,
+  CORE_VOLATILE_IDS.trapped,
+  CORE_VOLATILE_IDS.yawn,
+]);
 /**
  * The core battle engine. Manages the battle state machine, delegates
  * generation-specific behavior to the provided ruleset, and emits
@@ -2554,10 +2587,7 @@ export class BattleEngine implements BattleEventEmitter {
     // Damage calculation (for damaging moves)
     let damage = 0;
     let brokeSubstitute = false;
-    if (
-      effectiveMoveData.category !== CORE_MOVE_CATEGORIES.status &&
-      (effectiveMoveData.power !== null || effectiveMoveData.id === CORE_MOVE_IDS.spitUp)
-    ) {
+    if (this.isMoveDamaging(effectiveMoveData)) {
       const isCrit = this.ruleset.rollCritical({
         attacker: actor,
         move: effectiveMoveData,
@@ -3166,7 +3196,7 @@ export class BattleEngine implements BattleEventEmitter {
     let damage = 0;
     let brokeSubstitute = false;
     const defenderSelectedMove = this.getDefenderSelectedMove(defenderSide);
-    if (moveData.category !== CORE_MOVE_CATEGORIES.status && moveData.power !== null) {
+    if (this.isMoveDamaging(moveData)) {
       const isCrit = this.ruleset.rollCritical({
         attacker: actor,
         move: moveData,
@@ -3529,7 +3559,9 @@ export class BattleEngine implements BattleEventEmitter {
 
   private captureBatonPassState(attacker: ActivePokemon): BatonPassState {
     const preservedVolatiles = new Map(attacker.volatileStatuses);
-    preservedVolatiles.delete(CORE_VOLATILE_IDS.stockpile);
+    for (const volatile of BATON_PASS_NO_COPY_VOLATILES) {
+      preservedVolatiles.delete(volatile);
+    }
 
     return {
       statStages: structuredClone(attacker.statStages),
@@ -3546,6 +3578,18 @@ export class BattleEngine implements BattleEventEmitter {
     active.statStages = structuredClone(batonPassState.statStages);
     active.substituteHp = batonPassState.substituteHp;
     active.volatileStatuses = structuredClone(batonPassState.volatileStatuses);
+  }
+
+  private isMoveDamaging(moveData: MoveData): boolean {
+    return this.ruleset.isMoveDamaging?.(moveData) ?? this.defaultIsMoveDamaging(moveData);
+  }
+
+  private defaultIsMoveDamaging(moveData: MoveData): boolean {
+    if (moveData.category === CORE_MOVE_CATEGORIES.status) {
+      return false;
+    }
+
+    return moveData.power !== null || moveData.id === CORE_MOVE_IDS.spitUp;
   }
 
   private resolvePendingSwitchPromptReplacement(side: 0 | 1, slot: number): void {
@@ -4630,6 +4674,33 @@ export class BattleEngine implements BattleEventEmitter {
       }
     }
 
+    // itemChange — set, restore, or clear a held item without direct handler mutation
+    if (result.itemChange) {
+      const itemTarget =
+        result.itemChange.target === BATTLE_EFFECT_TARGETS.attacker ? attacker : defender;
+      itemTarget.pokemon.heldItem = result.itemChange.item;
+      if (result.itemChange.clearLastItem) {
+        itemTarget.pokemon.lastItem = null;
+      }
+
+      if (
+        result.itemChange.item === null &&
+        itemTarget.ability === CORE_ABILITY_IDS.unburden &&
+        !itemTarget.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)
+      ) {
+        itemTarget.volatileStatuses.set(CORE_VOLATILE_IDS.unburden, { turnsLeft: -1 });
+        this.emit({
+          type: BATTLE_EVENT_TYPES.volatileStart,
+          side:
+            result.itemChange.target === BATTLE_EFFECT_TARGETS.attacker
+              ? attackerSide
+              : defenderSide,
+          pokemon: getPokemonName(itemTarget),
+          volatile: CORE_VOLATILE_IDS.unburden,
+        });
+      }
+    }
+
     // Screen set (Reflect / Light Screen)
     if (result.screenSet) {
       const screenSide =
@@ -5031,16 +5102,27 @@ export class BattleEngine implements BattleEventEmitter {
     if (result.abilityChange) {
       const abilityTarget =
         result.abilityChange.target === BATTLE_EFFECT_TARGETS.attacker ? attacker : defender;
-      const _abilityTargetSide =
-        result.abilityChange.target === BATTLE_EFFECT_TARGETS.attacker
-          ? attackerSide
-          : defenderSide;
       const oldAbility = abilityTarget.ability;
       abilityTarget.ability = result.abilityChange.ability;
       this.emit({
         type: BATTLE_EVENT_TYPES.message,
         text: `${getPokemonName(abilityTarget)}'s ability changed from ${oldAbility} to ${result.abilityChange.ability}!`,
       });
+    }
+
+    if (result.abilitySuppress) {
+      const abilityTarget =
+        result.abilitySuppress.target === BATTLE_EFFECT_TARGETS.attacker ? attacker : defender;
+      if (abilityTarget.suppressedAbility == null) {
+        abilityTarget.suppressedAbility = abilityTarget.ability;
+        abilityTarget.ability = "";
+      }
+    }
+
+    if (result.abilitySwap) {
+      const attackerAbility = attacker.ability;
+      attacker.ability = defender.ability;
+      defender.ability = attackerAbility;
     }
 
     // moveSlotChange — temporarily replace a move slot (Mimic)

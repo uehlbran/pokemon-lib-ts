@@ -29,7 +29,7 @@
       "bypassSubstitute": false
     },
     "effect": null,
-    "description": "Pounds the target with a thick appendage.",
+    "description": "The user charges on the first turn and attacks on the second.",
     "generation": 1
   },
   {
@@ -427,7 +427,7 @@
     "accuracy": 75,
     "pp": 10,
     "priority": 0,
-    "target": "all-adjacent-foes",
+    "target": "adjacent-foe",
     "flags": {
       "contact": false,
       "sound": false,
@@ -539,7 +539,7 @@
     "accuracy": 100,
     "pp": 35,
     "priority": 0,
-    "target": "adjacent-foe",
+    "target": "any",
     "flags": {
       "contact": false,
       "sound": false,
@@ -572,7 +572,7 @@
     "accuracy": 100,
     "pp": 35,
     "priority": 0,
-    "target": "adjacent-foe",
+    "target": "any",
     "flags": {
       "contact": true,
       "sound": false,
@@ -1807,7 +1807,7 @@
     "accuracy": 100,
     "pp": 30,
     "priority": 0,
-    "target": "all-adjacent-foes",
+    "target": "adjacent-foe",
     "flags": {
       "contact": false,
       "sound": false,
@@ -1924,7 +1924,7 @@
     "accuracy": null,
     "pp": 30,
     "priority": 0,
-    "target": "user-field",
+    "target": "self",
     "flags": {
       "contact": false,
       "sound": false,
@@ -2026,7 +2026,7 @@
     "accuracy": 100,
     "pp": 15,
     "priority": 0,
-    "target": "adjacent-foe",
+    "target": "all-adjacent-foes",
     "flags": {
       "contact": false,
       "sound": false,
@@ -2289,7 +2289,7 @@
     "accuracy": 100,
     "pp": 35,
     "priority": 0,
-    "target": "adjacent-foe",
+    "target": "any",
     "flags": {
       "contact": true,
       "sound": false,
@@ -2322,7 +2322,7 @@
     "accuracy": 100,
     "pp": 20,
     "priority": 0,
-    "target": "adjacent-foe",
+    "target": "any",
     "flags": {
       "contact": true,
       "sound": false,
@@ -2858,7 +2858,7 @@
     "accuracy": 100,
     "pp": 20,
     "priority": 0,
-    "target": "adjacent-foe",
+    "target": "random-foe",
     "flags": {
       "contact": true,
       "sound": false,
@@ -2894,7 +2894,7 @@
     "accuracy": 95,
     "pp": 40,
     "priority": 0,
-    "target": "adjacent-foe",
+    "target": "all-adjacent-foes",
     "flags": {
       "contact": false,
       "sound": false,
@@ -4121,7 +4121,7 @@
     "accuracy": null,
     "pp": 30,
     "priority": 0,
-    "target": "user-field",
+    "target": "self",
     "flags": {
       "contact": false,
       "sound": false,
@@ -4158,7 +4158,7 @@
     "accuracy": null,
     "pp": 30,
     "priority": 0,
-    "target": "entire-field",
+    "target": "self",
     "flags": {
       "contact": false,
       "sound": false,
@@ -4194,7 +4194,7 @@
     "accuracy": null,
     "pp": 20,
     "priority": 0,
-    "target": "user-field",
+    "target": "self",
     "flags": {
       "contact": false,
       "sound": false,
@@ -4376,7 +4376,7 @@
     "accuracy": 100,
     "pp": 5,
     "priority": 0,
-    "target": "all-adjacent",
+    "target": "adjacent-foe",
     "flags": {
       "contact": false,
       "sound": false,
@@ -5224,7 +5224,7 @@
     "accuracy": 90,
     "pp": 5,
     "priority": 0,
-    "target": "adjacent-foe",
+    "target": "any",
     "flags": {
       "contact": false,
       "sound": false,
@@ -5248,7 +5248,7 @@
       "type": "two-turn",
       "firstTurn": "charge"
     },
-    "description": "A second-turn attack move where critical hits land more easily. This may also make the target flinch.",
+    "description": "The user charges on the first turn and attacks on the second. If the user is holding a Power Herb, the move completes in one turn.",
     "generation": 1
   },
   {
@@ -5296,7 +5296,7 @@
     "accuracy": 100,
     "pp": 30,
     "priority": 0,
-    "target": "all-adjacent-foes",
+    "target": "adjacent-foe",
     "flags": {
       "contact": false,
       "sound": false,
@@ -5563,7 +5563,7 @@
     "accuracy": 90,
     "pp": 10,
     "priority": 0,
-    "target": "all-adjacent-foes",
+    "target": "adjacent-foe",
     "flags": {
       "contact": false,
       "sound": false,
@@ -5739,7 +5739,7 @@
     "accuracy": 100,
     "pp": 10,
     "priority": 0,
-    "target": "adjacent-foe",
+    "target": "random-foe",
     "flags": {
       "contact": true,
       "sound": false,
@@ -5775,7 +5775,7 @@
     "accuracy": 100,
     "pp": 5,
     "priority": 0,
-    "target": "all-adjacent",
+    "target": "adjacent-foe",
     "flags": {
       "contact": false,
       "sound": false,
@@ -5885,7 +5885,7 @@
     "accuracy": null,
     "pp": 30,
     "priority": 0,
-    "target": "self",
+    "target": "adjacent-foe",
     "flags": {
       "contact": false,
       "sound": false,

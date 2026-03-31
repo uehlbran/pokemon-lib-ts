@@ -352,9 +352,11 @@ describe("Worry Seed", () => {
 
     expect(result).not.toBeNull();
     expect(result!.abilityChange).toEqual({ target: "defender", ability: A.insomnia });
-    // Direct mutation: sleep status is cured and sleep-counter volatile is removed
-    expect(ctx.defender.pokemon.status).toBeNull();
-    expect(ctx.defender.volatileStatuses.has(SLEEP_COUNTER)).toBe(false);
+    expect(result!.statusCuredOnly).toEqual({ target: "defender" });
+    expect(result!.volatilesToClear).toContainEqual({
+      target: "defender",
+      volatile: SLEEP_COUNTER,
+    });
     expect(result!.messages[0]).toContain("woke up");
   });
 
@@ -416,9 +418,7 @@ describe("Gastro Acid", () => {
     const result = handleGen5StatusMove(ctx);
 
     expect(result).not.toBeNull();
-    // Direct mutation: defender's ability is set to "" and original is stored
-    expect(ctx.defender.ability).toBe("");
-    expect(ctx.defender.suppressedAbility).toBe(A.intimidate);
+    expect(result!.abilitySuppress).toEqual({ target: "defender" });
     expect(result!.messages[0]).toContain("suppressed");
   });
 
@@ -433,8 +433,7 @@ describe("Gastro Acid", () => {
     const result = handleGen5StatusMove(ctx);
 
     expect(result).not.toBeNull();
-    expect(ctx.defender.ability).toBe("");
-    expect(ctx.defender.suppressedAbility).toBe(A.moldBreaker);
+    expect(result!.abilitySuppress).toEqual({ target: "defender" });
   });
 
   it("given target has Multitype, when Gastro Acid is used, then fails", () => {
@@ -573,9 +572,7 @@ describe("Skill Swap", () => {
     const result = handleGen5StatusMove(ctx);
 
     expect(result).not.toBeNull();
-    // Direct mutation: abilities are swapped
-    expect(ctx.attacker.ability).toBe(A.ironBarbs);
-    expect(ctx.defender.ability).toBe(A.levitate);
+    expect(result!.abilitySwap).toBe(true);
     expect(result!.messages[0]).toContain("swapped");
   });
 
@@ -591,8 +588,7 @@ describe("Skill Swap", () => {
     const result = handleGen5StatusMove(ctx);
 
     expect(result).not.toBeNull();
-    expect(ctx.attacker.ability).toBe(A.overgrow);
-    expect(ctx.defender.ability).toBe(A.intimidate);
+    expect(result!.abilitySwap).toBe(true);
   });
 
   it("given both have the same ability in Gen 5, when Skill Swap is used, then fails", () => {

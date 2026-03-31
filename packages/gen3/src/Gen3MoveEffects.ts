@@ -979,13 +979,8 @@ function handleIdInterceptedMove(context: MoveEffectContext, result: MutableResu
         return true;
       }
 
-      const defenseBoostDelta = attacker.statStages.defense < 6 ? 1 : 0;
-      const spDefenseBoostDelta = attacker.statStages.spDefense < 6 ? 1 : 0;
       const nextState = {
         layers: layers + 1,
-        defenseBoostsApplied: Number(existing?.data?.defenseBoostsApplied ?? 0) + defenseBoostDelta,
-        spDefenseBoostsApplied:
-          Number(existing?.data?.spDefenseBoostsApplied ?? 0) + spDefenseBoostDelta,
       };
 
       if (existing) {
@@ -996,21 +991,6 @@ function handleIdInterceptedMove(context: MoveEffectContext, result: MutableResu
       } else {
         result.selfVolatileInflicted = CORE_VOLATILE_IDS.stockpile;
         result.selfVolatileData = { turnsLeft: -1, data: nextState };
-      }
-
-      if (defenseBoostDelta > 0) {
-        result.statChanges.push({
-          target: BATTLE_EFFECT_TARGETS.attacker,
-          stat: CORE_STAT_IDS.defense,
-          stages: 1,
-        });
-      }
-      if (spDefenseBoostDelta > 0) {
-        result.statChanges.push({
-          target: BATTLE_EFFECT_TARGETS.attacker,
-          stat: CORE_STAT_IDS.spDefense,
-          stages: 1,
-        });
       }
       result.messages.push(`${attackerName} stockpiled ${layers + 1}!`);
       return true;
@@ -1025,27 +1005,10 @@ function handleIdInterceptedMove(context: MoveEffectContext, result: MutableResu
         return true;
       }
 
-      const defenseBoostsApplied = Number(stockpile?.data?.defenseBoostsApplied ?? 0);
-      const spDefenseBoostsApplied = Number(stockpile?.data?.spDefenseBoostsApplied ?? 0);
       result.volatilesToClear = [
         ...(result.volatilesToClear ?? []),
         { target: BATTLE_EFFECT_TARGETS.attacker, volatile: CORE_VOLATILE_IDS.stockpile },
       ];
-
-      if (defenseBoostsApplied > 0) {
-        result.statChanges.push({
-          target: BATTLE_EFFECT_TARGETS.attacker,
-          stat: CORE_STAT_IDS.defense,
-          stages: -defenseBoostsApplied,
-        });
-      }
-      if (spDefenseBoostsApplied > 0) {
-        result.statChanges.push({
-          target: BATTLE_EFFECT_TARGETS.attacker,
-          stat: CORE_STAT_IDS.spDefense,
-          stages: -spDefenseBoostsApplied,
-        });
-      }
 
       if (move.id === GEN3_MOVE_IDS.swallow) {
         const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
