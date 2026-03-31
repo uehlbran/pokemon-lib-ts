@@ -273,6 +273,7 @@
     {
       "ownershipKey": "gen4:leaf-mechanic:ruleset-and-handlers",
       "ownerKind": "leaf-mechanic",
+      "allowSharedFile": true,
       "patterns": [
         "packages/gen4/src/Gen4CritCalc.ts",
         "packages/gen4/src/Gen4DamageCalc.ts",
@@ -297,7 +298,8 @@
     {
       "ownershipKey": "gen4:leaf-mechanic:ability-trigger-surface",
       "ownerKind": "leaf-mechanic",
-      "patterns": ["packages/gen4/src/Gen4Abilities.ts"],
+      "allowSharedFile": true,
+      "patterns": ["packages/gen4/src/Gen4Abilities.ts", "packages/gen4/src/Gen4Ruleset.ts"],
       "mechanicIds": ["gen4.runtime.ability-trigger-surface"],
       "authorityKeys": ["gen4.mixed-runtime"],
       "propagatesTo": ["oracle:tooling:runner"]
