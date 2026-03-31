@@ -171,6 +171,11 @@ test("given the main verification surfaces, when checking their commands, then t
   assert.match(ciSource, /npm run changeset:check/, "CI proof gate must run changeset checking");
   assert.match(
     ciSource,
+    /proof-gate:\n(?:.*\n)*?\s+needs:\s+\[lint\]/,
+    "CI proof gate must wait for the lint job before attesting lint execution",
+  );
+  assert.match(
+    ciSource,
     /npm run proof:audit:mutation/,
     "CI proof gate must run the direct mutation audit",
   );

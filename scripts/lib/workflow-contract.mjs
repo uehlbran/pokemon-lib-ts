@@ -63,6 +63,7 @@ export function validateCiWorkflow(repoRoot) {
     "ready_for_review",
     "converted_to_draft",
     "proof-gate:",
+    "needs: [lint]",
     "validate-control-plane.ts",
     "npm run changeset:check",
     "npm run proof:preview -- --mode ci-preview",
