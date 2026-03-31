@@ -1,4 +1,6 @@
 import {
+  CORE_ABILITY_IDS,
+  CORE_ABILITY_TRIGGER_IDS,
   CORE_ITEM_IDS,
   CORE_ITEM_TRIGGER_IDS,
   CORE_MOVE_IDS,
@@ -6,6 +8,7 @@ import {
 } from "@pokemon-lib-ts/core";
 import { GEN9_ITEM_IDS, GEN9_SPECIES_IDS } from "@pokemon-lib-ts/gen9/data";
 import {
+  BATTLE_ABILITY_EFFECT_TYPES,
   BATTLE_EFFECT_TARGETS,
   BATTLE_ITEM_EFFECT_TYPES,
   BATTLE_ITEM_EFFECT_VALUES,
@@ -308,6 +311,86 @@ class DeferredHeldItemChainRuleset extends MockRuleset {
   }
 }
 
+class PassiveImmunityForceSwitchRuleset extends MockRuleset {
+  override hasAbilities(): boolean {
+    return true;
+  }
+
+  override hasHeldItems(): boolean {
+    return true;
+  }
+
+  override calculateDamage(context: Parameters<MockRuleset["calculateDamage"]>[0]) {
+    if (context.defender.pokemon.uid === "blastoise-1") {
+      return {
+        damage: 0,
+        effectiveness: 0,
+        isCrit: false,
+        randomFactor: 1,
+      };
+    }
+
+    return {
+      damage: 10,
+      effectiveness: 1,
+      isCrit: false,
+      randomFactor: 1,
+    };
+  }
+
+  override applyAbility(trigger: string, context: Parameters<MockRuleset["applyAbility"]>[1]) {
+    if (
+      trigger === CORE_ABILITY_TRIGGER_IDS.passiveImmunity &&
+      context.pokemon.pokemon.uid === "blastoise-1"
+    ) {
+      return {
+        activated: true,
+        effects: [
+          {
+            effectType: BATTLE_ABILITY_EFFECT_TYPES.statChange,
+            target: BATTLE_EFFECT_TARGETS.self,
+            stat: CORE_STAT_IDS.defense,
+            stages: -1,
+          },
+        ],
+        messages: [],
+      };
+    }
+
+    return { activated: false, effects: [], messages: [] };
+  }
+
+  override applyHeldItem(trigger: string, context: ItemContext) {
+    if (
+      trigger === CORE_ITEM_TRIGGER_IDS.onStatChange &&
+      context.statChange?.phase === "after" &&
+      context.pokemon.pokemon.uid === "blastoise-1" &&
+      context.statChange.applied.some(
+        (change) => change.stat === CORE_STAT_IDS.defense && change.stages < 0,
+      )
+    ) {
+      return {
+        activated: true,
+        effects: [
+          {
+            type: BATTLE_ITEM_EFFECT_TYPES.none,
+            target: BATTLE_EFFECT_TARGETS.self,
+            value: BATTLE_ITEM_EFFECT_VALUES.forceSwitch,
+          },
+          {
+            type: BATTLE_ITEM_EFFECT_TYPES.consume,
+            target: BATTLE_EFFECT_TARGETS.self,
+            value: CORE_ITEM_IDS.leftovers,
+          },
+        ],
+        messages: ["Blastoise's Eject Pack activated!"],
+      };
+    }
+
+    return { activated: false, effects: [], messages: [] };
+  }
+}
+
 function createHeldItemStatBoostEngine(ruleset: HeldItemStatBoostRuleset) {
   const config: BattleConfig = {
     generation: 9,
@@ -403,6 +486,46 @@ function createStatChangeEngine(
   return new BattleEngine(config, ruleset, createMockDataManager());
 }
 
+function createPassiveImmunityForceSwitchEngine(ruleset: PassiveImmunityForceSwitchRuleset) {
+  const config: BattleConfig = {
+    generation: 9,
+    format: "singles",
+    teams: [
+      [
+        createTestPokemon(GEN9_SPECIES_IDS.charizard, 50, {
+          uid: "charizard-1",
+          nickname: "Charizard",
+          moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
+          calculatedStats: createStats(200, 120),
+          currentHp: 200,
+        }),
+      ],
+      [
+        createTestPokemon(GEN9_SPECIES_IDS.blastoise, 50, {
+          uid: "blastoise-1",
+          nickname: "Blastoise",
+          ability: CORE_ABILITY_IDS.torrent,
+          heldItem: CORE_ITEM_IDS.leftovers,
+          moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
+          calculatedStats: createStats(200, 80),
+          currentHp: 200,
+        }),
+        createTestPokemon(GEN9_SPECIES_IDS.pikachu, 50, {
+          uid: "pikachu-2",
+          nickname: "Pikachu",
+          moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
+          calculatedStats: createStats(120, 90),
+          currentHp: 120,
+        }),
+      ],
+    ],
+    seed: 42,
+  };
+
+  ruleset.setGenerationForTest(config.generation);
+  return new BattleEngine(config, ruleset, createMockDataManager());
+}
+
 describe("BattleEngine held-item stat boosts", () => {
   it("given a held item stat-boost effect, when damage resolves, then a stat-change event is emitted and the stage is applied", () => {
     const ruleset = new HeldItemStatBoostRuleset();
@@ -465,6 +588,7 @@ describe("BattleEngine held-item stat boosts", () => {
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
     expect(engine.getPhase()).toBe("switch-prompt");
+    expect(engine.state.sides[0].active[0]?.pokemon.heldItem).toBeNull();
     engine.submitSwitch(0, 1);
 
     expect(engine.getPhase()).toBe("action-select");
@@ -536,5 +660,23 @@ describe("BattleEngine held-item stat boosts", () => {
     expect(engine.state.sides[1].active[0]?.statStages.attack).toBe(1);
     expect(engine.state.sides[0].active[0]?.statStages.speed).toBe(1);
     expect(engine.state.sides[1].active[0]?.statStages.spAttack).toBe(1);
+  });
+
+  it("given a passive-immunity ability that queues a self-switching held-item reaction, when move resolution returns early, then the deferred item queue still flushes before the defender can act", () => {
+    const ruleset = new PassiveImmunityForceSwitchRuleset();
+    const engine = createPassiveImmunityForceSwitchEngine(ruleset);
+    engine.start();
+    const initialAttackerHp = engine.state.sides[0].active[0]?.pokemon.currentHp;
+
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    expect(engine.getPhase()).toBe("switch-prompt");
+    expect(engine.state.sides[0].active[0]?.pokemon.currentHp).toBe(initialAttackerHp);
+    expect(engine.state.sides[1].active[0]?.pokemon.heldItem).toBeNull();
+
+    engine.submitSwitch(1, 1);
+
+    expect(engine.state.sides[1].active[0]?.pokemon.uid).toBe("pikachu-2");
   });
 });

@@ -742,6 +742,7 @@ describe("On-Hit Items", () => {
 
 describe("applyGen7HeldItem -- on-stat-change", () => {
   it("given Adrenaline Orb and an opponent Intimidate attack drop, when on-stat-change fires, then raises Speed and consumes", () => {
+    // Source: Showdown data/items.ts -- Adrenaline Orb triggers from Intimidate attack drops.
     const pokemon = createOnFieldPokemon({
       heldItem: ITEM_IDS.adrenalineOrb,
       speed: 100,
@@ -767,6 +768,7 @@ describe("applyGen7HeldItem -- on-stat-change", () => {
   });
 
   it("given Adrenaline Orb and a non-Intimidate stat drop, when on-stat-change fires, then it does not activate", () => {
+    // Source: Showdown data/items.ts -- Adrenaline Orb only checks opponent Intimidate attack drops.
     const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.adrenalineOrb });
     const ctx = {
       ...createItemContext({ pokemon }),
@@ -785,6 +787,7 @@ describe("applyGen7HeldItem -- on-stat-change", () => {
   });
 
   it("given Adrenaline Orb and a blocked Intimidate drop, when on-stat-change fires, then it still activates", () => {
+    // Source: Showdown data/items.ts -- Adrenaline Orb keys off the attempted Intimidate drop, not only applied stages.
     const pokemon = createOnFieldPokemon({
       heldItem: ITEM_IDS.adrenalineOrb,
       ability: ABILITY_IDS.hyperCutter,

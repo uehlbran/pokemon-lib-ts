@@ -803,6 +803,7 @@ describe("getConsumableItemEffect", () => {
 
 describe("applyGen8HeldItem -- on-stat-change", () => {
   it("given Eject Pack and an applied stat drop, when on-stat-change fires, then forces a self switch and consumes", () => {
+    // Source: Showdown data/items.ts -- Eject Pack triggers after the holder's own stats drop.
     const pokemon = createOnFieldPokemon({ heldItem: ITEMS.ejectPack });
     const ctx = {
       ...makeContext({ pokemon, state: makeSwitchableState(pokemon, true) }),
@@ -825,6 +826,7 @@ describe("applyGen8HeldItem -- on-stat-change", () => {
   });
 
   it("given Eject Pack without a legal bench replacement, when on-stat-change fires, then it does not activate", () => {
+    // Source: Showdown data/items.ts -- Eject Pack requires an available replacement via canSwitch(side).
     const pokemon = createOnFieldPokemon({ heldItem: ITEMS.ejectPack });
     const ctx = {
       ...makeContext({ pokemon, state: makeSwitchableState(pokemon, false) }),
@@ -843,6 +845,7 @@ describe("applyGen8HeldItem -- on-stat-change", () => {
   });
 
   it("given Adrenaline Orb and an opponent Intimidate attack drop, when on-stat-change fires, then raises Speed and consumes", () => {
+    // Source: Showdown data/items.ts -- Adrenaline Orb triggers from Intimidate attack drops.
     const pokemon = createOnFieldPokemon({
       heldItem: ITEMS.adrenalineOrb,
       speed: 100,

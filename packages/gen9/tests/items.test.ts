@@ -1545,6 +1545,7 @@ describe("Consumable Items", () => {
 
       const result = applyGen9HeldItem(TEST_TRIGGER_IDS.onStatChange, ctx);
       expect(result.activated).toBe(true);
+      expect(result.effects).toEqual([]);
       expect(result.blockedStatChanges).toEqual([TEST_STAT_IDS.defense]);
       expect(result.messages).toEqual([
         `${pokemon.pokemon.nickname ?? `Pokemon #${pokemon.pokemon.speciesId}`}'s Clear Amulet prevented its stats from being lowered!`,
@@ -1567,6 +1568,7 @@ describe("Consumable Items", () => {
 
       const result = applyGen9HeldItem(TEST_TRIGGER_IDS.onStatChange, ctx);
       expect(result.activated).toBe(true);
+      expect(result.effects).toEqual([]);
       expect(result.blockedStatChanges).toEqual([TEST_STAT_IDS.defense]);
       expect(result.messages).toEqual([]);
     });
@@ -1587,6 +1589,7 @@ describe("Consumable Items", () => {
 
       const result = applyGen9HeldItem(TEST_TRIGGER_IDS.onStatChange, ctx);
       expect(result.activated).toBe(true);
+      expect(result.effects).toEqual([]);
       expect(result.blockedStatChanges).toEqual([TEST_STAT_IDS.defense]);
       expect(result.messages).toEqual([]);
     });
@@ -1607,6 +1610,7 @@ describe("Consumable Items", () => {
 
       const result = applyGen9HeldItem(TEST_TRIGGER_IDS.onStatChange, ctx);
       expect(result.activated).toBe(true);
+      expect(result.effects).toEqual([]);
       expect(result.blockedStatChanges).toEqual([TEST_STAT_IDS.speed]);
       expect(result.messages).toEqual([
         `${pokemon.pokemon.nickname ?? `Pokemon #${pokemon.pokemon.speciesId}`}'s Clear Amulet prevented its stats from being lowered!`,

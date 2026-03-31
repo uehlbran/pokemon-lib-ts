@@ -2329,6 +2329,7 @@ export class BattleEngine implements BattleEventEmitter {
       if (beforeMoveAbilityResult.activated) {
         this.processAbilityResult(beforeMoveAbilityResult, actor, defender, action.side);
         if (beforeMoveAbilityResult.movePrevented) {
+          this.flushPendingHeldItemResults();
           actor.lastMoveUsed = moveData.id;
           actor.movedThisTurn = true;
           return;
@@ -2572,6 +2573,7 @@ export class BattleEngine implements BattleEventEmitter {
         });
         if (immunityResult.activated) {
           this.processAbilityResult(immunityResult, defender, actor, defenderSide as 0 | 1);
+          this.flushPendingHeldItemResults();
           actor.lastMoveUsed = moveData.id;
           actor.movedThisTurn = true;
           return; // Move fully absorbed — skip damage, effects, items
@@ -3179,6 +3181,7 @@ export class BattleEngine implements BattleEventEmitter {
         });
         if (immunityResult.activated) {
           this.processAbilityResult(immunityResult, defender, actor, defenderSide);
+          this.flushPendingHeldItemResults();
           actor.lastMoveUsed = moveId;
           actor.movedThisTurn = true;
           return; // Move fully absorbed — skip damage, effects, items
@@ -3964,6 +3967,7 @@ export class BattleEngine implements BattleEventEmitter {
           });
           if (flinchResult.activated) {
             this.processAbilityResult(flinchResult, actor, opponent, side);
+            this.flushPendingHeldItemResults();
           }
         }
       }
@@ -6054,7 +6058,12 @@ export class BattleEngine implements BattleEventEmitter {
           if (effect.value === BATTLE_ITEM_EFFECT_VALUES.forceSwitch) {
             if (effect.target === BATTLE_EFFECT_TARGETS.opponent && opponent) {
               const switchSide = (1 - side) as 0 | 1;
-              this.performImmediateForcedSwitch(switchSide, { markSideAsPhased: true });
+              const switched = this.performImmediateForcedSwitch(switchSide, {
+                markSideAsPhased: true,
+              });
+              if (!switched) {
+                blockedConsume = true;
+              }
               break;
             }
 
