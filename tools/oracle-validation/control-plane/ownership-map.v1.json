@@ -18,6 +18,7 @@
         "packages/*/src/**",
         "packages/*/data/**",
         "tools/data-importer/**",
+        "tools/oracle-validation/control-plane/**",
         "tools/oracle-validation/src/**",
         "scripts/**",
         ".github/workflows/**"
@@ -29,17 +30,60 @@
       "ownershipKey": "core:leaf-mechanic:entities-and-constants",
       "ownerKind": "leaf-mechanic",
       "patterns": ["packages/core/src/constants/**", "packages/core/src/entities/**"],
-      "mechanicIds": ["shared.contract.move-effect-result"],
+      "mechanicIds": ["shared.contract.move-effect-result", "shared.contract.reference-ids"],
       "authorityKeys": ["shared.engine-contracts"],
       "propagatesTo": ["battle:contract:move-effect-result"]
     },
     {
       "ownershipKey": "battle:contract:damage-context",
       "ownerKind": "contract",
+      "allowSharedFile": true,
       "patterns": ["packages/battle/src/context/types.ts"],
       "mechanicIds": ["shared.contract.damage-context"],
       "authorityKeys": ["shared.engine-contracts"],
       "propagatesTo": [
+        "gen1:leaf-mechanic:ruleset-and-handlers",
+        "gen2:leaf-mechanic:ruleset-and-handlers",
+        "gen3:leaf-mechanic:ruleset-and-handlers",
+        "gen4:leaf-mechanic:ruleset-and-handlers",
+        "gen5:leaf-mechanic:ruleset-and-handlers",
+        "gen6:leaf-mechanic:ruleset-and-handlers",
+        "gen7:leaf-mechanic:ruleset-and-handlers",
+        "gen8:leaf-mechanic:ruleset-and-handlers",
+        "gen9:leaf-mechanic:ruleset-and-handlers"
+      ]
+    },
+    {
+      "ownershipKey": "battle:contract:hit-check-contexts",
+      "ownerKind": "contract",
+      "allowSharedFile": true,
+      "patterns": ["packages/battle/src/context/types.ts"],
+      "mechanicIds": ["shared.contract.hit-check-contexts"],
+      "authorityKeys": ["shared.engine-contracts"],
+      "propagatesTo": [
+        "gen1:leaf-mechanic:ruleset-and-handlers",
+        "gen2:leaf-mechanic:ruleset-and-handlers",
+        "gen3:leaf-mechanic:ruleset-and-handlers",
+        "gen4:leaf-mechanic:ruleset-and-handlers",
+        "gen5:leaf-mechanic:ruleset-and-handlers",
+        "gen6:leaf-mechanic:ruleset-and-handlers",
+        "gen7:leaf-mechanic:ruleset-and-handlers",
+        "gen8:leaf-mechanic:ruleset-and-handlers",
+        "gen9:leaf-mechanic:ruleset-and-handlers"
+      ]
+    },
+    {
+      "ownershipKey": "battle:contract:move-effect-context",
+      "ownerKind": "contract",
+      "allowSharedFile": true,
+      "patterns": ["packages/battle/src/context/types.ts"],
+      "mechanicIds": ["shared.contract.move-effect-context"],
+      "authorityKeys": ["shared.engine-contracts"],
+      "propagatesTo": [
+        "gen1:leaf-mechanic:ruleset-and-handlers",
+        "gen2:leaf-mechanic:ruleset-and-handlers",
+        "gen3:leaf-mechanic:ruleset-and-handlers",
+        "gen4:leaf-mechanic:ruleset-and-handlers",
         "gen5:leaf-mechanic:ruleset-and-handlers",
         "gen6:leaf-mechanic:ruleset-and-handlers",
         "gen7:leaf-mechanic:ruleset-and-handlers",
@@ -50,10 +94,72 @@
     {
       "ownershipKey": "battle:contract:move-effect-result",
       "ownerKind": "contract",
+      "allowSharedFile": true,
       "patterns": ["packages/battle/src/context/types.ts"],
       "mechanicIds": ["shared.contract.move-effect-result"],
       "authorityKeys": ["shared.engine-contracts"],
       "propagatesTo": [
+        "gen1:leaf-mechanic:ruleset-and-handlers",
+        "gen2:leaf-mechanic:ruleset-and-handlers",
+        "gen3:leaf-mechanic:ruleset-and-handlers",
+        "gen4:leaf-mechanic:ruleset-and-handlers",
+        "gen5:leaf-mechanic:ruleset-and-handlers",
+        "gen6:leaf-mechanic:ruleset-and-handlers",
+        "gen7:leaf-mechanic:ruleset-and-handlers",
+        "gen8:leaf-mechanic:ruleset-and-handlers",
+        "gen9:leaf-mechanic:ruleset-and-handlers"
+      ]
+    },
+    {
+      "ownershipKey": "battle:contract:ability-context-result",
+      "ownerKind": "contract",
+      "allowSharedFile": true,
+      "patterns": ["packages/battle/src/context/types.ts"],
+      "mechanicIds": ["shared.contract.ability-context-result"],
+      "authorityKeys": ["shared.engine-contracts"],
+      "propagatesTo": [
+        "gen1:leaf-mechanic:ruleset-and-handlers",
+        "gen2:leaf-mechanic:ruleset-and-handlers",
+        "gen3:leaf-mechanic:ruleset-and-handlers",
+        "gen4:leaf-mechanic:ruleset-and-handlers",
+        "gen5:leaf-mechanic:ruleset-and-handlers",
+        "gen6:leaf-mechanic:ruleset-and-handlers",
+        "gen7:leaf-mechanic:ruleset-and-handlers",
+        "gen8:leaf-mechanic:ruleset-and-handlers",
+        "gen9:leaf-mechanic:ruleset-and-handlers"
+      ]
+    },
+    {
+      "ownershipKey": "battle:contract:item-context-result",
+      "ownerKind": "contract",
+      "allowSharedFile": true,
+      "patterns": ["packages/battle/src/context/types.ts"],
+      "mechanicIds": ["shared.contract.item-context-result"],
+      "authorityKeys": ["shared.engine-contracts"],
+      "propagatesTo": [
+        "gen1:leaf-mechanic:ruleset-and-handlers",
+        "gen2:leaf-mechanic:ruleset-and-handlers",
+        "gen3:leaf-mechanic:ruleset-and-handlers",
+        "gen4:leaf-mechanic:ruleset-and-handlers",
+        "gen5:leaf-mechanic:ruleset-and-handlers",
+        "gen6:leaf-mechanic:ruleset-and-handlers",
+        "gen7:leaf-mechanic:ruleset-and-handlers",
+        "gen8:leaf-mechanic:ruleset-and-handlers",
+        "gen9:leaf-mechanic:ruleset-and-handlers"
+      ]
+    },
+    {
+      "ownershipKey": "battle:contract:field-effect-results",
+      "ownerKind": "contract",
+      "allowSharedFile": true,
+      "patterns": ["packages/battle/src/context/types.ts"],
+      "mechanicIds": ["shared.contract.field-effect-results"],
+      "authorityKeys": ["shared.engine-contracts"],
+      "propagatesTo": [
+        "gen1:leaf-mechanic:ruleset-and-handlers",
+        "gen2:leaf-mechanic:ruleset-and-handlers",
+        "gen3:leaf-mechanic:ruleset-and-handlers",
+        "gen4:leaf-mechanic:ruleset-and-handlers",
         "gen5:leaf-mechanic:ruleset-and-handlers",
         "gen6:leaf-mechanic:ruleset-and-handlers",
         "gen7:leaf-mechanic:ruleset-and-handlers",
@@ -182,7 +288,11 @@
     {
       "ownershipKey": "oracle:tooling:runner",
       "ownerKind": "tooling",
-      "patterns": ["tools/oracle-validation/src/**", "tools/oracle-validation/data/**"],
+      "patterns": [
+        "tools/oracle-validation/control-plane/**",
+        "tools/oracle-validation/src/**",
+        "tools/oracle-validation/data/**"
+      ],
       "mechanicIds": [
         "shared.tooling.changed-mechanics.reporting",
         "shared.tooling.oracle-runner.artifacts"

@@ -11,6 +11,7 @@ import type {
 import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_TRIGGER_IDS,
+  CORE_HAZARD_IDS,
   CORE_ITEM_IDS,
   CORE_ITEM_TRIGGER_IDS,
   CORE_MOVE_CATEGORIES,
@@ -193,6 +194,21 @@ export class BattleEngine implements BattleEventEmitter {
   // the winning side's participants receive EXP.
   // Source: Game mechanic — EXP is split among all pokemon that participated in a battle.
   private readonly participantTracker: Map<string, Set<string>> = new Map();
+  private pendingHeldItemResults: {
+    readonly result: import("../context").ItemResult;
+    readonly pokemon: ActivePokemon;
+    readonly opponent: ActivePokemon | null;
+    readonly side: 0 | 1;
+    readonly expectedHeldItemId: string | null;
+  }[] = [];
+
+  private hasPendingSwitchResolution(): boolean {
+    return (
+      this.sidesNeedingSwitch.size > 0 ||
+      this.pendingSelfSwitches.size > 0 ||
+      this.pendingSwitches.size > 0
+    );
+  }
 
   private static assertRulesetGenerationMatches(
     source: "BattleEngine" | "BattleEngine.deserialize",
@@ -911,6 +927,7 @@ export class BattleEngine implements BattleEventEmitter {
             this.processAbilityResult(result, entry.pokemon, opponent, entry.side);
           }
         }
+        this.flushPendingHeldItemResults();
       }
     }
 
@@ -1071,6 +1088,7 @@ export class BattleEngine implements BattleEventEmitter {
             this.processAbilityResult(abilityResult, entry.pokemon, opponent, entry.side);
           }
         }
+        this.flushPendingHeldItemResults();
       }
 
       this.pendingSwitches.clear();
@@ -1572,6 +1590,12 @@ export class BattleEngine implements BattleEventEmitter {
         enumerable: false,
         configurable: false,
       },
+      pendingHeldItemResults: {
+        value: [],
+        writable: true,
+        enumerable: false,
+        configurable: false,
+      },
     });
 
     engine.restoreBattleGimmickState(parsed.gimmickState);
@@ -1755,28 +1779,28 @@ export class BattleEngine implements BattleEventEmitter {
       if (hazardResult.statusInflicted && !active.pokemon.status) {
         this.applyPrimaryStatus(active, hazardResult.statusInflicted, side.index);
       }
-      // Source: Showdown data/moves.ts — stickyweb: this.boost({spe: -1}, pokemon)
+      // Source: Showdown data/moves.ts — stickyweb: this.boost({spe: -1}, pokemon,
+      //   pokemon.side.foe.active[0], this.dex.getActiveMove('stickyweb'))
       // Apply stat changes from hazards (e.g. Sticky Web −1 Speed)
       if (hazardResult.statChanges && hazardResult.statChanges.length > 0) {
-        for (const change of hazardResult.statChanges) {
-          const currentStage = active.statStages[change.stat] ?? 0;
-          // Source: All generations — stat stages clamped to [-6, +6] (Bulbapedia: "Stat stages")
-          const newStage = Math.max(-6, Math.min(6, currentStage + change.stages));
-          active.statStages[change.stat] = newStage;
-          this.emit({
-            type: BATTLE_EVENT_TYPES.statChange,
-            side: side.index,
-            pokemon: getPokemonName(active),
+        const hazardSourcePokemon = this.getOpponentActive(side.index);
+        this.applyStatChangeBatch(
+          active,
+          side.index,
+          hazardResult.statChanges.map((change) => ({
             stat: change.stat,
             stages: change.stages,
-            currentStage: newStage,
-          });
-          // Source: pret/pokered engine/battle/core.asm — BadgeStatBoosts called after stat stage changes
-          // Only fire hook when stage actually changed (guard against clamped no-ops)
-          if (newStage !== currentStage) {
-            this.ruleset.onStatStageChange?.(active, change.stat, newStage, this.state);
-          }
-        }
+          })),
+          {
+            opponent: hazardSourcePokemon,
+            source: hazardSourcePokemon
+              ? BATTLE_EFFECT_TARGETS.opponent
+              : BATTLE_EFFECT_TARGETS.field,
+            // Sticky Web's hazard id and move id are the same canonical runtime id.
+            causeId: CORE_HAZARD_IDS.stickyWeb,
+            causeType: "move",
+          },
+        );
       }
       // Source: Bulbapedia — Poison-type absorbs Toxic Spikes on switch-in
       if (hazardResult.hazardsToRemove && hazardResult.hazardsToRemove.length > 0) {
@@ -1814,6 +1838,7 @@ export class BattleEngine implements BattleEventEmitter {
           trigger: CORE_ABILITY_TRIGGER_IDS.onSwitchIn,
         });
         this.processAbilityResult(abilityResult, active, opponent, side.index);
+        this.flushPendingHeldItemResults();
       }
     }
   }
@@ -1938,6 +1963,9 @@ export class BattleEngine implements BattleEventEmitter {
       // Skip if this side's Pokemon was phased out (Roar/Whirlwind) earlier this turn.
       // The replacement should not execute the phased-out Pokemon's queued action.
       if (isMoveLikeAction(action) && this.phasedSides.has(action.side)) {
+        continue;
+      }
+      if (isMoveLikeAction(action) && this.pendingSelfSwitches.has(action.side)) {
         continue;
       }
 
@@ -2301,6 +2329,7 @@ export class BattleEngine implements BattleEventEmitter {
       if (beforeMoveAbilityResult.activated) {
         this.processAbilityResult(beforeMoveAbilityResult, actor, defender, action.side);
         if (beforeMoveAbilityResult.movePrevented) {
+          this.flushPendingHeldItemResults();
           actor.lastMoveUsed = moveData.id;
           actor.movedThisTurn = true;
           return;
@@ -2544,6 +2573,7 @@ export class BattleEngine implements BattleEventEmitter {
         });
         if (immunityResult.activated) {
           this.processAbilityResult(immunityResult, defender, actor, defenderSide as 0 | 1);
+          this.flushPendingHeldItemResults();
           actor.lastMoveUsed = moveData.id;
           actor.movedThisTurn = true;
           return; // Move fully absorbed — skip damage, effects, items
@@ -2776,7 +2806,10 @@ export class BattleEngine implements BattleEventEmitter {
         });
 
     if (effectResult !== null) {
-      this.processEffectResult(effectResult, actor, defender, action.side, defenderSide as 0 | 1);
+      this.processEffectResult(effectResult, actor, defender, action.side, defenderSide as 0 | 1, {
+        causeId: effectiveMoveData.id,
+        causeType: "move",
+      });
       if (this.state.ended) {
         actor.lastMoveUsed = moveData.id;
         actor.movedThisTurn = true;
@@ -2975,6 +3008,8 @@ export class BattleEngine implements BattleEventEmitter {
       }
     }
 
+    this.flushPendingHeldItemResults();
+
     actor.lastMoveUsed = moveData.id;
     actor.movedThisTurn = true;
 
@@ -2993,6 +3028,7 @@ export class BattleEngine implements BattleEventEmitter {
       });
       if (afterMoveResult.activated) {
         this.processAbilityResult(afterMoveResult, actor, defender, action.side);
+        this.flushPendingHeldItemResults();
       }
     }
   }
@@ -3145,6 +3181,7 @@ export class BattleEngine implements BattleEventEmitter {
         });
         if (immunityResult.activated) {
           this.processAbilityResult(immunityResult, defender, actor, defenderSide);
+          this.flushPendingHeldItemResults();
           actor.lastMoveUsed = moveId;
           actor.movedThisTurn = true;
           return; // Move fully absorbed — skip damage, effects, items
@@ -3369,6 +3406,8 @@ export class BattleEngine implements BattleEventEmitter {
         this.processItemResult(atkItemResult, actor, defender, actorSide);
       }
     }
+
+    this.flushPendingHeldItemResults();
 
     actor.lastMoveUsed = moveId;
 
@@ -3608,25 +3647,17 @@ export class BattleEngine implements BattleEventEmitter {
 
     // Apply stat change
     if (result.statChange) {
-      const { stat, stages } = result.statChange;
-      const current = target.statStages[stat] ?? 0;
-      // Source: All generations — stat stages are universally clamped to [-6, +6] range
-      // (Bulbapedia: "Stat stages" — the range [-6, +6] is consistent across all mainline games)
-      const newStage = Math.max(-6, Math.min(6, current + stages));
-      target.statStages[stat] = newStage;
-      this.emit({
-        type: BATTLE_EVENT_TYPES.statChange,
-        side: action.side,
-        pokemon: getPokemonName(target),
-        stat,
-        stages,
-        currentStage: newStage,
-      });
-      // Source: pret/pokered engine/battle/core.asm — BadgeStatBoosts called after stat stage changes
-      // Only fire hook when stage actually changed (guard against clamped no-ops)
-      if (newStage !== current) {
-        this.ruleset.onStatStageChange?.(target, stat, newStage, this.state);
-      }
+      this.applyStatChangeBatch(
+        target,
+        action.side,
+        [{ stat: result.statChange.stat, stages: result.statChange.stages }],
+        {
+          opponent: null,
+          source: BATTLE_EFFECT_TARGETS.self,
+          causeId: action.itemId,
+          causeType: "item-action",
+        },
+      );
     }
 
     // Emit result messages
@@ -3936,6 +3967,7 @@ export class BattleEngine implements BattleEventEmitter {
           });
           if (flinchResult.activated) {
             this.processAbilityResult(flinchResult, actor, opponent, side);
+            this.flushPendingHeldItemResults();
           }
         }
       }
@@ -4288,6 +4320,10 @@ export class BattleEngine implements BattleEventEmitter {
     defender: ActivePokemon,
     attackerSide: 0 | 1,
     defenderSide: 0 | 1,
+    options?: {
+      readonly causeId?: string;
+      readonly causeType?: "move" | "system";
+    },
   ): void {
     if (result.escapeBattle && attackerSide === 0 && this.state.isWildBattle) {
       // Source: pret/pokered src/engine/battle/effect_commands.asm — successful wild Teleport
@@ -4349,25 +4385,31 @@ export class BattleEngine implements BattleEventEmitter {
     }
 
     // Stat changes
-    for (const change of result.statChanges) {
-      const target = change.target === BATTLE_EFFECT_TARGETS.attacker ? attacker : defender;
-      const targetSide =
-        change.target === BATTLE_EFFECT_TARGETS.attacker ? attackerSide : defenderSide;
-      const currentStage = target.statStages[change.stat];
-      const newStage = Math.max(-6, Math.min(6, currentStage + change.stages));
-      target.statStages[change.stat] = newStage;
-      this.emit({
-        type: BATTLE_EVENT_TYPES.statChange,
-        side: targetSide,
-        pokemon: getPokemonName(target),
-        stat: change.stat,
-        stages: change.stages,
-        currentStage: newStage,
-      });
-      // Source: pret/pokered engine/battle/core.asm — BadgeStatBoosts called after stat stage changes
-      // Only fire hook when stage actually changed (guard against clamped no-ops)
-      if (newStage !== currentStage) {
-        this.ruleset.onStatStageChange?.(target, change.stat, newStage, this.state);
+    if (result.statChanges.length > 0) {
+      const attackerChanges = result.statChanges
+        .filter((change) => change.target === BATTLE_EFFECT_TARGETS.attacker)
+        .map((change) => ({ stat: change.stat, stages: change.stages }));
+      const defenderChanges = result.statChanges
+        .filter((change) => change.target === BATTLE_EFFECT_TARGETS.defender)
+        .map((change) => ({ stat: change.stat, stages: change.stages }));
+
+      if (attackerChanges.length > 0) {
+        this.applyStatChangeBatch(attacker, attackerSide, attackerChanges, {
+          opponent: defender,
+          source: BATTLE_EFFECT_TARGETS.self,
+          causeId: options?.causeId,
+          causeType: options?.causeType ?? "system",
+          deferItemReactions: true,
+        });
+      }
+      if (defenderChanges.length > 0) {
+        this.applyStatChangeBatch(defender, defenderSide, defenderChanges, {
+          opponent: attacker,
+          source: BATTLE_EFFECT_TARGETS.opponent,
+          causeId: options?.causeId,
+          causeType: options?.causeType ?? "system",
+          deferItemReactions: true,
+        });
       }
     }
 
@@ -5090,6 +5132,7 @@ export class BattleEngine implements BattleEventEmitter {
       applyPrimaryStatus: (target, status, side, sleepTurnsOverride) =>
         this.applyPrimaryStatus(target, status, side, sleepTurnsOverride),
     });
+    this.flushPendingHeldItemResults();
   }
 
   private processWeatherDamage(): void {
@@ -5616,6 +5659,196 @@ export class BattleEngine implements BattleEventEmitter {
     }
   }
 
+  private enqueueHeldItemResult(
+    result: import("../context").ItemResult,
+    pokemon: ActivePokemon,
+    opponent: ActivePokemon | null,
+    side: 0 | 1,
+  ): void {
+    this.pendingHeldItemResults.push({
+      result,
+      pokemon,
+      opponent,
+      side,
+      expectedHeldItemId: pokemon.pokemon.heldItem,
+    });
+  }
+
+  private flushPendingHeldItemResults(): void {
+    let processedEntries = 0;
+    while (this.pendingHeldItemResults.length > 0) {
+      const pending = this.pendingHeldItemResults;
+      this.pendingHeldItemResults = [];
+      for (const entry of pending) {
+        processedEntries += 1;
+        if (processedEntries > 128) {
+          throw new Error(
+            "Held-item reaction queue did not stabilize after 128 deferred item results.",
+          );
+        }
+
+        const active = this.state.sides[entry.side]?.active[0];
+        if (active !== entry.pokemon) continue;
+        if (entry.pokemon.pokemon.currentHp <= 0) continue;
+        if (entry.pokemon.pokemon.heldItem !== entry.expectedHeldItemId) continue;
+        if (entry.opponent) {
+          this.processItemResult(entry.result, entry.pokemon, entry.opponent, entry.side);
+        } else {
+          this.processItemResult(entry.result, entry.pokemon, entry.side);
+        }
+      }
+    }
+  }
+
+  private applyStatChangeBatch(
+    target: ActivePokemon,
+    targetSide: 0 | 1,
+    changes: readonly {
+      readonly stat: BattleStat;
+      readonly stages: number;
+    }[],
+    options: {
+      readonly opponent: ActivePokemon | null;
+      readonly source:
+        | typeof BATTLE_EFFECT_TARGETS.self
+        | typeof BATTLE_EFFECT_TARGETS.opponent
+        | typeof BATTLE_EFFECT_TARGETS.field;
+      readonly causeId?: string;
+      readonly causeType?: "ability" | "hazard" | "item" | "item-action" | "move" | "system";
+      readonly deferItemReactions?: boolean;
+    },
+  ): void {
+    if (changes.length === 0) return;
+
+    const causeMove =
+      options.causeType === "move" && options.causeId
+        ? (() => {
+            try {
+              return this.dataManager.getMove(options.causeId);
+            } catch {
+              return undefined;
+            }
+          })()
+        : undefined;
+
+    const attempted = changes.map((change) => ({
+      stat: change.stat,
+      stages: change.stages,
+    }));
+
+    const blockedStats = new Set<BattleStat>();
+    if (this.ruleset.hasHeldItems() && target.pokemon.heldItem) {
+      const beforeResult = this.ruleset.applyHeldItem(CORE_ITEM_TRIGGER_IDS.onStatChange, {
+        pokemon: target,
+        opponent: options.opponent ?? undefined,
+        state: this.state,
+        rng: this.state.rng,
+        move: causeMove,
+        statChange: {
+          phase: "before",
+          source: options.source,
+          attempted,
+          applied: [],
+          causeId: options.causeId,
+          causeType: options.causeType,
+        },
+      });
+      for (const stat of beforeResult.blockedStatChanges ?? []) {
+        blockedStats.add(stat);
+      }
+      if (beforeResult.activated) {
+        if (options.opponent) {
+          this.processItemResult(beforeResult, target, options.opponent, targetSide);
+        } else {
+          this.processItemResult(beforeResult, target, targetSide);
+        }
+      }
+    }
+
+    const applied: {
+      readonly stat: BattleStat;
+      readonly stages: number;
+      readonly currentStage: number;
+    }[] = [];
+
+    for (const change of changes) {
+      if (blockedStats.has(change.stat)) continue;
+      const currentStage = target.statStages[change.stat];
+      // Source: Showdown sim/pokemon.ts -- boostBy clamps stat stages to [-6, 6]
+      const newStage = Math.max(-6, Math.min(6, currentStage + change.stages));
+      const appliedStages = newStage - currentStage;
+      if (appliedStages === 0) continue;
+
+      target.statStages[change.stat] = newStage;
+      applied.push({
+        stat: change.stat,
+        stages: appliedStages,
+        currentStage: newStage,
+      });
+      this.emit({
+        type: BATTLE_EVENT_TYPES.statChange,
+        side: targetSide,
+        pokemon: getPokemonName(target),
+        stat: change.stat,
+        stages: appliedStages,
+        currentStage: newStage,
+      });
+      this.ruleset.onStatStageChange?.(target, change.stat, newStage, this.state);
+    }
+
+    if (!this.ruleset.hasHeldItems()) return;
+
+    const maybeHandleItemResult = (
+      holder: ActivePokemon,
+      holderSide: 0 | 1,
+      opponent: ActivePokemon | null,
+      trigger:
+        | typeof CORE_ITEM_TRIGGER_IDS.onStatChange
+        | typeof CORE_ITEM_TRIGGER_IDS.onFoeStatChange,
+      phase: "after" | "foe-after",
+    ) => {
+      if (!holder.pokemon.heldItem) return;
+      const itemResult = this.ruleset.applyHeldItem(trigger, {
+        pokemon: holder,
+        opponent: opponent ?? undefined,
+        state: this.state,
+        rng: this.state.rng,
+        move: causeMove,
+        statChange: {
+          phase,
+          source: options.source,
+          attempted,
+          applied,
+          causeId: options.causeId,
+          causeType: options.causeType,
+        },
+      });
+      if (!itemResult.activated) return;
+      if (options.deferItemReactions) {
+        this.enqueueHeldItemResult(itemResult, holder, opponent, holderSide);
+        return;
+      }
+      if (opponent) {
+        this.processItemResult(itemResult, holder, opponent, holderSide);
+      } else {
+        this.processItemResult(itemResult, holder, holderSide);
+      }
+    };
+
+    maybeHandleItemResult(
+      target,
+      targetSide,
+      options.opponent,
+      CORE_ITEM_TRIGGER_IDS.onStatChange,
+      "after",
+    );
+
+    const foe = options.opponent;
+    if (!foe || foe.pokemon.currentHp <= 0) return;
+    const foeSide = (1 - targetSide) as 0 | 1;
+    maybeHandleItemResult(foe, foeSide, target, CORE_ITEM_TRIGGER_IDS.onFoeStatChange, "foe-after");
+  }
+
   private processItemResult(
     result: import("../context").ItemResult,
     pokemon: ActivePokemon,
@@ -5636,8 +5869,11 @@ export class BattleEngine implements BattleEventEmitter {
     }
 
     const heldItemId = pokemon.pokemon.heldItem;
+    let blockedConsume = false;
 
-    for (const effect of result.effects) {
+    for (let index = 0; index < result.effects.length; index++) {
+      const effect = result.effects[index];
+      if (!effect) continue;
       switch (effect.type) {
         case BATTLE_ITEM_EFFECT_TYPES.heal: {
           const amount = effect.value as number;
@@ -5676,6 +5912,9 @@ export class BattleEngine implements BattleEventEmitter {
           // Source: Showdown data/abilities.ts -- harvest onResidual reads pokemon.lastItem
           // Berry IDs always end with "-berry" per Showdown convention.
           const consumedItemId = effect.value as string;
+          if (blockedConsume) {
+            break;
+          }
           if (consumedItemId?.endsWith("-berry")) {
             pokemon.volatileStatuses.set(CORE_VOLATILE_IDS.harvestBerry, {
               turnsLeft: -1,
@@ -5762,30 +6001,33 @@ export class BattleEngine implements BattleEventEmitter {
           break;
         }
         case BATTLE_ITEM_EFFECT_TYPES.statBoost: {
-          // Stage boost to the specified stat for the holder.
-          // Uses effect.stages if present (e.g., Weakness Policy = +2), defaulting to +1.
-          // Source: Showdown -- stat pinch berries (+1), Weakness Policy (+2) onEat/onDamagingHit
-          const stat = effect.value as BattleStat;
-          const boostStages = effect.stages ?? 1;
-          const statStages = pokemon.statStages as Record<string, number>;
-          if (stat in statStages) {
-            const currentStage = statStages[stat] ?? 0;
-            const newStage = Math.max(-6, Math.min(6, currentStage + boostStages));
-            statStages[stat] = newStage;
-            this.emit({
-              type: BATTLE_EVENT_TYPES.statChange,
-              side,
-              pokemon: getPokemonName(pokemon),
-              stat,
-              stages: boostStages,
-              currentStage: newStage,
-            });
-            // Source: pret/pokered engine/battle/core.asm — BadgeStatBoosts called after stat stage changes
-            // Only fire hook when stage actually changed (guard against clamped no-ops)
-            if (newStage !== currentStage) {
-              this.ruleset.onStatStageChange?.(pokemon, stat, newStage, this.state);
+          // Stat-boost item effects must stay batched so foe-side reactions
+          // (e.g., Mirror Herb) can see the full boost set from a single item use.
+          const batched: { stat: BattleStat; stages: number }[] = [];
+          let lookahead = index;
+          while (lookahead < result.effects.length) {
+            const nextEffect = result.effects[lookahead];
+            if (!nextEffect) break;
+            if (nextEffect.type !== BATTLE_ITEM_EFFECT_TYPES.statBoost) break;
+            const stat = nextEffect.value as BattleStat;
+            const boostStages = nextEffect.stages ?? 1;
+            const statStages = pokemon.statStages as Record<string, number>;
+            if (stat in statStages) {
+              batched.push({ stat, stages: boostStages });
             }
+            lookahead++;
           }
+
+          if (batched.length > 0) {
+            this.applyStatChangeBatch(pokemon, side, batched, {
+              opponent,
+              source: BATTLE_EFFECT_TARGETS.self,
+              causeId: heldItemId ?? undefined,
+              causeType: "item",
+              deferItemReactions: true,
+            });
+          }
+          index = lookahead - 1;
           break;
         }
         case BATTLE_ITEM_EFFECT_TYPES.selfDamage: {
@@ -5814,11 +6056,33 @@ export class BattleEngine implements BattleEventEmitter {
         }
         case BATTLE_ITEM_EFFECT_TYPES.none:
           if (effect.value === BATTLE_ITEM_EFFECT_VALUES.forceSwitch) {
-            const switchSide =
-              effect.target === BATTLE_EFFECT_TARGETS.opponent && opponent
-                ? ((1 - side) as 0 | 1)
-                : side;
-            this.performImmediateForcedSwitch(switchSide, { markSideAsPhased: true });
+            if (effect.target === BATTLE_EFFECT_TARGETS.opponent && opponent) {
+              const switchSide = (1 - side) as 0 | 1;
+              const switched = this.performImmediateForcedSwitch(switchSide, {
+                markSideAsPhased: true,
+              });
+              if (!switched) {
+                blockedConsume = true;
+              }
+              break;
+            }
+
+            const sideState = this.state.sides[side];
+            const active = sideState.active[0];
+            const hasAliveBench = sideState.team.some(
+              (teamPokemon, idx) => teamPokemon.currentHp > 0 && idx !== active?.teamSlot,
+            );
+            const canSelfSwitch =
+              active === pokemon &&
+              pokemon.pokemon.currentHp > 0 &&
+              hasAliveBench &&
+              !this.hasPendingSwitchResolution();
+            if (canSelfSwitch) {
+              this.sidesNeedingSwitch.add(side);
+              this.pendingSelfSwitches.set(side, { batonPass: false });
+            } else {
+              blockedConsume = true;
+            }
           }
           break;
         case BATTLE_ITEM_EFFECT_TYPES.speedBoost:
@@ -5843,7 +6107,7 @@ export class BattleEngine implements BattleEventEmitter {
       });
     }
 
-    for (const msg of result.messages) {
+    for (const msg of blockedConsume ? [] : result.messages) {
       this.emit({ type: BATTLE_EVENT_TYPES.message, text: msg });
     }
   }
@@ -5876,22 +6140,16 @@ export class BattleEngine implements BattleEventEmitter {
             effect.target === BATTLE_EFFECT_TARGETS.self ? pokemonSide : opponentSide;
           const stat = effect.stat ?? CORE_STAT_IDS.attack;
           const stages = effect.stages ?? -1;
-          const currentStage = target.statStages[stat];
-          const newStage = Math.max(-6, Math.min(6, currentStage + stages));
-          target.statStages[stat] = newStage;
-          this.emit({
-            type: BATTLE_EVENT_TYPES.statChange,
-            side: targetSide,
-            pokemon: getPokemonName(target),
-            stat,
-            stages,
-            currentStage: newStage,
+          this.applyStatChangeBatch(target, targetSide, [{ stat, stages }], {
+            opponent: effect.target === BATTLE_EFFECT_TARGETS.self ? opponent : pokemon,
+            source:
+              effect.target === BATTLE_EFFECT_TARGETS.self
+                ? BATTLE_EFFECT_TARGETS.self
+                : BATTLE_EFFECT_TARGETS.opponent,
+            causeId: pokemon.ability ?? undefined,
+            causeType: "ability",
+            deferItemReactions: true,
           });
-          // Source: pret/pokered engine/battle/core.asm — BadgeStatBoosts called after stat stage changes
-          // Only fire hook when stage actually changed (guard against clamped no-ops)
-          if (newStage !== currentStage) {
-            this.ruleset.onStatStageChange?.(target, stat, newStage, this.state);
-          }
           break;
         }
         case BATTLE_ABILITY_EFFECT_TYPES.weatherSet: {

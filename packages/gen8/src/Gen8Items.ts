@@ -6,6 +6,7 @@ import {
 } from "@pokemon-lib-ts/battle";
 import type { MoveEffect, PokemonType, VolatileStatus } from "@pokemon-lib-ts/core";
 import {
+  CORE_ITEM_TRIGGER_IDS,
   CORE_MOVE_CATEGORIES,
   CORE_MOVE_EFFECT_TARGETS,
   CORE_MOVE_IDS,
@@ -16,7 +17,7 @@ import {
   getTypeEffectiveness,
   TYPE_EFFECTIVENESS_MULTIPLIERS,
 } from "@pokemon-lib-ts/core";
-import { GEN8_ABILITY_IDS, GEN8_ITEM_IDS } from "./data/reference-ids";
+import { GEN8_ABILITY_IDS, GEN8_ITEM_IDS, GEN8_MOVE_IDS } from "./data/reference-ids";
 import { GEN8_TYPE_CHART } from "./Gen8TypeChart.js";
 
 // ---------------------------------------------------------------------------
@@ -45,6 +46,31 @@ const CONSUMABLE_ITEM_STAT_IDS = {
 
 const ABILITY_IDS = GEN8_ABILITY_IDS;
 const STATUS_IDS = CORE_STATUS_IDS;
+
+function canHolderSwitchOut(context: ItemContext): boolean {
+  const side = context.state.sides.find((candidate) =>
+    candidate.active?.some((active) => active === context.pokemon),
+  );
+  if (!side) return true;
+  const sideState = side as unknown as {
+    team?: Array<{ currentHp: number }>;
+    bench?: Array<{ pokemon?: { currentHp: number }; currentHp?: number }>;
+  };
+
+  if (Array.isArray(sideState.team)) {
+    return sideState.team.some(
+      (teamPokemon, index) => teamPokemon.currentHp > 0 && index !== context.pokemon.teamSlot,
+    );
+  }
+
+  if (Array.isArray(sideState.bench)) {
+    return sideState.bench.some(
+      (benchPokemon) => (benchPokemon.pokemon?.currentHp ?? benchPokemon.currentHp ?? 0) > 0,
+    );
+  }
+
+  return false;
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Type-Boost Items (carried from Gen 6-7, 1.2x = 4915/4096)
@@ -739,6 +765,9 @@ export function applyGen8HeldItem(trigger: string, context: ItemContext): ItemRe
 
   let result: ItemResult;
   switch (trigger) {
+    case CORE_ITEM_TRIGGER_IDS.onStatChange:
+      result = handleOnStatChange(item, context);
+      break;
     case "before-move":
       result = handleBeforeMove(item, context);
       break;
@@ -1853,6 +1882,97 @@ function handleOnHit(item: string, context: ItemContext): ItemResult {
         };
       }
       return NO_ACTIVATION;
+    }
+
+    default:
+      return NO_ACTIVATION;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// on-stat-change (holder-side stat change reactions)
+// ---------------------------------------------------------------------------
+
+function handleOnStatChange(item: string, context: ItemContext): ItemResult {
+  const statChange = context.statChange;
+  if (!statChange) return NO_ACTIVATION;
+
+  const pokemon = context.pokemon;
+  const pokemonName = pokemon.pokemon.nickname ?? `Pokemon #${pokemon.pokemon.speciesId}`;
+
+  switch (item) {
+    // Eject Pack: consume and force the holder out after one of its stats is lowered.
+    // Source: Showdown data/items.ts -- ejectpack.onAfterBoost
+    case ITEM_IDS.ejectPack: {
+      if (
+        statChange.phase !== "after" ||
+        statChange.causeId === GEN8_MOVE_IDS.partingShot ||
+        !statChange.applied.some((change) => change.stages < 0) ||
+        !canHolderSwitchOut(context)
+      ) {
+        return NO_ACTIVATION;
+      }
+
+      return {
+        activated: true,
+        effects: [
+          {
+            type: BATTLE_ITEM_EFFECT_TYPES.none,
+            target: BATTLE_EFFECT_TARGETS.self,
+            value: ITEM_EFFECT_VALUE.forceSwitch,
+          },
+          {
+            type: BATTLE_ITEM_EFFECT_TYPES.consume,
+            target: BATTLE_EFFECT_TARGETS.self,
+            value: ITEM_IDS.ejectPack,
+          },
+        ],
+        messages: [`${pokemonName}'s Eject Pack activated!`],
+      };
+    }
+
+    // Adrenaline Orb: +1 Speed after an Intimidate-style Attack drop from the foe.
+    // Source: Showdown data/items.ts -- adrenalineorb.onAfterBoost
+    case ITEM_IDS.adrenalineOrb: {
+      const attemptedAttackDrop = statChange.attempted.some(
+        (change) => change.stat === CORE_STAT_IDS.attack && change.stages < 0,
+      );
+      const appliedAttackDrop = statChange.applied.some(
+        (change) => change.stat === CORE_STAT_IDS.attack && change.stages < 0,
+      );
+      const currentAttackStage = pokemon.statStages[CORE_STAT_IDS.attack] ?? 0;
+      const nullifiedByStageClamp =
+        !appliedAttackDrop &&
+        (!attemptedAttackDrop ||
+          currentAttackStage <= -6 ||
+          (pokemon.ability === GEN8_ABILITY_IDS.contrary && currentAttackStage >= 6));
+      const currentSpeedStage = pokemon.statStages[CORE_STAT_IDS.speed] ?? 0;
+      if (
+        statChange.phase !== "after" ||
+        statChange.source !== BATTLE_EFFECT_TARGETS.opponent ||
+        statChange.causeId !== GEN8_ABILITY_IDS.intimidate ||
+        nullifiedByStageClamp ||
+        currentSpeedStage >= 6
+      ) {
+        return NO_ACTIVATION;
+      }
+
+      return {
+        activated: true,
+        effects: [
+          {
+            type: BATTLE_ITEM_EFFECT_TYPES.statBoost,
+            target: BATTLE_EFFECT_TARGETS.self,
+            value: CORE_STAT_IDS.speed,
+          },
+          {
+            type: BATTLE_ITEM_EFFECT_TYPES.consume,
+            target: BATTLE_EFFECT_TARGETS.self,
+            value: ITEM_IDS.adrenalineOrb,
+          },
+        ],
+        messages: [`${pokemonName}'s Adrenaline Orb raised its Speed!`],
+      };
     }
 
     default:

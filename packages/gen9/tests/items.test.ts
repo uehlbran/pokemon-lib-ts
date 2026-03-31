@@ -2,6 +2,7 @@ import type { ActivePokemon, BattleSide, BattleState, ItemContext } from "@pokem
 import type { PokemonType, PrimaryStatus, SeededRandom } from "@pokemon-lib-ts/core";
 import { createEvs, createIvs } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { GEN9_ABILITY_IDS } from "../src/data";
 import {
   applyGen9HeldItem,
   getBlackSludgeEffect,
@@ -62,6 +63,17 @@ import {
 // ---------------------------------------------------------------------------
 
 const MOVE_FIXTURES = {
+  crunch: {
+    id: TEST_MOVE_IDS.crunch,
+    type: TEST_TYPE_IDS.normal,
+    category: TEST_MOVE_CATEGORIES.physical,
+    effect: {
+      type: "stat-change",
+      target: "foe",
+      chance: 20,
+      changes: [{ stat: TEST_STAT_IDS.defense, stages: -1 }],
+    },
+  },
   earthquake: {
     id: TEST_MOVE_IDS.earthquake,
     type: TEST_TYPE_IDS.ground,
@@ -82,6 +94,11 @@ const MOVE_FIXTURES = {
     id: TEST_MOVE_IDS.iceBeam,
     type: TEST_TYPE_IDS.ice,
     category: TEST_MOVE_CATEGORIES.special,
+  },
+  stickyWeb: {
+    id: TEST_MOVE_IDS.stickyWeb,
+    type: TEST_TYPE_IDS.bug,
+    category: TEST_MOVE_CATEGORIES.status,
   },
   surf: {
     id: TEST_MOVE_IDS.surf,
@@ -238,6 +255,20 @@ function createItemContext(overrides: {
     damage: overrides.damage,
     opponent: overrides.opponent,
   } as ItemContext;
+}
+
+function createSwitchableState(pokemon: ActivePokemon, hasBench: boolean): BattleState {
+  return {
+    ...createBattleState(),
+    sides: [
+      {
+        active: [pokemon],
+        bench: hasBench ? [createOnFieldPokemon({ heldItem: null })] : [],
+        entryHazards: {},
+      } as unknown as BattleSide,
+      { active: [], bench: [], entryHazards: {} } as unknown as BattleSide,
+    ],
+  } as BattleState;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1494,6 +1525,269 @@ describe("Consumable Items", () => {
       });
       const result = applyGen9HeldItem(TEST_TRIGGER_IDS.onHit, ctx);
       expect(result.activated).toBe(false);
+    });
+  });
+
+  describe("applyGen9HeldItem -- stat-change triggers", () => {
+    it("given Clear Amulet and an opponent-caused stat drop before application, when on-stat-change fires, then blocks the dropped stat", () => {
+      const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.clearAmulet });
+      const ctx = {
+        ...createItemContext({ pokemon }),
+        statChange: {
+          phase: "before",
+          source: "opponent",
+          attempted: [{ stat: TEST_STAT_IDS.defense, stages: -1 }],
+          applied: [],
+          causeId: TEST_MOVE_IDS.earthquake,
+          causeType: "move",
+        },
+      } as ItemContext;
+
+      const result = applyGen9HeldItem(TEST_TRIGGER_IDS.onStatChange, ctx);
+      expect(result.activated).toBe(true);
+      expect(result.effects).toEqual([]);
+      expect(result.blockedStatChanges).toEqual([TEST_STAT_IDS.defense]);
+      expect(result.messages).toEqual([
+        `${pokemon.pokemon.nickname ?? `Pokemon #${pokemon.pokemon.speciesId}`}'s Clear Amulet prevented its stats from being lowered!`,
+      ]);
+    });
+
+    it("given Clear Amulet and a secondary stat drop, when on-stat-change fires, then it blocks the stat without the fail message", () => {
+      const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.clearAmulet });
+      const ctx = {
+        ...createItemContext({ pokemon, move: MOVE_FIXTURES.crunch }),
+        statChange: {
+          phase: "before",
+          source: "opponent",
+          attempted: [{ stat: TEST_STAT_IDS.defense, stages: -1 }],
+          applied: [],
+          causeId: TEST_MOVE_IDS.crunch,
+          causeType: "move",
+        },
+      } as ItemContext;
+
+      const result = applyGen9HeldItem(TEST_TRIGGER_IDS.onStatChange, ctx);
+      expect(result.activated).toBe(true);
+      expect(result.effects).toEqual([]);
+      expect(result.blockedStatChanges).toEqual([TEST_STAT_IDS.defense]);
+      expect(result.messages).toEqual([]);
+    });
+
+    it("given Clear Amulet and Octolock, when on-stat-change fires, then it blocks the stat without the fail message", () => {
+      const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.clearAmulet });
+      const ctx = {
+        ...createItemContext({ pokemon, move: MOVE_FIXTURES.tackle }),
+        statChange: {
+          phase: "before",
+          source: "opponent",
+          attempted: [{ stat: TEST_STAT_IDS.defense, stages: -1 }],
+          applied: [],
+          causeId: TEST_MOVE_IDS.octolock,
+          causeType: "move",
+        },
+      } as ItemContext;
+
+      const result = applyGen9HeldItem(TEST_TRIGGER_IDS.onStatChange, ctx);
+      expect(result.activated).toBe(true);
+      expect(result.effects).toEqual([]);
+      expect(result.blockedStatChanges).toEqual([TEST_STAT_IDS.defense]);
+      expect(result.messages).toEqual([]);
+    });
+
+    it("given Clear Amulet and Sticky Web, when on-stat-change fires, then it blocks the Speed drop with the fail message", () => {
+      const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.clearAmulet });
+      const ctx = {
+        ...createItemContext({ pokemon, move: MOVE_FIXTURES.stickyWeb }),
+        statChange: {
+          phase: "before",
+          source: "opponent",
+          attempted: [{ stat: TEST_STAT_IDS.speed, stages: -1 }],
+          applied: [],
+          causeId: TEST_MOVE_IDS.stickyWeb,
+          causeType: "move",
+        },
+      } as ItemContext;
+
+      const result = applyGen9HeldItem(TEST_TRIGGER_IDS.onStatChange, ctx);
+      expect(result.activated).toBe(true);
+      expect(result.effects).toEqual([]);
+      expect(result.blockedStatChanges).toEqual([TEST_STAT_IDS.speed]);
+      expect(result.messages).toEqual([
+        `${pokemon.pokemon.nickname ?? `Pokemon #${pokemon.pokemon.speciesId}`}'s Clear Amulet prevented its stats from being lowered!`,
+      ]);
+    });
+
+    it("given Eject Pack and an applied self stat drop, when on-stat-change fires, then forces a self switch and consumes", () => {
+      const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.ejectPack });
+      const ctx = {
+        ...createItemContext({ pokemon, state: createSwitchableState(pokemon, true) }),
+        statChange: {
+          phase: "after",
+          source: "self",
+          attempted: [{ stat: TEST_STAT_IDS.defense, stages: -1 }],
+          applied: [{ stat: TEST_STAT_IDS.defense, stages: -1, currentStage: -1 }],
+          causeId: "close-combat",
+          causeType: "move",
+        },
+      } as ItemContext;
+
+      const result = applyGen9HeldItem(TEST_TRIGGER_IDS.onStatChange, ctx);
+      expect(result.activated).toBe(true);
+      expect(result.effects[0]).toEqual(forceSwitchSelf());
+      expect(result.effects[1]).toEqual(consumeSelf(TEST_ITEM_IDS.ejectPack));
+    });
+
+    it("given Eject Pack without a legal bench replacement, when on-stat-change fires, then it does not activate", () => {
+      const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.ejectPack });
+      const ctx = {
+        ...createItemContext({ pokemon, state: createSwitchableState(pokemon, false) }),
+        statChange: {
+          phase: "after",
+          source: "self",
+          attempted: [{ stat: TEST_STAT_IDS.defense, stages: -1 }],
+          applied: [{ stat: TEST_STAT_IDS.defense, stages: -1, currentStage: -1 }],
+          causeId: "close-combat",
+          causeType: "move",
+        },
+      } as ItemContext;
+
+      const result = applyGen9HeldItem(TEST_TRIGGER_IDS.onStatChange, ctx);
+      expect(result).toEqual({ activated: false, effects: [], messages: [] });
+    });
+
+    it("given Adrenaline Orb and an opponent Intimidate attack drop, when on-stat-change fires, then raises Speed and consumes", () => {
+      const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.adrenalineOrb });
+      const ctx = {
+        ...createItemContext({ pokemon }),
+        statChange: {
+          phase: "after",
+          source: "opponent",
+          attempted: [{ stat: TEST_STAT_IDS.attack, stages: -1 }],
+          applied: [{ stat: TEST_STAT_IDS.attack, stages: -1, currentStage: -1 }],
+          causeId: "intimidate",
+          causeType: "ability",
+        },
+      } as ItemContext;
+
+      const result = applyGen9HeldItem(TEST_TRIGGER_IDS.onStatChange, ctx);
+      expect(result.activated).toBe(true);
+      expect(result.effects[0]).toEqual(statBoostSelf(TEST_STAT_IDS.speed));
+      expect(result.effects[1]).toEqual(consumeSelf(TEST_ITEM_IDS.adrenalineOrb));
+    });
+
+    it("given Adrenaline Orb and a blocked Intimidate drop, when on-stat-change fires, then it still activates", () => {
+      const pokemon = createOnFieldPokemon({
+        heldItem: TEST_ITEM_IDS.adrenalineOrb,
+        ability: GEN9_ABILITY_IDS.hyperCutter,
+      });
+      const ctx = {
+        ...createItemContext({ pokemon }),
+        statChange: {
+          phase: "after",
+          source: "opponent",
+          attempted: [{ stat: TEST_STAT_IDS.attack, stages: -1 }],
+          applied: [],
+          causeId: "intimidate",
+          causeType: "ability",
+        },
+      } as ItemContext;
+
+      const result = applyGen9HeldItem(TEST_TRIGGER_IDS.onStatChange, ctx);
+      expect(result.activated).toBe(true);
+      expect(result.effects[0]).toEqual(statBoostSelf(TEST_STAT_IDS.speed));
+      expect(result.effects[1]).toEqual(consumeSelf(TEST_ITEM_IDS.adrenalineOrb));
+    });
+
+    it("given Adrenaline Orb and an Intimidate drop at the Attack floor, when on-stat-change fires, then it does not activate", () => {
+      const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.adrenalineOrb });
+      pokemon.statStages.attack = -6;
+      const ctx = {
+        ...createItemContext({ pokemon }),
+        statChange: {
+          phase: "after",
+          source: "opponent",
+          attempted: [{ stat: TEST_STAT_IDS.attack, stages: -1 }],
+          applied: [],
+          causeId: "intimidate",
+          causeType: "ability",
+        },
+      } as ItemContext;
+
+      const result = applyGen9HeldItem(TEST_TRIGGER_IDS.onStatChange, ctx);
+      expect(result).toEqual({ activated: false, effects: [], messages: [] });
+    });
+
+    it("given Adrenaline Orb and a Contrary Intimidate drop at the positive cap, when on-stat-change fires, then it does not activate", () => {
+      const pokemon = createOnFieldPokemon({
+        heldItem: TEST_ITEM_IDS.adrenalineOrb,
+        ability: GEN9_ABILITY_IDS.contrary,
+      });
+      pokemon.statStages.attack = 6;
+      const ctx = {
+        ...createItemContext({ pokemon }),
+        statChange: {
+          phase: "after",
+          source: "opponent",
+          attempted: [{ stat: TEST_STAT_IDS.attack, stages: -1 }],
+          applied: [],
+          causeId: "intimidate",
+          causeType: "ability",
+        },
+      } as ItemContext;
+
+      const result = applyGen9HeldItem(TEST_TRIGGER_IDS.onStatChange, ctx);
+      expect(result).toEqual({ activated: false, effects: [], messages: [] });
+    });
+
+    it("given Adrenaline Orb and an active Contrary override at the positive cap, when on-stat-change fires, then it uses the active ability field", () => {
+      const pokemon = createOnFieldPokemon({
+        heldItem: TEST_ITEM_IDS.adrenalineOrb,
+        ability: TEST_DEFAULTS.ability,
+      });
+      pokemon.ability = GEN9_ABILITY_IDS.contrary;
+      pokemon.statStages.attack = 6;
+      const ctx = {
+        ...createItemContext({ pokemon }),
+        statChange: {
+          phase: "after",
+          source: "opponent",
+          attempted: [{ stat: TEST_STAT_IDS.attack, stages: -1 }],
+          applied: [],
+          causeId: "intimidate",
+          causeType: "ability",
+        },
+      } as ItemContext;
+
+      const result = applyGen9HeldItem(TEST_TRIGGER_IDS.onStatChange, ctx);
+      expect(result).toEqual({ activated: false, effects: [], messages: [] });
+    });
+
+    it("given Mirror Herb and a foe's positive boosts, when on-foe-stat-change fires, then copies each boost and consumes", () => {
+      const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.mirrorHerb });
+      const opponent = createOnFieldPokemon({});
+      const ctx = {
+        ...createItemContext({ pokemon, opponent }),
+        statChange: {
+          phase: "foe-after",
+          source: "self",
+          attempted: [
+            { stat: TEST_STAT_IDS.attack, stages: 1 },
+            { stat: TEST_STAT_IDS.speed, stages: 1 },
+          ],
+          applied: [
+            { stat: TEST_STAT_IDS.attack, stages: 1, currentStage: 1 },
+            { stat: TEST_STAT_IDS.speed, stages: 1, currentStage: 1 },
+          ],
+          causeId: "dragon-dance",
+          causeType: "move",
+        },
+      } as ItemContext;
+
+      const result = applyGen9HeldItem(TEST_TRIGGER_IDS.onFoeStatChange, ctx);
+      expect(result.activated).toBe(true);
+      expect(result.effects[0]).toEqual(statBoostSelf(TEST_STAT_IDS.attack, 1));
+      expect(result.effects[1]).toEqual(statBoostSelf(TEST_STAT_IDS.speed, 1));
+      expect(result.effects[2]).toEqual(consumeSelf(TEST_ITEM_IDS.mirrorHerb));
     });
   });
 });

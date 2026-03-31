@@ -444,6 +444,8 @@ export interface ItemSystem {
    * @param trigger Known trigger points:
    *   - `"before-turn-order"` -- triggered before move-order sorting for same-priority go-first items
    *   - `"end-of-turn"` -- standard end-of-turn item effects (Leftovers, Black Sludge, etc.)
+   *   - `"on-stat-change"` -- holder-side stat change reactions/interceptors (Clear Amulet, Eject Pack)
+   *   - `"on-foe-stat-change"` -- foe-side post-boost reactions (Mirror Herb)
    *   - `"on-damage-taken"` -- triggered when the holder takes damage (context.opponent = attacker)
    *   - `"on-hit"` -- triggered when the holder lands a hit (context.opponent = defender)
    *   - `"on-contact"` -- triggered when a contact move hits the holder (context.opponent = attacker)

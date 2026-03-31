@@ -5,6 +5,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import {
   classifyRepoFile,
   expandOwnershipKeys,
+  type FileClassification,
   loadControlPlane,
   resolveRepoRelativePath,
 } from "./control-plane.js";
@@ -169,6 +170,14 @@ function resolveRequiredSuites(
   return [...suites].sort();
 }
 
+export function isLowConfidenceClassification(classification: FileClassification): boolean {
+  return (
+    classification.fileClass === "runtime-owning" &&
+    classification.ruleMatches.length > 1 &&
+    classification.ruleMatches.some((rule) => !rule.allowSharedFile)
+  );
+}
+
 function buildImpactsReport(repoRoot: string, args: Args): ImpactsReport {
   const controlPlane = loadControlPlane(repoRoot);
   const baseRefResolution = resolveBaseRef(repoRoot, args.baseRef);
@@ -207,10 +216,7 @@ function buildImpactsReport(repoRoot: string, args: Args): ImpactsReport {
     ),
   ].sort();
   const lowConfidenceFiles = classifications
-    .filter(
-      (classification) =>
-        classification.fileClass === "runtime-owning" && classification.ruleMatches.length > 1,
-    )
+    .filter((classification) => isLowConfidenceClassification(classification))
     .map((classification) => classification.filePath);
 
   return impactsReportSchema.parse({

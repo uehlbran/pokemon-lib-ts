@@ -57,7 +57,10 @@ const DEFAULT_MOVE = createMockDataManager().getMove(CORE_MOVE_IDS.tackle);
 
 function createForceSwitchItemEngine(
   mode: typeof GEN5_ITEM_IDS.redCard | typeof GEN5_ITEM_IDS.ejectButton,
+  options?: { holderHasBench?: boolean; attackerHasBench?: boolean },
 ) {
+  const holderHasBench = options?.holderHasBench ?? true;
+  const attackerHasBench = options?.attackerHasBench ?? true;
   const ruleset = new ForceSwitchItemRuleset(mode, "blastoise-1");
   const config: BattleConfig = {
     generation: 5,
@@ -79,25 +82,30 @@ function createForceSwitchItemEngine(
           },
           currentHp: 153,
         }),
-        createTestPokemon(25, 50, {
-          uid: "pikachu-side0-bench",
-          nickname: "Pikachu",
-          moves: [createMoveSlot(DEFAULT_MOVE.id, DEFAULT_MOVE.pp)],
-          calculatedStats: {
-            hp: 120,
-            attack: 80,
-            defense: 70,
-            spAttack: 80,
-            spDefense: 70,
-            speed: 90,
-          },
-          currentHp: 120,
-        }),
+        ...(attackerHasBench
+          ? [
+              createTestPokemon(25, 50, {
+                uid: "pikachu-side0-bench",
+                nickname: "Pikachu",
+                moves: [createMoveSlot(DEFAULT_MOVE.id, DEFAULT_MOVE.pp)],
+                calculatedStats: {
+                  hp: 120,
+                  attack: 80,
+                  defense: 70,
+                  spAttack: 80,
+                  spDefense: 70,
+                  speed: 90,
+                },
+                currentHp: 120,
+              }),
+            ]
+          : []),
       ],
       [
         createTestPokemon(9, 50, {
           uid: "blastoise-1",
           nickname: "Blastoise",
+          heldItem: mode,
           moves: [createMoveSlot(DEFAULT_MOVE.id, DEFAULT_MOVE.pp)],
           calculatedStats: {
             hp: 154,
@@ -109,20 +117,24 @@ function createForceSwitchItemEngine(
           },
           currentHp: 154,
         }),
-        createTestPokemon(25, 50, {
-          uid: "pikachu-bench",
-          nickname: "Pikachu",
-          moves: [createMoveSlot(DEFAULT_MOVE.id, DEFAULT_MOVE.pp)],
-          calculatedStats: {
-            hp: 120,
-            attack: 80,
-            defense: 70,
-            spAttack: 80,
-            spDefense: 70,
-            speed: 90,
-          },
-          currentHp: 120,
-        }),
+        ...(holderHasBench
+          ? [
+              createTestPokemon(25, 50, {
+                uid: "pikachu-bench",
+                nickname: "Pikachu",
+                moves: [createMoveSlot(DEFAULT_MOVE.id, DEFAULT_MOVE.pp)],
+                calculatedStats: {
+                  hp: 120,
+                  attack: 80,
+                  defense: 70,
+                  spAttack: 80,
+                  spDefense: 70,
+                  speed: 90,
+                },
+                currentHp: 120,
+              }),
+            ]
+          : []),
       ],
     ],
     seed: 42,
@@ -144,16 +156,50 @@ describe("Held-item force switch handling", () => {
     expect(engine.state.sides[0].active[0]?.pokemon.uid).toBe("pikachu-side0-bench");
   });
 
-  it("given Eject Button activates before the holder acts, when the holder is switched out, then its queued move is skipped", () => {
+  it("given Eject Button activates before the holder acts, when the holder is prompted to switch, then its queued move is skipped", () => {
     const engine = createForceSwitchItemEngine(GEN5_ITEM_IDS.ejectButton);
 
     engine.start();
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
-    expect(engine.state.sides[1].active[0]?.pokemon.uid).toBe("pikachu-bench");
+    expect(engine.getPhase()).toBe("switch-prompt");
     // Source: the Charizard fixture above is initialized with 153 HP and should remain untouched
     // because Eject Button forces the holder out before its queued move resolves.
     expect(engine.state.sides[0].active[0]?.pokemon.currentHp).toBe(153);
+
+    engine.submitSwitch(1, 1);
+
+    expect(engine.getPhase()).toBe("action-select");
+    expect(engine.state.sides[1].active[0]?.pokemon.uid).toBe("pikachu-bench");
+  });
+
+  it("given Eject Button would activate but the holder has no legal replacement, when contact damage resolves, then the item is not consumed and the holder still acts", () => {
+    const engine = createForceSwitchItemEngine(GEN5_ITEM_IDS.ejectButton, {
+      holderHasBench: false,
+    });
+
+    engine.start();
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    expect(engine.getPhase()).toBe("action-select");
+    expect(engine.state.sides[1].active[0]?.pokemon.uid).toBe("blastoise-1");
+    expect(engine.state.sides[1].active[0]?.pokemon.heldItem).toBe(GEN5_ITEM_IDS.ejectButton);
+    expect(engine.state.sides[0].active[0]?.pokemon.currentHp).toBe(143);
+  });
+
+  it("given Red Card would force the attacker out but the attacker has no legal replacement, when contact damage resolves, then the item is not consumed and the attacker stays in", () => {
+    const engine = createForceSwitchItemEngine(GEN5_ITEM_IDS.redCard, {
+      attackerHasBench: false,
+    });
+
+    engine.start();
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    expect(engine.getPhase()).toBe("action-select");
+    expect(engine.state.sides[0].active[0]?.pokemon.uid).toBe("charizard-1");
+    expect(engine.state.sides[1].active[0]?.pokemon.heldItem).toBe(GEN5_ITEM_IDS.redCard);
   });
 });

@@ -105,7 +105,7 @@ function handleTailwind(ctx: MoveEffectContext): MoveEffectResult {
   });
 }
 
-function handleDefog(ctx: MoveEffectContext): MoveEffectResult {
+function handleDefog(_ctx: MoveEffectContext): MoveEffectResult {
   // Clear defender's hazards + screens; -1 evasion on defender
   // Source: Showdown Gen 4 — Defog clears hazards, screens, and lowers evasion
   // Source: Bulbapedia — Defog lowers target's evasion by 1 and clears hazards
@@ -123,7 +123,7 @@ function handleDefog(ctx: MoveEffectContext): MoveEffectResult {
   });
 }
 
-function handleGravity(ctx: MoveEffectContext): MoveEffectResult {
+function handleGravity(_ctx: MoveEffectContext): MoveEffectResult {
   // Intensify gravity — engine applies the field state via gravitySet flag
   // Source: Showdown Gen 4 — Gravity lasts 5 turns, grounds all Pokemon
   // Source: Bulbapedia — https://bulbapedia.bulbagarden.net/wiki/Gravity_(move)

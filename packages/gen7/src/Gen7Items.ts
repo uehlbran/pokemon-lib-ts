@@ -8,6 +8,7 @@ import type { MoveEffect, PokemonType, VolatileStatus } from "@pokemon-lib-ts/co
 import {
   CORE_ABILITY_IDS,
   CORE_ITEM_IDS,
+  CORE_ITEM_TRIGGER_IDS,
   CORE_MOVE_CATEGORIES,
   CORE_MOVE_EFFECT_TARGETS,
   CORE_MOVE_IDS,
@@ -377,6 +378,9 @@ export function applyGen7HeldItem(trigger: string, context: ItemContext): ItemRe
 
   let result: ItemResult;
   switch (trigger) {
+    case CORE_ITEM_TRIGGER_IDS.onStatChange:
+      result = handleOnStatChange(item, context);
+      break;
     case "before-move":
       result = handleBeforeMove(item, context);
       break;
@@ -1584,6 +1588,67 @@ function handleOnHit(item: string, context: ItemContext): ItemResult {
         };
       }
       return NO_ACTIVATION;
+    }
+
+    default:
+      return NO_ACTIVATION;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// on-stat-change
+// ---------------------------------------------------------------------------
+
+function handleOnStatChange(item: string, context: ItemContext): ItemResult {
+  const statChange = context.statChange;
+  if (!statChange) return NO_ACTIVATION;
+
+  const pokemon = context.pokemon;
+  const pokemonName = pokemon.pokemon.nickname ?? `Pokemon #${pokemon.pokemon.speciesId}`;
+
+  switch (item) {
+    // Adrenaline Orb: +1 Speed after an Intimidate-style Attack drop from the foe.
+    // Source: Showdown data/items.ts -- adrenalineorb.onAfterBoost
+    case GEN7_ITEM_IDS.adrenalineOrb: {
+      const attemptedAttackDrop = statChange.attempted.some(
+        (change) => change.stat === CORE_STAT_IDS.attack && change.stages < 0,
+      );
+      const appliedAttackDrop = statChange.applied.some(
+        (change) => change.stat === CORE_STAT_IDS.attack && change.stages < 0,
+      );
+      const currentAttackStage = pokemon.statStages[CORE_STAT_IDS.attack] ?? 0;
+      const nullifiedByStageClamp =
+        !appliedAttackDrop &&
+        (!attemptedAttackDrop ||
+          currentAttackStage <= -6 ||
+          (pokemon.ability === GEN7_ABILITY_IDS.contrary && currentAttackStage >= 6));
+      const currentSpeedStage = pokemon.statStages[CORE_STAT_IDS.speed] ?? 0;
+      if (
+        statChange.phase !== "after" ||
+        statChange.source !== BATTLE_EFFECT_TARGETS.opponent ||
+        statChange.causeId !== GEN7_ABILITY_IDS.intimidate ||
+        nullifiedByStageClamp ||
+        currentSpeedStage >= 6
+      ) {
+        return NO_ACTIVATION;
+      }
+
+      return {
+        activated: true,
+        effects: [
+          {
+            type: BATTLE_ITEM_EFFECT_TYPES.statBoost,
+            target: BATTLE_EFFECT_TARGETS.self,
+            value: CORE_STAT_IDS.speed,
+          },
+          {
+            type: BATTLE_ITEM_EFFECT_TYPES.consume,
+            target: BATTLE_EFFECT_TARGETS.self,
+            value: GEN7_ITEM_IDS.adrenalineOrb,
+          },
+        ],
+        messages: [`${pokemonName}'s Adrenaline Orb raised its Speed!`],
+      };
     }
 
     default:

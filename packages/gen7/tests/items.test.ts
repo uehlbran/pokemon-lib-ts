@@ -173,6 +173,7 @@ function createItemContext(overrides: {
   move?: MoveData;
   damage?: number;
   seed?: number;
+  statChange?: ItemContext["statChange"];
 }): ItemContext {
   return {
     pokemon: overrides.pokemon ?? createOnFieldPokemon({}),
@@ -180,6 +181,7 @@ function createItemContext(overrides: {
     rng: new SeededRandom(overrides.seed ?? 42),
     move: overrides.move,
     damage: overrides.damage,
+    statChange: overrides.statChange,
   };
 }
 
@@ -735,6 +737,143 @@ describe("On-Hit Items", () => {
       expect(result.activated).toBe(true);
       expect(result.effects[0]).toEqual({ type: "heal", target: "self", value: 20 });
     });
+  });
+});
+
+describe("applyGen7HeldItem -- on-stat-change", () => {
+  it("given Adrenaline Orb and an opponent Intimidate attack drop, when on-stat-change fires, then raises Speed and consumes", () => {
+    // Source: Showdown data/items.ts -- Adrenaline Orb triggers from Intimidate attack drops.
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.adrenalineOrb,
+      speed: 100,
+    });
+    const ctx = {
+      ...createItemContext({ pokemon }),
+      statChange: {
+        phase: "after",
+        source: "opponent",
+        attempted: [{ stat: "attack", stages: -1 }],
+        applied: [{ stat: "attack", stages: -1, currentStage: -1 }],
+        causeId: GEN7_ABILITY_IDS.intimidate,
+        causeType: "ability",
+      },
+    } as ItemContext;
+
+    const result = applyGen7HeldItem(ITEM_TRIGGERS.onStatChange, ctx);
+    expect(result.activated).toBe(true);
+    expect(result.effects).toEqual([
+      { type: "stat-boost", target: "self", value: "speed" },
+      { type: "consume", target: "self", value: ITEM_IDS.adrenalineOrb },
+    ]);
+  });
+
+  it("given Adrenaline Orb and a non-Intimidate stat drop, when on-stat-change fires, then it does not activate", () => {
+    // Source: Showdown data/items.ts -- Adrenaline Orb only checks opponent Intimidate attack drops.
+    const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.adrenalineOrb });
+    const ctx = {
+      ...createItemContext({ pokemon }),
+      statChange: {
+        phase: "after",
+        source: "opponent",
+        attempted: [{ stat: "attack", stages: -1 }],
+        applied: [{ stat: "attack", stages: -1, currentStage: -1 }],
+        causeId: MOVE_IDS.growl,
+        causeType: "move",
+      },
+    } as ItemContext;
+
+    const result = applyGen7HeldItem(ITEM_TRIGGERS.onStatChange, ctx);
+    expect(result).toEqual({ activated: false, effects: [], messages: [] });
+  });
+
+  it("given Adrenaline Orb and a blocked Intimidate drop, when on-stat-change fires, then it still activates", () => {
+    // Source: Showdown data/items.ts -- Adrenaline Orb keys off the attempted Intimidate drop, not only applied stages.
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.adrenalineOrb,
+      ability: ABILITY_IDS.hyperCutter,
+    });
+    const ctx = {
+      ...createItemContext({ pokemon }),
+      statChange: {
+        phase: "after",
+        source: "opponent",
+        attempted: [{ stat: "attack", stages: -1 }],
+        applied: [],
+        causeId: GEN7_ABILITY_IDS.intimidate,
+        causeType: "ability",
+      },
+    } as ItemContext;
+
+    const result = applyGen7HeldItem(ITEM_TRIGGERS.onStatChange, ctx);
+    expect(result.activated).toBe(true);
+    expect(result.effects).toEqual([
+      { type: "stat-boost", target: "self", value: "speed" },
+      { type: "consume", target: "self", value: ITEM_IDS.adrenalineOrb },
+    ]);
+  });
+
+  it("given Adrenaline Orb and an Intimidate drop at the Attack floor, when on-stat-change fires, then it does not activate", () => {
+    const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.adrenalineOrb });
+    pokemon.statStages.attack = -6;
+    const ctx = {
+      ...createItemContext({ pokemon }),
+      statChange: {
+        phase: "after",
+        source: "opponent",
+        attempted: [{ stat: "attack", stages: -1 }],
+        applied: [],
+        causeId: GEN7_ABILITY_IDS.intimidate,
+        causeType: "ability",
+      },
+    } as ItemContext;
+
+    const result = applyGen7HeldItem(ITEM_TRIGGERS.onStatChange, ctx);
+    expect(result).toEqual({ activated: false, effects: [], messages: [] });
+  });
+
+  it("given Adrenaline Orb and a Contrary Intimidate drop at the positive cap, when on-stat-change fires, then it does not activate", () => {
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.adrenalineOrb,
+      ability: ABILITY_IDS.contrary,
+    });
+    pokemon.statStages.attack = 6;
+    const ctx = {
+      ...createItemContext({ pokemon }),
+      statChange: {
+        phase: "after",
+        source: "opponent",
+        attempted: [{ stat: "attack", stages: -1 }],
+        applied: [],
+        causeId: GEN7_ABILITY_IDS.intimidate,
+        causeType: "ability",
+      },
+    } as ItemContext;
+
+    const result = applyGen7HeldItem(ITEM_TRIGGERS.onStatChange, ctx);
+    expect(result).toEqual({ activated: false, effects: [], messages: [] });
+  });
+
+  it("given Adrenaline Orb and an active Contrary override at the positive cap, when on-stat-change fires, then it uses the active ability field", () => {
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.adrenalineOrb,
+      ability: ABILITY_IDS.none,
+    });
+    pokemon.ability = ABILITY_IDS.contrary;
+    pokemon.statStages.attack = 6;
+    const ctx = {
+      ...createItemContext({ pokemon }),
+      statChange: {
+        phase: "after",
+        source: "opponent",
+        attempted: [{ stat: "attack", stages: -1 }],
+        applied: [],
+        causeId: ABILITY_IDS.intimidate,
+        causeType: "ability",
+      },
+    } as ItemContext;
+
+    const result = applyGen7HeldItem(ITEM_TRIGGERS.onStatChange, ctx);
+    expect(result).toEqual({ activated: false, effects: [], messages: [] });
   });
 });
 

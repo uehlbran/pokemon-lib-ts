@@ -7,6 +7,7 @@ import {
   type SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { GEN8_ABILITY_IDS } from "../src/data";
 import { hasHeavyDutyBoots } from "../src/Gen8EntryHazards";
 import {
   applyGen8HeldItem,
@@ -184,6 +185,20 @@ function makeContext(overrides: {
     move: overrides.move,
     damage: overrides.damage,
   } as ItemContext;
+}
+
+function makeSwitchableState(pokemon: ActivePokemon, hasBench: boolean): BattleState {
+  return {
+    ...createSyntheticBattleState(),
+    sides: [
+      {
+        active: [pokemon],
+        bench: hasBench ? [createOnFieldPokemon({ heldItem: null })] : [],
+        entryHazards: {},
+      } as unknown as BattleSide,
+      { active: [], bench: [], entryHazards: {} } as unknown as BattleSide,
+    ],
+  } as BattleState;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -783,6 +798,165 @@ describe("getConsumableItemEffect", () => {
   it("given passive item, when getting effect, then returns null", () => {
     const result = getConsumableItemEffect(ITEMS.leftovers, {});
     expect(result).toBe(null);
+  });
+});
+
+describe("applyGen8HeldItem -- on-stat-change", () => {
+  it("given Eject Pack and an applied stat drop, when on-stat-change fires, then forces a self switch and consumes", () => {
+    // Source: Showdown data/items.ts -- Eject Pack triggers after the holder's own stats drop.
+    const pokemon = createOnFieldPokemon({ heldItem: ITEMS.ejectPack });
+    const ctx = {
+      ...makeContext({ pokemon, state: makeSwitchableState(pokemon, true) }),
+      statChange: {
+        phase: "after",
+        source: "self",
+        attempted: [{ stat: "defense", stages: -1 }],
+        applied: [{ stat: "defense", stages: -1, currentStage: -1 }],
+        causeId: "close-combat",
+        causeType: "move",
+      },
+    } as ItemContext;
+
+    const result = applyGen8HeldItem(CORE_ITEM_TRIGGER_IDS.onStatChange, ctx);
+    expect(result.activated).toBe(true);
+    expect(result.effects).toEqual([
+      { type: "none", target: "self", value: "force-switch" },
+      { type: "consume", target: "self", value: ITEMS.ejectPack },
+    ]);
+  });
+
+  it("given Eject Pack without a legal bench replacement, when on-stat-change fires, then it does not activate", () => {
+    // Source: Showdown data/items.ts -- Eject Pack requires an available replacement via canSwitch(side).
+    const pokemon = createOnFieldPokemon({ heldItem: ITEMS.ejectPack });
+    const ctx = {
+      ...makeContext({ pokemon, state: makeSwitchableState(pokemon, false) }),
+      statChange: {
+        phase: "after",
+        source: "self",
+        attempted: [{ stat: "defense", stages: -1 }],
+        applied: [{ stat: "defense", stages: -1, currentStage: -1 }],
+        causeId: "close-combat",
+        causeType: "move",
+      },
+    } as ItemContext;
+
+    const result = applyGen8HeldItem(CORE_ITEM_TRIGGER_IDS.onStatChange, ctx);
+    expect(result).toEqual({ activated: false, effects: [], messages: [] });
+  });
+
+  it("given Adrenaline Orb and an opponent Intimidate attack drop, when on-stat-change fires, then raises Speed and consumes", () => {
+    // Source: Showdown data/items.ts -- Adrenaline Orb triggers from Intimidate attack drops.
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEMS.adrenalineOrb,
+      speed: 100,
+    });
+    const ctx = {
+      ...makeContext({ pokemon }),
+      statChange: {
+        phase: "after",
+        source: "opponent",
+        attempted: [{ stat: "attack", stages: -1 }],
+        applied: [{ stat: "attack", stages: -1, currentStage: -1 }],
+        causeId: "intimidate",
+        causeType: "ability",
+      },
+    } as ItemContext;
+
+    const result = applyGen8HeldItem(CORE_ITEM_TRIGGER_IDS.onStatChange, ctx);
+    expect(result.activated).toBe(true);
+    expect(result.effects).toEqual([
+      { type: "stat-boost", target: "self", value: "speed" },
+      { type: "consume", target: "self", value: ITEMS.adrenalineOrb },
+    ]);
+  });
+
+  it("given Adrenaline Orb and a blocked Intimidate drop, when on-stat-change fires, then it still activates", () => {
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEMS.adrenalineOrb,
+      ability: GEN8_ABILITY_IDS.hyperCutter,
+    });
+    const ctx = {
+      ...makeContext({ pokemon }),
+      statChange: {
+        phase: "after",
+        source: "opponent",
+        attempted: [{ stat: "attack", stages: -1 }],
+        applied: [],
+        causeId: "intimidate",
+        causeType: "ability",
+      },
+    } as ItemContext;
+
+    const result = applyGen8HeldItem(CORE_ITEM_TRIGGER_IDS.onStatChange, ctx);
+    expect(result.activated).toBe(true);
+    expect(result.effects).toEqual([
+      { type: "stat-boost", target: "self", value: "speed" },
+      { type: "consume", target: "self", value: ITEMS.adrenalineOrb },
+    ]);
+  });
+
+  it("given Adrenaline Orb and an Intimidate drop at the Attack floor, when on-stat-change fires, then it does not activate", () => {
+    const pokemon = createOnFieldPokemon({ heldItem: ITEMS.adrenalineOrb });
+    pokemon.statStages.attack = -6;
+    const ctx = {
+      ...makeContext({ pokemon }),
+      statChange: {
+        phase: "after",
+        source: "opponent",
+        attempted: [{ stat: "attack", stages: -1 }],
+        applied: [],
+        causeId: "intimidate",
+        causeType: "ability",
+      },
+    } as ItemContext;
+
+    const result = applyGen8HeldItem(CORE_ITEM_TRIGGER_IDS.onStatChange, ctx);
+    expect(result).toEqual({ activated: false, effects: [], messages: [] });
+  });
+
+  it("given Adrenaline Orb and a Contrary Intimidate drop at the positive cap, when on-stat-change fires, then it does not activate", () => {
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEMS.adrenalineOrb,
+      ability: GEN8_ABILITY_IDS.contrary,
+    });
+    pokemon.statStages.attack = 6;
+    const ctx = {
+      ...makeContext({ pokemon }),
+      statChange: {
+        phase: "after",
+        source: "opponent",
+        attempted: [{ stat: "attack", stages: -1 }],
+        applied: [],
+        causeId: "intimidate",
+        causeType: "ability",
+      },
+    } as ItemContext;
+
+    const result = applyGen8HeldItem(CORE_ITEM_TRIGGER_IDS.onStatChange, ctx);
+    expect(result).toEqual({ activated: false, effects: [], messages: [] });
+  });
+
+  it("given Adrenaline Orb and an active Contrary override at the positive cap, when on-stat-change fires, then it uses the active ability field", () => {
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEMS.adrenalineOrb,
+      ability: CORE_ABILITY_IDS.none,
+    });
+    pokemon.ability = GEN8_ABILITY_IDS.contrary;
+    pokemon.statStages.attack = 6;
+    const ctx = {
+      ...makeContext({ pokemon }),
+      statChange: {
+        phase: "after",
+        source: "opponent",
+        attempted: [{ stat: "attack", stages: -1 }],
+        applied: [],
+        causeId: GEN8_ABILITY_IDS.intimidate,
+        causeType: "ability",
+      },
+    } as ItemContext;
+
+    const result = applyGen8HeldItem(CORE_ITEM_TRIGGER_IDS.onStatChange, ctx);
+    expect(result).toEqual({ activated: false, effects: [], messages: [] });
   });
 });
 

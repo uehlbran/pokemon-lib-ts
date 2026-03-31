@@ -694,6 +694,39 @@ export interface ItemContext {
   readonly move?: MoveData;
   /** Damage dealt this turn, if the trigger is damage-related */
   readonly damage?: number;
+  /**
+   * For stat-change item triggers: describes the attempted and applied stage
+   * changes for the holder (or foe, for mirrored reactions).
+   *
+   * - `phase: "before"` allows pre-apply interception (e.g., Clear Amulet)
+   * - `phase: "after"` exposes post-apply reactions on the holder
+   * - `phase: "foe-after"` exposes post-apply reactions to opposing boosts
+   *
+   * `attempted` always contains the original requested deltas. `applied` only
+   * contains deltas that actually changed stages after clamping / blocking.
+   * This lets post-apply item hooks distinguish blocked Intimidate-style drops
+   * from stage-floor/stage-cap no-ops by comparing the attempted deltas with
+   * the holder's resulting stages.
+   */
+  readonly statChange?: {
+    readonly phase: "before" | "after" | "foe-after";
+    readonly source:
+      | typeof BATTLE_EFFECT_TARGETS.self
+      | typeof BATTLE_EFFECT_TARGETS.opponent
+      | typeof BATTLE_EFFECT_TARGETS.field;
+    readonly attempted: readonly {
+      readonly stat: BattleStat;
+      readonly stages: number;
+    }[];
+    readonly applied: readonly {
+      readonly stat: BattleStat;
+      readonly stages: number;
+      readonly currentStage: number;
+    }[];
+    /** Cause metadata for trigger-specific gating (e.g., Intimidate, Parting Shot). */
+    readonly causeId?: string;
+    readonly causeType?: "ability" | "hazard" | "item" | "item-action" | "move" | "system";
+  };
 }
 
 type ItemEffectTarget = typeof BATTLE_EFFECT_TARGETS.self | typeof BATTLE_EFFECT_TARGETS.opponent;
@@ -790,6 +823,11 @@ export interface ItemResult {
   readonly effects: readonly ItemEffect[];
   /** Freeform messages to emit as `MessageEvent`s */
   readonly messages: readonly string[];
+  /**
+   * Optional list of stats to block from the current attempted stat-change batch.
+   * Used by pre-apply interception items such as Clear Amulet.
+   */
+  readonly blockedStatChanges?: readonly BattleStat[];
 }
 
 /**
