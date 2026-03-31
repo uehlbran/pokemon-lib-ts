@@ -1,8 +1,22 @@
 {
   "version": 1,
   "checkIdPattern": "gen{n}:{suite}:{kind}:{identifier}",
+  "suiteIds": [
+    "changeset-check",
+    "control-plane",
+    "lint",
+    "mutation-audit",
+    "oracle-fast",
+    "package-boundaries",
+    "pret-validate",
+    "proof-preview",
+    "test",
+    "typecheck",
+    "typecheck:contracts",
+    "workflow-contract"
+  ],
   "checkStatuses": ["pass", "fail", "skip", "incomplete", "advisory", "deferred", "interrupted"],
-  "suiteStatuses": ["pass", "fail", "skip", "incomplete", "advisory", "interrupted"],
+  "suiteStatuses": ["pass", "fail", "skip", "incomplete", "deferred", "advisory", "interrupted"],
   "runModes": ["fast", "full"],
   "conclusions": ["fail", "provisional-pass", "compliant", "interrupted"]
 }

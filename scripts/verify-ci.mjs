@@ -7,11 +7,19 @@ const turboTaskConcurrency = process.env.VERIFY_CI_TURBO_TASK_CONCURRENCY ?? "4"
 
 await runVerification({
   env: {
-    VERIFY_LOCAL_VITEST_MAX_WORKERS: process.env.VERIFY_LOCAL_VITEST_MAX_WORKERS ?? "75%",
     VERIFY_LOCAL_VITEST_MAX_CONCURRENCY: process.env.VERIFY_LOCAL_VITEST_MAX_CONCURRENCY ?? "4",
   },
   steps: [
     { label: "workflow validator tests", npmArgs: ["run", "test:workflow"] },
+    {
+      label: "control-plane validation",
+      npmArgs: ["exec", "--", "tsx", "tools/oracle-validation/src/validate-control-plane.ts"],
+    },
+    { label: "proof preview", npmArgs: ["run", "proof:preview", "--", "--mode", "ci-preview"] },
+    {
+      label: "direct mutation audit",
+      npmArgs: ["run", "proof:audit:mutation", "--", "--mode", "ci-preview"],
+    },
     { label: "lint", npmArgs: ["run", "lint:check"] },
     {
       label: "build",
@@ -43,5 +51,35 @@ await runVerification({
     { label: "generated completeness status", npmArgs: ["run", "status:generate"] },
     { label: "generated status honesty gate", npmArgs: ["run", "status:check"] },
     { label: "changeset gate", npmArgs: ["run", "changeset:check"] },
+    {
+      label: "impacts enforcement",
+      npmArgs: [
+        "run",
+        "proof:enforce",
+        "--",
+        "--mode",
+        "ci-preview",
+        "--executed-suite",
+        "changeset-check",
+        "--executed-suite",
+        "control-plane",
+        "--executed-suite",
+        "mutation-audit",
+        "--executed-suite",
+        "oracle-fast",
+        "--executed-suite",
+        "package-boundaries",
+        "--executed-suite",
+        "pret-validate",
+        "--executed-suite",
+        "proof-preview",
+        "--executed-suite",
+        "test",
+        "--executed-suite",
+        "typecheck:contracts",
+        "--executed-suite",
+        "workflow-contract",
+      ],
+    },
   ],
 });

@@ -35,6 +35,7 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - run: npm exec -- tsx tools/oracle-validation/src/validate-control-plane.ts
       - run: npm run test:workflow
       - run: npm run test:all
       - run: npm run test:invariants
@@ -53,6 +54,7 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - run: npm exec -- tsx tools/oracle-validation/src/validate-control-plane.ts
       - run: npm run typecheck
       - run: npm run typecheck:contracts
 
@@ -66,6 +68,7 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - run: npm exec -- tsx tools/oracle-validation/src/validate-control-plane.ts
       - run: npm run build
       - run: npm run ci:package-boundaries
 
@@ -118,12 +121,15 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - run: npm exec -- tsx tools/oracle-validation/src/validate-control-plane.ts
       - run: npm run build
+      - run: npm run changeset:check
       - run: npm run proof:preview -- --mode ci-preview
+      - run: npm run proof:audit:mutation -- --mode ci-preview
       - run: npm run test:workflow
       - run: npm run test
       - run: npm run ci:package-boundaries
       - run: npm run typecheck:contracts
       - run: npm run validate:pret
       - run: npm run oracle:fast
-      - run: npm run proof:enforce -- --mode ci-preview --executed-suite changeset-check --executed-suite oracle-fast --executed-suite package-boundaries --executed-suite pret-validate --executed-suite proof-preview --executed-suite test --executed-suite typecheck:contracts --executed-suite workflow-contract
+      - run: npm run proof:enforce -- --mode ci-preview --executed-suite changeset-check --executed-suite control-plane --executed-suite mutation-audit --executed-suite oracle-fast --executed-suite package-boundaries --executed-suite pret-validate --executed-suite proof-preview --executed-suite test --executed-suite typecheck:contracts --executed-suite workflow-contract

@@ -128,6 +128,11 @@ test("given the main verification surfaces, when checking their commands, then t
   assert.match(verifyLocalSource, /oracle:fast/, "verify-local must run the fast oracle proof");
   assert.match(
     verifyLocalSource,
+    /validate-control-plane\.ts/,
+    "verify-local must validate the control plane before proof preview",
+  );
+  assert.match(
+    verifyLocalSource,
     /status:generate/,
     "verify-local must regenerate completeness status",
   );
@@ -146,11 +151,29 @@ test("given the main verification surfaces, when checking their commands, then t
     /test:all/,
     "verify-ci must retain the broad committed-tier test path",
   );
+  assert.match(
+    verifyCiSource,
+    /validate-control-plane\.ts/,
+    "verify-ci must validate the control plane",
+  );
+  assert.match(verifyCiSource, /proof:preview/, "verify-ci must mirror the proof preview step");
+  assert.match(
+    verifyCiSource,
+    /proof:audit:mutation/,
+    "verify-ci must run the direct mutation audit",
+  );
+  assert.match(verifyCiSource, /proof:enforce/, "verify-ci must mirror proof-gate enforcement");
   assert.match(ciSource, /npm run test:all/, "CI must run test:all");
   assert.match(ciSource, /npm run test:workflow/, "CI must run workflow honesty tests");
   assert.match(ciSource, /npm run oracle:fast/, "CI must run fast oracle proof");
   assert.match(ciSource, /npm run status:generate/, "CI must regenerate completeness status");
   assert.match(ciSource, /npm run status:check/, "CI must enforce generated status honesty");
+  assert.match(ciSource, /npm run changeset:check/, "CI proof gate must run changeset checking");
+  assert.match(
+    ciSource,
+    /npm run proof:audit:mutation/,
+    "CI proof gate must run the direct mutation audit",
+  );
 });
 
 test("given normal verification package scripts, when checking test commands, then direct vitest calls are routed through the shared wrapper", () => {

@@ -68,29 +68,97 @@ const obligationCatalogSchema = z.strictObject({
   ),
 });
 
+const proofLayerSchema = z.enum(["source", "semantic", "runtime", "behavior"]);
+const reasonClassSchema = z.enum([
+  "known-bug",
+  "deferred-doubles",
+  "intentional-deviation",
+  "tooling-gap",
+]);
+const normalizationReasonClassSchema = z.enum([
+  "oracle-representation-mismatch",
+  "source-authorized-naming-collapse",
+  "ignored-nondeterministic-field",
+  "proven-structural-mismatch",
+]);
+const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+
+const bootstrapWaiverEntrySchema = z.strictObject({
+  waiverId: z.string().min(1),
+  mechanicIds: z.array(z.string().min(1)).min(1),
+  issueNumber: z.number().int().positive(),
+  owner: z.string().min(1),
+  approver: z.string().min(1),
+  expiresOn: dateSchema,
+  missingProofs: z.array(proofLayerSchema).min(1),
+});
+
 const waiverSchema = z.strictObject({
   version: z.literal(1),
-  waivers: z.array(z.unknown()),
+  waivers: z.array(bootstrapWaiverEntrySchema),
+});
+
+const divergenceEntrySchema = z.strictObject({
+  divergenceId: z.string().min(1),
+  mechanicIds: z.array(z.string().min(1)).min(1),
+  reasonClass: reasonClassSchema,
+  issueNumber: z.number().int().positive(),
+  owner: z.string().min(1),
+  approver: z.string().min(1),
+  authorityKey: z.string().min(1),
+  expiresOn: dateSchema,
 });
 
 const divergenceRegistrySchema = z.strictObject({
   version: z.literal(1),
-  divergences: z.array(z.unknown()),
+  divergences: z.array(divergenceEntrySchema),
+});
+
+const normalizationEntrySchema = z.strictObject({
+  normalizationId: z.string().min(1),
+  reasonClass: normalizationReasonClassSchema,
+  fields: z.array(z.string().min(1)).min(1),
+  cluster: z.string().min(1),
+  topologies: z.array(z.string().min(1)).min(1),
+  generations: z.array(z.number().int().min(1).max(9)).min(1),
+  authorityKeys: z.array(z.string().min(1)).min(1),
+  owner: z.string().min(1),
+  approver: z.string().min(1),
+  expiresOn: dateSchema,
 });
 
 const normalizationRegistrySchema = z.strictObject({
   version: z.literal(1),
-  normalizations: z.array(z.unknown()),
+  normalizations: z.array(normalizationEntrySchema),
+});
+
+const lineageContractSchema = z.strictObject({
+  gen: z.number().int().min(1).max(9),
+  entityType: z.string().min(1),
+  entityId: z.string().min(1),
+  triggerPath: z.string().min(1),
+  runtimeOwner: z.string().min(1),
+  authorityTag: z.enum(["pret", "showdown", "mixed", "manual"]),
+  descendantPolicy: z.enum([
+    "inherit-unmodified",
+    "inherit-with-delta",
+    "new-in-gen",
+    "removed-in-gen",
+    "reintroduced-in-gen",
+    "mixed-authority-manual",
+  ]),
+  proofIds: z.array(z.string().min(1)).default([]),
 });
 
 const lineageContractsSchema = z.strictObject({
   version: z.literal(1),
-  contracts: z.array(z.unknown()),
+  contracts: z.array(lineageContractSchema),
 });
 
 const proofSchemaRegistrySchema = z.strictObject({
   version: z.literal(1),
   checkIdPattern: z.string().min(1),
+  suiteIds: z.array(z.string().min(1)).min(1),
   checkStatuses: z.array(z.string().min(1)).min(1),
   suiteStatuses: z.array(z.string().min(1)).min(1),
   runModes: z.array(z.string().min(1)).min(1),

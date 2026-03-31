@@ -208,6 +208,16 @@ function buildImpactsReport(repoRoot: string, args: Args): ImpactsReport {
       ),
     ),
   ].sort();
+  const touchedClusters = [
+    ...new Set(
+      directMechanicIds.flatMap((mechanicId) => {
+        const mechanic = controlPlane.mechanicCatalog.mechanics.find(
+          (entry) => entry.mechanicId === mechanicId,
+        );
+        return mechanic ? [mechanic.cluster] : [];
+      }),
+    ),
+  ].sort();
   const touchedAuthorityKeys = [
     ...new Set(
       transitiveOwnershipKeys.flatMap(
@@ -234,6 +244,7 @@ function buildImpactsReport(repoRoot: string, args: Args): ImpactsReport {
     directMechanicIds,
     transitiveMechanicIds,
     touchedAuthorityKeys,
+    touchedClusters,
     requiredSuites: resolveRequiredSuites(controlPlane, transitiveMechanicIds),
     lowConfidenceFiles,
     fileClassifications: classifications.map((classification) => ({
