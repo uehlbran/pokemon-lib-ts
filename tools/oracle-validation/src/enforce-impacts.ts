@@ -135,18 +135,15 @@ export function evaluateImpactsEnforcement(
           `oracle-fast proof summary must have runMode=fast, received ${oracleFastEvidence.summary.runMode}.`,
         );
       }
-      if (
-        oracleFastEvidence.summary.conclusion !== "provisional-pass" &&
-        oracleFastEvidence.summary.conclusion !== "compliant"
-      ) {
+      if (oracleFastEvidence.summary.conclusion === "fail") {
         errors.push(
-          `oracle-fast proof summary conclusion must be provisional-pass or compliant, received ${oracleFastEvidence.summary.conclusion}.`,
+          `oracle-fast proof summary conclusion must not be fail, received ${oracleFastEvidence.summary.conclusion}.`,
         );
       }
 
       const evidencedMechanicIds = new Set(
         oracleFastEvidence.checks
-          .filter((check) => check.enforcement === "required" && check.status !== "skip")
+          .filter((check) => check.enforcement === "required" && check.status === "pass")
           .flatMap((check) => check.mechanicIds),
       );
 

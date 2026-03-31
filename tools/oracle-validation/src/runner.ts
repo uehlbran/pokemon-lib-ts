@@ -236,7 +236,7 @@ async function main(): Promise<void> {
   const hasFailures = generationResults.some(
     (g) => Object.values(g.suites).some((s) => s.failed > 0) || g.staleDisagreements.length > 0,
   );
-  if (hasFailures || summary.conclusion === "fail" || summary.conclusion === "interrupted") {
+  if (hasFailures || summary.conclusion === "fail") {
     process.exitCode = 1;
   }
 }

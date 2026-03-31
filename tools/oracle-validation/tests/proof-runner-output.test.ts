@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildProofSummary, summarizeSuite } from "../src/proof-runner-output.js";
 
 describe("buildProofSummary", () => {
-  it("preserves legacy pass suites that do not emit proof checks yet", () => {
+  it("marks required suites incomplete when they emit no required proof checks", () => {
     const { summary } = buildProofSummary(
       "abc123",
       ["fast"],
@@ -42,8 +42,8 @@ describe("buildProofSummary", () => {
     if (!suite) {
       throw new Error("Expected a data suite summary");
     }
-    expect(suite.status).toBe("pass");
-    expect(summary.conclusion).toBe("provisional-pass");
+    expect(suite.status).toBe("incomplete");
+    expect(summary.conclusion).toBe("interrupted");
   });
 
   it("treats advisory suites as advisory when they have no executable checks", () => {
@@ -89,7 +89,7 @@ describe("buildProofSummary", () => {
     expect(suite.status).toBe("advisory");
   });
 
-  it("still marks required suites incomplete when only advisory checks executed", () => {
+  it("marks required suites incomplete when only advisory checks executed", () => {
     const { summary } = buildProofSummary(
       "abc123",
       ["fast"],
@@ -137,8 +137,8 @@ describe("buildProofSummary", () => {
     if (!suite) {
       throw new Error("Expected a data suite summary");
     }
-    expect(suite.status).toBe("advisory");
-    expect(summary.conclusion).toBe("provisional-pass");
+    expect(suite.status).toBe("incomplete");
+    expect(summary.conclusion).toBe("interrupted");
   });
 
   it("surfaces deferred required checks at the suite level", () => {
@@ -176,6 +176,43 @@ describe("buildProofSummary", () => {
     expect(suite.status).toBe("deferred");
     expect(suite.requiredCounts.deferred).toBe(1);
     expect(suite.requiredCounts.executed).toBe(1);
+  });
+
+  it("marks required suites incomplete when their only required checks are skipped", () => {
+    const suite = summarizeSuite(
+      "mechanics",
+      {
+        status: "pass",
+        suitePassed: true,
+        failed: 0,
+        skipped: 0,
+        failures: [],
+        notes: [],
+        matchedKnownDisagreements: [],
+        staleDisagreements: [],
+        oracleChecks: [],
+      },
+      [
+        {
+          checkId: "gen5:mechanics:oracle:skip-only",
+          generation: 5,
+          suite: "mechanics",
+          status: "skip",
+          enforcement: "required",
+          description: "No executable checkpoint reached",
+          mechanicIds: [],
+          authorityKeys: [],
+          clusters: [],
+          topologies: [],
+          sourceRole: "authoritative",
+          normalizationIds: [],
+        },
+      ],
+    );
+
+    expect(suite.status).toBe("incomplete");
+    expect(suite.requiredCounts.executed).toBe(1);
+    expect(suite.requiredCounts.skipped).toBe(1);
   });
 
   it("attaches runtime mechanic metadata to runtime evidence suites when provided", () => {
