@@ -52,6 +52,7 @@
     "oracle:groundtruth": "tsx tools/oracle-validation/src/runner.ts --suite groundTruth",
     "oracle:fast": "tsx tools/oracle-validation/src/runner.ts --suite fast",
     "proof:preview": "tsx tools/oracle-validation/src/changed-mechanics.ts",
+    "proof:enforce": "tsx tools/oracle-validation/src/enforce-impacts.ts",
     "proof:audit:mutation": "tsx tools/oracle-validation/src/direct-mutation-audit.ts",
     "smoke": "tsx tools/oracle-validation/src/runner.ts --suite smoke",
     "compliance": "tsx tools/oracle-validation/src/runner.ts --suite all",

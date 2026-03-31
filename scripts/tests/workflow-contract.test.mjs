@@ -3,6 +3,7 @@ import { dirname, resolve } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import {
+  validateCiWorkflow,
   validateComplianceWorkflow,
   validatePrTriggerWorkflow,
 } from "../lib/workflow-contract.mjs";
@@ -21,5 +22,10 @@ test("pr review workflow retriggers on draft state changes", () => {
 
 test("issue-link workflow retriggers on draft state changes", () => {
   const result = validatePrTriggerWorkflow(repoRoot, "check-issue-link.yml");
+  assert.equal(result.isValid, true, result.errors.join("\n"));
+});
+
+test("ci workflow runs proof-gate enforcement with preview artifacts", () => {
+  const result = validateCiWorkflow(repoRoot);
   assert.equal(result.isValid, true, result.errors.join("\n"));
 });

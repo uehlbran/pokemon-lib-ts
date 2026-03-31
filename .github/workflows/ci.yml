@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, edited]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
@@ -98,3 +99,26 @@ jobs:
           else
             echo "No publishable package source or data files changed — changeset not required."
           fi
+
+  proof-gate:
+    name: proof-gate
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run proof:preview -- --mode ci-preview
+      - run: npm run test:workflow
+      - run: npm run test
+      - run: npm run ci:package-boundaries
+      - run: npm run typecheck:contracts
+      - run: npm run validate:pret
+      - run: npm run oracle:fast
+      - run: npm run proof:enforce -- --mode ci-preview --executed-suite changeset-check --executed-suite oracle-fast --executed-suite package-boundaries --executed-suite pret-validate --executed-suite proof-preview --executed-suite test --executed-suite typecheck:contracts --executed-suite workflow-contract
