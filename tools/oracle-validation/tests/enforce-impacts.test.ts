@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { evaluateImpactsEnforcement } from "../src/enforce-impacts.js";
-import type { ImpactsReport } from "../src/proof-artifact-schema.js";
+import type { ImpactsReport, ProofCheck, ProofSummary } from "../src/proof-artifact-schema.js";
 
 const knownSuites = new Set(["control-plane", "proof-preview", "workflow-contract"]);
 
@@ -24,6 +24,37 @@ function createImpactsReport(overrides: Partial<ImpactsReport> = {}): ImpactsRep
     requiredSuites: ["proof-preview"],
     lowConfidenceFiles: [],
     fileClassifications: [],
+    ...overrides,
+  };
+}
+
+function createProofSummary(overrides: Partial<ProofSummary> = {}): ProofSummary {
+  return {
+    schemaVersion: "proof-summary.v1",
+    gitSha: "abc123",
+    timestamp: "2026-03-31T00:00:00.000Z",
+    runMode: "fast",
+    suitesRequested: ["fast"],
+    conclusion: "provisional-pass",
+    generations: [],
+    ...overrides,
+  };
+}
+
+function createProofCheck(overrides: Partial<ProofCheck> = {}): ProofCheck {
+  return {
+    checkId: "gen5:mechanics:oracle:sample",
+    generation: 5,
+    suite: "mechanics",
+    status: "pass",
+    enforcement: "required",
+    description: "sample",
+    mechanicIds: [],
+    authorityKeys: [],
+    clusters: [],
+    topologies: [],
+    sourceRole: "authoritative",
+    normalizationIds: [],
     ...overrides,
   };
 }
@@ -87,5 +118,54 @@ describe("evaluateImpactsEnforcement", () => {
     expect(result.errors).toContain(
       "Touched legacy mechanic shared.engine.turn-order is legacy-unproven and has no active bootstrap waiver.",
     );
+  });
+
+  it("fails when touched mechanics require oracle-fast evidence but artifacts are missing", () => {
+    const result = evaluateImpactsEnforcement(
+      createImpactsReport({ requiredSuites: ["oracle-fast"] }),
+      ["oracle-fast"],
+      new Set([...knownSuites, "oracle-fast"]),
+      [],
+      ["gen5.runtime.ruleset"],
+      null,
+    );
+
+    expect(result.errors).toContain(
+      "Missing oracle-fast proof artifacts for touched mechanics: gen5.runtime.ruleset",
+    );
+  });
+
+  it("fails when oracle-fast artifacts do not include required proof checks for touched mechanics", () => {
+    const result = evaluateImpactsEnforcement(
+      createImpactsReport({ requiredSuites: ["oracle-fast"] }),
+      ["oracle-fast"],
+      new Set([...knownSuites, "oracle-fast"]),
+      [],
+      ["gen5.runtime.ruleset"],
+      {
+        summary: createProofSummary(),
+        checks: [createProofCheck({ mechanicIds: ["gen4.runtime.ruleset"] })],
+      },
+    );
+
+    expect(result.errors).toContain(
+      "Touched mechanic gen5.runtime.ruleset has no required oracle-fast proof checks in checks.v1.jsonl.",
+    );
+  });
+
+  it("passes when oracle-fast artifacts include required proof checks for touched mechanics", () => {
+    const result = evaluateImpactsEnforcement(
+      createImpactsReport({ requiredSuites: ["oracle-fast"] }),
+      ["oracle-fast"],
+      new Set([...knownSuites, "oracle-fast"]),
+      [],
+      ["gen5.runtime.ruleset"],
+      {
+        summary: createProofSummary(),
+        checks: [createProofCheck({ mechanicIds: ["gen5.runtime.ruleset"] })],
+      },
+    );
+
+    expect(result.errors).toEqual([]);
   });
 });

@@ -4,7 +4,14 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { loadControlPlane } from "./control-plane.js";
-import { type ImpactsReport, impactsReportSchema } from "./proof-artifact-schema.js";
+import {
+  type ImpactsReport,
+  impactsReportSchema,
+  type ProofCheck,
+  type ProofSummary,
+  proofCheckSchema,
+  proofSummarySchema,
+} from "./proof-artifact-schema.js";
 import { validateControlPlane } from "./validate-control-plane.js";
 
 interface Args {
@@ -16,6 +23,11 @@ interface EnforcementResult {
   readonly errors: string[];
   readonly requiredSuites: string[];
   readonly executedSuites: string[];
+}
+
+interface OracleFastEvidence {
+  readonly summary: ProofSummary;
+  readonly checks: readonly ProofCheck[];
 }
 
 function parseArgs(argv: string[]): Args {
@@ -60,6 +72,8 @@ export function evaluateImpactsEnforcement(
   executedSuites: readonly string[],
   knownSuites: ReadonlySet<string>,
   controlPlaneErrors: readonly string[] = [],
+  touchedOracleMechanicIds: readonly string[] = [],
+  oracleFastEvidence: OracleFastEvidence | null = null,
 ): EnforcementResult {
   const errors: string[] = [...controlPlaneErrors];
   const canonicalExecutedSuites = [...new Set(executedSuites.map(canonicalizeSuiteId))].sort();
@@ -93,11 +107,102 @@ export function evaluateImpactsEnforcement(
     );
   }
 
+  const requiredOracleMechanicIds = [...new Set(touchedOracleMechanicIds)].sort();
+  if (requiredOracleMechanicIds.length > 0) {
+    if (!requiredSuites.includes("oracle-fast")) {
+      errors.push(
+        `Touched mechanics require oracle-fast evidence, but impacts.v1.json did not declare oracle-fast as a required suite: ${requiredOracleMechanicIds.join(", ")}`,
+      );
+    } else if (!oracleFastEvidence) {
+      errors.push(
+        `Missing oracle-fast proof artifacts for touched mechanics: ${requiredOracleMechanicIds.join(", ")}`,
+      );
+    } else {
+      if (oracleFastEvidence.summary.runMode !== "fast") {
+        errors.push(
+          `oracle-fast proof summary must have runMode=fast, received ${oracleFastEvidence.summary.runMode}.`,
+        );
+      }
+      if (
+        oracleFastEvidence.summary.conclusion !== "provisional-pass" &&
+        oracleFastEvidence.summary.conclusion !== "compliant"
+      ) {
+        errors.push(
+          `oracle-fast proof summary conclusion must be provisional-pass or compliant, received ${oracleFastEvidence.summary.conclusion}.`,
+        );
+      }
+
+      const evidencedMechanicIds = new Set(
+        oracleFastEvidence.checks
+          .filter((check) => check.enforcement === "required" && check.status !== "skip")
+          .flatMap((check) => check.mechanicIds),
+      );
+
+      for (const mechanicId of requiredOracleMechanicIds) {
+        if (!evidencedMechanicIds.has(mechanicId)) {
+          errors.push(
+            `Touched mechanic ${mechanicId} has no required oracle-fast proof checks in checks.v1.jsonl.`,
+          );
+        }
+      }
+    }
+  }
+
   return {
     errors,
     requiredSuites,
     executedSuites: canonicalExecutedSuites,
   };
+}
+
+function loadProofSummary(repoRoot: string, runMode: "fast" | "full"): ProofSummary {
+  const gitSha = git(repoRoot, "rev-parse", "HEAD");
+  const summaryPath = join(
+    repoRoot,
+    "tools",
+    "oracle-validation",
+    "results",
+    gitSha,
+    runMode,
+    "summary.v1.json",
+  );
+
+  let rawJson: string;
+  try {
+    rawJson = readFileSync(summaryPath, "utf8");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`Missing proof summary artifact at ${summaryPath}: ${message}`);
+  }
+
+  return proofSummarySchema.parse(JSON.parse(rawJson));
+}
+
+function loadProofChecks(repoRoot: string, runMode: "fast" | "full"): ProofCheck[] {
+  const gitSha = git(repoRoot, "rev-parse", "HEAD");
+  const checksPath = join(
+    repoRoot,
+    "tools",
+    "oracle-validation",
+    "results",
+    gitSha,
+    runMode,
+    "checks.v1.jsonl",
+  );
+
+  let rawLines: string;
+  try {
+    rawLines = readFileSync(checksPath, "utf8");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`Missing proof checks artifact at ${checksPath}: ${message}`);
+  }
+
+  return rawLines
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+    .map((line) => proofCheckSchema.parse(JSON.parse(line)));
 }
 
 function loadImpactsReport(repoRoot: string, mode: string): ImpactsReport {
@@ -144,6 +249,15 @@ function main(): void {
     args.executedSuites,
     new Set(controlPlane.proofSchema.suiteIds),
     controlPlaneResult.errors,
+    impacts.transitiveMechanicIds.filter((mechanicId) =>
+      /^gen\d+\.runtime\.ruleset$/.test(mechanicId),
+    ),
+    args.executedSuites.map(canonicalizeSuiteId).includes("oracle-fast")
+      ? {
+          summary: loadProofSummary(repoRoot, "fast"),
+          checks: loadProofChecks(repoRoot, "fast"),
+        }
+      : null,
   );
 
   if (result.errors.length > 0) {

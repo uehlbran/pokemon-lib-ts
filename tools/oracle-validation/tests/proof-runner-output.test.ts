@@ -163,6 +163,10 @@ describe("buildProofSummary", () => {
           status: "deferred",
           enforcement: "required",
           description: "Expected boost requires engine-backed validation",
+          mechanicIds: [],
+          authorityKeys: [],
+          clusters: [],
+          topologies: [],
           sourceRole: "authoritative",
           normalizationIds: [],
         },
@@ -172,5 +176,61 @@ describe("buildProofSummary", () => {
     expect(suite.status).toBe("deferred");
     expect(suite.requiredCounts.deferred).toBe(1);
     expect(suite.requiredCounts.executed).toBe(1);
+  });
+
+  it("attaches runtime mechanic metadata to runtime evidence suites when provided", () => {
+    const { checks } = buildProofSummary(
+      "abc123",
+      ["fast"],
+      [
+        {
+          gen: 5,
+          packageName: "@pokemon-lib-ts/gen5",
+          suites: {
+            mechanics: {
+              status: "pass",
+              suitePassed: true,
+              failed: 0,
+              skipped: 0,
+              failures: [],
+              notes: [],
+              matchedKnownDisagreements: [],
+              staleDisagreements: [],
+              oracleChecks: [
+                {
+                  id: "gen5:mechanics:sample",
+                  suite: "mechanics",
+                  description: "Sample runtime check",
+                  ourValue: 1,
+                  oracleValue: 1,
+                },
+              ],
+            },
+          },
+          registry: {
+            knownDisagreements: [],
+            knownOracleBugs: [],
+          },
+          staleDisagreements: [],
+        },
+      ],
+      new Map([
+        [
+          5,
+          {
+            mechanicIds: ["gen5.runtime.ruleset"],
+            authorityKeys: ["gen5.showdown-runtime"],
+            clusters: ["move-effect-ownership"],
+            topologies: ["singles"],
+          },
+        ],
+      ]),
+    );
+
+    expect(checks).toHaveLength(1);
+    expect(checks[0]?.mechanicIds).toEqual(["gen5.runtime.ruleset"]);
+    expect(checks[0]?.authorityKeys).toEqual(["gen5.showdown-runtime"]);
+    expect(checks[0]?.clusters).toEqual(["move-effect-ownership"]);
+    expect(checks[0]?.topologies).toEqual(["singles"]);
   });
 });
