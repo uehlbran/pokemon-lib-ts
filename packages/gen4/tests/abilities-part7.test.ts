@@ -506,6 +506,36 @@ describe("applyGen4Ability trigger-surface carry-forward coverage", () => {
     expect(result.effects).toEqual([]);
   });
 
+  it("given Synchronize poisoned by a held item, when on-status-inflicted runs, then it does not mirror poison", () => {
+    const opponent = createOnFieldPokemon({ ability: ABILITIES.blaze, types: [TYPES.normal] });
+    const ctx = createAbilityContext({
+      ability: ABILITIES.synchronize,
+      opponent,
+      statusSourceEffectId: "held-item",
+    });
+    ctx.pokemon.pokemon.status = CORE_STATUS_IDS.poison;
+
+    const result = applyGen4Ability(TRIGGERS.onStatusInflicted, ctx);
+
+    expect(result.activated).toBe(false);
+    expect(result.effects).toEqual([]);
+  });
+
+  it("given Synchronize inflicting its own status, when on-status-inflicted runs, then it does not mirror poison", () => {
+    const opponent = createOnFieldPokemon({ ability: ABILITIES.blaze, types: [TYPES.normal] });
+    const ctx = createAbilityContext({
+      ability: ABILITIES.synchronize,
+      opponent,
+      statusSourceEffectId: "self-status",
+    });
+    ctx.pokemon.pokemon.status = CORE_STATUS_IDS.poison;
+
+    const result = applyGen4Ability(TRIGGERS.onStatusInflicted, ctx);
+
+    expect(result.activated).toBe(false);
+    expect(result.effects).toEqual([]);
+  });
+
   it("given Castform with Forecast in sun, when weather changes, then it becomes Fire type", () => {
     const ctx = createAbilityContext({
       ability: ABILITIES.forecast,

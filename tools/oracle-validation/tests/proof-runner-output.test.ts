@@ -271,7 +271,7 @@ describe("buildProofSummary", () => {
     expect(checks[0]?.topologies).toEqual(["singles"]);
   });
 
-  it("preserves multiple runtime mechanic ids on runtime evidence checks", () => {
+  it("limits runtime evidence checks to ruleset runtime mechanics", () => {
     const { checks } = buildProofSummary(
       "abc123",
       ["fast"],
@@ -321,9 +321,6 @@ describe("buildProofSummary", () => {
     );
 
     expect(checks).toHaveLength(1);
-    expect(checks[0]?.mechanicIds).toEqual([
-      "gen4.runtime.ability-trigger-surface",
-      "gen4.runtime.ruleset",
-    ]);
+    expect(checks[0]?.mechanicIds).toEqual(["gen4.runtime.ruleset"]);
   });
 });

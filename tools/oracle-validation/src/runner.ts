@@ -207,6 +207,9 @@ async function main(): Promise<void> {
     if (!match) {
       continue;
     }
+    if (mechanic.obligationSeed !== "ruleset") {
+      continue;
+    }
 
     const gen = Number.parseInt(match[1] ?? "", 10);
     const existingMetadata = runtimeMechanicMetadataEntries.get(gen) ?? {

@@ -1339,7 +1339,11 @@ function handleOnStatusInflicted(abilityId: string, context: AbilityContext): Ab
   // Source: Bulbapedia — Synchronize only mirrors burn/paralysis/poison
   const status = context.pokemon.pokemon.status;
   if (!status) return { activated: false, effects: [], messages: [] };
-  if (context.statusSourceEffectId === "toxic-spikes") {
+  if (
+    context.statusSourceEffectId === "toxic-spikes" ||
+    context.statusSourceEffectId === "self-status" ||
+    context.statusSourceEffectId === "held-item"
+  ) {
     return { activated: false, effects: [], messages: [] };
   }
   if (

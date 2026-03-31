@@ -217,6 +217,21 @@ describe("evaluateImpactsEnforcement", () => {
     );
   });
 
+  it("does not require oracle-fast evidence for mechanics covered by active runtime waivers", () => {
+    const result = evaluateImpactsEnforcement(
+      createImpactsReport({ requiredSuites: ["oracle-fast"] }),
+      ["oracle-fast"],
+      new Set([...knownSuites, "oracle-fast"]),
+      [],
+      ["gen4.runtime.ability-trigger-surface"],
+      null,
+      new Map(),
+      ["gen4.runtime.ability-trigger-surface"],
+    );
+
+    expect(result.errors).toEqual([]);
+  });
+
   it("fails when oracle-fast artifacts do not include required proof checks for touched mechanics", () => {
     const result = evaluateImpactsEnforcement(
       createImpactsReport({ requiredSuites: ["oracle-fast"] }),

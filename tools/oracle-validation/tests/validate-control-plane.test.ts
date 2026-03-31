@@ -519,7 +519,7 @@ describe("validateControlPlane", () => {
     };
 
     expect(validateControlPlane(mutatedControlPlane).errors).toContain(
-      "Ability trigger surface gen4:leaf-mechanic:ability-trigger-surface dispatcher packages/gen4/src/Gen4Abilities.ts is missing routed trigger on-terrain-change.",
+      "Ability trigger surface gen4:leaf-mechanic:ability-trigger-surface dispatchers packages/gen4/src/Gen4Abilities.ts are missing routed trigger on-terrain-change.",
     );
   });
 });

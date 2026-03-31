@@ -158,7 +158,7 @@ const lineageContractsSchema = z.strictObject({
 const abilityTriggerSurfaceSchema = z.strictObject({
   runtimeOwner: z.string().min(1),
   authorityKey: z.string().min(1),
-  dispatcherPath: z.string().min(1),
+  dispatcherPaths: z.array(z.string().min(1)).min(1),
   routedTriggers: z.array(z.string().min(1)).min(1),
 });
 

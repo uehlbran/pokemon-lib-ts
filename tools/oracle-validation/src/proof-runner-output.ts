@@ -80,7 +80,16 @@ function resolveProofCheckMetadata(
     return emptyProofCheckMetadata();
   }
 
-  return runtimeMechanicMetadataByGeneration.get(generation.gen) ?? emptyProofCheckMetadata();
+  const metadata =
+    runtimeMechanicMetadataByGeneration.get(generation.gen) ?? emptyProofCheckMetadata();
+  return {
+    mechanicIds: metadata.mechanicIds.filter((mechanicId) =>
+      mechanicId.endsWith(".runtime.ruleset"),
+    ),
+    authorityKeys: [...metadata.authorityKeys],
+    clusters: [...metadata.clusters],
+    topologies: [...metadata.topologies],
+  };
 }
 
 function createProofChecks(

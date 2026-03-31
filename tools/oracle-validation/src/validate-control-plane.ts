@@ -421,30 +421,31 @@ export function validateControlPlane(
       );
     }
 
-    const dispatcherClassification = classifyRepoFile(controlPlane, surface.dispatcherPath);
-    if (dispatcherClassification.fileClass !== "runtime-owning") {
-      errors.push(
-        `Ability trigger surface ${surface.runtimeOwner} dispatcher ${surface.dispatcherPath} must classify as runtime-owning.`,
-      );
-      continue;
-    }
-    if (!dispatcherClassification.ownershipKeys.includes(surface.runtimeOwner)) {
-      errors.push(
-        `Ability trigger surface ${surface.runtimeOwner} dispatcher ${surface.dispatcherPath} is not owned by ${surface.runtimeOwner}.`,
-      );
-    }
-
     let dispatcherSource = "";
-    try {
-      dispatcherSource = readFileSync(
-        resolve(controlPlane.repoRoot, surface.dispatcherPath),
-        "utf8",
-      );
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      errors.push(
-        `Ability trigger surface ${surface.runtimeOwner} dispatcher ${surface.dispatcherPath} could not be read: ${message}`,
-      );
+    for (const dispatcherPath of surface.dispatcherPaths) {
+      const dispatcherClassification = classifyRepoFile(controlPlane, dispatcherPath);
+      if (dispatcherClassification.fileClass !== "runtime-owning") {
+        errors.push(
+          `Ability trigger surface ${surface.runtimeOwner} dispatcher ${dispatcherPath} must classify as runtime-owning.`,
+        );
+        continue;
+      }
+      if (!dispatcherClassification.ownershipKeys.includes(surface.runtimeOwner)) {
+        errors.push(
+          `Ability trigger surface ${surface.runtimeOwner} dispatcher ${dispatcherPath} is not owned by ${surface.runtimeOwner}.`,
+        );
+      }
+
+      try {
+        dispatcherSource += `\n${readFileSync(resolve(controlPlane.repoRoot, dispatcherPath), "utf8")}`;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        errors.push(
+          `Ability trigger surface ${surface.runtimeOwner} dispatcher ${dispatcherPath} could not be read: ${message}`,
+        );
+      }
+    }
+    if (dispatcherSource.length === 0) {
       continue;
     }
 
@@ -456,7 +457,7 @@ export function validateControlPlane(
     for (const triggerId of surface.routedTriggers) {
       if (!hasRoutedAbilityTrigger(dispatcherSource, triggerId)) {
         errors.push(
-          `Ability trigger surface ${surface.runtimeOwner} dispatcher ${surface.dispatcherPath} is missing routed trigger ${triggerId}.`,
+          `Ability trigger surface ${surface.runtimeOwner} dispatchers ${surface.dispatcherPaths.join(", ")} are missing routed trigger ${triggerId}.`,
         );
       }
     }
