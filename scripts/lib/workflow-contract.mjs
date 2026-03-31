@@ -18,8 +18,8 @@ export function validateComplianceWorkflow(repoRoot) {
     "npm run proof:audit:mutation -- --mode fast",
     "npm run proof:audit:mutation -- --mode full",
     "summary.v1.json",
-    "tools/oracle-validation/results/" + githubShaExpression + "/fast",
-    "tools/oracle-validation/results/" + githubShaExpression + "/full",
+    `tools/oracle-validation/results/${githubShaExpression}/fast`,
+    `tools/oracle-validation/results/${githubShaExpression}/full`,
   ]) {
     if (!workflow.includes(expected)) {
       errors.push(`Missing expected compliance workflow contract snippet: ${expected}`);

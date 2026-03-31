@@ -1,8 +1,9 @@
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { execFileSync } from "node:child_process";
 import { z } from "zod";
+
 import { buildImpactsReport } from "./changed-mechanics.js";
 
 const directMutationFindingSchema = z.strictObject({
@@ -20,7 +21,7 @@ const directMutationAuditSchema = z.strictObject({
   findings: z.array(directMutationFindingSchema),
 });
 
-const suspiciousPatterns: Array<{ name: string; regex: RegExp }> = [
+const suspiciousPatterns: { name: string; regex: RegExp }[] = [
   {
     name: "ctx-state-mutation",
     regex: /\bctx\.state\.[^;\n]*=/,
@@ -59,7 +60,7 @@ function shouldInspect(filePath: string): boolean {
 
 function inspectFile(repoRoot: string, filePath: string) {
   const contents = readFileSync(join(repoRoot, filePath), "utf8");
-  const findings: Array<z.infer<typeof directMutationFindingSchema>> = [];
+  const findings: z.infer<typeof directMutationFindingSchema>[] = [];
   const lines = contents.split("\n");
   for (const [index, line] of lines.entries()) {
     for (const pattern of suspiciousPatterns) {
@@ -83,14 +84,7 @@ function main(): void {
     .filter((filePath) => shouldInspect(filePath))
     .flatMap((filePath) => inspectFile(repoRoot, filePath));
   const gitSha = git(repoRoot, "rev-parse", "HEAD");
-  const resultsDir = join(
-    repoRoot,
-    "tools",
-    "oracle-validation",
-    "results",
-    gitSha,
-    args.mode,
-  );
+  const resultsDir = join(repoRoot, "tools", "oracle-validation", "results", gitSha, args.mode);
   mkdirSync(resultsDir, { recursive: true });
   const report = directMutationAuditSchema.parse({
     schemaVersion: "direct-mutation-audit.v1",
@@ -104,7 +98,9 @@ function main(): void {
   if (findings.length > 0) {
     console.error(`Direct mutation audit findings written to ${outputPath}`);
     for (const finding of findings) {
-      console.error(`- ${finding.filePath}:${finding.line} [${finding.pattern}] ${finding.excerpt}`);
+      console.error(
+        `- ${finding.filePath}:${finding.line} [${finding.pattern}] ${finding.excerpt}`,
+      );
     }
     process.exitCode = 1;
     return;

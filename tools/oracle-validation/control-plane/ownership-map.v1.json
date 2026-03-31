@@ -28,10 +28,7 @@
     {
       "ownershipKey": "core:leaf-mechanic:entities-and-constants",
       "ownerKind": "leaf-mechanic",
-      "patterns": [
-        "packages/core/src/constants/**",
-        "packages/core/src/entities/**"
-      ],
+      "patterns": ["packages/core/src/constants/**", "packages/core/src/entities/**"],
       "mechanicIds": ["shared.contract.move-effect-result"],
       "authorityKeys": ["shared.engine-contracts"],
       "propagatesTo": ["battle:contract:move-effect-result"]
@@ -73,10 +70,7 @@
         "packages/battle/src/ruleset/**",
         "packages/battle/src/index.ts"
       ],
-      "mechanicIds": [
-        "shared.engine.switch-legality",
-        "shared.engine.turn-order"
-      ],
+      "mechanicIds": ["shared.engine.switch-legality", "shared.engine.turn-order"],
       "authorityKeys": ["shared.engine-contracts"],
       "propagatesTo": [
         "gen5:leaf-mechanic:ruleset-and-handlers",
@@ -188,10 +182,7 @@
     {
       "ownershipKey": "oracle:tooling:runner",
       "ownerKind": "tooling",
-      "patterns": [
-        "tools/oracle-validation/src/**",
-        "tools/oracle-validation/data/**"
-      ],
+      "patterns": ["tools/oracle-validation/src/**", "tools/oracle-validation/data/**"],
       "mechanicIds": [
         "shared.tooling.changed-mechanics.reporting",
         "shared.tooling.oracle-runner.artifacts"

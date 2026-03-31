@@ -125,14 +125,11 @@ export class Gen7UltraBurst implements BattleGimmick {
    */
   private readonly usedBySide: Set<0 | 1> = new Set();
 
-  /**
-   * Reference to the Z-Move gimmick to mark it as used when Ultra Burst fires.
-   * Ultra Burst consumes the Ultranecrozium Z, which also consumes the Z-Move slot.
-   */
-  private readonly zMove: Gen7ZMove;
-
   constructor(zMove: Gen7ZMove) {
-    this.zMove = zMove;
+    // Ultra Burst still shares the Z-Crystal activation surface; keep the constructor
+    // signature aligned with the caller even though this class does not consult the
+    // Z-Move object directly.
+    void zMove;
   }
 
   /**

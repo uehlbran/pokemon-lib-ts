@@ -1,23 +1,8 @@
 {
   "version": 1,
   "checkIdPattern": "gen{n}:{suite}:{kind}:{identifier}",
-  "checkStatuses": [
-    "pass",
-    "fail",
-    "skip",
-    "incomplete",
-    "advisory",
-    "deferred",
-    "interrupted"
-  ],
-  "suiteStatuses": [
-    "pass",
-    "fail",
-    "skip",
-    "incomplete",
-    "advisory",
-    "interrupted"
-  ],
+  "checkStatuses": ["pass", "fail", "skip", "incomplete", "advisory", "deferred", "interrupted"],
+  "suiteStatuses": ["pass", "fail", "skip", "incomplete", "advisory", "interrupted"],
   "runModes": ["fast", "full"],
   "conclusions": ["fail", "provisional-pass", "compliant", "interrupted"]
 }
