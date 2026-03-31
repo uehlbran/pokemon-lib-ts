@@ -1,6 +1,6 @@
 # Gen2 Implementation Status
 
-**Last updated:** 2026-03-22
+**Last updated:** 2026-03-31
 **Generated completeness status:** `tools/oracle-validation/results/completeness-status.md`
 **Architecture:** Implements `GenerationRuleset` directly (NOT BaseRuleset — too mechanically different from Gen 3+)
 
@@ -88,13 +88,14 @@
 - Confusion: 50% self-hit, 1-4 turns
 - Protect: `floor(255 / 3^N)` formula — pokecrystal verified (PR #511 #318)
 
-### Move Handlers (custom) — all implemented
+### Implemented Custom Move Handlers
 - Belly Drum (+6 Atk, -50% HP), Rapid Spin (clear hazards + leech seed + bind)
 - Mean Look / Spider Web (trapping volatile)
 - Thief (steal item if user has none)
 - Explosion / Self-Destruct (selfFaint + defense halving)
 - Perish Song (3-turn faint countdown)
 - Attract (infatuation volatile)
+- Rest (full heal + status cure + toxic-counter clear + fixed 2-turn sleep)
 - Baton Pass (sets switchOut + batonPass flags; preserves confusion/focus-energy/leech-seed volatiles — PR #241)
 - Swagger (+Atk + confusion), Flatter (+SpAtk + confusion)
 - Curse (non-Ghost: stat change; Ghost: 50% HP sacrifice + curse volatile on target)
@@ -130,11 +131,19 @@
 
 ## OPEN BUGS
 
-None. All bugs closed as of 2026-03-22.
+Known open Gen 2 bugs remain in the tracker. Representative open issues as of 2026-03-31:
+
+- #1837 — Heal Bell is data-only and never cures the party
+- #1847 — Tri Attack secondary status effect missing
+- #1849 — Destiny Bond has no handler
+- #1851 — Endure silently no-ops
+- #1859 — Transform silently no-ops
+
+This page is a historical implementation summary, not a claim that Gen 2 correctness work is complete.
 
 ## Test Coverage
 
-31 test files, 757 tests (as of 2026-03-22), 80%+ threshold met across all metrics.
+33 executed test files, 777 tests (as of 2026-03-31).
 
 ---
 
@@ -169,3 +178,4 @@ None. All bugs closed as of 2026-03-22.
 | #511 | fix/gen2 | 6 formula bugs: crit level doubling, Struggle recoil (maxHp/4), Protect formula (÷3^N), STAB order, SpDef DV, high-crit stage (+1 not +2) |
 | #523 | fix/gen2 | Resolve #61 EoT docs, #121 Struggle calc location, #488 OHKO accuracy docs |
 | #527 | feat/gen2 | 9 move handlers: Future Sight, Sleep Talk, Snore, Present, Magnitude, Triple Kick, Rollout, Fury Cutter, Beat Up |
+| #1870 | fix/gen2-custom-move-wave-1 | Restore/custom-pin Gen 2 Rest, Perish Song, and Curse runtime handlers; add toxic-counter clear proof and engine-path dispatch coverage |
