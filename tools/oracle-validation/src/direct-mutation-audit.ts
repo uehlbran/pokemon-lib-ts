@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import ts from "typescript";
 import { z } from "zod";
 
 import { buildImpactsReport } from "./changed-mechanics.js";
@@ -25,6 +26,39 @@ const assignmentOperatorPattern = String.raw`(?:\+\+|--|(?:\+\+|--)\s*|(?:\+|-|\
 const propertyAccessPattern = String.raw`(?:\.[A-Za-z_$][\w$]*|\[[^\]\n]+\])+`;
 const stateTargetPattern = String.raw`ctx\.state${propertyAccessPattern}`;
 const activePokemonTargetPattern = String.raw`ctx\.(?:attacker|defender)(?:\.pokemon)?${propertyAccessPattern}`;
+const mutatorMethodNames = new Set([
+  "set",
+  "delete",
+  "clear",
+  "push",
+  "pop",
+  "shift",
+  "unshift",
+  "splice",
+]);
+const trackedContextRoots: ReadonlyMap<string, MutationRootKind> = new Map([
+  ["state", "state"],
+  ["attacker", "active"],
+  ["defender", "active"],
+  ["pokemon", "active"],
+]);
+const assignmentOperatorKinds = new Set([
+  ts.SyntaxKind.EqualsToken,
+  ts.SyntaxKind.PlusEqualsToken,
+  ts.SyntaxKind.MinusEqualsToken,
+  ts.SyntaxKind.AsteriskEqualsToken,
+  ts.SyntaxKind.AsteriskAsteriskEqualsToken,
+  ts.SyntaxKind.SlashEqualsToken,
+  ts.SyntaxKind.PercentEqualsToken,
+  ts.SyntaxKind.LessThanLessThanEqualsToken,
+  ts.SyntaxKind.GreaterThanGreaterThanEqualsToken,
+  ts.SyntaxKind.GreaterThanGreaterThanGreaterThanEqualsToken,
+  ts.SyntaxKind.AmpersandEqualsToken,
+  ts.SyntaxKind.BarEqualsToken,
+  ts.SyntaxKind.CaretEqualsToken,
+]);
+
+type MutationRootKind = "state" | "active";
 
 const suspiciousPatterns: { name: string; regex: RegExp }[] = [
   {
@@ -65,28 +99,173 @@ function git(repoRoot: string, ...args: string[]): string {
   }).trim();
 }
 
-function shouldInspect(filePath: string): boolean {
+export function shouldInspect(filePath: string): boolean {
   return (
-    /^packages\/gen\d+\/src\/Gen\d+(MoveEffects|Abilities|Items)/.test(filePath) ||
-    /^packages\/gen\d+\/src\/Gen\d+Ruleset/.test(filePath)
+    /^packages\/gen\d+\/src\/Gen\d+(MoveEffects|Abilities|Items|Terrain|Weather|Dynamax|DamageCalc)/.test(
+      filePath,
+    ) || /^packages\/gen\d+\/src\/Gen\d+Ruleset/.test(filePath)
+  );
+}
+
+function unwrapExpression(expression: ts.Expression): ts.Expression {
+  let current = expression;
+  while (
+    ts.isAsExpression(current) ||
+    ts.isTypeAssertionExpression(current) ||
+    ts.isParenthesizedExpression(current) ||
+    ts.isNonNullExpression(current) ||
+    ts.isSatisfiesExpression(current)
+  ) {
+    current = current.expression;
+  }
+  return current;
+}
+
+function resolveMutationRootKind(
+  expression: ts.Expression,
+  aliases: ReadonlyMap<string, MutationRootKind>,
+): MutationRootKind | null {
+  const current = unwrapExpression(expression);
+
+  if (ts.isIdentifier(current)) {
+    return aliases.get(current.text) ?? null;
+  }
+
+  if (ts.isPropertyAccessExpression(current)) {
+    const receiver = unwrapExpression(current.expression);
+    if (ts.isIdentifier(receiver) && (receiver.text === "ctx" || receiver.text === "context")) {
+      return trackedContextRoots.get(current.name.text) ?? null;
+    }
+    return resolveMutationRootKind(current.expression, aliases);
+  }
+
+  if (ts.isElementAccessExpression(current)) {
+    return resolveMutationRootKind(current.expression, aliases);
+  }
+
+  return null;
+}
+
+function recordAliasFromDeclaration(
+  declaration: ts.VariableDeclaration,
+  aliases: Map<string, MutationRootKind>,
+): void {
+  if (!declaration.initializer) {
+    return;
+  }
+
+  if (ts.isIdentifier(declaration.name)) {
+    const rootKind = resolveMutationRootKind(declaration.initializer, aliases);
+    if (rootKind) {
+      aliases.set(declaration.name.text, rootKind);
+    }
+    return;
+  }
+
+  if (!ts.isObjectBindingPattern(declaration.name)) {
+    return;
+  }
+
+  const initializer = unwrapExpression(declaration.initializer);
+  const isTrackedContextRoot =
+    ts.isIdentifier(initializer) && (initializer.text === "ctx" || initializer.text === "context");
+  if (!isTrackedContextRoot) {
+    return;
+  }
+
+  for (const element of declaration.name.elements) {
+    if (element.dotDotDotToken || !ts.isIdentifier(element.name)) {
+      continue;
+    }
+
+    const propertyName =
+      element.propertyName && ts.isIdentifier(element.propertyName)
+        ? element.propertyName.text
+        : element.name.text;
+    const rootKind = trackedContextRoots.get(propertyName);
+    if (rootKind) {
+      aliases.set(element.name.text, rootKind);
+    }
+  }
+}
+
+function findingPatternForRoot(rootKind: MutationRootKind): string {
+  return rootKind === "state" ? "ctx-state-mutation" : "active-pokemon-mutation";
+}
+
+export function scanSourceForDirectMutations(
+  sourceText: string,
+  filePath: string,
+): z.infer<typeof directMutationFindingSchema>[] {
+  const sourceFile = ts.createSourceFile(
+    filePath,
+    sourceText,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  const findings: z.infer<typeof directMutationFindingSchema>[] = [];
+  const emitted = new Set<string>();
+
+  function pushFinding(node: ts.Node, pattern: string): void {
+    const start = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
+    const excerpt = node.getText(sourceFile).trim();
+    const key = `${start.line + 1}:${pattern}:${excerpt}`;
+    if (emitted.has(key)) {
+      return;
+    }
+    emitted.add(key);
+    findings.push({
+      filePath,
+      line: start.line + 1,
+      pattern,
+      excerpt,
+    });
+  }
+
+  function visit(node: ts.Node, aliases: Map<string, MutationRootKind>): void {
+    if (ts.isVariableDeclaration(node)) {
+      recordAliasFromDeclaration(node, aliases);
+    }
+
+    if (ts.isBinaryExpression(node) && assignmentOperatorKinds.has(node.operatorToken.kind)) {
+      const rootKind = resolveMutationRootKind(node.left, aliases);
+      if (rootKind) {
+        pushFinding(node, findingPatternForRoot(rootKind));
+      }
+    } else if (
+      (ts.isPrefixUnaryExpression(node) || ts.isPostfixUnaryExpression(node)) &&
+      (node.operator === ts.SyntaxKind.PlusPlusToken ||
+        node.operator === ts.SyntaxKind.MinusMinusToken)
+    ) {
+      const rootKind = resolveMutationRootKind(node.operand, aliases);
+      if (rootKind) {
+        pushFinding(node, findingPatternForRoot(rootKind));
+      }
+    } else if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression)) {
+      const rootKind = resolveMutationRootKind(node.expression.expression, aliases);
+      if (rootKind && mutatorMethodNames.has(node.expression.name.text)) {
+        pushFinding(node, findingPatternForRoot(rootKind));
+      }
+    }
+
+    const nextAliases =
+      ts.isSourceFile(node) || ts.isBlock(node) || ts.isModuleBlock(node) || ts.isFunctionLike(node)
+        ? new Map(aliases)
+        : aliases;
+
+    ts.forEachChild(node, (child) => visit(child, nextAliases));
+  }
+
+  visit(sourceFile, new Map());
+  return findings.sort(
+    (left, right) => left.line - right.line || left.pattern.localeCompare(right.pattern),
   );
 }
 
 function inspectFile(repoRoot: string, filePath: string) {
   const contents = readFileSync(join(repoRoot, filePath), "utf8");
-  const findings: z.infer<typeof directMutationFindingSchema>[] = [];
-  const lines = contents.split("\n");
-  for (const [index, line] of lines.entries()) {
-    for (const pattern of detectDirectMutationPatterns(line)) {
-      findings.push({
-        filePath,
-        line: index + 1,
-        pattern,
-        excerpt: line.trim(),
-      });
-    }
-  }
-  return findings;
+  return scanSourceForDirectMutations(contents, filePath);
 }
 
 function main(): void {
