@@ -500,18 +500,24 @@ describe("validateControlPlane", () => {
 
   it("fails when a checked-in ability trigger surface declares a trigger absent from the dispatcher", () => {
     const controlPlane = loadControlPlane(repoRoot);
-    const [firstSurface, ...remainingSurfaces] = controlPlane.abilityTriggerSurfaces.surfaces;
-    if (!firstSurface) {
+    const surfaceIndex = controlPlane.abilityTriggerSurfaces.surfaces.findIndex(
+      (surface) => surface.runtimeOwner === "gen4:leaf-mechanic:ability-trigger-surface",
+    );
+    if (surfaceIndex === -1) {
       throw new Error("Expected checked-in ability trigger surfaces to be present.");
     }
+    const targetSurface = controlPlane.abilityTriggerSurfaces.surfaces[surfaceIndex]!;
+    const remainingSurfaces = controlPlane.abilityTriggerSurfaces.surfaces.filter(
+      (_, index) => index !== surfaceIndex,
+    );
     const mutatedControlPlane: ControlPlane = {
       ...controlPlane,
       abilityTriggerSurfaces: {
         version: 1,
         surfaces: [
           {
-            ...firstSurface,
-            routedTriggers: [...firstSurface.routedTriggers, "on-terrain-change"],
+            ...targetSurface,
+            routedTriggers: [...targetSurface.routedTriggers, "on-terrain-change"],
           },
           ...remainingSurfaces,
         ],

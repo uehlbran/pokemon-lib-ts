@@ -10,6 +10,7 @@ import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_TRIGGER_IDS,
   CORE_GENDERS,
+  CORE_HAZARD_IDS,
   CORE_MOVE_CATEGORIES,
   CORE_STAT_IDS,
   CORE_STATUS_IDS,
@@ -1340,7 +1341,7 @@ function handleOnStatusInflicted(abilityId: string, context: AbilityContext): Ab
   const status = context.pokemon.pokemon.status;
   if (!status) return { activated: false, effects: [], messages: [] };
   if (
-    context.statusSourceEffectId === "toxic-spikes" ||
+    context.statusSourceEffectId === CORE_HAZARD_IDS.toxicSpikes ||
     context.statusSourceEffectId === "self-status" ||
     context.statusSourceEffectId === "held-item"
   ) {

@@ -77,6 +77,20 @@ describe("control plane ownership mapping", () => {
     expect(expanded).toContain("gen8:leaf-mechanic:ability-trigger-surface");
   });
 
+  it("propagates battle ability-context contract changes into the Gen 4 ability trigger surface", () => {
+    const controlPlane = loadControlPlane(repoRoot);
+    const expanded = expandOwnershipKeys(controlPlane, ["battle:contract:ability-context-result"]);
+
+    expect(expanded).toContain("gen4:leaf-mechanic:ability-trigger-surface");
+  });
+
+  it("propagates engine changes into the Gen 4 ability trigger surface", () => {
+    const controlPlane = loadControlPlane(repoRoot);
+    const expanded = expandOwnershipKeys(controlPlane, ["battle:shared-seam:engine"]);
+
+    expect(expanded).toContain("gen4:leaf-mechanic:ability-trigger-surface");
+  });
+
   it("maps the data importer workspace manifest into importer tooling ownership", () => {
     const controlPlane = loadControlPlane(repoRoot);
     const classification = classifyRepoFile(controlPlane, "tools/data-importer/package.json");
@@ -146,6 +160,18 @@ describe("control plane ownership mapping", () => {
 
     expect(classification.fileClass).toBe("runtime-owning");
     expect(classification.ownershipKeys).toEqual(["gen9:leaf-mechanic:ruleset-and-handlers"]);
+    expect(classification.ruleMatches).toHaveLength(1);
+  });
+
+  it("maps Gen 4 src/data files into the coarse ruleset owner", () => {
+    const controlPlane = loadControlPlane(repoRoot);
+    const classification = classifyRepoFile(
+      controlPlane,
+      "packages/gen4/src/data/reference-ids.ts",
+    );
+
+    expect(classification.fileClass).toBe("runtime-owning");
+    expect(classification.ownershipKeys).toEqual(["gen4:leaf-mechanic:ruleset-and-handlers"]);
     expect(classification.ruleMatches).toHaveLength(1);
   });
 });

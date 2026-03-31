@@ -1832,7 +1832,7 @@ export class BattleEngine implements BattleEventEmitter {
           hazardResult.statusInflicted,
           side.index,
           undefined,
-          "toxic-spikes",
+          CORE_HAZARD_IDS.toxicSpikes,
         );
       }
       // Source: Showdown data/moves.ts — stickyweb: this.boost({spe: -1}, pokemon,
