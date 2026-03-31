@@ -70,10 +70,25 @@ describe("buildImpactsReport", () => {
       baseRef: "HEAD",
       mode: "test-preview",
     });
+    const controlPlane = loadControlPlane(repoRoot);
+    const mechanicClusters = new Map(
+      controlPlane.mechanicCatalog.mechanics.map(
+        (entry) => [entry.mechanicId, entry.cluster] as const,
+      ),
+    );
+    const expectedTouchedClusters = [
+      ...new Set(
+        report.directMechanicIds.flatMap((mechanicId) => {
+          const cluster = mechanicClusters.get(mechanicId);
+          return cluster ? [cluster] : [];
+        }),
+      ),
+    ].sort();
 
     expect(report.requestedBaseRef).toBe("HEAD");
     expect(report.resolvedBaseRef).toBe("HEAD");
     expect(report.usedFallbackBaseRef).toBe(false);
+    expect(report.touchedClusters).toEqual(expectedTouchedClusters);
   });
 
   it("does not flag explicitly shared ownership files as low-confidence", () => {

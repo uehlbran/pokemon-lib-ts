@@ -1,0 +1,327 @@
+import { describe, expect, it } from "vitest";
+import type { ControlPlane } from "../src/control-plane.js";
+import { validateControlPlane } from "../src/validate-control-plane.js";
+
+function createControlPlane(overrides: Partial<ControlPlane> = {}): ControlPlane {
+  return {
+    repoRoot: "/repo",
+    ownershipMap: {
+      version: 1,
+      fileClassRules: [{ fileClass: "runtime-owning", patterns: ["packages/**"] }],
+      ownershipRules: [
+        {
+          ownershipKey: "battle:shared-seam:engine",
+          ownerKind: "shared-seam",
+          patterns: ["packages/battle/src/**"],
+          allowSharedFile: false,
+          mechanicIds: ["shared.engine.turn-order"],
+          authorityKeys: ["shared.engine-contracts"],
+          propagatesTo: [],
+        },
+      ],
+    },
+    mechanicCatalog: {
+      version: 1,
+      mechanics: [
+        {
+          mechanicId: "shared.engine.turn-order",
+          cluster: "effective-speed-order",
+          topologies: ["singles"],
+          orderingSensitive: true,
+          persistent: false,
+          proofStatus: "proved",
+          authorityKey: "shared.engine-contracts",
+          requiredSuites: ["test"],
+          obligationSeed: "turn-order",
+        },
+      ],
+    },
+    authorityManifest: {
+      version: 1,
+      authorities: [
+        {
+          authorityKey: "shared.engine-contracts",
+          sourceRepo: "local",
+          referenceCommit: "workspace",
+          sourcePath: "packages/battle/src/context/types.ts",
+          symbolOrRoutine: "engine-contracts",
+          sourceRole: "authoritative",
+        },
+      ],
+    },
+    obligationCatalog: {
+      version: 1,
+      clusters: [
+        {
+          cluster: "effective-speed-order",
+          requiredProofs: ["source", "semantic", "runtime", "behavior"],
+          requiredSuites: ["test"],
+        },
+      ],
+    },
+    bootstrapWaivers: { version: 1, waivers: [] },
+    divergenceRegistry: { version: 1, divergences: [] },
+    normalizationRegistry: { version: 1, normalizations: [] },
+    lineageContracts: { version: 1, contracts: [] },
+    proofSchema: {
+      version: 1,
+      checkIdPattern: "gen{n}:{suite}:{kind}:{identifier}",
+      suiteIds: [
+        "test",
+        "proof-preview",
+        "typecheck:contracts",
+        "workflow-contract",
+        "mutation-audit",
+      ],
+      checkStatuses: ["pass", "fail", "skip", "incomplete", "advisory", "deferred", "interrupted"],
+      suiteStatuses: ["pass", "fail", "skip", "incomplete", "deferred", "advisory", "interrupted"],
+      runModes: ["fast", "full"],
+      conclusions: ["fail", "provisional-pass", "compliant", "interrupted"],
+    },
+    protocolCapabilityMatrix: {
+      version: 1,
+      clusters: [
+        {
+          cluster: "effective-speed-order",
+          operations: ["effectiveSpeed"],
+          supportedTopologies: ["singles"],
+          engineOwner: "battle:shared-seam:engine",
+        },
+      ],
+    },
+    ...overrides,
+  };
+}
+
+describe("validateControlPlane", () => {
+  it("passes for a structurally valid control plane", () => {
+    expect(validateControlPlane(createControlPlane()).errors).toEqual([]);
+  });
+
+  it("fails when a touched legacy mechanic has no active bootstrap waiver", () => {
+    const controlPlane = createControlPlane({
+      mechanicCatalog: {
+        version: 1,
+        mechanics: [
+          {
+            mechanicId: "shared.engine.turn-order",
+            cluster: "effective-speed-order",
+            topologies: ["singles"],
+            orderingSensitive: true,
+            persistent: false,
+            proofStatus: "legacy-unproven",
+            authorityKey: "shared.engine-contracts",
+            requiredSuites: ["test"],
+            obligationSeed: "turn-order",
+          },
+        ],
+      },
+    });
+
+    expect(
+      validateControlPlane(controlPlane, {
+        touchedMechanicIds: ["shared.engine.turn-order"],
+      }).errors,
+    ).toContain(
+      "Touched legacy mechanic shared.engine.turn-order is legacy-unproven and has no active bootstrap waiver.",
+    );
+  });
+
+  it("accepts a touched legacy mechanic when an active bootstrap waiver exists", () => {
+    const controlPlane = createControlPlane({
+      mechanicCatalog: {
+        version: 1,
+        mechanics: [
+          {
+            mechanicId: "shared.engine.turn-order",
+            cluster: "effective-speed-order",
+            topologies: ["singles"],
+            orderingSensitive: true,
+            persistent: false,
+            proofStatus: "legacy-partial",
+            authorityKey: "shared.engine-contracts",
+            requiredSuites: ["test"],
+            obligationSeed: "turn-order",
+          },
+        ],
+      },
+      bootstrapWaivers: {
+        version: 1,
+        waivers: [
+          {
+            waiverId: "waiver.turn-order",
+            mechanicIds: ["shared.engine.turn-order"],
+            issueNumber: 9999,
+            owner: "codex",
+            approver: "owner",
+            expiresOn: "2099-01-01",
+            missingProofs: ["behavior"],
+          },
+        ],
+      },
+    });
+
+    expect(
+      validateControlPlane(controlPlane, {
+        touchedMechanicIds: ["shared.engine.turn-order"],
+      }).errors,
+    ).toEqual([]);
+  });
+
+  it("treats expiresOn as inclusive through the stated day", () => {
+    const controlPlane = createControlPlane({
+      mechanicCatalog: {
+        version: 1,
+        mechanics: [
+          {
+            mechanicId: "shared.engine.turn-order",
+            cluster: "effective-speed-order",
+            topologies: ["singles"],
+            orderingSensitive: true,
+            persistent: false,
+            proofStatus: "legacy-partial",
+            authorityKey: "shared.engine-contracts",
+            requiredSuites: ["test"],
+            obligationSeed: "turn-order",
+          },
+        ],
+      },
+      bootstrapWaivers: {
+        version: 1,
+        waivers: [
+          {
+            waiverId: "waiver.same-day",
+            mechanicIds: ["shared.engine.turn-order"],
+            issueNumber: 9999,
+            owner: "codex",
+            approver: "owner",
+            expiresOn: "2026-03-31",
+            missingProofs: ["behavior"],
+          },
+        ],
+      },
+    });
+
+    expect(
+      validateControlPlane(controlPlane, {
+        touchedMechanicIds: ["shared.engine.turn-order"],
+        now: new Date("2026-03-31T18:00:00.000Z"),
+      }).errors,
+    ).toEqual([]);
+  });
+
+  it("fails on expired bootstrap waivers and expired normalizations", () => {
+    const controlPlane = createControlPlane({
+      bootstrapWaivers: {
+        version: 1,
+        waivers: [
+          {
+            waiverId: "waiver.expired",
+            mechanicIds: ["shared.engine.turn-order"],
+            issueNumber: 9999,
+            owner: "codex",
+            approver: "owner",
+            expiresOn: "2000-01-01",
+            missingProofs: ["behavior"],
+          },
+        ],
+      },
+      normalizationRegistry: {
+        version: 1,
+        normalizations: [
+          {
+            normalizationId: "normalization.expired",
+            reasonClass: "oracle-representation-mismatch",
+            fields: ["damage"],
+            cluster: "effective-speed-order",
+            topologies: ["singles"],
+            generations: [5],
+            authorityKeys: ["shared.engine-contracts"],
+            owner: "codex",
+            approver: "owner",
+            expiresOn: "2000-01-01",
+          },
+        ],
+      },
+    });
+
+    const errors = validateControlPlane(controlPlane).errors;
+
+    expect(errors).toContain("Expired bootstrap waiver waiver.expired blocks merge.");
+    expect(errors).toContain("Expired normalization normalization.expired blocks merge.");
+  });
+
+  it("fails when a mechanic requires an unknown suite", () => {
+    const controlPlane = createControlPlane({
+      mechanicCatalog: {
+        version: 1,
+        mechanics: [
+          {
+            mechanicId: "shared.engine.turn-order",
+            cluster: "effective-speed-order",
+            topologies: ["singles"],
+            orderingSensitive: true,
+            persistent: false,
+            proofStatus: "proved",
+            authorityKey: "shared.engine-contracts",
+            requiredSuites: ["unknown-suite"],
+            obligationSeed: "turn-order",
+          },
+        ],
+      },
+    });
+
+    expect(validateControlPlane(controlPlane).errors).toContain(
+      "Mechanic shared.engine.turn-order requires unknown suite unknown-suite.",
+    );
+  });
+
+  it("fails when a protocol cluster references an unknown engine owner", () => {
+    const controlPlane = createControlPlane({
+      protocolCapabilityMatrix: {
+        version: 1,
+        clusters: [
+          {
+            cluster: "effective-speed-order",
+            operations: ["effectiveSpeed"],
+            supportedTopologies: ["singles"],
+            engineOwner: "battle:shared-seam:missing",
+          },
+        ],
+      },
+    });
+
+    expect(validateControlPlane(controlPlane).errors).toContain(
+      "Protocol cluster effective-speed-order references unknown engineOwner battle:shared-seam:missing.",
+    );
+  });
+
+  it("fails when the proof schema drifts from the runtime artifact schema", () => {
+    const controlPlane = createControlPlane({
+      proofSchema: {
+        version: 1,
+        checkIdPattern: "gen{n}:{suite}:{kind}:{identifier}",
+        suiteIds: ["test", "proof-preview", "typecheck:contracts", "workflow-contract"],
+        checkStatuses: ["pass", "fail"],
+        suiteStatuses: ["pass", "fail"],
+        runModes: ["fast"],
+        conclusions: ["fail"],
+      },
+    });
+
+    const errors = validateControlPlane(controlPlane).errors;
+
+    expect(errors).toContain(
+      "proof-schema.v1.json checkStatuses must match proof-artifact-schema.ts checkStatusSchema exactly.",
+    );
+    expect(errors).toContain(
+      "proof-schema.v1.json suiteStatuses must match proof-artifact-schema.ts suiteStatusSchema exactly.",
+    );
+    expect(errors).toContain(
+      "proof-schema.v1.json runModes must match proof-artifact-schema.ts runModeSchema exactly.",
+    );
+    expect(errors).toContain(
+      "proof-schema.v1.json conclusions must match proof-artifact-schema.ts runConclusionSchema exactly.",
+    );
+  });
+});

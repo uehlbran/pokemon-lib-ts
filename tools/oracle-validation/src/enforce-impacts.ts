@@ -3,20 +3,9 @@ import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
+import { loadControlPlane } from "./control-plane.js";
 import { type ImpactsReport, impactsReportSchema } from "./proof-artifact-schema.js";
-
-const knownSuites = new Set([
-  "changeset-check",
-  "lint",
-  "oracle-fast",
-  "package-boundaries",
-  "pret-validate",
-  "proof-preview",
-  "test",
-  "typecheck",
-  "typecheck:contracts",
-  "workflow-contract",
-]);
+import { validateControlPlane } from "./validate-control-plane.js";
 
 interface Args {
   readonly mode: string;
@@ -69,8 +58,10 @@ function canonicalizeSuiteId(suiteId: string): string {
 export function evaluateImpactsEnforcement(
   impacts: ImpactsReport,
   executedSuites: readonly string[],
+  knownSuites: ReadonlySet<string>,
+  controlPlaneErrors: readonly string[] = [],
 ): EnforcementResult {
-  const errors: string[] = [];
+  const errors: string[] = [...controlPlaneErrors];
   const canonicalExecutedSuites = [...new Set(executedSuites.map(canonicalizeSuiteId))].sort();
   const requiredSuites = [...new Set(impacts.requiredSuites.map(canonicalizeSuiteId))].sort();
 
@@ -144,7 +135,16 @@ function main(): void {
   const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
   const args = parseArgs(process.argv.slice(2));
   const impacts = loadImpactsReport(repoRoot, args.mode);
-  const result = evaluateImpactsEnforcement(impacts, args.executedSuites);
+  const controlPlane = loadControlPlane(repoRoot);
+  const controlPlaneResult = validateControlPlane(controlPlane, {
+    touchedMechanicIds: impacts.transitiveMechanicIds,
+  });
+  const result = evaluateImpactsEnforcement(
+    impacts,
+    args.executedSuites,
+    new Set(controlPlane.proofSchema.suiteIds),
+    controlPlaneResult.errors,
+  );
 
   if (result.errors.length > 0) {
     console.error(`Impacts enforcement failed for ${args.mode}.`);

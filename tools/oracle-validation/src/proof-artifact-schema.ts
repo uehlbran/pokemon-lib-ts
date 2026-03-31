@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const checkStatusSchema = z.enum([
+export const CHECK_STATUS_VALUES = [
   "pass",
   "fail",
   "skip",
@@ -8,9 +8,11 @@ export const checkStatusSchema = z.enum([
   "advisory",
   "deferred",
   "interrupted",
-]);
+] as const;
 
-export const suiteStatusSchema = z.enum([
+export const checkStatusSchema = z.enum(CHECK_STATUS_VALUES);
+
+export const SUITE_STATUS_VALUES = [
   "pass",
   "fail",
   "skip",
@@ -18,11 +20,20 @@ export const suiteStatusSchema = z.enum([
   "deferred",
   "advisory",
   "interrupted",
-]);
+] as const;
+
+export const suiteStatusSchema = z.enum(SUITE_STATUS_VALUES);
 
 export const enforcementSchema = z.enum(["required", "advisory"]);
-export const runModeSchema = z.enum(["fast", "full"]);
-export const runConclusionSchema = z.enum(["fail", "provisional-pass", "compliant", "interrupted"]);
+export const RUN_MODE_VALUES = ["fast", "full"] as const;
+export const runModeSchema = z.enum(RUN_MODE_VALUES);
+export const RUN_CONCLUSION_VALUES = [
+  "fail",
+  "provisional-pass",
+  "compliant",
+  "interrupted",
+] as const;
+export const runConclusionSchema = z.enum(RUN_CONCLUSION_VALUES);
 
 export const checkCountSchema = z.strictObject({
   executed: z.number().int().nonnegative(),
@@ -96,6 +107,7 @@ export const impactsReportSchema = z.strictObject({
   directMechanicIds: z.array(z.string().min(1)).default([]),
   transitiveMechanicIds: z.array(z.string().min(1)).default([]),
   touchedAuthorityKeys: z.array(z.string().min(1)).default([]),
+  touchedClusters: z.array(z.string().min(1)),
   requiredSuites: z.array(z.string().min(1)).default([]),
   lowConfidenceFiles: z.array(z.string().min(1)).default([]),
   fileClassifications: z.array(
