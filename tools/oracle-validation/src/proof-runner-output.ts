@@ -181,16 +181,12 @@ export function summarizeSuite(
     status = "incomplete";
   } else if (requiredCounts.deferred > 0) {
     status = "deferred";
-  } else if (!hasProofChecks) {
-    status = enforcement === "advisory" ? "advisory" : "pass";
-  } else if (
-    enforcement === "required" &&
-    requiredCounts.executed === 0 &&
-    advisoryCounts.executed > 0
-  ) {
-    status = "advisory";
   } else if (enforcement === "required" && requiredCounts.executed === 0) {
+    // Required suites are fail-closed once the proof pipeline is active. A legacy
+    // pass result without required proof checks is missing evidence, not success.
     status = "incomplete";
+  } else if (!hasProofChecks) {
+    status = "advisory";
   } else if (enforcement === "advisory") {
     status = "advisory";
   } else {

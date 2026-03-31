@@ -218,4 +218,38 @@ describe("evaluateImpactsEnforcement", () => {
 
     expect(result.errors).toEqual([]);
   });
+
+  it("allows interrupted oracle-fast summaries when touched mechanics still have required evidence", () => {
+    const result = evaluateImpactsEnforcement(
+      createImpactsReport({ requiredSuites: ["oracle-fast"] }),
+      ["oracle-fast"],
+      new Set([...knownSuites, "oracle-fast"]),
+      [],
+      ["gen5.runtime.ruleset"],
+      {
+        summary: createProofSummary({ conclusion: "interrupted" }),
+        checks: [createProofCheck({ mechanicIds: ["gen5.runtime.ruleset"] })],
+      },
+    );
+
+    expect(result.errors).toEqual([]);
+  });
+
+  it("fails when oracle-fast proof summary conclusion is fail", () => {
+    const result = evaluateImpactsEnforcement(
+      createImpactsReport({ requiredSuites: ["oracle-fast"] }),
+      ["oracle-fast"],
+      new Set([...knownSuites, "oracle-fast"]),
+      [],
+      ["gen5.runtime.ruleset"],
+      {
+        summary: createProofSummary({ conclusion: "fail" }),
+        checks: [createProofCheck({ mechanicIds: ["gen5.runtime.ruleset"] })],
+      },
+    );
+
+    expect(result.errors).toContain(
+      "oracle-fast proof summary conclusion must not be fail, received fail.",
+    );
+  });
 });
