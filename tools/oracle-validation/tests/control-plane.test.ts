@@ -74,6 +74,7 @@ describe("control plane ownership mapping", () => {
 
     expect(expanded).toContain("oracle:tooling:runner");
     expect(expanded).toContain("gen8:leaf-mechanic:ruleset-and-handlers");
+    expect(expanded).toContain("gen8:leaf-mechanic:ability-trigger-surface");
   });
 
   it("maps the data importer workspace manifest into importer tooling ownership", () => {
@@ -82,5 +83,47 @@ describe("control plane ownership mapping", () => {
 
     expect(classification.fileClass).toBe("runtime-owning");
     expect(classification.ownershipKeys).toContain("data-importer:tooling:importer-and-overrides");
+  });
+
+  it("maps Gen 8 ability files into the dedicated ability trigger ownership key", () => {
+    const controlPlane = loadControlPlane(repoRoot);
+    const classification = classifyRepoFile(controlPlane, "packages/gen8/src/Gen8AbilitiesStat.ts");
+
+    expect(classification.fileClass).toBe("runtime-owning");
+    expect(classification.ownershipKeys).toEqual(["gen8:leaf-mechanic:ability-trigger-surface"]);
+    expect(classification.ruleMatches).toHaveLength(1);
+  });
+
+  it("keeps Gen 9 ruleset files in the coarse ruleset owner without low-confidence overlap", () => {
+    const controlPlane = loadControlPlane(repoRoot);
+    const classification = classifyRepoFile(controlPlane, "packages/gen9/src/Gen9Ruleset.ts");
+
+    expect(classification.fileClass).toBe("runtime-owning");
+    expect(classification.ownershipKeys).toEqual(["gen9:leaf-mechanic:ruleset-and-handlers"]);
+    expect(classification.ruleMatches).toHaveLength(1);
+  });
+
+  it("maps Gen 8 src/data files into the coarse ruleset owner", () => {
+    const controlPlane = loadControlPlane(repoRoot);
+    const classification = classifyRepoFile(
+      controlPlane,
+      "packages/gen8/src/data/reference-ids.ts",
+    );
+
+    expect(classification.fileClass).toBe("runtime-owning");
+    expect(classification.ownershipKeys).toEqual(["gen8:leaf-mechanic:ruleset-and-handlers"]);
+    expect(classification.ruleMatches).toHaveLength(1);
+  });
+
+  it("maps Gen 9 src/data files into the coarse ruleset owner", () => {
+    const controlPlane = loadControlPlane(repoRoot);
+    const classification = classifyRepoFile(
+      controlPlane,
+      "packages/gen9/src/data/reference-ids.ts",
+    );
+
+    expect(classification.fileClass).toBe("runtime-owning");
+    expect(classification.ownershipKeys).toEqual(["gen9:leaf-mechanic:ruleset-and-handlers"]);
+    expect(classification.ruleMatches).toHaveLength(1);
   });
 });

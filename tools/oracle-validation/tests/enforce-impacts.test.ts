@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { evaluateImpactsEnforcement } from "../src/enforce-impacts.js";
+import {
+  evaluateImpactsEnforcement,
+  touchedOwnershipKeysForValidation,
+} from "../src/enforce-impacts.js";
 import type { ImpactsReport, ProofCheck, ProofSummary } from "../src/proof-artifact-schema.js";
 
 const knownSuites = new Set(["control-plane", "proof-preview", "workflow-contract"]);
@@ -60,6 +63,20 @@ function createProofCheck(overrides: Partial<ProofCheck> = {}): ProofCheck {
 }
 
 describe("evaluateImpactsEnforcement", () => {
+  it("includes propagated ownership keys in lineage validation input", () => {
+    expect(
+      touchedOwnershipKeysForValidation(
+        createImpactsReport({
+          directOwnershipKeys: ["battle:contract:damage-context"],
+          transitiveOwnershipKeys: [
+            "battle:contract:damage-context",
+            "gen8:leaf-mechanic:ability-trigger-surface",
+          ],
+        }),
+      ),
+    ).toEqual(["battle:contract:damage-context", "gen8:leaf-mechanic:ability-trigger-surface"]);
+  });
+
   it("passes when all required suites executed and no ambiguity exists", () => {
     const result = evaluateImpactsEnforcement(
       createImpactsReport(),

@@ -106,4 +106,12 @@ describe("buildImpactsReport", () => {
     ]);
     expect(isLowConfidenceClassification(classification)).toBe(false);
   });
+
+  it("does not flag split Gen 8 ability ownership as low-confidence", () => {
+    const controlPlane = loadControlPlane(repoRoot);
+    const classification = classifyRepoFile(controlPlane, "packages/gen8/src/Gen8Abilities.ts");
+
+    expect(classification.ownershipKeys).toEqual(["gen8:leaf-mechanic:ability-trigger-surface"]);
+    expect(isLowConfidenceClassification(classification)).toBe(false);
+  });
 });

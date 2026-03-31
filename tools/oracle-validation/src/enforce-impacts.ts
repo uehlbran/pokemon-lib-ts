@@ -71,6 +71,10 @@ function canonicalizeSuiteId(suiteId: string): string {
   }
 }
 
+export function touchedOwnershipKeysForValidation(impacts: ImpactsReport): string[] {
+  return [...new Set([...impacts.directOwnershipKeys, ...impacts.transitiveOwnershipKeys])].sort();
+}
+
 export function evaluateImpactsEnforcement(
   impacts: ImpactsReport,
   executedSuites: readonly string[],
@@ -283,6 +287,7 @@ function main(): void {
   const controlPlane = loadControlPlane(repoRoot);
   const controlPlaneResult = validateControlPlane(controlPlane, {
     touchedMechanicIds: impacts.transitiveMechanicIds,
+    touchedOwnershipKeys: touchedOwnershipKeysForValidation(impacts),
   });
   const artifactBackedSuites = new Map<string, ArtifactBackedSuiteStatus>([
     ["proof-preview", "pass"],

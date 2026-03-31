@@ -10,6 +10,7 @@ import {
 
 export interface ControlPlaneValidationOptions {
   readonly touchedMechanicIds?: readonly string[];
+  readonly touchedOwnershipKeys?: readonly string[];
   readonly now?: Date;
 }
 
@@ -102,6 +103,9 @@ export function validateControlPlane(
       entry.ownershipKey,
       new Set(entry.mechanicIds),
     ]),
+  );
+  const ownershipRuleByKey = new Map(
+    controlPlane.ownershipMap.ownershipRules.map((entry) => [entry.ownershipKey, entry] as const),
   );
 
   for (const duplicate of duplicateValues(authorityKeys)) {
@@ -350,6 +354,26 @@ export function validateControlPlane(
     if (!ownershipKeySet.has(contract.runtimeOwner)) {
       errors.push(
         `Lineage contract ${contract.entityId}:${contract.triggerPath} references unknown runtimeOwner ${contract.runtimeOwner}.`,
+      );
+    }
+  }
+
+  for (const ownershipKey of [...new Set(options.touchedOwnershipKeys ?? [])].sort()) {
+    const rule = ownershipRuleByKey.get(ownershipKey);
+    if (!rule) {
+      errors.push(`Touched ownership key ${ownershipKey} is missing from ownership-map.v1.json.`);
+      continue;
+    }
+    if (rule.ownerKind !== "leaf-mechanic") {
+      continue;
+    }
+
+    const hasLineageContract = controlPlane.lineageContracts.contracts.some(
+      (contract) => contract.runtimeOwner === ownershipKey,
+    );
+    if (!hasLineageContract) {
+      errors.push(
+        `Touched runtime owner ${ownershipKey} has no lineage contracts in lineage-contracts.v1.json.`,
       );
     }
   }
