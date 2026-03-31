@@ -1,6 +1,6 @@
 # Testing and Confidence Status
 
-**Last updated:** 2026-03-27
+**Last updated:** 2026-03-31
 **Purpose:** Track behavioral coverage confidence, architecture/testability hotspots, and cartridge-compliance rollout across the repo.
 
 This document exists because raw line/branch coverage is not enough to claim correctness confidence. The repo needs visible status for:
@@ -30,6 +30,7 @@ Confidence levels:
 - `battle` is functionally broad and documents a complete singles engine in [battle-status.md](./battle-status.md), including turn flow and end-of-turn handler coverage.
 - `battle` has direct deterministic ordering coverage for same-speed ties, action-type priority, and forced-switch queued-action invalidation in its shared unit/integration suites.
 - `battle` also now has direct setup/runtime invariant coverage for helper-built active/side/state wrappers in `packages/battle/tests/unit/utils/battle-helpers.test.ts`, plus stronger deserialize checkpoint/relink validation in `packages/battle/tests/integration/engine/deserialize.test.ts`.
+- `battle` now also has direct engine-path coverage for the shared held-item stat-change and reactive-switch seams in `packages/battle/tests/integration/engine/held-item-stat-change.test.ts` and `packages/battle/tests/integration/engine/item-force-switch.test.ts`, including blocked drops, foe-post-boost copying, deferred item flushing, and no-replacement failure paths.
 - Gen 1 has the deepest source-backed confidence today:
   - ground-truth / deep-dive coverage
   - replay validation
@@ -65,6 +66,7 @@ Showdown parity is not the success criterion for Gen 1-4. For those gens, cartri
 | Speed tie determinism | battle | `strong` | Direct deterministic coverage exists in `packages/battle/tests/unit/ruleset/base-ruleset-branches.test.ts`, `packages/battle/tests/unit/ruleset/base-ruleset-rng-determinism.test.ts`, and `packages/battle/tests/integration/engine/battle-engine-branches.test.ts` | Keep strong local coverage and eventually add replay/trace parity for engine-level tie outcomes |
 | Bracket modifiers (priority / Trick Room / go-first item family) | battle + all gens | `weak` | Shared engine coverage exists for move priority, action-type priority, and selected go-first items, but the repo still lacks a maintained matrix for combined bracket interactions and cross-gen negative-order classes | Build ordering rows keyed to specific bracket modifiers and close the remaining matrix gaps |
 | Queued-action invalidation on forced switch | battle | `strong` | Direct regression coverage exists in `packages/battle/tests/integration/engine/forced-switch.test.ts` and `packages/battle/tests/integration/engine/item-force-switch.test.ts`, including queued move, Struggle, recharge, and item-driven invalidation | Extend the same explicit invalidation checks to the remaining forced-switch sources and faint-replacement edges |
+| Held-item stat-change / reactive-switch seams | battle + gen7-9 | `strong` to `weak` mixed | Direct engine-path coverage now exists in `packages/battle/tests/integration/engine/held-item-stat-change.test.ts`, `packages/battle/tests/integration/engine/item-force-switch.test.ts`, and later-gen item suites for Adrenaline Orb, Clear Amulet, Mirror Herb, Eject Pack, Red Card, and Eject Button; move-miss / sound-move / room-activation item seams are still open under `#1746` | Extend the same seam matrix to `Blunder Policy`, `Throat Spray`, and `Room Service` before claiming closure for later-gen item routing |
 | Base end-of-turn ordering | battle | `strong` | BaseRuleset and engine suites cover default handler ordering and confusion/countdown paths directly | Keep strong local confidence and extend later to trace/oracle validation |
 | Gen-specific end-of-turn ordering | battle + gen1-9 | `weak` to `strong` mixed | Engine and per-gen suites cover many handlers, but there is no maintained per-generation order matrix | Build per-gen ordering matrix against tests + source notes |
 | Hazard / grounded / semi-invulnerable interactions | gen5-9 | `weak` | Multiple historical bughunt fixes landed across gen5-9, but there is still no maintained confidence row tying those interactions to current test evidence | Audit tests against current rulesets and identify remaining blind spots |
@@ -113,6 +115,7 @@ Cartridge-accuracy gaps with limited competitive impact:
 Missing singles mechanic gaps:
 - `#793` Forecast type change missing in Gen 4-9
 - `#788` Ultra Burst missing in Gen 7
+- `#1746` Blunder Policy / Throat Spray / Room Service still remain helper-only because the engine lacks move-miss, sound-move, and room-activation item dispatch seams
 
 Open tracker overlap requiring cleanup:
 - `#789` remains as the umbrella tracker for the remaining Gen 7 move-effect tail.

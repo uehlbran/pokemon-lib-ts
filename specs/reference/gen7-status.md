@@ -1,6 +1,6 @@
 # Gen7 Implementation Status
 
-**Last updated:** 2026-03-27
+**Last updated:** 2026-03-31
 **Overall estimate:** 100% complete (all waves merged — PR #703 final)
 **Architecture:** Extends `BaseRuleset`
 **Spec:** `specs/battle/08-gen7.md`
@@ -111,9 +111,9 @@
 
 ## Test Coverage
 
-25 test files, 1,178 tests (as of 2026-03-27).
+29 test files, 1,231 tests (as of 2026-03-31).
 
-Test files: `abilities-damage.test.ts`, `abilities-nerfs.test.ts`, `abilities-new.test.ts`, `abilities-switch-contact.test.ts`, `aurora-veil.test.ts`, `bugfix-phase2.test.ts`, `coverage-gaps.test.ts`, `crit-calc.test.ts`, `damage-calc.test.ts`, `data-loading.test.ts`, `dual-gimmick.test.ts`, `entry-hazards.test.ts`, `exp-formula.test.ts`, `integration.test.ts`, `items.test.ts`, `mega-evolution.test.ts`, `move-effects.test.ts`, `ruleset.test.ts`, `smoke.test.ts`, `status.test.ts`, `terrain.test.ts`, `type-chart.test.ts`, `weather.test.ts`, `z-move.test.ts`, `z-move-status.test.ts`
+Test files: `abilities-damage.test.ts`, `abilities-nerfs.test.ts`, `abilities-new.test.ts`, `abilities-switch-contact.test.ts`, `aurora-veil.test.ts`, `bugfix-phase2.test.ts`, `cloud-nine-suppression.test.ts`, `coverage-gaps.test.ts`, `crit-calc.test.ts`, `damage-calc.test.ts`, `data-loading.test.ts`, `dual-gimmick.test.ts`, `entry-hazards.test.ts`, `exp-formula.test.ts`, `facade-power-doubling.test.ts`, `gimmick-state.test.ts`, `integration/integration.test.ts`, `items.test.ts`, `mega-evolution.test.ts`, `move-effects.test.ts`, `ruleset.test.ts`, `smoke/smoke.test.ts`, `status.test.ts`, `terrain.test.ts`, `type-chart.test.ts`, `ultra-burst.test.ts`, `weather.test.ts`, `z-move.test.ts`, `z-move-status.test.ts`
 
 ---
 
@@ -131,6 +131,7 @@ None. All tracked bugs closed.
 - PR #1054: Sunsteel Strike / Moongeist Beam now ignore target abilities through the shared Mold Breaker-style bypass path (partial close for #789)
 - PR #1055: Sunsteel Strike / Moongeist Beam now also bypass Battle Armor / Shell Armor crit immunity through the same shared signature-move ignore-ability set
 - PR #1061: Spectral Thief now steals positive boosts before damage through a shared pre-damage move-effect hook so the same hit uses the stolen stages (closes #1059)
+- PR #1797: Adrenaline Orb now routes through the shared held-item stat-change seam, uses the active battle ability for Contrary's +6 cap check, and keeps Red Card / Eject Button on the engine-owned reactive-switch seam (closes #1709; shared switch routing work also closes #1739)
 
 ## PR History
 
@@ -151,3 +152,4 @@ None. All tracked bugs closed.
 | #785 | fix/gen5-8-bughunt-status | Bughunt wave 2: Rayquaza mega, Disguise non-lethal, Beast Boost/Moxie, pinch berries EoT, Focus Sash (closes #701 #687 #688 #683 #725) |
 | #786 | fix/gen5-9-unaware-simple-priority | fix: Unaware/Simple priority and Mold Breaker-family bypass directionality (closes #757) |
 | #1061 | fix/gen7-spectral-thief | fix: Spectral Thief boost stealing before damage via shared pre-damage move-effect hook (closes #1059) |
+| #1797 | feat/trigger-surface-routing | Shared held-item stat-change seam for Adrenaline Orb plus reactive-switch seam hardening for Red Card / Eject Button (closes #1709; shared routing work also closes #1739) |

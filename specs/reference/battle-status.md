@@ -1,6 +1,6 @@
 # Battle Implementation Status
 
-**Last updated:** 2026-03-27
+**Last updated:** 2026-03-31
 **Overall estimate:** Feature-complete for singles battles, but this page is a summary, not a correctness proof.
 **Architecture:** Pluggable gen-agnostic engine. Delegates ALL gen-specific behavior to GenerationRuleset. Depends only on @pokemon-lib-ts/core.
 
@@ -77,8 +77,10 @@ Gen 5+ stubs (moody, harvest, grassy-terrain-heal now implemented in gen5+ rules
 - Actual implementations in gen rulesets
 
 ### Held Item System (hooks, not implementations)
-- before-move, on-damage-taken, on-hit, EoT item hooks
+- before-turn-order, before-move, holder-side stat-change, foe-side stat-change, on-damage-taken, on-hit, on-contact, and EoT item hooks
+- Deferred held-item reactions now flush through move-prevented, passive-immunity, flinch, and failed reactive-switch exits so item consumers stay on the engine-owned seam instead of helper-only branches
 - `processItemResult()` handles 8 effect types
+- Engine-path regression coverage now pins the shared item seams directly in `packages/battle/tests/integration/engine/held-item-stat-change.test.ts` and `packages/battle/tests/integration/engine/item-force-switch.test.ts`
 - Actual implementations in gen rulesets
 
 ### Weather System
@@ -124,6 +126,7 @@ Gen 5+ stubs (moody, harvest, grassy-terrain-heal now implemented in gen5+ rules
 | Doubles/Triples/Rotation formats | Massive separate initiative; BattleFormat type exists |
 | Greedy AI controller | Spec'd but deferred; RandomAI is sufficient for current gens |
 | Minimax AI controller | Spec'd but deferred |
+| Later-gen held-item trigger surfaces for move miss / sound-move use / room activation | Tracked by `#1746`; Gen 8-9 `Blunder Policy`, `Throat Spray`, and `Room Service` still lack engine dispatch hooks |
 
 This page no longer claims "no missing issues" for singles correctness. New seam regressions are expected to be caught by invariant tests and CI, not by this summary doc.
 
@@ -151,3 +154,4 @@ This page no longer claims "no missing issues" for singles correctness. New seam
 | #636 | fix/battle,gen6 | `getBattleGimmick()` gains type parameter for Gen 7 disambiguation |
 | #1067 | chore/core-battle-confidence-phase1 | BattleEngine deserialize now rejects lossy non-checkpoint restores, re-links active Pokemon back to saved team instances, and rejects contradictory active/team checkpoint state |
 | #1068 | chore/core-battle-confidence-phase2 | Battle helper fixture surfaces now pin malformed `createOnFieldPokemon()` / `createBattleSide()` / `createBattleState()` inputs with direct invariant tests while preserving supported active-only and Tera fallback fixture shapes |
+| #1797 | feat/trigger-surface-routing | Shared held-item stat-change / reactive-switch seams for Adrenaline Orb, Eject Pack, Mirror Herb, Clear Amulet, Red Card, and Eject Button, plus early-return flushing for deferred item reactions |
