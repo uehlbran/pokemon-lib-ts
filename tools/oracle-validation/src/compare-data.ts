@@ -43,8 +43,8 @@ export const STAT_CHANGE_TARGET_MAP: Record<string, string> = {
   adjacentFoe: "foe",
   allAdjacentFoes: "foe",
   allAdjacent: "foe",
-  allySide: "foe",
-  allyTeam: "foe",
+  allySide: "self", // sets condition on user's side — no pure stat-change move uses this today
+  allyTeam: "self", // targets user's full team — no pure stat-change move uses this today
   foeSide: "foe",
   all: "foe",
   randomNormal: "foe",

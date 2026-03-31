@@ -216,6 +216,7 @@ function mapTarget(sdTarget: string): string {
     adjacentAlly: "adjacent-ally",
     adjacentAllyOrSelf: "self",
     adjacentFoe: "adjacent-foe",
+    allies: "self", // Gen 8+ Howl: affects user + allies; collapses to self in singles
   };
   return TARGET_MAP[sdTarget] ?? "adjacent-foe";
 }
@@ -528,7 +529,7 @@ function buildMoveEffect(move: Move): object | null {
       "all-adjacent-foes": CORE_MOVE_EFFECT_TARGETS.foe,
       "all-adjacent": CORE_MOVE_EFFECT_TARGETS.foe,
       "user-field": CORE_MOVE_EFFECT_TARGETS.foe,
-      "user-and-allies": CORE_MOVE_EFFECT_TARGETS.foe,
+      "user-and-allies": CORE_MOVE_EFFECT_TARGETS.self, // allyTeam: targets user's side
       "foe-field": CORE_MOVE_EFFECT_TARGETS.foe,
       "entire-field": CORE_MOVE_EFFECT_TARGETS.foe,
       "random-foe": CORE_MOVE_EFFECT_TARGETS.foe,

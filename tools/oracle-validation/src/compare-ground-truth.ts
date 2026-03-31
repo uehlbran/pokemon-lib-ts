@@ -497,6 +497,9 @@ function evaluateAbilityCheckCase(
 ): string | null {
   // Validates that every move in affectedMoves has the flag corresponding to
   // this ability in our moves.json. ABILITY_FLAG_MAP maps ability IDs to flag names.
+  // NOTE: testCase.expectedBoost is intentionally not verified here — this is a
+  // data-level check only (flag presence). Verifying the boost multiplier requires
+  // engine integration (battle simulation), which is Phase 6 scope.
   const flagName = ABILITY_FLAG_MAP[testCase.abilityId];
   if (flagName === undefined) {
     return (
