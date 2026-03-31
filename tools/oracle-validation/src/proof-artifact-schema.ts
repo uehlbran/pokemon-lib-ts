@@ -137,7 +137,24 @@ export const coverageReportSchema = z.strictObject({
   ),
 });
 
+export const workflowContractCheckSchema = z.strictObject({
+  checkId: z.string().min(1),
+  workflow: z.string().min(1),
+  status: z.enum(["pass", "fail"]),
+  errors: z.array(z.string()).default([]),
+});
+
+export const workflowContractArtifactSchema = z.strictObject({
+  schemaVersion: z.literal("workflow-contract.v1"),
+  gitSha: z.string().min(1),
+  timestamp: z.string().datetime(),
+  mode: z.string().min(1),
+  status: z.enum(["pass", "fail"]),
+  checks: z.array(workflowContractCheckSchema).min(1),
+});
+
 export type ProofCheck = z.infer<typeof proofCheckSchema>;
 export type ProofSuiteResult = z.infer<typeof proofSuiteResultSchema>;
 export type ProofSummary = z.infer<typeof proofSummarySchema>;
 export type ImpactsReport = z.infer<typeof impactsReportSchema>;
+export type WorkflowContractArtifact = z.infer<typeof workflowContractArtifactSchema>;

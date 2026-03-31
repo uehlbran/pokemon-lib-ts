@@ -56,6 +56,7 @@
     "proof:preview": "tsx tools/oracle-validation/src/changed-mechanics.ts",
     "proof:enforce": "tsx tools/oracle-validation/src/enforce-impacts.ts",
     "proof:audit:mutation": "tsx tools/oracle-validation/src/direct-mutation-audit.ts",
+    "proof:audit:workflow": "tsx tools/oracle-validation/src/workflow-contract-audit.ts",
     "status:generate": "tsx tools/oracle-validation/src/generate-completeness-status.ts",
     "status:check": "node scripts/check-generated-status.mjs",
     "smoke": "tsx tools/oracle-validation/src/runner.ts --suite smoke",
