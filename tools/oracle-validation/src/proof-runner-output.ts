@@ -110,11 +110,15 @@ function summarizeSuite(
     else counts.advisory += 1;
   }
 
+  const hasProofChecks = requiredCounts.executed > 0 || advisoryCounts.executed > 0;
+
   let status: ProofSuiteResult["status"];
   if (suiteResult.status === "skip") {
     status = "skip";
   } else if (suiteResult.failed > 0 || requiredCounts.failed > 0) {
     status = "fail";
+  } else if (!hasProofChecks) {
+    status = enforcement === "advisory" ? "advisory" : "pass";
   } else if (
     enforcement === "required" &&
     requiredCounts.executed === 0 &&

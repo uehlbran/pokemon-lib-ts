@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildProofSummary } from "../src/proof-runner-output.js";
 
 describe("buildProofSummary", () => {
-  it("marks required suites with zero executed checks as incomplete", () => {
+  it("preserves legacy pass suites that do not emit proof checks yet", () => {
     const { summary } = buildProofSummary(
       "abc123",
       ["fast"],
@@ -42,8 +42,8 @@ describe("buildProofSummary", () => {
     if (!suite) {
       throw new Error("Expected a data suite summary");
     }
-    expect(suite.status).toBe("incomplete");
-    expect(summary.conclusion).toBe("interrupted");
+    expect(suite.status).toBe("pass");
+    expect(summary.conclusion).toBe("provisional-pass");
   });
 
   it("treats advisory suites as advisory when they have no executable checks", () => {
@@ -87,5 +87,57 @@ describe("buildProofSummary", () => {
       throw new Error("Expected a stats suite summary");
     }
     expect(suite.status).toBe("advisory");
+  });
+
+  it("still marks required suites incomplete when only advisory checks executed", () => {
+    const { summary } = buildProofSummary(
+      "abc123",
+      ["fast"],
+      [
+        {
+          gen: 1,
+          packageName: "@pokemon-lib-ts/gen1",
+          suites: {
+            data: {
+              status: "pass",
+              suitePassed: true,
+              failed: 0,
+              skipped: 0,
+              failures: [],
+              notes: [],
+              matchedKnownDisagreements: ["gen1:data:move:foo"],
+              staleDisagreements: [],
+              oracleChecks: [
+                {
+                  id: "gen1:data:move:foo",
+                  suite: "data",
+                  description: "Known disagreement",
+                  ourValue: "a",
+                  oracleValue: "b",
+                },
+              ],
+            },
+          },
+          registry: {
+            knownDisagreements: [],
+            knownOracleBugs: [],
+          },
+          staleDisagreements: [],
+        },
+      ],
+    );
+
+    const generation = summary.generations[0];
+    expect(generation).toBeDefined();
+    if (!generation) {
+      throw new Error("Expected a generation summary");
+    }
+    const suite = generation.suites.data;
+    expect(suite).toBeDefined();
+    if (!suite) {
+      throw new Error("Expected a data suite summary");
+    }
+    expect(suite.status).toBe("advisory");
+    expect(summary.conclusion).toBe("provisional-pass");
   });
 });
