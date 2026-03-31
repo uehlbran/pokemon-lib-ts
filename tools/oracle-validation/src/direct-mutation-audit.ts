@@ -22,11 +22,12 @@ const directMutationAuditSchema = z.strictObject({
   findings: z.array(directMutationFindingSchema),
 });
 
-const assignmentOperatorPattern = String.raw`(?:\+\+|--|(?:\+\+|--)\s*|(?:\+|-|\*|\/|%|<<|>>|>>>|&|\^|\||\*\*)?=(?!=))`;
+const assignmentOperatorPattern = String.raw`(?:\+\+|--|(?:\+\+|--)\s*|(?:\?\?|\|\||&&|\+|-|\*|\/|%|<<|>>|>>>|&|\^|\||\*\*)?=(?!=))`;
 const propertyAccessPattern = String.raw`(?:\.[A-Za-z_$][\w$]*|\[[^\]\n]+\])+`;
 const stateTargetPattern = String.raw`ctx\.state${propertyAccessPattern}`;
 const activePokemonTargetPattern = String.raw`ctx\.(?:attacker|defender)(?:\.pokemon)?${propertyAccessPattern}`;
 const mutatorMethodNames = new Set([
+  "add",
   "set",
   "delete",
   "clear",
@@ -44,12 +45,15 @@ const trackedContextRoots: ReadonlyMap<string, MutationRootKind> = new Map([
 ]);
 const assignmentOperatorKinds = new Set([
   ts.SyntaxKind.EqualsToken,
+  ts.SyntaxKind.AmpersandAmpersandEqualsToken,
+  ts.SyntaxKind.BarBarEqualsToken,
   ts.SyntaxKind.PlusEqualsToken,
   ts.SyntaxKind.MinusEqualsToken,
   ts.SyntaxKind.AsteriskEqualsToken,
   ts.SyntaxKind.AsteriskAsteriskEqualsToken,
   ts.SyntaxKind.SlashEqualsToken,
   ts.SyntaxKind.PercentEqualsToken,
+  ts.SyntaxKind.QuestionQuestionEqualsToken,
   ts.SyntaxKind.LessThanLessThanEqualsToken,
   ts.SyntaxKind.GreaterThanGreaterThanEqualsToken,
   ts.SyntaxKind.GreaterThanGreaterThanGreaterThanEqualsToken,
@@ -167,23 +171,25 @@ function recordAliasFromDeclaration(
   }
 
   const initializer = unwrapExpression(declaration.initializer);
-  const isTrackedContextRoot =
+  const contextRoot =
     ts.isIdentifier(initializer) && (initializer.text === "ctx" || initializer.text === "context");
-  if (!isTrackedContextRoot) {
-    return;
-  }
+  const rootKind = contextRoot ? null : resolveMutationRootKind(declaration.initializer, aliases);
 
   for (const element of declaration.name.elements) {
     if (element.dotDotDotToken || !ts.isIdentifier(element.name)) {
       continue;
     }
 
-    const propertyName =
-      element.propertyName && ts.isIdentifier(element.propertyName)
-        ? element.propertyName.text
-        : element.name.text;
-    const rootKind = trackedContextRoots.get(propertyName);
-    if (rootKind) {
+    const propertyName = element.propertyName ?? element.name;
+    if (contextRoot && ts.isIdentifier(propertyName)) {
+      const propertyRootKind = trackedContextRoots.get(propertyName.text);
+      if (propertyRootKind) {
+        aliases.set(element.name.text, propertyRootKind);
+      }
+      continue;
+    }
+
+    if (rootKind && ts.isIdentifier(propertyName)) {
       aliases.set(element.name.text, rootKind);
     }
   }

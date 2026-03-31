@@ -15,6 +15,15 @@ describe("detectDirectMutationPatterns", () => {
     expect(detectDirectMutationPatterns('ctx.state.phase = "move";')).toContain(
       "ctx-state-mutation",
     );
+    expect(detectDirectMutationPatterns('ctx.state.phase &&= "move";')).toContain(
+      "ctx-state-mutation",
+    );
+    expect(detectDirectMutationPatterns('ctx.state.phase ||= "switch";')).toContain(
+      "ctx-state-mutation",
+    );
+    expect(detectDirectMutationPatterns('ctx.state.phase ??= "idle";')).toContain(
+      "ctx-state-mutation",
+    );
     expect(detectDirectMutationPatterns("ctx.state.turnNumber++;")).toContain("ctx-state-mutation");
     expect(detectDirectMutationPatterns("--ctx.state.turnNumber;")).toContain("ctx-state-mutation");
   });
@@ -62,6 +71,21 @@ describe("scanSourceForDirectMutations", () => {
     ]);
   });
 
+  it("detects chained destructuring aliases from tracked roots", () => {
+    const findings = scanSourceForDirectMutations(
+      `
+      function sample(ctx: MoveEffectContext) {
+        const { attacker } = ctx;
+        const { pokemon } = attacker;
+        pokemon.currentHp = 10;
+      }
+      `,
+      "packages/gen9/src/Gen9MoveEffects.ts",
+    );
+
+    expect(findings.map((finding) => finding.pattern)).toEqual(["active-pokemon-mutation"]);
+  });
+
   it("ignores local scratch mutations that do not derive from tracked context", () => {
     const findings = scanSourceForDirectMutations(
       `
@@ -104,6 +128,19 @@ describe("scanSourceForDirectMutations", () => {
       "ctx-state-mutation",
       "ctx-state-mutation",
     ]);
+  });
+
+  it("detects mutator add calls on tracked sets", () => {
+    const findings = scanSourceForDirectMutations(
+      `
+      function sample(ctx: MoveEffectContext) {
+        ctx.state.pseudoWeather.add("trickroom");
+      }
+      `,
+      "packages/gen9/src/Gen9MoveEffects.ts",
+    );
+
+    expect(findings.map((finding) => finding.pattern)).toEqual(["ctx-state-mutation"]);
   });
 });
 
