@@ -1,7 +1,7 @@
 
 # Gen4 Implementation Status
 
-**Last updated:** 2026-03-22
+**Last updated:** 2026-03-31
 **Generated completeness status:** `tools/oracle-validation/results/completeness-status.md`
 **Architecture:** Extends `BaseRuleset`
 
@@ -84,6 +84,7 @@
 - **#509**: Truant EoT toggle, Orb damage breakdown, Pain Split event stream
 - **#522**: Sticky Barb contact transfer triggers Unburden volatile
 - **#523**: Re-export AbilityContext/ItemContext types from gen4 package
+- **#1863**: Restored honest Gen 4 ability-trigger surface routing. Synchronize now skips Toxic Spikes, self-inflicted statuses, and held-item statuses on the supported singles topology; control-plane ownership, lineage, waivers, and trigger-surface manifests now track the split `gen4.runtime.ability-trigger-surface` seam explicitly
 
 ### Original Audit Bug Status (24 issues filed 2026-03-21)
 All 24 issues are now **CLOSED** (#254–#278 + #261, #264, #276).
@@ -131,3 +132,4 @@ None. All bugs closed as of 2026-03-22.
 | #522 | fix/gen4 | Sticky Barb contact transfer triggers Unburden volatile |
 | #523 | fix/gen4 | Re-export AbilityContext/ItemContext types; resolve #61, #121, #454, #488 |
 | #785 | fix/gen5-8-bughunt-status | Bughunt wave 2: Mold Breaker bypasses Simple/Unaware in stat stage calc (closes #704) |
+| #1863 | feat/ability-trigger-surface-audit | Restore Gen 4 ability-trigger surface routing honesty: Synchronize hazard/self-status/item-status skips, engine status-source tagging, and explicit control-plane ownership for `gen4.runtime.ability-trigger-surface` |

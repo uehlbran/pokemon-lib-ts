@@ -21,6 +21,7 @@ Battle correctness claims now rely on explicit seam tests, especially:
 - Event emitter system (`on`/`off`/`getEventLog`/`emit`)
 - Factory `fromGeneration()` via GenerationRegistry
 - Preflight validation now rejects invalid species, moves, held items, abilities, and malformed singles setups before battle state initialization
+- Status-source tagging now distinguishes self-inflicted and held-item primary statuses on the engine seam so downstream ability routing can reject fake mirror paths instead of guessing at status provenance
 
 ### End-of-Turn Pipeline Helper (`packages/battle/src/engine/BattleEndOfTurnPipeline.ts` — 646 lines)
 - Extracted residual-effect dispatch order from `BattleEngine`
@@ -156,3 +157,4 @@ This page no longer claims "no missing issues" for singles correctness. New seam
 | #1067 | chore/core-battle-confidence-phase1 | BattleEngine deserialize now rejects lossy non-checkpoint restores, re-links active Pokemon back to saved team instances, and rejects contradictory active/team checkpoint state |
 | #1068 | chore/core-battle-confidence-phase2 | Battle helper fixture surfaces now pin malformed `createOnFieldPokemon()` / `createBattleSide()` / `createBattleState()` inputs with direct invariant tests while preserving supported active-only and Tera fallback fixture shapes |
 | #1797 | feat/trigger-surface-routing | Shared held-item stat-change / reactive-switch seams for Adrenaline Orb, Eject Pack, Mirror Herb, Clear Amulet, Red Card, and Eject Button, plus early-return flushing for deferred item reactions |
+| #1863 | feat/ability-trigger-surface-audit | Gen 4 ability-trigger surface ownership/control-plane audit, engine status-source tagging for self-status vs held-item status, and Synchronize routing guards that keep unsupported mirror paths off the proof surface |
