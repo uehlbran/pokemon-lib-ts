@@ -5,7 +5,7 @@
       "cluster": "workflow-integrity",
       "operations": ["changed-mechanics-report", "versioned-artifact-write"],
       "supportedTopologies": ["singles"],
-      "engineOwner": "oracle:tooling:runner"
+      "engineOwners": ["oracle:tooling:runner", "workflow:tooling:compliance"]
     },
     {
       "cluster": "protocol-completeness",
@@ -41,26 +41,51 @@
         "splitTargetMultiHit",
         "scalingMultiHit"
       ],
-      "supportedTopologies": ["singles", "bench", "serialization"],
-      "engineOwner": "battle:contract:move-effect-result"
+      "supportedTopologies": ["singles", "bench", "serialization", "switch-legality"],
+      "engineOwners": [
+        "core:leaf-mechanic:entities-and-constants",
+        "battle:contract:damage-context",
+        "battle:contract:hit-check-contexts",
+        "battle:contract:move-effect-context",
+        "battle:contract:move-effect-result",
+        "battle:contract:ability-context-result",
+        "battle:contract:item-context-result",
+        "battle:contract:field-effect-results"
+      ]
     },
     {
       "cluster": "switch-legality",
       "operations": ["switchLegalityCheck", "reactiveSwitch", "forcedSwitchBlock"],
       "supportedTopologies": ["singles", "switch-legality"],
-      "engineOwner": "battle:shared-seam:engine"
+      "engineOwners": ["battle:shared-seam:engine"]
     },
     {
       "cluster": "effective-speed-order",
       "operations": ["effectiveSpeed", "turnOrder", "preMoveOrdering"],
       "supportedTopologies": ["singles"],
-      "engineOwner": "battle:shared-seam:engine"
+      "engineOwners": ["battle:shared-seam:engine"]
     },
     {
       "cluster": "move-effect-ownership",
       "operations": ["moveEffectDispatch", "itemTriggerDispatch", "abilityTriggerDispatch"],
       "supportedTopologies": ["singles"],
-      "engineOwner": "gen8:leaf-mechanic:ruleset-and-handlers"
+      "engineOwners": [
+        "gen1:leaf-mechanic:ruleset-and-handlers",
+        "gen2:leaf-mechanic:ruleset-and-handlers",
+        "gen3:leaf-mechanic:ruleset-and-handlers",
+        "gen4:leaf-mechanic:ruleset-and-handlers",
+        "gen5:leaf-mechanic:ruleset-and-handlers",
+        "gen6:leaf-mechanic:ruleset-and-handlers",
+        "gen7:leaf-mechanic:ruleset-and-handlers",
+        "gen8:leaf-mechanic:ruleset-and-handlers",
+        "gen9:leaf-mechanic:ruleset-and-handlers"
+      ]
+    },
+    {
+      "cluster": "support-utils",
+      "operations": ["battleUtilityDispatch"],
+      "supportedTopologies": ["singles"],
+      "engineOwners": ["battle:shared-seam:utils"]
     }
   ]
 }

@@ -172,7 +172,7 @@ const protocolCapabilityMatrixSchema = z.strictObject({
       cluster: z.string().min(1),
       operations: z.array(z.string().min(1)).min(1),
       supportedTopologies: z.array(z.string().min(1)).min(1),
-      engineOwner: z.string().min(1),
+      engineOwners: z.array(z.string().min(1)).min(1),
     }),
   ),
 });
