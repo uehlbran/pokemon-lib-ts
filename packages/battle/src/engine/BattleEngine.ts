@@ -201,6 +201,14 @@ export class BattleEngine implements BattleEventEmitter {
     readonly expectedHeldItemId: string | null;
   }[] = [];
 
+  private hasPendingSwitchResolution(): boolean {
+    return (
+      this.sidesNeedingSwitch.size > 0 ||
+      this.pendingSelfSwitches.size > 0 ||
+      this.pendingSwitches.size > 0
+    );
+  }
+
   private static assertRulesetGenerationMatches(
     source: "BattleEngine" | "BattleEngine.deserialize",
     battleGeneration: number,
@@ -6043,9 +6051,7 @@ export class BattleEngine implements BattleEventEmitter {
               active === pokemon &&
               pokemon.pokemon.currentHp > 0 &&
               hasAliveBench &&
-              !this.sidesNeedingSwitch.has(side) &&
-              !this.pendingSelfSwitches.has(side) &&
-              !this.pendingSwitches.has(side);
+              !this.hasPendingSwitchResolution();
             if (canSelfSwitch) {
               this.sidesNeedingSwitch.add(side);
               this.pendingSelfSwitches.set(side, { batonPass: false });
@@ -6076,7 +6082,7 @@ export class BattleEngine implements BattleEventEmitter {
       });
     }
 
-    for (const msg of result.messages) {
+    for (const msg of blockedConsume ? [] : result.messages) {
       this.emit({ type: BATTLE_EVENT_TYPES.message, text: msg });
     }
   }

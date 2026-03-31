@@ -140,6 +140,62 @@ class StatChangeForceSwitchRuleset extends MockRuleset {
   }
 }
 
+class CompetingSwitchItemRuleset extends MockRuleset {
+  override hasHeldItems(): boolean {
+    return true;
+  }
+
+  override applyHeldItem(trigger: string, context: ItemContext) {
+    if (
+      trigger === CORE_ITEM_TRIGGER_IDS.onDamageTaken &&
+      context.pokemon.pokemon.uid === "blastoise-1"
+    ) {
+      return {
+        activated: true,
+        effects: [
+          {
+            type: BATTLE_ITEM_EFFECT_TYPES.none,
+            target: BATTLE_EFFECT_TARGETS.self,
+            value: BATTLE_ITEM_EFFECT_VALUES.forceSwitch,
+          },
+          {
+            type: BATTLE_ITEM_EFFECT_TYPES.consume,
+            target: BATTLE_EFFECT_TARGETS.self,
+            value: CORE_ITEM_IDS.ejectButton,
+          },
+        ],
+        messages: ["Blastoise's Eject Button activated!"],
+      };
+    }
+
+    if (
+      trigger === CORE_ITEM_TRIGGER_IDS.onStatChange &&
+      context.statChange?.phase === "after" &&
+      context.pokemon.pokemon.uid === "charizard-1" &&
+      context.statChange.applied.some((change) => change.stages < 0)
+    ) {
+      return {
+        activated: true,
+        effects: [
+          {
+            type: BATTLE_ITEM_EFFECT_TYPES.none,
+            target: BATTLE_EFFECT_TARGETS.self,
+            value: BATTLE_ITEM_EFFECT_VALUES.forceSwitch,
+          },
+          {
+            type: BATTLE_ITEM_EFFECT_TYPES.consume,
+            target: BATTLE_EFFECT_TARGETS.self,
+            value: CORE_ITEM_IDS.leftovers,
+          },
+        ],
+        messages: ["Charizard's Eject Pack activated!"],
+      };
+    }
+
+    return { activated: false, effects: [], messages: [] };
+  }
+}
+
 function createHeldItemStatBoostEngine(ruleset: HeldItemStatBoostRuleset) {
   const config: BattleConfig = {
     generation: 9,
@@ -177,6 +233,7 @@ function createStatChangeEngine(
   side0HeldItem: string | null,
   side1HeldItem: string | null,
   includeBenchOnSide0 = false,
+  includeBenchOnSide1 = false,
 ) {
   const side0Team = [
     createTestPokemon(GEN9_SPECIES_IDS.charizard, 50, {
@@ -214,6 +271,17 @@ function createStatChangeEngine(
           calculatedStats: createStats(200, 80),
           currentHp: 200,
         }),
+        ...(includeBenchOnSide1
+          ? [
+              createTestPokemon(GEN9_SPECIES_IDS.pikachu, 50, {
+                uid: "pikachu-2",
+                nickname: "Pikachu",
+                moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
+                calculatedStats: createStats(120, 90),
+                currentHp: 120,
+              }),
+            ]
+          : []),
       ],
     ],
     seed: 42,
@@ -289,5 +357,37 @@ describe("BattleEngine held-item stat boosts", () => {
 
     expect(engine.getPhase()).toBe("action-select");
     expect(engine.state.sides[0].active[0]?.pokemon.uid).toBe("pikachu-1");
+  });
+
+  it("given another switch effect is already pending from the move, when a post-apply stat-change force-switch item would activate, then the item stays unused and emits no message", () => {
+    const ruleset = new CompetingSwitchItemRuleset();
+    ruleset.setMoveEffectResult({
+      statChanges: [
+        { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.defense, stages: -1 },
+      ],
+    });
+    const engine = createStatChangeEngine(
+      ruleset,
+      CORE_ITEM_IDS.leftovers,
+      CORE_ITEM_IDS.ejectButton,
+      true,
+      true,
+    );
+    const events: BattleEvent[] = [];
+    engine.on((event) => events.push(event));
+    engine.start();
+
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    expect(engine.getPhase()).toBe("switch-prompt");
+    expect(engine.state.sides[0].active[0]?.pokemon.uid).toBe("charizard-1");
+    expect(engine.state.sides[0].active[0]?.pokemon.heldItem).toBe(CORE_ITEM_IDS.leftovers);
+    expect(engine.state.sides[1].active[0]?.pokemon.heldItem).toBeNull();
+    expect(
+      events.some(
+        (event) => event.type === "message" && event.text === "Charizard's Eject Pack activated!",
+      ),
+    ).toBe(false);
   });
 });
