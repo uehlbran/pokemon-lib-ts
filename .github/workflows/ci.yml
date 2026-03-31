@@ -134,4 +134,4 @@ jobs:
       - run: npm run typecheck:contracts
       - run: npm run validate:pret
       - run: npm run oracle:fast
-      - run: npm run proof:enforce -- --mode ci-preview --executed-suite changeset-check --executed-suite control-plane --executed-suite lint --executed-suite oracle-fast --executed-suite package-boundaries --executed-suite pret-validate --executed-suite test --executed-suite typecheck:contracts
+      - run: npm run proof:enforce -- --mode ci-preview --executed-suite changeset-check --executed-suite control-plane --executed-suite lint --executed-suite mutation-audit --executed-suite oracle-fast --executed-suite package-boundaries --executed-suite pret-validate --executed-suite test --executed-suite typecheck:contracts
