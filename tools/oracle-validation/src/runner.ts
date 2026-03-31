@@ -10,6 +10,7 @@ import { runGroundTruthSuite } from "./compare-ground-truth.js";
 import { runMechanicsSuite } from "./compare-mechanics.js";
 import { runStatsSuite } from "./compare-stats.js";
 import { runTerrainSuite } from "./compare-terrain.js";
+import { loadControlPlane } from "./control-plane.js";
 import { runDamageTraceSuite } from "./damage-trace.js";
 import { loadDisagreementRegistrySummary } from "./disagreement-registry.js";
 import { discoverImplementedGenerations, type ImplementedGeneration } from "./gen-discovery.js";
@@ -191,7 +192,42 @@ async function main(): Promise<void> {
     process.env.GITHUB_SHA ??
     process.env.VERCEL_GIT_COMMIT_SHA ??
     execFileSync("git", ["rev-parse", "HEAD"], { cwd: repoRoot, encoding: "utf8" }).trim();
-  const { summary, checks } = buildProofSummary(gitSha, suites, generationResults);
+  const controlPlane = loadControlPlane(repoRoot);
+  const runtimeMechanicMetadataEntries: Array<
+    readonly [
+      number,
+      {
+        readonly mechanicIds: readonly string[];
+        readonly authorityKeys: readonly string[];
+        readonly clusters: readonly string[];
+        readonly topologies: readonly string[];
+      },
+    ]
+  > = [];
+  for (const mechanic of controlPlane.mechanicCatalog.mechanics) {
+    const match = /^gen(\d+)\.runtime\.ruleset$/.exec(mechanic.mechanicId);
+    if (!match) {
+      continue;
+    }
+
+    const gen = Number.parseInt(match[1] ?? "", 10);
+    runtimeMechanicMetadataEntries.push([
+      gen,
+      {
+        mechanicIds: [mechanic.mechanicId],
+        authorityKeys: [mechanic.authorityKey],
+        clusters: [mechanic.cluster],
+        topologies: mechanic.topologies,
+      },
+    ]);
+  }
+  const runtimeMechanicMetadataByGeneration = new Map(runtimeMechanicMetadataEntries);
+  const { summary, checks } = buildProofSummary(
+    gitSha,
+    suites,
+    generationResults,
+    runtimeMechanicMetadataByGeneration,
+  );
   const resultsDir = writeProofArtifacts(repoRoot, gitSha, summary, checks);
   console.log(formatRunnerOutput(summary));
   console.log(`Artifacts written to ${resultsDir}`);

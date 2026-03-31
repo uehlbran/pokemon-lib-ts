@@ -21,6 +21,25 @@ export interface LegacyGenerationRun {
   readonly staleDisagreements: string[];
 }
 
+interface ProofCheckMetadata {
+  readonly mechanicIds: readonly string[];
+  readonly authorityKeys: readonly string[];
+  readonly clusters: readonly string[];
+  readonly topologies: readonly string[];
+}
+
+const RUNTIME_EVIDENCE_SUITES = new Set([
+  "groundTruth",
+  "damage",
+  "mechanics",
+  "terrain",
+  "gimmicks",
+  "edgeCases",
+  "replay",
+  "damageTrace",
+  "smoke",
+]);
+
 function createEmptyCounts() {
   return {
     executed: 0,
@@ -43,11 +62,38 @@ function classifyCheckStatus(check: OracleCheck): "pass" | "fail" {
   return isDeepStrictEqual(check.ourValue, check.oracleValue) ? "pass" : "fail";
 }
 
+function emptyProofCheckMetadata(): ProofCheckMetadata {
+  return {
+    mechanicIds: [],
+    authorityKeys: [],
+    clusters: [],
+    topologies: [],
+  };
+}
+
+function resolveProofCheckMetadata(
+  generation: LegacyGenerationRun,
+  suiteName: string,
+  runtimeMechanicMetadataByGeneration: ReadonlyMap<number, ProofCheckMetadata>,
+): ProofCheckMetadata {
+  if (!RUNTIME_EVIDENCE_SUITES.has(suiteName)) {
+    return emptyProofCheckMetadata();
+  }
+
+  return runtimeMechanicMetadataByGeneration.get(generation.gen) ?? emptyProofCheckMetadata();
+}
+
 function createProofChecks(
   generation: LegacyGenerationRun,
   suiteName: string,
   suiteResult: SuiteResult,
+  runtimeMechanicMetadataByGeneration: ReadonlyMap<number, ProofCheckMetadata>,
 ): ProofCheck[] {
+  const metadata = resolveProofCheckMetadata(
+    generation,
+    suiteName,
+    runtimeMechanicMetadataByGeneration,
+  );
   const checks: ProofCheck[] = suiteResult.oracleChecks.map((check) => {
     const status = classifyCheckStatus(check);
     const matchedKnownDisagreement = suiteResult.matchedKnownDisagreements.includes(check.id);
@@ -58,6 +104,10 @@ function createProofChecks(
       status: matchedKnownDisagreement && status === "fail" ? "advisory" : status,
       enforcement: matchedKnownDisagreement ? "advisory" : "required",
       description: check.description,
+      mechanicIds: [...metadata.mechanicIds],
+      authorityKeys: [...metadata.authorityKeys],
+      clusters: [...metadata.clusters],
+      topologies: [...metadata.topologies],
       sourceRole: "authoritative",
       rawOurValue: check.ourValue,
       rawOracleValue: check.oracleValue,
@@ -77,6 +127,10 @@ function createProofChecks(
         status: "fail",
         enforcement: "required",
         description: failure,
+        mechanicIds: [...metadata.mechanicIds],
+        authorityKeys: [...metadata.authorityKeys],
+        clusters: [...metadata.clusters],
+        topologies: [...metadata.topologies],
         sourceRole: "authoritative",
         normalizationIds: [],
       });
@@ -157,12 +211,20 @@ export function summarizeSuite(
   };
 }
 
-function summarizeGeneration(generation: LegacyGenerationRun): {
+function summarizeGeneration(
+  generation: LegacyGenerationRun,
+  runtimeMechanicMetadataByGeneration: ReadonlyMap<number, ProofCheckMetadata>,
+): {
   summary: ProofSummary["generations"][number];
   checks: ProofCheck[];
 } {
   const suiteEntries = Object.entries(generation.suites).map(([suiteName, suiteResult]) => {
-    const checks = createProofChecks(generation, suiteName, suiteResult);
+    const checks = createProofChecks(
+      generation,
+      suiteName,
+      suiteResult,
+      runtimeMechanicMetadataByGeneration,
+    );
     return {
       suiteName,
       checks,
@@ -219,13 +281,16 @@ export function buildProofSummary(
   gitSha: string,
   suitesRequested: readonly string[],
   generations: readonly LegacyGenerationRun[],
+  runtimeMechanicMetadataByGeneration: ReadonlyMap<number, ProofCheckMetadata> = new Map(),
 ): {
   summary: ProofSummary;
   checks: ProofCheck[];
 } {
   const runMode = inferRunMode(suitesRequested);
   runModeSchema.parse(runMode);
-  const summarized = generations.map((generation) => summarizeGeneration(generation));
+  const summarized = generations.map((generation) =>
+    summarizeGeneration(generation, runtimeMechanicMetadataByGeneration),
+  );
   const generationSummaries = summarized.map((entry) => entry.summary);
   const summary = proofSummarySchema.parse({
     schemaVersion: "proof-summary.v1",
