@@ -18,7 +18,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as url from "node:url";
-import { GEN_NUMBERS } from "@pokemon-lib-ts/core";
+import { GEN_NUMBERS } from "../../../../packages/core/src/constants/reference-ids";
 import { getOverridesForGen } from "./index";
 import type { MoveOverride, PokemonOverride } from "./types";
 

@@ -9,3 +9,4 @@ export {
   getPokemonName,
 } from "./BattleHelpers";
 export { getEffectiveStatStage } from "./statStageHelpers";
+export { resolveStatChangeTarget } from "./target-resolution";

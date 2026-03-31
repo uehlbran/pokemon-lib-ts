@@ -27,7 +27,7 @@ import type {
   ValidationResult,
   WeatherEffectResult,
 } from "@pokemon-lib-ts/battle";
-import { BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
+import { BATTLE_EFFECT_TARGETS, resolveStatChangeTarget } from "@pokemon-lib-ts/battle";
 import type {
   AbilityTrigger,
   BattleStat,
@@ -201,6 +201,12 @@ export class Gen1Ruleset implements GenerationRuleset {
 
     // Status moves don't crit
     if (move.category === CORE_MOVE_CATEGORIES.status) return false;
+
+    // Defense-in-depth: fixed-damage moves (power: null) cannot crit.
+    // The engine already gates rollCritical behind power !== null at BattleEngine.ts,
+    // but this guard prevents misuse if rollCritical is ever called directly.
+    // Note: Counter/Bide are the primary cases — they have power: null in our data.
+    if (move.power === null || move.power === 0) return false;
 
     const attackerSpecies = this.dataManager.getSpecies(attacker.pokemon.speciesId);
     return rollGen1Critical(attacker, move, attackerSpecies, rng);
@@ -626,10 +632,7 @@ export class Gen1Ruleset implements GenerationRuleset {
         }
 
         for (const change of effect.changes) {
-          const resolvedTarget =
-            effect.target === BATTLE_EFFECT_TARGETS.self
-              ? BATTLE_EFFECT_TARGETS.attacker
-              : BATTLE_EFFECT_TARGETS.defender;
+          const resolvedTarget = resolveStatChangeTarget(effect.target);
 
           if (
             resolvedTarget === BATTLE_EFFECT_TARGETS.defender &&

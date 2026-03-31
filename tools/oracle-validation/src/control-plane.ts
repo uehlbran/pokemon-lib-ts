@@ -1,0 +1,244 @@
+import { readFileSync } from "node:fs";
+import { join, relative, resolve } from "node:path";
+import { z } from "zod";
+
+export const fileClassSchema = z.enum(["runtime-owning", "evidence-only"]);
+export const ownerKindSchema = z.enum(["leaf-mechanic", "shared-seam", "contract", "tooling"]);
+
+const fileClassRuleSchema = z.strictObject({
+  fileClass: fileClassSchema,
+  patterns: z.array(z.string().min(1)).min(1),
+});
+
+const ownershipRuleSchema = z.strictObject({
+  ownershipKey: z.string().min(1),
+  ownerKind: ownerKindSchema,
+  patterns: z.array(z.string().min(1)).min(1),
+  mechanicIds: z.array(z.string().min(1)).default([]),
+  authorityKeys: z.array(z.string().min(1)).default([]),
+  propagatesTo: z.array(z.string().min(1)).default([]),
+});
+
+const ownershipMapSchema = z.strictObject({
+  version: z.literal(1),
+  fileClassRules: z.array(fileClassRuleSchema).min(1),
+  ownershipRules: z.array(ownershipRuleSchema).min(1),
+});
+
+const mechanicCatalogSchema = z.strictObject({
+  version: z.literal(1),
+  mechanics: z.array(
+    z.strictObject({
+      mechanicId: z.string().min(1),
+      cluster: z.string().min(1),
+      topologies: z.array(z.string().min(1)).min(1),
+      orderingSensitive: z.boolean(),
+      persistent: z.boolean(),
+      proofStatus: z.enum(["legacy-unproven", "legacy-partial", "proved"]),
+      authorityKey: z.string().min(1),
+      requiredSuites: z.array(z.string().min(1)).min(1),
+      obligationSeed: z.string().min(1),
+    }),
+  ),
+});
+
+const authorityManifestSchema = z.strictObject({
+  version: z.literal(1),
+  authorities: z.array(
+    z.strictObject({
+      authorityKey: z.string().min(1),
+      sourceRepo: z.string().min(1),
+      referenceCommit: z.string().min(1),
+      sourcePath: z.string().min(1),
+      symbolOrRoutine: z.string().min(1),
+      sourceRole: z.enum(["authoritative", "fallback", "differential"]),
+    }),
+  ),
+});
+
+const obligationCatalogSchema = z.strictObject({
+  version: z.literal(1),
+  clusters: z.array(
+    z.strictObject({
+      cluster: z.string().min(1),
+      requiredProofs: z.array(z.enum(["source", "semantic", "runtime", "behavior"])).min(1),
+      requiredSuites: z.array(z.string().min(1)).min(1),
+    }),
+  ),
+});
+
+const waiverSchema = z.strictObject({
+  version: z.literal(1),
+  waivers: z.array(z.unknown()),
+});
+
+const divergenceRegistrySchema = z.strictObject({
+  version: z.literal(1),
+  divergences: z.array(z.unknown()),
+});
+
+const normalizationRegistrySchema = z.strictObject({
+  version: z.literal(1),
+  normalizations: z.array(z.unknown()),
+});
+
+const lineageContractsSchema = z.strictObject({
+  version: z.literal(1),
+  contracts: z.array(z.unknown()),
+});
+
+const proofSchemaRegistrySchema = z.strictObject({
+  version: z.literal(1),
+  checkIdPattern: z.string().min(1),
+  checkStatuses: z.array(z.string().min(1)).min(1),
+  suiteStatuses: z.array(z.string().min(1)).min(1),
+  runModes: z.array(z.string().min(1)).min(1),
+  conclusions: z.array(z.string().min(1)).min(1),
+});
+
+const protocolCapabilityMatrixSchema = z.strictObject({
+  version: z.literal(1),
+  clusters: z.array(
+    z.strictObject({
+      cluster: z.string().min(1),
+      operations: z.array(z.string().min(1)).min(1),
+      supportedTopologies: z.array(z.string().min(1)).min(1),
+      engineOwner: z.string().min(1),
+    }),
+  ),
+});
+
+export type FileClass = z.infer<typeof fileClassSchema>;
+export type OwnerKind = z.infer<typeof ownerKindSchema>;
+export type OwnershipRule = z.infer<typeof ownershipRuleSchema>;
+export type OwnershipMap = z.infer<typeof ownershipMapSchema>;
+export type MechanicCatalog = z.infer<typeof mechanicCatalogSchema>;
+export type AuthorityManifest = z.infer<typeof authorityManifestSchema>;
+export type ObligationCatalog = z.infer<typeof obligationCatalogSchema>;
+export type ProofSchemaRegistry = z.infer<typeof proofSchemaRegistrySchema>;
+
+export interface ControlPlane {
+  readonly repoRoot: string;
+  readonly ownershipMap: OwnershipMap;
+  readonly mechanicCatalog: MechanicCatalog;
+  readonly authorityManifest: AuthorityManifest;
+  readonly obligationCatalog: ObligationCatalog;
+  readonly bootstrapWaivers: z.infer<typeof waiverSchema>;
+  readonly divergenceRegistry: z.infer<typeof divergenceRegistrySchema>;
+  readonly normalizationRegistry: z.infer<typeof normalizationRegistrySchema>;
+  readonly lineageContracts: z.infer<typeof lineageContractsSchema>;
+  readonly proofSchema: ProofSchemaRegistry;
+  readonly protocolCapabilityMatrix: z.infer<typeof protocolCapabilityMatrixSchema>;
+}
+
+export interface FileClassification {
+  readonly filePath: string;
+  readonly fileClass: FileClass | null;
+  readonly ownershipKeys: readonly string[];
+  readonly ruleMatches: readonly OwnershipRule[];
+}
+
+function readJsonFile<T>(path: string, schema: z.ZodType<T>): T {
+  const raw = JSON.parse(readFileSync(path, "utf8"));
+  return schema.parse(raw);
+}
+
+function globToRegExp(pattern: string): RegExp {
+  const escaped = pattern
+    .replace(/[|\\{}()[\]^$+?.]/g, "\\$&")
+    .replace(/\*\*/g, "___DOUBLE_WILDCARD___")
+    .replace(/\*/g, "[^/]*")
+    .replace(/___DOUBLE_WILDCARD___/g, ".*");
+  return new RegExp(`^${escaped}$`);
+}
+
+function normalizePath(filePath: string): string {
+  return filePath.replaceAll("\\", "/").replace(/^\.\//, "");
+}
+
+export function loadControlPlane(repoRoot: string): ControlPlane {
+  const baseDir = join(repoRoot, "tools", "oracle-validation", "control-plane");
+  return {
+    repoRoot,
+    ownershipMap: readJsonFile(join(baseDir, "ownership-map.v1.json"), ownershipMapSchema),
+    mechanicCatalog: readJsonFile(join(baseDir, "mechanic-catalog.v1.json"), mechanicCatalogSchema),
+    authorityManifest: readJsonFile(
+      join(baseDir, "authority-manifest.v1.json"),
+      authorityManifestSchema,
+    ),
+    obligationCatalog: readJsonFile(
+      join(baseDir, "obligation-catalog.v1.json"),
+      obligationCatalogSchema,
+    ),
+    bootstrapWaivers: readJsonFile(join(baseDir, "bootstrap-waivers.v1.json"), waiverSchema),
+    divergenceRegistry: readJsonFile(
+      join(baseDir, "divergence-registry.v1.json"),
+      divergenceRegistrySchema,
+    ),
+    normalizationRegistry: readJsonFile(
+      join(baseDir, "normalization-registry.v1.json"),
+      normalizationRegistrySchema,
+    ),
+    lineageContracts: readJsonFile(
+      join(baseDir, "lineage-contracts.v1.json"),
+      lineageContractsSchema,
+    ),
+    proofSchema: readJsonFile(join(baseDir, "proof-schema.v1.json"), proofSchemaRegistrySchema),
+    protocolCapabilityMatrix: readJsonFile(
+      join(baseDir, "protocol-capability-matrix.v1.json"),
+      protocolCapabilityMatrixSchema,
+    ),
+  };
+}
+
+export function classifyRepoFile(controlPlane: ControlPlane, filePath: string): FileClassification {
+  const normalizedPath = normalizePath(filePath);
+
+  const fileClass =
+    controlPlane.ownershipMap.fileClassRules.find((rule) =>
+      rule.patterns.some((pattern) => globToRegExp(pattern).test(normalizedPath)),
+    )?.fileClass ?? null;
+
+  const ruleMatches = controlPlane.ownershipMap.ownershipRules.filter((rule) =>
+    rule.patterns.some((pattern) => globToRegExp(pattern).test(normalizedPath)),
+  );
+
+  return {
+    filePath: normalizedPath,
+    fileClass,
+    ownershipKeys: [...new Set(ruleMatches.map((rule) => rule.ownershipKey))].sort(),
+    ruleMatches,
+  };
+}
+
+export function expandOwnershipKeys(
+  controlPlane: ControlPlane,
+  directOwnershipKeys: readonly string[],
+): string[] {
+  const byKey = new Map(
+    controlPlane.ownershipMap.ownershipRules.map((rule) => [rule.ownershipKey, rule] as const),
+  );
+  const queue = [...new Set(directOwnershipKeys)];
+  const expanded = new Set(queue);
+
+  while (queue.length > 0) {
+    const key = queue.shift();
+    if (!key) continue;
+    const rule = byKey.get(key);
+    if (!rule) continue;
+    for (const propagated of rule.propagatesTo) {
+      if (expanded.has(propagated)) continue;
+      expanded.add(propagated);
+      queue.push(propagated);
+    }
+  }
+
+  return [...expanded].sort();
+}
+
+export function resolveRepoRelativePath(repoRoot: string, absoluteOrRelativePath: string): string {
+  const absolute = absoluteOrRelativePath.startsWith("/")
+    ? absoluteOrRelativePath
+    : resolve(repoRoot, absoluteOrRelativePath);
+  return normalizePath(relative(repoRoot, absolute));
+}

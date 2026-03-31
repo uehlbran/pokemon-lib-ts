@@ -72,22 +72,22 @@ describe("Gen8MaxMoves", () => {
       expect(result).toBe(130);
     });
 
-    it("given Fire type move with BP 90, when converting to Max Move, then returns 125", () => {
-      // Source: Showdown data/moves.ts -- standard table: 85-90 -> 125
+    it("given Fire type move with BP 90, when converting to Max Move, then returns 130", () => {
+      // Source: Showdown sim/dex-moves.ts:517-549 -- ERRATA #20: standard table 75-109 -> 130
       const result = getMaxMovePower(90, CORE_TYPE_IDS.fire);
-      expect(result).toBe(125);
+      expect(result).toBe(130);
     });
 
-    it("given Fighting type move with BP 100, when converting to Max Move, then returns 100", () => {
-      // Source: Showdown data/moves.ts -- Poison/Fighting table: 95-100 -> 100
+    it("given Fighting type move with BP 100, when converting to Max Move, then returns 90", () => {
+      // Source: Showdown sim/dex-moves.ts:517-549 -- ERRATA #20: Poison/Fighting table 75-109 -> 90
       const result = getMaxMovePower(100, CORE_TYPE_IDS.fighting);
-      expect(result).toBe(100);
+      expect(result).toBe(90);
     });
 
-    it("given Poison type move with BP 100, when converting to Max Move, then returns 100", () => {
-      // Source: Showdown data/moves.ts -- Poison/Fighting table: 95-100 -> 100
+    it("given Poison type move with BP 100, when converting to Max Move, then returns 90", () => {
+      // Source: Showdown sim/dex-moves.ts:517-549 -- ERRATA #20: Poison/Fighting table 75-109 -> 90
       const result = getMaxMovePower(100, CORE_TYPE_IDS.poison);
-      expect(result).toBe(100);
+      expect(result).toBe(90);
     });
 
     it("given status move (BP 0), when converting to Max Move, then returns 0", () => {
@@ -114,10 +114,10 @@ describe("Gen8MaxMoves", () => {
       expect(result).toBe(150);
     });
 
-    it("given very high BP (200) Fighting type, when converting, then caps at 130", () => {
-      // Source: Showdown data/moves.ts -- Poison/Fighting table caps at 130
+    it("given very high BP (200) Fighting type, when converting, then caps at 100", () => {
+      // Source: Showdown sim/dex-moves.ts:517-549 -- ERRATA #20: Poison/Fighting table >=150 -> 100
       const result = getMaxMovePower(200, CORE_TYPE_IDS.fighting);
-      expect(result).toBe(130);
+      expect(result).toBe(100);
     });
 
     it("given BP 60 Water type, when converting, then returns 110", () => {

@@ -36,10 +36,23 @@ type LocalMoveEffect =
   | { readonly type: string }
   | null;
 
+interface LocalMoveFlags {
+  readonly contact?: boolean;
+  readonly sound?: boolean;
+  readonly punch?: boolean;
+  readonly bite?: boolean;
+  readonly bullet?: boolean;
+  readonly powder?: boolean;
+}
+
 interface LocalMove {
   readonly id: string;
   readonly priority: number;
   readonly power: number | null;
+  readonly accuracy: number | null;
+  readonly pp: number;
+  readonly category: string;
+  readonly flags?: LocalMoveFlags;
   readonly effect: LocalMoveEffect;
 }
 
@@ -89,6 +102,13 @@ function normalizeSpeciesId(name: string): string {
  *    Source: spec 1.7l
  * 5. Drain fractions — compares our effect.amount against @pkmn/data drain fraction.
  *    Source: spec 1.7l
+ * 6. Move categories — compares our category (physical/special/status) against @pkmn/data.
+ *    Source: Showdown data/moves.ts category; Gen 1-2 type-based via @pkmn/data.
+ * 7. Move accuracy — compares our accuracy (number | null) against @pkmn/data.
+ *    Our null = always-hits = oracle's true.
+ * 8. Base PP — compares our pp against @pkmn/data base PP.
+ * 9. Key move flags — compares contact/sound/punch/bite/bullet/powder against @pkmn/data.
+ *    These flags drive ability triggers (Iron Fist, Strong Jaw, Bulletproof, etc.).
  *
  * Source authority:
  *   Gen 1-2: pret/pokered, pret/pokecrystal
@@ -336,6 +356,138 @@ export function runMechanicsSuite(
 
   notes.push(
     `Gen ${generation.gen}: checked ${drainChecked} drain move${drainChecked === 1 ? "" : "s"} (spec 1.7l)`,
+  );
+
+  // ── 6. Move Category ───────────────────────────────────────────────────────
+  // Validates our move category (physical/special/status) against @pkmn/data.
+  // Gen 1-2: type-based physical/special split is correctly represented by @pkmn/data.
+  // Source: Showdown data/moves.ts category
+
+  let categoryChecked = 0;
+
+  for (const move of localMoves) {
+    if (!move.category)
+      throw new Error(
+        `compare-mechanics: move "${move.id}" has empty/falsy category — data is corrupt`,
+      );
+    const moveId = normalizeMoveId(move.id);
+    const oracleMove = oracle.moves.get(moveId);
+    if (!oracleMove?.exists) continue;
+
+    oracleChecks.push({
+      id: buildCheckId(generation, "move-category", moveId),
+      suite: MECHANICS_SUITE_NAME,
+      description: `Move ${move.id} category matches @pkmn/data`,
+      ourValue: move.category,
+      oracleValue: oracleMove.category.toLowerCase(),
+    });
+
+    categoryChecked += 1;
+  }
+
+  notes.push(`Gen ${generation.gen}: checked ${categoryChecked} move categories`);
+
+  // ── 7. Move Accuracy ───────────────────────────────────────────────────────
+  // Validates our accuracy values against @pkmn/data.
+  // Our null = always hits = oracle's boolean true.
+  // Source: Showdown data/moves.ts accuracy
+
+  let accuracyChecked = 0;
+
+  for (const move of localMoves) {
+    const moveId = normalizeMoveId(move.id);
+    const oracleMove = oracle.moves.get(moveId);
+    if (!oracleMove?.exists) continue;
+
+    // Normalize: our null (always-hits) maps to oracle's true
+    const ourAccuracy: number | true = move.accuracy === null ? true : move.accuracy;
+
+    oracleChecks.push({
+      id: buildCheckId(generation, "move-accuracy", moveId),
+      suite: MECHANICS_SUITE_NAME,
+      description: `Move ${move.id} accuracy matches @pkmn/data`,
+      ourValue: ourAccuracy,
+      oracleValue: oracleMove.accuracy,
+    });
+
+    accuracyChecked += 1;
+  }
+
+  notes.push(`Gen ${generation.gen}: checked ${accuracyChecked} move accuracy values`);
+
+  // ── 8. Base PP ─────────────────────────────────────────────────────────────
+  // Validates our base PP against @pkmn/data.
+  // Some moves changed PP between gens (e.g. Cut, Strength). @pkmn/data is per-gen.
+  // Source: Showdown data/moves.ts pp
+
+  let ppChecked = 0;
+
+  for (const move of localMoves) {
+    // pp=0 is falsy but valid; only null/undefined indicates corrupt data
+    if (move.pp == null)
+      throw new Error(
+        `compare-mechanics: move "${move.id}" has null/undefined pp — data is corrupt`,
+      );
+    const moveId = normalizeMoveId(move.id);
+    const oracleMove = oracle.moves.get(moveId);
+    if (!oracleMove?.exists) continue;
+
+    oracleChecks.push({
+      id: buildCheckId(generation, "move-pp", moveId),
+      suite: MECHANICS_SUITE_NAME,
+      description: `Move ${move.id} base PP matches @pkmn/data`,
+      ourValue: move.pp,
+      oracleValue: oracleMove.pp,
+    });
+
+    ppChecked += 1;
+  }
+
+  notes.push(`Gen ${generation.gen}: checked ${ppChecked} move base PP values`);
+
+  // ── 9. Key Move Flags ──────────────────────────────────────────────────────
+  // Validates mechanically important flags against @pkmn/data.
+  // These flags drive ability triggers: Iron Fist (punch), Strong Jaw (bite),
+  // Bulletproof (bullet), Overcoat/Safety Goggles (powder), Soundproof (sound),
+  // Rocky Helmet/Static/etc. (contact).
+  // Source: Showdown data/moves.ts flags
+
+  const CHECKED_FLAGS: ReadonlyArray<keyof LocalMoveFlags> = [
+    "contact",
+    "sound",
+    "punch",
+    "bite",
+    "bullet",
+    "powder",
+  ];
+
+  let flagMoveChecked = 0;
+
+  for (const move of localMoves) {
+    // flags is genuinely optional — moves with no flags object have no flags to check
+    if (!move.flags) continue;
+    const moveId = normalizeMoveId(move.id);
+    const oracleMove = oracle.moves.get(moveId);
+    if (!oracleMove?.exists) continue;
+
+    for (const flag of CHECKED_FLAGS) {
+      const ourValue = move.flags[flag] ?? false;
+      const oracleValue = Boolean(oracleMove.flags?.[flag]);
+
+      oracleChecks.push({
+        id: buildCheckId(generation, `flag-${flag}`, moveId),
+        suite: MECHANICS_SUITE_NAME,
+        description: `Move ${move.id} flag "${flag}" matches @pkmn/data`,
+        ourValue,
+        oracleValue,
+      });
+    }
+
+    flagMoveChecked += 1;
+  }
+
+  notes.push(
+    `Gen ${generation.gen}: checked ${CHECKED_FLAGS.length} flags on ${flagMoveChecked} moves`,
   );
 
   // ── Documentation: Status Effects (spec 1.7c) ─────────────────────────────

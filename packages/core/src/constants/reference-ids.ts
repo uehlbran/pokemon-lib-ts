@@ -235,12 +235,14 @@ export const CORE_MOVE_CATEGORIES = {
 export const CORE_MOVE_EFFECT_TARGETS = {
   self: "self",
   foe: "foe",
+  ally: "ally",
   all: "all",
   entireField: "entire-field",
 } as const;
 
 export const CORE_MOVE_TARGET_IDS = {
   adjacentFoe: "adjacent-foe",
+  adjacentAlly: "adjacent-ally",
   self: "self",
   all: "all",
   entireField: "entire-field",

@@ -42,6 +42,8 @@ console.log("==> PASSED: build");
 console.log("\n==> running lint, typecheck, tests, and boundaries in parallel...");
 
 await Promise.all([
+  runStep("proof preview", ["run", "proof:preview"]),
+  runStep("direct mutation audit", ["run", "proof:audit:mutation"]),
   runStep("workflow validator tests", ["run", "test:workflow"]),
   runStep("lint", ["run", "lint:check"]),
   runStep("tests (unit + integration)", ["run", "test"]),

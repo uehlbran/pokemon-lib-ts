@@ -1,0 +1,218 @@
+{
+  "version": 1,
+  "fileClassRules": [
+    {
+      "fileClass": "evidence-only",
+      "patterns": [
+        "packages/*/tests/**",
+        "tools/oracle-validation/tests/**",
+        "scripts/tests/**",
+        "specs/**",
+        "references/**",
+        "**/*.md"
+      ]
+    },
+    {
+      "fileClass": "runtime-owning",
+      "patterns": [
+        "packages/*/src/**",
+        "packages/*/data/**",
+        "tools/data-importer/**",
+        "tools/oracle-validation/src/**",
+        "scripts/**",
+        ".github/workflows/**"
+      ]
+    }
+  ],
+  "ownershipRules": [
+    {
+      "ownershipKey": "core:leaf-mechanic:entities-and-constants",
+      "ownerKind": "leaf-mechanic",
+      "patterns": ["packages/core/src/constants/**", "packages/core/src/entities/**"],
+      "mechanicIds": ["shared.contract.move-effect-result"],
+      "authorityKeys": ["shared.engine-contracts"],
+      "propagatesTo": ["battle:contract:move-effect-result"]
+    },
+    {
+      "ownershipKey": "battle:contract:damage-context",
+      "ownerKind": "contract",
+      "patterns": ["packages/battle/src/context/types.ts"],
+      "mechanicIds": ["shared.contract.damage-context"],
+      "authorityKeys": ["shared.engine-contracts"],
+      "propagatesTo": [
+        "gen5:leaf-mechanic:ruleset-and-handlers",
+        "gen6:leaf-mechanic:ruleset-and-handlers",
+        "gen7:leaf-mechanic:ruleset-and-handlers",
+        "gen8:leaf-mechanic:ruleset-and-handlers",
+        "gen9:leaf-mechanic:ruleset-and-handlers"
+      ]
+    },
+    {
+      "ownershipKey": "battle:contract:move-effect-result",
+      "ownerKind": "contract",
+      "patterns": ["packages/battle/src/context/types.ts"],
+      "mechanicIds": ["shared.contract.move-effect-result"],
+      "authorityKeys": ["shared.engine-contracts"],
+      "propagatesTo": [
+        "gen5:leaf-mechanic:ruleset-and-handlers",
+        "gen6:leaf-mechanic:ruleset-and-handlers",
+        "gen7:leaf-mechanic:ruleset-and-handlers",
+        "gen8:leaf-mechanic:ruleset-and-handlers",
+        "gen9:leaf-mechanic:ruleset-and-handlers"
+      ]
+    },
+    {
+      "ownershipKey": "battle:shared-seam:engine",
+      "ownerKind": "shared-seam",
+      "patterns": [
+        "packages/battle/src/engine/**",
+        "packages/battle/src/state/**",
+        "packages/battle/src/ruleset/**",
+        "packages/battle/src/index.ts"
+      ],
+      "mechanicIds": ["shared.engine.switch-legality", "shared.engine.turn-order"],
+      "authorityKeys": ["shared.engine-contracts"],
+      "propagatesTo": [
+        "gen5:leaf-mechanic:ruleset-and-handlers",
+        "gen6:leaf-mechanic:ruleset-and-handlers",
+        "gen7:leaf-mechanic:ruleset-and-handlers",
+        "gen8:leaf-mechanic:ruleset-and-handlers",
+        "gen9:leaf-mechanic:ruleset-and-handlers"
+      ]
+    },
+    {
+      "ownershipKey": "battle:shared-seam:utils",
+      "ownerKind": "shared-seam",
+      "patterns": ["packages/battle/src/utils/**"],
+      "mechanicIds": ["shared.engine.support-utils"],
+      "authorityKeys": ["shared.engine-contracts"],
+      "propagatesTo": ["battle:shared-seam:engine"]
+    },
+    {
+      "ownershipKey": "gen1:leaf-mechanic:ruleset-and-handlers",
+      "ownerKind": "leaf-mechanic",
+      "patterns": ["packages/gen1/src/**", "packages/gen1/data/**"],
+      "mechanicIds": ["gen1.runtime.ruleset"],
+      "authorityKeys": ["gen1.pret-runtime"],
+      "propagatesTo": ["oracle:tooling:runner"]
+    },
+    {
+      "ownershipKey": "gen2:leaf-mechanic:ruleset-and-handlers",
+      "ownerKind": "leaf-mechanic",
+      "patterns": ["packages/gen2/src/**", "packages/gen2/data/**"],
+      "mechanicIds": ["gen2.runtime.ruleset"],
+      "authorityKeys": ["gen2.pret-runtime"],
+      "propagatesTo": ["oracle:tooling:runner"]
+    },
+    {
+      "ownershipKey": "gen3:leaf-mechanic:ruleset-and-handlers",
+      "ownerKind": "leaf-mechanic",
+      "patterns": ["packages/gen3/src/**", "packages/gen3/data/**"],
+      "mechanicIds": ["gen3.runtime.ruleset"],
+      "authorityKeys": ["gen3.pret-runtime"],
+      "propagatesTo": ["oracle:tooling:runner"]
+    },
+    {
+      "ownershipKey": "gen4:leaf-mechanic:ruleset-and-handlers",
+      "ownerKind": "leaf-mechanic",
+      "patterns": ["packages/gen4/src/**", "packages/gen4/data/**"],
+      "mechanicIds": ["gen4.runtime.ruleset"],
+      "authorityKeys": ["gen4.mixed-runtime"],
+      "propagatesTo": ["oracle:tooling:runner"]
+    },
+    {
+      "ownershipKey": "gen5:leaf-mechanic:ruleset-and-handlers",
+      "ownerKind": "leaf-mechanic",
+      "patterns": ["packages/gen5/src/**", "packages/gen5/data/**"],
+      "mechanicIds": ["gen5.runtime.ruleset"],
+      "authorityKeys": ["gen5.showdown-runtime"],
+      "propagatesTo": ["oracle:tooling:runner"]
+    },
+    {
+      "ownershipKey": "gen6:leaf-mechanic:ruleset-and-handlers",
+      "ownerKind": "leaf-mechanic",
+      "patterns": ["packages/gen6/src/**", "packages/gen6/data/**"],
+      "mechanicIds": ["gen6.runtime.ruleset"],
+      "authorityKeys": ["gen6.showdown-runtime"],
+      "propagatesTo": ["oracle:tooling:runner"]
+    },
+    {
+      "ownershipKey": "gen7:leaf-mechanic:ruleset-and-handlers",
+      "ownerKind": "leaf-mechanic",
+      "patterns": ["packages/gen7/src/**", "packages/gen7/data/**"],
+      "mechanicIds": ["gen7.runtime.ruleset"],
+      "authorityKeys": ["gen7.showdown-runtime"],
+      "propagatesTo": ["oracle:tooling:runner"]
+    },
+    {
+      "ownershipKey": "gen8:leaf-mechanic:ruleset-and-handlers",
+      "ownerKind": "leaf-mechanic",
+      "patterns": ["packages/gen8/src/**", "packages/gen8/data/**"],
+      "mechanicIds": ["gen8.runtime.ruleset"],
+      "authorityKeys": ["gen8.showdown-runtime"],
+      "propagatesTo": ["oracle:tooling:runner"]
+    },
+    {
+      "ownershipKey": "gen9:leaf-mechanic:ruleset-and-handlers",
+      "ownerKind": "leaf-mechanic",
+      "patterns": ["packages/gen9/src/**", "packages/gen9/data/**"],
+      "mechanicIds": ["gen9.runtime.ruleset"],
+      "authorityKeys": ["gen9.showdown-runtime"],
+      "propagatesTo": ["oracle:tooling:runner"]
+    },
+    {
+      "ownershipKey": "data-importer:tooling:importer-and-overrides",
+      "ownerKind": "tooling",
+      "patterns": ["tools/data-importer/src/**"],
+      "mechanicIds": ["shared.tooling.changed-mechanics.reporting"],
+      "authorityKeys": ["shared.control-plane"],
+      "propagatesTo": [
+        "gen1:leaf-mechanic:ruleset-and-handlers",
+        "gen2:leaf-mechanic:ruleset-and-handlers",
+        "gen3:leaf-mechanic:ruleset-and-handlers",
+        "gen4:leaf-mechanic:ruleset-and-handlers",
+        "gen5:leaf-mechanic:ruleset-and-handlers",
+        "gen6:leaf-mechanic:ruleset-and-handlers",
+        "gen7:leaf-mechanic:ruleset-and-handlers",
+        "gen8:leaf-mechanic:ruleset-and-handlers",
+        "gen9:leaf-mechanic:ruleset-and-handlers",
+        "oracle:tooling:runner"
+      ]
+    },
+    {
+      "ownershipKey": "oracle:tooling:runner",
+      "ownerKind": "tooling",
+      "patterns": ["tools/oracle-validation/src/**", "tools/oracle-validation/data/**"],
+      "mechanicIds": [
+        "shared.tooling.changed-mechanics.reporting",
+        "shared.tooling.oracle-runner.artifacts"
+      ],
+      "authorityKeys": ["shared.control-plane"],
+      "propagatesTo": ["workflow:tooling:compliance"]
+    },
+    {
+      "ownershipKey": "replay-parser:tooling:simulation",
+      "ownerKind": "tooling",
+      "patterns": ["tools/replay-parser/src/**"],
+      "mechanicIds": ["shared.tooling.oracle-runner.artifacts"],
+      "authorityKeys": ["shared.control-plane"],
+      "propagatesTo": []
+    },
+    {
+      "ownershipKey": "scripts:tooling:local-verification",
+      "ownerKind": "tooling",
+      "patterns": ["scripts/**"],
+      "mechanicIds": ["shared.tooling.changed-mechanics.reporting"],
+      "authorityKeys": ["shared.control-plane"],
+      "propagatesTo": ["workflow:tooling:compliance"]
+    },
+    {
+      "ownershipKey": "workflow:tooling:compliance",
+      "ownerKind": "tooling",
+      "patterns": [".github/workflows/**"],
+      "mechanicIds": ["shared.tooling.workflow.compliance"],
+      "authorityKeys": ["shared.workflow"],
+      "propagatesTo": []
+    }
+  ]
+}

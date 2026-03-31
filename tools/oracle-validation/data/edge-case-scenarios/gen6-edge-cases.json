@@ -56,12 +56,12 @@
     },
     {
       "id": "gen6-fairy-vs-dark-2x",
-      "description": "Fairy-type moves deal 2x damage to Dark-type Pokemon",
+      "description": "Fairy-type moves deal 2x damage to pure Dark-type Pokemon",
       "attacker": { "species": "Sylveon", "level": 50 },
-      "defender": { "species": "Hydreigon", "level": 50 },
+      "defender": { "species": "Umbreon", "level": 50 },
       "move": "Moonblast",
       "expected_type_effectiveness": 2,
-      "note": "Fairy is super-effective vs Dark. Source: Showdown sim/battle-actions.ts Gen6 type chart"
+      "note": "Fairy is super-effective vs Dark (2x). Uses Umbreon (pure Dark) to avoid the 4x outcome of Dark/Dragon. Source: Showdown sim/battle-actions.ts Gen6 type chart"
     },
     {
       "id": "gen6-fairy-vs-fire-half",

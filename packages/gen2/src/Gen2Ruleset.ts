@@ -169,6 +169,11 @@ export class Gen2Ruleset implements GenerationRuleset {
     // Status moves don't crit
     if (move.category === CORE_MOVE_CATEGORIES.status) return false;
 
+    // Defense-in-depth: fixed-damage moves (power: null) cannot crit.
+    // The engine already gates rollCritical behind power !== null at BattleEngine.ts,
+    // but this guard prevents misuse if rollCritical is ever called directly.
+    if (move.power === null || move.power === 0) return false;
+
     return rollGen2Critical(attacker, move, rng);
   }
 

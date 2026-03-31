@@ -184,7 +184,7 @@ describe("BattleEngine — itemTransfer contract", () => {
   it("given a move effect with itemTransfer from defender to attacker, when defender has an item and attacker does not, then item transfers", () => {
     // Verifies the engine's itemTransfer path (BattleEngine.ts:4509-4517)
     // This is the Thief/Covet pattern: steal defender's item
-    const { engine, events, ruleset } = createTestEngine({
+    const { engine, ruleset } = createTestEngine({
       team1: [
         createTestPokemon(6, 50, {
           uid: "thief-user",

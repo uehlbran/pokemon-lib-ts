@@ -2591,6 +2591,31 @@ describe("Gen1Ruleset rollCritical", () => {
     expect(critRate).toBeGreaterThan(0.1);
     expect(critRate).toBeLessThan(0.25);
   });
+
+  it("given a physical move with null power (fixed-damage), when rolling crit, then returns false (defense-in-depth)", () => {
+    // Defense-in-depth guard — the engine already gates rollCritical behind power !== null
+    // at BattleEngine.ts, but this guard prevents misuse if rollCritical is called directly.
+    // Covers Counter/Bide which are physical but have power: null in our data.
+    // Source: pokered engine/battle/core.asm — Counter/Bide have no CriticalHitTest path
+    const attacker = createActivePokemonFixture({
+      pokemon: {
+        ...createActivePokemonFixture().pokemon,
+        speciesId: GEN1_SPECIES_IDS.pikachu,
+      } as PokemonInstance,
+    });
+    const nullPowerMove = createScenarioMove({
+      category: MOVE_CATEGORIES.physical,
+      power: null,
+    });
+    const state = makeBattleState();
+    // Use seed 7 — without the null-power guard, rollGen1Critical would return true for this seed
+    // (verified: SeededRandom(7).chance(45/256) === true for Pikachu's crit rate)
+    const rng = new SeededRandom(7);
+    // Act
+    const result = ruleset.rollCritical({ attacker, move: nullPowerMove, state, rng });
+    // Assert
+    expect(result).toBe(false);
+  });
 });
 
 // ============================================================================

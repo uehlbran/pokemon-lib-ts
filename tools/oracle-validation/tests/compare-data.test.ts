@@ -42,6 +42,7 @@ function createTempGenerationData(): ImplementedGeneration {
       },
     }),
   );
+  writeFileSync(join(dataDir, "moves.json"), JSON.stringify([]));
 
   return {
     gen: 1,

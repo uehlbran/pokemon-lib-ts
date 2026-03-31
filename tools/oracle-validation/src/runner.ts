@@ -1,9 +1,10 @@
-import { mkdirSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { execFileSync } from "node:child_process";
+import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { runReplaySuite } from "./battle-replay.js";
 import { runDamageSuite } from "./compare-damage.js";
 import { runDataSuite } from "./compare-data.js";
+import { runEdgeCasesSuite } from "./compare-edge-cases.js";
 import { runGimmicksSuite } from "./compare-gimmicks.js";
 import { runGroundTruthSuite } from "./compare-ground-truth.js";
 import { runMechanicsSuite } from "./compare-mechanics.js";
@@ -12,8 +13,9 @@ import { runTerrainSuite } from "./compare-terrain.js";
 import { runDamageTraceSuite } from "./damage-trace.js";
 import { loadDisagreementRegistrySummary } from "./disagreement-registry.js";
 import { discoverImplementedGenerations, type ImplementedGeneration } from "./gen-discovery.js";
+import { buildProofSummary, writeProofArtifacts } from "./proof-runner-output.js";
 import { formatRunnerOutput } from "./reporter.js";
-import { type GenerationResult, runnerOutputSchema, type SuiteResult } from "./result-schema.js";
+import type { SuiteResult } from "./result-schema.js";
 import { runSmokeSuite } from "./smoke-runner.js";
 
 type SupportedSuite =
@@ -24,6 +26,7 @@ type SupportedSuite =
   | "mechanics"
   | "terrain"
   | "gimmicks"
+  | "edgeCases"
   | "replay"
   | "damageTrace"
   | "smoke"
@@ -39,6 +42,7 @@ const SUPPORTED_SUITES: ReadonlySet<SupportedSuite> = new Set([
   "mechanics",
   "terrain",
   "gimmicks",
+  "edgeCases",
   "replay",
   "damageTrace",
   "smoke",
@@ -101,6 +105,7 @@ function expandSuites(suites: SupportedSuite[]): SupportedSuite[] {
       "mechanics",
       "terrain",
       "gimmicks",
+      "edgeCases",
       "replay",
       "damageTrace",
       "smoke",
@@ -108,7 +113,16 @@ function expandSuites(suites: SupportedSuite[]): SupportedSuite[] {
   }
   if (suites.includes("fast")) {
     // Fast gate — structural checks only, no live battle simulation
-    return ["data", "stats", "groundTruth", "damage", "mechanics", "terrain", "gimmicks"];
+    return [
+      "data",
+      "stats",
+      "groundTruth",
+      "damage",
+      "mechanics",
+      "terrain",
+      "gimmicks",
+      "edgeCases",
+    ];
   }
 
   return suites;
@@ -132,63 +146,61 @@ async function main(): Promise<void> {
     return;
   }
 
-  const generationResults: GenerationResult[] = generations.map(
-    (generation: ImplementedGeneration) => {
-      const suiteResults: Record<string, SuiteResult> = {};
-      const registry = loadDisagreementRegistrySummary(generation, repoRoot);
+  const generationResults = generations.map((generation: ImplementedGeneration) => {
+    const suiteResults: Record<string, SuiteResult> = {};
+    const registry = loadDisagreementRegistrySummary(generation, repoRoot);
 
-      for (const suite of expandedSuites) {
-        if (suite === "data") {
-          suiteResults[suite] = runDataSuite(generation, registry.knownDisagreements);
-        } else if (suite === "stats") {
-          suiteResults[suite] = runStatsSuite(generation);
-        } else if (suite === "groundTruth") {
-          suiteResults[suite] = runGroundTruthSuite(generation, repoRoot);
-        } else if (suite === "damage") {
-          suiteResults[suite] = runDamageSuite(generation, registry.knownDisagreements);
-        } else if (suite === "mechanics") {
-          suiteResults[suite] = runMechanicsSuite(generation, registry.knownDisagreements);
-        } else if (suite === "terrain") {
-          suiteResults[suite] = runTerrainSuite(generation, registry.knownDisagreements);
-        } else if (suite === "gimmicks") {
-          suiteResults[suite] = runGimmicksSuite(generation, registry.knownDisagreements);
-        } else if (suite === "replay") {
-          suiteResults[suite] = runReplaySuite(generation, repoRoot);
-        } else if (suite === "damageTrace") {
-          suiteResults[suite] = runDamageTraceSuite(generation);
-        } else if (suite === "smoke") {
-          suiteResults[suite] = runSmokeSuite(generation);
-        }
+    for (const suite of expandedSuites) {
+      if (suite === "data") {
+        suiteResults[suite] = runDataSuite(generation, registry.knownDisagreements);
+      } else if (suite === "stats") {
+        suiteResults[suite] = runStatsSuite(generation);
+      } else if (suite === "groundTruth") {
+        suiteResults[suite] = runGroundTruthSuite(generation, repoRoot);
+      } else if (suite === "damage") {
+        suiteResults[suite] = runDamageSuite(generation, registry.knownDisagreements);
+      } else if (suite === "mechanics") {
+        suiteResults[suite] = runMechanicsSuite(generation, registry.knownDisagreements);
+      } else if (suite === "terrain") {
+        suiteResults[suite] = runTerrainSuite(generation, registry.knownDisagreements);
+      } else if (suite === "gimmicks") {
+        suiteResults[suite] = runGimmicksSuite(generation, registry.knownDisagreements);
+      } else if (suite === "edgeCases") {
+        suiteResults[suite] = runEdgeCasesSuite(generation, registry.knownDisagreements);
+      } else if (suite === "replay") {
+        suiteResults[suite] = runReplaySuite(generation, repoRoot);
+      } else if (suite === "damageTrace") {
+        suiteResults[suite] = runDamageTraceSuite(generation);
+      } else if (suite === "smoke") {
+        suiteResults[suite] = runSmokeSuite(generation);
       }
+    }
 
-      return {
-        gen: generation.gen,
-        packageName: generation.packageName,
-        suites: suiteResults,
-        registry,
-        staleDisagreements: [
-          ...new Set(Object.values(suiteResults).flatMap((result) => result.staleDisagreements)),
-        ].sort(),
-      };
-    },
-  );
-
-  const output = runnerOutputSchema.parse({
-    timestamp: new Date().toISOString(),
-    suitesRequested: expandedSuites,
-    generations: generationResults,
+    return {
+      gen: generation.gen,
+      packageName: generation.packageName,
+      suites: suiteResults,
+      registry,
+      staleDisagreements: [
+        ...new Set(Object.values(suiteResults).flatMap((result) => result.staleDisagreements)),
+      ].sort(),
+    };
   });
 
-  const resultsDir = join(repoRoot, "tools", "oracle-validation", "results");
-  mkdirSync(resultsDir, { recursive: true });
-  writeFileSync(join(resultsDir, "fast-path.json"), JSON.stringify(output, null, 2));
-  console.log(formatRunnerOutput(output));
+  const gitSha =
+    process.env.GITHUB_SHA ??
+    process.env.VERCEL_GIT_COMMIT_SHA ??
+    execFileSync("git", ["rev-parse", "HEAD"], { cwd: repoRoot, encoding: "utf8" }).trim();
+  const { summary, checks } = buildProofSummary(gitSha, suites, generationResults);
+  const resultsDir = writeProofArtifacts(repoRoot, gitSha, summary, checks);
+  console.log(formatRunnerOutput(summary));
+  console.log(`Artifacts written to ${resultsDir}`);
 
   // Exit non-zero if any suite has actual failures (stale disagreements also count)
-  const hasFailures = output.generations.some(
+  const hasFailures = generationResults.some(
     (g) => Object.values(g.suites).some((s) => s.failed > 0) || g.staleDisagreements.length > 0,
   );
-  if (hasFailures) {
+  if (hasFailures || summary.conclusion === "fail" || summary.conclusion === "interrupted") {
     process.exitCode = 1;
   }
 }

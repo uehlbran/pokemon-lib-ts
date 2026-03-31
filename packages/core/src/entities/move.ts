@@ -171,7 +171,7 @@ export interface StatusGuaranteedEffect {
 export interface StatChangeEffect {
   readonly type: "stat-change";
   readonly changes: readonly StatChange[];
-  readonly target: "self" | "foe";
+  readonly target: "self" | "foe" | "ally";
   readonly chance: number; // 0-100 (100 = guaranteed)
   /**
    * True when this effect originates from Showdown's `secondary.self.boosts` field.

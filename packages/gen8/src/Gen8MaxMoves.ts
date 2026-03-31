@@ -204,42 +204,32 @@ export function getMaxMovePower(basePower: number, moveType: PokemonType): numbe
 /**
  * Poison/Fighting Max Move power table.
  *
- * Source: Showdown data/moves.ts -- maxMove.basePower for Poison/Fighting moves
+ * Source: Showdown sim/dex-moves.ts:517-549 -- ERRATA #20: dual power tables
+ * <45→70, 45-54→75, 55-64→80, 65-74→85, 75-109→90, 110-149→95, ≥150→100
  */
 function getPoisonFightingMaxPower(basePower: number): number {
-  if (basePower <= 40) return 70;
-  if (basePower <= 50) return 75;
-  if (basePower <= 60) return 80;
-  if (basePower <= 70) return 85;
-  if (basePower <= 80) return 90;
-  if (basePower <= 90) return 95;
-  if (basePower <= 100) return 100;
-  if (basePower <= 110) return 105;
-  if (basePower <= 120) return 110;
-  if (basePower <= 130) return 115;
-  if (basePower <= 140) return 120;
-  if (basePower <= 150) return 125;
-  return 130;
+  if (basePower <= 44) return 70;
+  if (basePower <= 54) return 75;
+  if (basePower <= 64) return 80;
+  if (basePower <= 74) return 85;
+  if (basePower <= 109) return 90;
+  if (basePower <= 149) return 95;
+  return 100;
 }
 
 /**
  * Standard (non-Poison/non-Fighting) Max Move power table.
  *
- * Source: Showdown data/moves.ts -- maxMove.basePower for standard moves
+ * Source: Showdown sim/dex-moves.ts:517-549 -- ERRATA #20: dual power tables
+ * <45→90, 45-54→100, 55-64→110, 65-74→120, 75-109→130, 110-149→140, ≥150→150
  */
 function getStandardMaxPower(basePower: number): number {
-  if (basePower <= 40) return 90;
-  if (basePower <= 50) return 100;
-  if (basePower <= 60) return 110;
-  if (basePower <= 70) return 115;
-  if (basePower <= 80) return 120;
-  if (basePower <= 90) return 125;
-  if (basePower <= 100) return 130;
-  if (basePower <= 110) return 135;
-  if (basePower <= 120) return 140;
-  if (basePower <= 130) return 145;
-  if (basePower <= 140) return 150;
-  // 145-150 and 155+ both cap at 150
+  if (basePower <= 44) return 90;
+  if (basePower <= 54) return 100;
+  if (basePower <= 64) return 110;
+  if (basePower <= 74) return 120;
+  if (basePower <= 109) return 130;
+  if (basePower <= 149) return 140;
   return 150;
 }
 

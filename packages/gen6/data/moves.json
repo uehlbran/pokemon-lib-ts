@@ -28,10 +28,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "drain",
-      "amount": 0.5
-    },
+    "effect": { "type": "drain", "amount": 0.5 },
     "description": "The user recovers 1/2 the HP lost by the target, rounded half up. If Big Root is held by the user, the HP recovered is 1.3x normal, rounded half down.",
     "generation": 1
   },
@@ -66,12 +63,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "spDefense",
-          "stages": -1
-        }
-      ],
+      "changes": [{ "stat": "spDefense", "stages": -1 }],
       "target": "foe",
       "chance": 10
     },
@@ -109,12 +101,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "defense",
-          "stages": 2
-        }
-      ],
+      "changes": [{ "stat": "defense", "stages": 2 }],
       "target": "self",
       "chance": 100
     },
@@ -152,12 +139,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "spDefense",
-          "stages": -2
-        }
-      ],
+      "changes": [{ "stat": "spDefense", "stages": -2 }],
       "target": "foe",
       "chance": 100
     },
@@ -360,12 +342,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "speed",
-          "stages": 2
-        }
-      ],
+      "changes": [{ "stat": "speed", "stages": 2 }],
       "target": "self",
       "chance": 100
     },
@@ -434,11 +411,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "flinch",
-      "chance": 30
-    },
+    "effect": { "type": "volatile-status", "status": "flinch", "chance": 30 },
     "description": "Has a 30% chance to make the target flinch.",
     "generation": 4
   },
@@ -506,12 +479,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "spDefense",
-          "stages": 2
-        }
-      ],
+      "changes": [{ "stat": "spDefense", "stages": 2 }],
       "target": "self",
       "chance": 100
     },
@@ -550,26 +518,11 @@
     "effect": {
       "type": "stat-change",
       "changes": [
-        {
-          "stat": "attack",
-          "stages": 1
-        },
-        {
-          "stat": "defense",
-          "stages": 1
-        },
-        {
-          "stat": "spAttack",
-          "stages": 1
-        },
-        {
-          "stat": "spDefense",
-          "stages": 1
-        },
-        {
-          "stat": "speed",
-          "stages": 1
-        }
+        { "stat": "attack", "stages": 1 },
+        { "stat": "defense", "stages": 1 },
+        { "stat": "spAttack", "stages": 1 },
+        { "stat": "spDefense", "stages": 1 },
+        { "stat": "speed", "stages": 1 }
       ],
       "target": "self",
       "chance": 10,
@@ -706,11 +659,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "multi-hit",
-      "min": 2,
-      "max": 5
-    },
+    "effect": { "type": "multi-hit", "min": 2, "max": 5 },
     "description": "Hits two to five times. Has a 35% chance to hit two or three times and a 15% chance to hit four or five times. If one of the hits breaks the target's substitute, it will take damage for the remaining hits. If the user has the Skill Link Ability, this move will always hit five times.",
     "generation": 3
   },
@@ -778,13 +727,8 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "spDefense",
-          "stages": 1
-        }
-      ],
-      "target": "self",
+      "changes": [{ "stat": "spDefense", "stages": 1 }],
+      "target": "ally",
       "chance": 100
     },
     "description": "Raises the target's Special Defense by 1 stage. Fails if there is no ally adjacent to the user.",
@@ -885,11 +829,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "flinch",
-      "chance": 30
-    },
+    "effect": { "type": "volatile-status", "status": "flinch", "chance": 30 },
     "description": "Has a 30% chance to make the target flinch.",
     "generation": 3
   },
@@ -955,11 +895,7 @@
       "charge": false,
       "bypassSubstitute": true
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "infatuation",
-      "chance": 100
-    },
+    "effect": { "type": "volatile-status", "status": "infatuation", "chance": 100 },
     "description": "Causes the target to become infatuated, making it unable to attack 50% of the time. Fails if both the user and the target are the same gender, if either is genderless, or if the target is already infatuated. The effect ends when either the user or the target is no longer active. Pokemon with the Oblivious Ability or protected by the Aroma Veil Ability are immune.",
     "generation": 2
   },
@@ -1027,12 +963,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "attack",
-          "stages": -1
-        }
-      ],
+      "changes": [{ "stat": "attack", "stages": -1 }],
       "target": "foe",
       "chance": 10
     },
@@ -1070,12 +1001,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "speed",
-          "stages": 2
-        }
-      ],
+      "changes": [{ "stat": "speed", "stages": 2 }],
       "target": "self",
       "chance": 100
     },
@@ -1146,13 +1072,8 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "attack",
-          "stages": -1
-        }
-      ],
-      "target": "self",
+      "changes": [{ "stat": "attack", "stages": -1 }],
+      "target": "foe",
       "chance": 100
     },
     "description": "Lowers the target's Attack by 1 stage.",
@@ -1187,11 +1108,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "multi-hit",
-      "min": 2,
-      "max": 5
-    },
+    "effect": { "type": "multi-hit", "min": 2, "max": 5 },
     "description": "Hits two to five times. Has a 35% chance to hit two or three times and a 15% chance to hit four or five times. If one of the hits breaks the target's substitute, it will take damage for the remaining hits. If the user has the Skill Link Ability, this move will always hit five times.",
     "generation": 1
   },
@@ -1226,12 +1143,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "defense",
-          "stages": 2
-        }
-      ],
+      "changes": [{ "stat": "defense", "stages": 2 }],
       "target": "self",
       "chance": 100
     },
@@ -1267,10 +1179,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "switch-out",
-      "who": "self"
-    },
+    "effect": { "type": "switch-out", "who": "self" },
     "description": "The user is replaced with another Pokemon in its party. The selected Pokemon has the user's stat stage changes transferred to it, as well as the effects of confusion, Aqua Ring, Curse, Embargo, Focus Energy, Gastro Acid, Heal Block, Ingrain, Leech Seed, Lock-On (Mind Reader), Magnet Rise, Perish Song, Power Trick, Telekinesis, the trapped effect of Mean Look (Block, Spider Web), and a substitute with its remaining HP. The effect of Gastro Acid is not transferred if the recipient has an Ability that cannot be affected. The effect of Telekinesis is not transferred if the recipient is Mega Gengar.",
     "generation": 2
   },
@@ -1303,10 +1212,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "custom",
-      "handler": "beat-up"
-    },
+    "effect": { "type": "custom", "handler": "beat-up" },
     "description": "Hits one time for the user and one time for each unfainted Pokemon without a non-volatile status condition in the user's party. The power of each hit is equal to 5+(X/10), where X is each participating Pokemon's base Attack; each hit is considered to come from the user.",
     "generation": 2
   },
@@ -1372,10 +1278,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "custom",
-      "handler": "belly-drum"
-    },
+    "effect": { "type": "custom", "handler": "belly-drum" },
     "description": "Raises the user's Attack by 12 stages in exchange for the user losing 1/2 of its maximum HP, rounded down. Fails if the user would faint or if its Attack stat stage is 6.",
     "generation": 2
   },
@@ -1507,11 +1410,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "flinch",
-      "chance": 30
-    },
+    "effect": { "type": "volatile-status", "status": "flinch", "chance": 30 },
     "description": "Has a 30% chance to make the target flinch.",
     "generation": 1
   },
@@ -1577,11 +1476,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "burn",
-      "chance": 10
-    },
+    "effect": { "type": "status-chance", "status": "burn", "chance": 10 },
     "description": "Has a 10% chance to burn the target and a higher chance for a critical hit.",
     "generation": 3
   },
@@ -1614,11 +1509,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "freeze",
-      "chance": 10
-    },
+    "effect": { "type": "status-chance", "status": "freeze", "chance": 10 },
     "description": "Has a 10% chance to freeze the target. If the weather is Hail, this move does not check accuracy.",
     "generation": 1
   },
@@ -1684,11 +1575,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "burn",
-      "chance": 20
-    },
+    "effect": { "type": "status-chance", "status": "burn", "chance": 20 },
     "description": "Has a 20% chance to burn the target.",
     "generation": 5
   },
@@ -1721,11 +1608,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "paralysis",
-      "chance": 30
-    },
+    "effect": { "type": "status-chance", "status": "paralysis", "chance": 30 },
     "description": "Has a 30% chance to paralyze the target. Damage doubles and no accuracy check is done if the target has used Minimize while active.",
     "generation": 1
   },
@@ -1758,11 +1641,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "paralysis",
-      "chance": 20
-    },
+    "effect": { "type": "status-chance", "status": "paralysis", "chance": 20 },
     "description": "Has a 20% chance to paralyze the target.",
     "generation": 5
   },
@@ -1795,11 +1674,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "flinch",
-      "chance": 10
-    },
+    "effect": { "type": "volatile-status", "status": "flinch", "chance": 10 },
     "description": "Has a 10% chance to make the target flinch.",
     "generation": 1
   },
@@ -1832,11 +1707,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "multi-hit",
-      "min": 2,
-      "max": 5
-    },
+    "effect": { "type": "multi-hit", "min": 2, "max": 5 },
     "description": "Hits two to five times. Has a 35% chance to hit two or three times and a 15% chance to hit four or five times. If one of the hits breaks the target's substitute, it will take damage for the remaining hits. If the user has the Skill Link Ability, this move will always hit five times.",
     "generation": 2
   },
@@ -1869,11 +1740,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "multi-hit",
-      "min": 2,
-      "max": 2
-    },
+    "effect": { "type": "multi-hit", "min": 2, "max": 2 },
     "description": "Hits twice. If the first hit breaks the target's substitute, it will take damage for the second hit.",
     "generation": 1
   },
@@ -1942,15 +1809,8 @@
     "effect": {
       "type": "multi",
       "effects": [
-        {
-          "type": "two-turn",
-          "firstTurn": "bounce"
-        },
-        {
-          "type": "status-chance",
-          "status": "paralysis",
-          "chance": 30
-        }
+        { "type": "two-turn", "firstTurn": "bounce" },
+        { "type": "status-chance", "status": "paralysis", "chance": 30 }
       ]
     },
     "description": "Has a 30% chance to paralyze the target. This attack charges on the first turn and executes on the second. On the first turn, the user avoids all attacks other than Gust, Hurricane, Sky Uppercut, Smack Down, Thousand Arrows, Thunder, and Twister, and Gust and Twister have doubled power when used against it. If the user is holding a Power Herb, the move completes in one turn.",
@@ -1985,10 +1845,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "recoil",
-      "amount": 0.33
-    },
+    "effect": { "type": "recoil", "amount": 0.33 },
     "description": "If the target lost HP, the user takes recoil damage equal to 33% the HP lost by the target, rounded half up, but not less than 1 HP.",
     "generation": 4
   },
@@ -2089,12 +1946,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "speed",
-          "stages": -1
-        }
-      ],
+      "changes": [{ "stat": "speed", "stages": -1 }],
       "target": "foe",
       "chance": 10
     },
@@ -2132,12 +1984,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "speed",
-          "stages": -1
-        }
-      ],
+      "changes": [{ "stat": "speed", "stages": -1 }],
       "target": "foe",
       "chance": 10
     },
@@ -2208,12 +2055,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "spDefense",
-          "stages": -1
-        }
-      ],
+      "changes": [{ "stat": "spDefense", "stages": -1 }],
       "target": "foe",
       "chance": 10
     },
@@ -2251,16 +2093,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "attack",
-          "stages": 1
-        },
-        {
-          "stat": "defense",
-          "stages": 1
-        }
-      ],
+      "changes": [{ "stat": "attack", "stages": 1 }, { "stat": "defense", "stages": 1 }],
       "target": "self",
       "chance": 100
     },
@@ -2298,12 +2131,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "speed",
-          "stages": -1
-        }
-      ],
+      "changes": [{ "stat": "speed", "stages": -1 }],
       "target": "foe",
       "chance": 100
     },
@@ -2372,11 +2200,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "multi-hit",
-      "min": 2,
-      "max": 5
-    },
+    "effect": { "type": "multi-hit", "min": 2, "max": 5 },
     "description": "Hits two to five times. Has a 35% chance to hit two or three times and a 15% chance to hit four or five times. If one of the hits breaks the target's substitute, it will take damage for the remaining hits. If the user has the Skill Link Ability, this move will always hit five times.",
     "generation": 3
   },
@@ -2411,16 +2235,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "spAttack",
-          "stages": 1
-        },
-        {
-          "stat": "spDefense",
-          "stages": 1
-        }
-      ],
+      "changes": [{ "stat": "spAttack", "stages": 1 }, { "stat": "spDefense", "stages": 1 }],
       "target": "self",
       "chance": 100
     },
@@ -2491,13 +2306,8 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "spAttack",
-          "stages": -2
-        }
-      ],
-      "target": "self",
+      "changes": [{ "stat": "spAttack", "stages": -2 }],
+      "target": "foe",
       "chance": 100
     },
     "description": "Lowers the target's Special Attack by 2 stages. The target is unaffected if both the user and the target are the same gender, or if either is genderless. Pokemon with the Oblivious Ability are immune.",
@@ -2567,12 +2377,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "spDefense",
-          "stages": 1
-        }
-      ],
+      "changes": [{ "stat": "spDefense", "stages": 1 }],
       "target": "self",
       "chance": 100
     },
@@ -2610,13 +2415,8 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "spAttack",
-          "stages": 1
-        }
-      ],
-      "target": "self",
+      "changes": [{ "stat": "spAttack", "stages": 1 }],
+      "target": "foe",
       "chance": 70,
       "fromSecondary": true
     },
@@ -2654,13 +2454,8 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "attack",
-          "stages": -2
-        }
-      ],
-      "target": "self",
+      "changes": [{ "stat": "attack", "stages": -2 }],
+      "target": "foe",
       "chance": 100
     },
     "description": "Lowers the target's Attack by 2 stages.",
@@ -2695,11 +2490,7 @@
       "charge": false,
       "bypassSubstitute": true
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "confusion",
-      "chance": 100
-    },
+    "effect": { "type": "volatile-status", "status": "confusion", "chance": 100 },
     "description": "Has a 100% chance to confuse the target.",
     "generation": 4
   },
@@ -2866,16 +2657,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "defense",
-          "stages": -1
-        },
-        {
-          "stat": "spDefense",
-          "stages": -1
-        }
-      ],
+      "changes": [{ "stat": "defense", "stages": -1 }, { "stat": "spDefense", "stages": -1 }],
       "target": "self",
       "chance": 100
     },
@@ -2914,18 +2696,9 @@
     "effect": {
       "type": "stat-change",
       "changes": [
-        {
-          "stat": "attack",
-          "stages": 1
-        },
-        {
-          "stat": "defense",
-          "stages": 1
-        },
-        {
-          "stat": "accuracy",
-          "stages": 1
-        }
+        { "stat": "attack", "stages": 1 },
+        { "stat": "defense", "stages": 1 },
+        { "stat": "accuracy", "stages": 1 }
       ],
       "target": "self",
       "chance": 100
@@ -2962,11 +2735,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "multi-hit",
-      "min": 2,
-      "max": 5
-    },
+    "effect": { "type": "multi-hit", "min": 2, "max": 5 },
     "description": "Hits two to five times. Has a 35% chance to hit two or three times and a 15% chance to hit four or five times. If one of the hits breaks the target's substitute, it will take damage for the remaining hits. If the user has the Skill Link Ability, this move will always hit five times.",
     "generation": 1
   },
@@ -3001,13 +2770,8 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "spAttack",
-          "stages": -1
-        }
-      ],
-      "target": "self",
+      "changes": [{ "stat": "spAttack", "stages": -1 }],
+      "target": "foe",
       "chance": 100
     },
     "description": "Lowers the target's Special Attack by 1 stage.",
@@ -3042,11 +2806,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "confusion",
-      "chance": 100
-    },
+    "effect": { "type": "volatile-status", "status": "confusion", "chance": 100 },
     "description": "Causes the target to become confused.",
     "generation": 1
   },
@@ -3079,11 +2839,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "confusion",
-      "chance": 10
-    },
+    "effect": { "type": "volatile-status", "status": "confusion", "chance": 10 },
     "description": "Has a 10% chance to confuse the target.",
     "generation": 1
   },
@@ -3118,12 +2874,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "speed",
-          "stages": -1
-        }
-      ],
+      "changes": [{ "stat": "speed", "stages": -1 }],
       "target": "foe",
       "chance": 10
     },
@@ -3159,10 +2910,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "custom",
-      "handler": "conversion"
-    },
+    "effect": { "type": "custom", "handler": "conversion" },
     "description": "The user's type changes to match the original type of the move in its first move slot. Fails if the user cannot change its type, or if the type is one of the user's current types.",
     "generation": 1
   },
@@ -3195,10 +2943,7 @@
       "charge": false,
       "bypassSubstitute": true
     },
-    "effect": {
-      "type": "custom",
-      "handler": "conversion2"
-    },
+    "effect": { "type": "custom", "handler": "conversion2" },
     "description": "The user's type changes to match a type that resists or is immune to the type of the last move used by the target, but not either of its current types. The determined type of the move is used rather than the original type. Fails if the target has not made a move, if the user cannot change its type, or if this move would only be able to select one of the user's current types.",
     "generation": 2
   },
@@ -3266,16 +3011,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "defense",
-          "stages": 1
-        },
-        {
-          "stat": "spDefense",
-          "stages": 1
-        }
-      ],
+      "changes": [{ "stat": "defense", "stages": 1 }, { "stat": "spDefense", "stages": 1 }],
       "target": "self",
       "chance": 100
     },
@@ -3313,12 +3049,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "defense",
-          "stages": 3
-        }
-      ],
+      "changes": [{ "stat": "defense", "stages": 3 }],
       "target": "self",
       "chance": 100
     },
@@ -3356,13 +3087,8 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "speed",
-          "stages": -2
-        }
-      ],
-      "target": "self",
+      "changes": [{ "stat": "speed", "stages": -2 }],
+      "target": "foe",
       "chance": 100
     },
     "description": "Lowers the target's Speed by 2 stages.",
@@ -3562,11 +3288,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "poison",
-      "chance": 10
-    },
+    "effect": { "type": "status-chance", "status": "poison", "chance": 10 },
     "description": "Has a 10% chance to poison the target and a higher chance for a critical hit.",
     "generation": 4
   },
@@ -3601,12 +3323,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "defense",
-          "stages": -1
-        }
-      ],
+      "changes": [{ "stat": "defense", "stages": -1 }],
       "target": "foe",
       "chance": 20
     },
@@ -3644,12 +3361,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "defense",
-          "stages": -1
-        }
-      ],
+      "changes": [{ "stat": "defense", "stages": -1 }],
       "target": "foe",
       "chance": 50
     },
@@ -3718,11 +3430,7 @@
       "charge": false,
       "bypassSubstitute": true
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "curse",
-      "chance": 100
-    },
+    "effect": { "type": "volatile-status", "status": "curse", "chance": 100 },
     "description": "If the user is not a Ghost type, lowers the user's Speed by 1 stage and raises the user's Attack and Defense by 1 stage. If the user is a Ghost type, the user loses 1/2 of its maximum HP, rounded down and even if it would cause fainting, in exchange for the target losing 1/4 of its maximum HP, rounded down, at the end of each turn while it is active. If the target uses Baton Pass, the replacement will continue to be affected. Fails if there is no target or if the target is already affected.",
     "generation": 2
   },
@@ -3788,11 +3496,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "flinch",
-      "chance": 20
-    },
+    "effect": { "type": "volatile-status", "status": "flinch", "chance": 20 },
     "description": "Has a 20% chance to make the target flinch.",
     "generation": 4
   },
@@ -3825,10 +3529,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-guaranteed",
-      "status": "sleep"
-    },
+    "effect": { "type": "status-guaranteed", "status": "sleep" },
     "description": "Causes the target to fall asleep.",
     "generation": 4
   },
@@ -3896,16 +3597,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "defense",
-          "stages": 1
-        },
-        {
-          "stat": "spDefense",
-          "stages": 1
-        }
-      ],
+      "changes": [{ "stat": "defense", "stages": 1 }, { "stat": "spDefense", "stages": 1 }],
       "target": "self",
       "chance": 100
     },
@@ -3943,12 +3635,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "defense",
-          "stages": 1
-        }
-      ],
+      "changes": [{ "stat": "defense", "stages": 1 }],
       "target": "self",
       "chance": 100
     },
@@ -4017,10 +3704,7 @@
       "charge": false,
       "bypassSubstitute": true
     },
-    "effect": {
-      "type": "custom",
-      "handler": "destiny-bond"
-    },
+    "effect": { "type": "custom", "handler": "destiny-bond" },
     "description": "Until the user's next turn, if an opposing Pokemon's attack knocks the user out, that Pokemon faints as well, unless the attack was Doom Desire or Future Sight.",
     "generation": 2
   },
@@ -4053,10 +3737,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "protect",
-      "variant": "standard"
-    },
+    "effect": { "type": "protect", "variant": "standard" },
     "description": "The user is protected from most attacks made by other Pokemon during this turn. This move has a 1/X chance of being successful, where X starts at 1 and triples each time this move is successfully used. X resets to 1 if this move fails, if the user's last move used is not Detect, Endure, King's Shield, Protect, Quick Guard, Spiky Shield, or Wide Guard, or if it was one of those moves and the user's protection was broken. Fails if the user moves last this turn.",
     "generation": 2
   },
@@ -4091,13 +3772,8 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "defense",
-          "stages": 1
-        }
-      ],
-      "target": "self",
+      "changes": [{ "stat": "defense", "stages": 1 }],
+      "target": "foe",
       "chance": 50,
       "fromSecondary": true
     },
@@ -4133,10 +3809,7 @@
       "charge": true,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "two-turn",
-      "firstTurn": "dig"
-    },
+    "effect": { "type": "two-turn", "firstTurn": "dig" },
     "description": "This attack charges on the first turn and executes on the second. On the first turn, the user avoids all attacks other than Earthquake and Magnitude but takes double damage from them, and is also unaffected by weather. If the user is holding a Power Herb, the move completes in one turn.",
     "generation": 1
   },
@@ -4169,11 +3842,7 @@
       "charge": false,
       "bypassSubstitute": true
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "disable",
-      "chance": 100
-    },
+    "effect": { "type": "volatile-status", "status": "disable", "chance": 100 },
     "description": "For 4 turns, the target's last move used becomes disabled. Fails if one of the target's moves is already disabled, if the target has not made a move, or if the target no longer knows the move.",
     "generation": 1
   },
@@ -4239,11 +3908,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "paralysis",
-      "chance": 30
-    },
+    "effect": { "type": "status-chance", "status": "paralysis", "chance": 30 },
     "description": "Has a 30% chance to paralyze the target.",
     "generation": 4
   },
@@ -4276,10 +3941,7 @@
       "charge": true,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "two-turn",
-      "firstTurn": "dive"
-    },
+    "effect": { "type": "two-turn", "firstTurn": "dive" },
     "description": "This attack charges on the first turn and executes on the second. On the first turn, the user avoids all attacks other than Surf and Whirlpool but takes double damage from them, and is also unaffected by weather. If the user is holding a Power Herb, the move completes in one turn.",
     "generation": 3
   },
@@ -4312,11 +3974,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "confusion",
-      "chance": 20
-    },
+    "effect": { "type": "volatile-status", "status": "confusion", "chance": 20 },
     "description": "Has a 20% chance to confuse the target.",
     "generation": 1
   },
@@ -4382,10 +4040,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "recoil",
-      "amount": 0.33
-    },
+    "effect": { "type": "recoil", "amount": 0.33 },
     "description": "If the target lost HP, the user takes recoil damage equal to 33% the HP lost by the target, rounded half up, but not less than 1 HP.",
     "generation": 1
   },
@@ -4418,11 +4073,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "multi-hit",
-      "min": 2,
-      "max": 2
-    },
+    "effect": { "type": "multi-hit", "min": 2, "max": 2 },
     "description": "Hits twice. If the first hit breaks the target's substitute, it will take damage for the second hit.",
     "generation": 4
   },
@@ -4455,11 +4106,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "multi-hit",
-      "min": 2,
-      "max": 2
-    },
+    "effect": { "type": "multi-hit", "min": 2, "max": 2 },
     "description": "Hits twice. If the first hit breaks the target's substitute, it will take damage for the second hit.",
     "generation": 1
   },
@@ -4492,11 +4139,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "multi-hit",
-      "min": 2,
-      "max": 5
-    },
+    "effect": { "type": "multi-hit", "min": 2, "max": 5 },
     "description": "Hits two to five times. Has a 35% chance to hit two or three times and a 15% chance to hit four or five times. If one of the hits breaks the target's substitute, it will take damage for the remaining hits. If the user has the Skill Link Ability, this move will always hit five times.",
     "generation": 1
   },
@@ -4531,12 +4174,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "evasion",
-          "stages": 1
-        }
-      ],
+      "changes": [{ "stat": "evasion", "stages": 1 }],
       "target": "self",
       "chance": 100
     },
@@ -4574,12 +4212,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "spAttack",
-          "stages": -2
-        }
-      ],
+      "changes": [{ "stat": "spAttack", "stages": -2 }],
       "target": "self",
       "chance": 100
     },
@@ -4617,16 +4250,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "defense",
-          "stages": -1
-        },
-        {
-          "stat": "spDefense",
-          "stages": -1
-        }
-      ],
+      "changes": [{ "stat": "defense", "stages": -1 }, { "stat": "spDefense", "stages": -1 }],
       "target": "self",
       "chance": 100
     },
@@ -4662,11 +4286,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "paralysis",
-      "chance": 30
-    },
+    "effect": { "type": "status-chance", "status": "paralysis", "chance": 30 },
     "description": "Has a 30% chance to paralyze the target.",
     "generation": 2
   },
@@ -4734,16 +4354,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "attack",
-          "stages": 1
-        },
-        {
-          "stat": "speed",
-          "stages": 1
-        }
-      ],
+      "changes": [{ "stat": "attack", "stages": 1 }, { "stat": "speed", "stages": 1 }],
       "target": "self",
       "chance": 100
     },
@@ -4812,10 +4423,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "fixed-damage",
-      "damage": 40
-    },
+    "effect": { "type": "fixed-damage", "damage": 40 },
     "description": "Deals 40 HP of damage to the target.",
     "generation": 1
   },
@@ -4848,11 +4456,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "flinch",
-      "chance": 20
-    },
+    "effect": { "type": "volatile-status", "status": "flinch", "chance": 20 },
     "description": "Has a 20% chance to make the target flinch. Damage doubles and no accuracy check is done if the target has used Minimize while active.",
     "generation": 4
   },
@@ -4918,10 +4522,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "drain",
-      "amount": 0.5
-    },
+    "effect": { "type": "drain", "amount": 0.5 },
     "description": "The user recovers 1/2 the HP lost by the target, rounded half up. If Big Root is held by the user, the HP recovered is 1.3x normal, rounded half down.",
     "generation": 4
   },
@@ -4954,10 +4555,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "drain",
-      "amount": 0.75
-    },
+    "effect": { "type": "drain", "amount": 0.75 },
     "description": "The user recovers 3/4 the HP lost by the target, rounded half up. If Big Root is held by the user, the HP recovered is 1.3x normal, rounded half down.",
     "generation": 6
   },
@@ -4990,10 +4588,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "drain",
-      "amount": 0.5
-    },
+    "effect": { "type": "drain", "amount": 0.5 },
     "description": "The target is unaffected by this move unless it is asleep. The user recovers 1/2 the HP lost by the target, rounded half up. If Big Root is held by the user, the HP recovered is 1.3x normal, rounded half down.",
     "generation": 1
   },
@@ -5092,11 +4687,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "multi-hit",
-      "min": 2,
-      "max": 2
-    },
+    "effect": { "type": "multi-hit", "min": 2, "max": 2 },
     "description": "Hits twice. If the first hit breaks the target's substitute, it will take damage for the second hit.",
     "generation": 5
   },
@@ -5129,11 +4720,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "confusion",
-      "chance": 100
-    },
+    "effect": { "type": "volatile-status", "status": "confusion", "chance": 100 },
     "description": "Has a 100% chance to confuse the target.",
     "generation": 2
   },
@@ -5168,12 +4755,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "spDefense",
-          "stages": -1
-        }
-      ],
+      "changes": [{ "stat": "spDefense", "stages": -1 }],
       "target": "foe",
       "chance": 10
     },
@@ -5277,13 +4859,8 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "spAttack",
-          "stages": -2
-        }
-      ],
-      "target": "self",
+      "changes": [{ "stat": "spAttack", "stages": -2 }],
+      "target": "foe",
       "chance": 100
     },
     "description": "Lowers the target's Special Attack by 2 stages.",
@@ -5452,12 +5029,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "speed",
-          "stages": -1
-        }
-      ],
+      "changes": [{ "stat": "speed", "stages": -1 }],
       "target": "foe",
       "chance": 100
     },
@@ -5526,11 +5098,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "burn",
-      "chance": 10
-    },
+    "effect": { "type": "status-chance", "status": "burn", "chance": 10 },
     "description": "Has a 10% chance to burn the target.",
     "generation": 1
   },
@@ -5563,11 +5131,7 @@
       "charge": false,
       "bypassSubstitute": true
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "encore",
-      "chance": 100
-    },
+    "effect": { "type": "volatile-status", "status": "encore", "chance": 100 },
     "description": "For 3 turns, the target is forced to repeat its last move used. If the affected move runs out of PP, the effect ends. Fails if the target is already under this effect, if it has not made a move, if the move has 0 PP, or if the move is Encore, Mimic, Mirror Move, Sketch, Struggle, or Transform.",
     "generation": 2
   },
@@ -5633,10 +5197,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "custom",
-      "handler": "endure"
-    },
+    "effect": { "type": "custom", "handler": "endure" },
     "description": "The user will survive attacks made by other Pokemon during this turn with at least 1 HP. This move has a 1/X chance of being successful, where X starts at 1 and triples each time this move is successfully used. X resets to 1 if this move fails, if the user's last move used is not Detect, Endure, King's Shield, Protect, Quick Guard, Spiky Shield, or Wide Guard, or if it was one of those moves and the user's protection was broken. Fails if the user moves last this turn.",
     "generation": 2
   },
@@ -5671,12 +5232,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "spDefense",
-          "stages": -1
-        }
-      ],
+      "changes": [{ "stat": "spDefense", "stages": -1 }],
       "target": "foe",
       "chance": 10
     },
@@ -5811,11 +5367,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "flinch",
-      "chance": 10
-    },
+    "effect": { "type": "volatile-status", "status": "flinch", "chance": 10 },
     "description": "Has a 10% chance to make the target flinch.",
     "generation": 3
   },
@@ -5980,11 +5532,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "flinch",
-      "chance": 100
-    },
+    "effect": { "type": "volatile-status", "status": "flinch", "chance": 100 },
     "description": "Has a 100% chance to make the target flinch. Fails unless it is the user's first turn on the field.",
     "generation": 3
   },
@@ -6019,13 +5567,8 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "spDefense",
-          "stages": -2
-        }
-      ],
-      "target": "self",
+      "changes": [{ "stat": "spDefense", "stages": -2 }],
+      "target": "foe",
       "chance": 100
     },
     "description": "Lowers the target's Special Defense by 2 stages.",
@@ -6095,13 +5638,8 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "attack",
-          "stages": -2
-        }
-      ],
-      "target": "self",
+      "changes": [{ "stat": "attack", "stages": -2 }],
+      "target": "foe",
       "chance": 100
     },
     "description": "Lowers the target's Attack by 2 stages.",
@@ -6237,13 +5775,8 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "spAttack",
-          "stages": 1
-        }
-      ],
-      "target": "self",
+      "changes": [{ "stat": "spAttack", "stages": 1 }],
+      "target": "foe",
       "chance": 50,
       "fromSecondary": true
     },
@@ -6312,11 +5845,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "burn",
-      "chance": 10
-    },
+    "effect": { "type": "status-chance", "status": "burn", "chance": 10 },
     "description": "Has a 10% chance to burn the target.",
     "generation": 1
   },
@@ -6352,16 +5881,8 @@
     "effect": {
       "type": "multi",
       "effects": [
-        {
-          "type": "status-chance",
-          "status": "burn",
-          "chance": 10
-        },
-        {
-          "type": "volatile-status",
-          "status": "flinch",
-          "chance": 10
-        }
+        { "type": "status-chance", "status": "burn", "chance": 10 },
+        { "type": "volatile-status", "status": "flinch", "chance": 10 }
       ]
     },
     "description": "Has a 10% chance to burn the target and a 10% chance to make it flinch.",
@@ -6429,11 +5950,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "burn",
-      "chance": 10
-    },
+    "effect": { "type": "status-chance", "status": "burn", "chance": 10 },
     "description": "Has a 10% chance to burn the target.",
     "generation": 1
   },
@@ -6499,9 +6016,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "ohko"
-    },
+    "effect": { "type": "ohko" },
     "description": "Deals damage to the target equal to the target's maximum HP. Ignores accuracy and evasiveness modifiers. This attack's accuracy is equal to (user's level - target's level + 30)%, and fails if the target is at a higher level. Pokemon with the Sturdy Ability are immune.",
     "generation": 1
   },
@@ -6602,13 +6117,8 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "speed",
-          "stages": 1
-        }
-      ],
-      "target": "self",
+      "changes": [{ "stat": "speed", "stages": 1 }],
+      "target": "foe",
       "chance": 100,
       "fromSecondary": true
     },
@@ -6644,11 +6154,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "burn",
-      "chance": 10
-    },
+    "effect": { "type": "status-chance", "status": "burn", "chance": 10 },
     "description": "Has a 10% chance to burn the target.",
     "generation": 2
   },
@@ -6681,11 +6187,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "burn",
-      "chance": 10
-    },
+    "effect": { "type": "status-chance", "status": "burn", "chance": 10 },
     "description": "Has a 10% chance to burn the target.",
     "generation": 1
   },
@@ -6721,15 +6223,8 @@
     "effect": {
       "type": "multi",
       "effects": [
-        {
-          "type": "recoil",
-          "amount": 0.33
-        },
-        {
-          "type": "status-chance",
-          "status": "burn",
-          "chance": 10
-        }
+        { "type": "recoil", "amount": 0.33 },
+        { "type": "status-chance", "status": "burn", "chance": 10 }
       ]
     },
     "description": "Has a 10% chance to burn the target. If the target lost HP, the user takes recoil damage equal to 33% the HP lost by the target, rounded half up, but not less than 1 HP.",
@@ -6766,13 +6261,8 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "accuracy",
-          "stages": -1
-        }
-      ],
-      "target": "self",
+      "changes": [{ "stat": "accuracy", "stages": -1 }],
+      "target": "foe",
       "chance": 100
     },
     "description": "Lowers the target's accuracy by 1 stage.",
@@ -6809,12 +6299,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "spDefense",
-          "stages": -1
-        }
-      ],
+      "changes": [{ "stat": "spDefense", "stages": -1 }],
       "target": "foe",
       "chance": 10
     },
@@ -6853,19 +6338,10 @@
     "effect": {
       "type": "multi",
       "effects": [
-        {
-          "type": "volatile-status",
-          "status": "confusion",
-          "chance": 100
-        },
+        { "type": "volatile-status", "status": "confusion", "chance": 100 },
         {
           "type": "stat-change",
-          "changes": [
-            {
-              "stat": "spAttack",
-              "stages": 1
-            }
-          ],
+          "changes": [{ "stat": "spAttack", "stages": 1 }],
           "target": "foe",
           "chance": 100
         }
@@ -6969,10 +6445,7 @@
       "charge": true,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "two-turn",
-      "firstTurn": "fly"
-    },
+    "effect": { "type": "two-turn", "firstTurn": "fly" },
     "description": "This attack charges on the first turn and executes on the second. On the first turn, the user avoids all attacks other than Gust, Hurricane, Sky Uppercut, Smack Down, Thousand Arrows, Thunder, and Twister, and Gust and Twister have doubled power when used against it. If the user is holding a Power Herb, the move completes in one turn.",
     "generation": 1
   },
@@ -7040,12 +6513,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "spDefense",
-          "stages": -1
-        }
-      ],
+      "changes": [{ "stat": "spDefense", "stages": -1 }],
       "target": "foe",
       "chance": 10
     },
@@ -7081,11 +6549,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "focus-energy",
-      "chance": 100
-    },
+    "effect": { "type": "volatile-status", "status": "focus-energy", "chance": 100 },
     "description": "Raises the user's chance for a critical hit by 2 stages. Fails if the user already has the effect. Baton Pass can be used to transfer this effect to an ally.",
     "generation": 1
   },
@@ -7184,11 +6648,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "paralysis",
-      "chance": 30
-    },
+    "effect": { "type": "status-chance", "status": "paralysis", "chance": 30 },
     "description": "Has a 30% chance to paralyze the target.",
     "generation": 4
   },
@@ -7320,11 +6780,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "freeze",
-      "chance": 10
-    },
+    "effect": { "type": "status-chance", "status": "freeze", "chance": 10 },
     "description": "Has a 10% chance to freeze the target. This move's type effectiveness against Water is changed to be super effective no matter what this move's type is.",
     "generation": 6
   },
@@ -7360,15 +6816,8 @@
     "effect": {
       "type": "multi",
       "effects": [
-        {
-          "type": "two-turn",
-          "firstTurn": "charge"
-        },
-        {
-          "type": "status-chance",
-          "status": "paralysis",
-          "chance": 30
-        }
+        { "type": "two-turn", "firstTurn": "charge" },
+        { "type": "status-chance", "status": "paralysis", "chance": 30 }
       ]
     },
     "description": "Has a 30% chance to paralyze the target. This attack charges on the first turn and executes on the second. If the user is holding a Power Herb, the move completes in one turn.",
@@ -7469,10 +6918,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "custom",
-      "handler": "frustration"
-    },
+    "effect": { "type": "custom", "handler": "frustration" },
     "description": "Power is equal to the greater of ((255 - user's Happiness) * 2/5), rounded down, or 1.",
     "generation": 2
   },
@@ -7505,11 +6951,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "multi-hit",
-      "min": 2,
-      "max": 5
-    },
+    "effect": { "type": "multi-hit", "min": 2, "max": 5 },
     "description": "Hits two to five times. Has a 35% chance to hit two or three times and a 15% chance to hit four or five times. If one of the hits breaks the target's substitute, it will take damage for the remaining hits. If the user has the Skill Link Ability, this move will always hit five times.",
     "generation": 1
   },
@@ -7575,11 +7017,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "multi-hit",
-      "min": 2,
-      "max": 5
-    },
+    "effect": { "type": "multi-hit", "min": 2, "max": 5 },
     "description": "Hits two to five times. Has a 35% chance to hit two or three times and a 15% chance to hit four or five times. If one of the hits breaks the target's substitute, it will take damage for the remaining hits. If the user has the Skill Link Ability, this move will always hit five times.",
     "generation": 1
   },
@@ -7678,10 +7116,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "custom",
-      "handler": "future-sight"
-    },
+    "effect": { "type": "custom", "handler": "future-sight" },
     "description": "Deals damage two turns after this move is used. At the end of that turn, the damage is calculated at that time and dealt to the Pokemon at the position the target had when the move was used. If the user is no longer active at the time, damage is calculated based on the user's natural Special Attack stat, types, and level, with no boosts from its held item or Ability. Fails if this move or Doom Desire is already in effect for the target's position.",
     "generation": 2
   },
@@ -7747,11 +7182,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "multi-hit",
-      "min": 2,
-      "max": 2
-    },
+    "effect": { "type": "multi-hit", "min": 2, "max": 2 },
     "description": "Hits twice. If the first hit breaks the target's substitute, it will take damage for the second hit.",
     "generation": 5
   },
@@ -7787,18 +7218,9 @@
     "effect": {
       "type": "stat-change",
       "changes": [
-        {
-          "stat": "spAttack",
-          "stages": 2
-        },
-        {
-          "stat": "spDefense",
-          "stages": 2
-        },
-        {
-          "stat": "speed",
-          "stages": 2
-        }
+        { "stat": "spAttack", "stages": 2 },
+        { "stat": "spDefense", "stages": 2 },
+        { "stat": "speed", "stages": 2 }
       ],
       "target": "self",
       "chance": 100
@@ -7835,10 +7257,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "drain",
-      "amount": 0.5
-    },
+    "effect": { "type": "drain", "amount": 0.5 },
     "description": "The user recovers 1/2 the HP lost by the target, rounded half up. If Big Root is held by the user, the HP recovered is 1.3x normal, rounded half down.",
     "generation": 2
   },
@@ -7906,12 +7325,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "speed",
-          "stages": -1
-        }
-      ],
+      "changes": [{ "stat": "speed", "stages": -1 }],
       "target": "foe",
       "chance": 100
     },
@@ -7947,10 +7361,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-guaranteed",
-      "status": "paralysis"
-    },
+    "effect": { "type": "status-guaranteed", "status": "paralysis" },
     "description": "Paralyzes the target.",
     "generation": 1
   },
@@ -8049,10 +7460,7 @@
       "charge": false,
       "bypassSubstitute": true
     },
-    "effect": {
-      "type": "status-guaranteed",
-      "status": "sleep"
-    },
+    "effect": { "type": "status-guaranteed", "status": "sleep" },
     "description": "Causes the target to fall asleep.",
     "generation": 3
   },
@@ -8153,13 +7561,8 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "attack",
-          "stages": -1
-        }
-      ],
-      "target": "self",
+      "changes": [{ "stat": "attack", "stages": -1 }],
+      "target": "foe",
       "chance": 100
     },
     "description": "Lowers the target's Attack by 1 stage.",
@@ -8196,16 +7599,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "attack",
-          "stages": 1
-        },
-        {
-          "stat": "spAttack",
-          "stages": 1
-        }
-      ],
+      "changes": [{ "stat": "attack", "stages": 1 }, { "stat": "spAttack", "stages": 1 }],
       "target": "self",
       "chance": 100
     },
@@ -8340,9 +7734,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "ohko"
-    },
+    "effect": { "type": "ohko" },
     "description": "Deals damage to the target equal to the target's maximum HP. Ignores accuracy and evasiveness modifiers. This attack's accuracy is equal to (user's level - target's level + 30)%, and fails if the target is at a higher level. Pokemon with the Sturdy Ability are immune.",
     "generation": 1
   },
@@ -8375,11 +7767,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "poison",
-      "chance": 30
-    },
+    "effect": { "type": "status-chance", "status": "poison", "chance": 30 },
     "description": "Has a 30% chance to poison the target.",
     "generation": 4
   },
@@ -8478,11 +7866,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "weather",
-      "weather": "hail",
-      "turns": 5
-    },
+    "effect": { "type": "weather", "weather": "hail", "turns": 5 },
     "description": "For 5 turns, the weather becomes Hail. At the end of each turn except the last, all active Pokemon lose 1/16 of their maximum HP, rounded down, unless they are an Ice type or have the Ice Body, Magic Guard, Overcoat, or Snow Cloak Abilities. Lasts for 8 turns if the user is holding Icy Rock. Fails if the current weather is Hail.",
     "generation": 3
   },
@@ -8517,12 +7901,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "speed",
-          "stages": -1
-        }
-      ],
+      "changes": [{ "stat": "speed", "stages": -1 }],
       "target": "self",
       "chance": 100
     },
@@ -8593,12 +7972,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "defense",
-          "stages": 1
-        }
-      ],
+      "changes": [{ "stat": "defense", "stages": 1 }],
       "target": "self",
       "chance": 100
     },
@@ -8667,10 +8041,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "recoil",
-      "amount": 0.25
-    },
+    "effect": { "type": "recoil", "amount": 0.25 },
     "description": "If the target lost HP, the user takes recoil damage equal to 1/4 the HP lost by the target, rounded half up, but not less than 1 HP.",
     "generation": 5
   },
@@ -8703,10 +8074,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "recoil",
-      "amount": 0.5
-    },
+    "effect": { "type": "recoil", "amount": 0.5 },
     "description": "If the target lost HP, the user takes recoil damage equal to 1/2 the HP lost by the target, rounded half up, but not less than 1 HP.",
     "generation": 4
   },
@@ -8739,11 +8107,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "flinch",
-      "chance": 30
-    },
+    "effect": { "type": "volatile-status", "status": "flinch", "chance": 30 },
     "description": "Has a 30% chance to make the target flinch.",
     "generation": 1
   },
@@ -8842,10 +8206,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "heal",
-      "amount": 0.5
-    },
+    "effect": { "type": "heal", "amount": 0.5 },
     "description": "The user restores 1/2 of its maximum HP, rounded half up.",
     "generation": 4
   },
@@ -8944,11 +8305,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "flinch",
-      "chance": 30
-    },
+    "effect": { "type": "volatile-status", "status": "flinch", "chance": 30 },
     "description": "Has a 30% chance to make the target flinch.",
     "generation": 5
   },
@@ -9047,11 +8404,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "burn",
-      "chance": 10
-    },
+    "effect": { "type": "status-chance", "status": "burn", "chance": 10 },
     "description": "Has a 10% chance to burn the target.",
     "generation": 3
   },
@@ -9183,10 +8536,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "custom",
-      "handler": "hidden-power"
-    },
+    "effect": { "type": "custom", "handler": "hidden-power" },
     "description": "This move's type depends on the user's individual values (IVs), and can be any type but Fairy and Normal.",
     "generation": 2
   },
@@ -9219,10 +8569,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "custom",
-      "handler": "hidden-power"
-    },
+    "effect": { "type": "custom", "handler": "hidden-power" },
     "description": "",
     "generation": 2
   },
@@ -9255,10 +8602,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "custom",
-      "handler": "hidden-power"
-    },
+    "effect": { "type": "custom", "handler": "hidden-power" },
     "description": "",
     "generation": 2
   },
@@ -9291,10 +8635,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "custom",
-      "handler": "hidden-power"
-    },
+    "effect": { "type": "custom", "handler": "hidden-power" },
     "description": "",
     "generation": 2
   },
@@ -9327,10 +8668,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "custom",
-      "handler": "hidden-power"
-    },
+    "effect": { "type": "custom", "handler": "hidden-power" },
     "description": "",
     "generation": 2
   },
@@ -9363,10 +8701,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "custom",
-      "handler": "hidden-power"
-    },
+    "effect": { "type": "custom", "handler": "hidden-power" },
     "description": "",
     "generation": 2
   },
@@ -9399,10 +8734,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "custom",
-      "handler": "hidden-power"
-    },
+    "effect": { "type": "custom", "handler": "hidden-power" },
     "description": "",
     "generation": 2
   },
@@ -9435,10 +8767,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "custom",
-      "handler": "hidden-power"
-    },
+    "effect": { "type": "custom", "handler": "hidden-power" },
     "description": "",
     "generation": 2
   },
@@ -9471,10 +8800,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "custom",
-      "handler": "hidden-power"
-    },
+    "effect": { "type": "custom", "handler": "hidden-power" },
     "description": "",
     "generation": 2
   },
@@ -9507,10 +8833,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "custom",
-      "handler": "hidden-power"
-    },
+    "effect": { "type": "custom", "handler": "hidden-power" },
     "description": "",
     "generation": 2
   },
@@ -9543,10 +8866,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "custom",
-      "handler": "hidden-power"
-    },
+    "effect": { "type": "custom", "handler": "hidden-power" },
     "description": "",
     "generation": 2
   },
@@ -9579,10 +8899,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "custom",
-      "handler": "hidden-power"
-    },
+    "effect": { "type": "custom", "handler": "hidden-power" },
     "description": "",
     "generation": 2
   },
@@ -9615,10 +8932,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "custom",
-      "handler": "hidden-power"
-    },
+    "effect": { "type": "custom", "handler": "hidden-power" },
     "description": "",
     "generation": 2
   },
@@ -9651,10 +8965,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "custom",
-      "handler": "hidden-power"
-    },
+    "effect": { "type": "custom", "handler": "hidden-power" },
     "description": "",
     "generation": 2
   },
@@ -9687,10 +8998,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "custom",
-      "handler": "hidden-power"
-    },
+    "effect": { "type": "custom", "handler": "hidden-power" },
     "description": "",
     "generation": 2
   },
@@ -9723,10 +9031,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "custom",
-      "handler": "hidden-power"
-    },
+    "effect": { "type": "custom", "handler": "hidden-power" },
     "description": "",
     "generation": 2
   },
@@ -9759,10 +9064,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "custom",
-      "handler": "hidden-power"
-    },
+    "effect": { "type": "custom", "handler": "hidden-power" },
     "description": "",
     "generation": 2
   },
@@ -9897,16 +9199,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "attack",
-          "stages": 1
-        },
-        {
-          "stat": "accuracy",
-          "stages": 1
-        }
-      ],
+      "changes": [{ "stat": "attack", "stages": 1 }, { "stat": "accuracy", "stages": 1 }],
       "target": "self",
       "chance": 100
     },
@@ -9975,9 +9268,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "ohko"
-    },
+    "effect": { "type": "ohko" },
     "description": "Deals damage to the target equal to the target's maximum HP. Ignores accuracy and evasiveness modifiers. This attack's accuracy is equal to (user's level - target's level + 30)%, and fails if the target is at a higher level. Pokemon with the Sturdy Ability are immune.",
     "generation": 1
   },
@@ -10010,10 +9301,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "drain",
-      "amount": 0.5
-    },
+    "effect": { "type": "drain", "amount": 0.5 },
     "description": "The user recovers 1/2 the HP lost by the target, rounded half up. If Big Root is held by the user, the HP recovered is 1.3x normal, rounded half down.",
     "generation": 5
   },
@@ -10048,12 +9336,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "attack",
-          "stages": 1
-        }
-      ],
+      "changes": [{ "stat": "attack", "stages": 1 }],
       "target": "self",
       "chance": 100
     },
@@ -10089,11 +9372,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "confusion",
-      "chance": 30
-    },
+    "effect": { "type": "volatile-status", "status": "confusion", "chance": 30 },
     "description": "Has a 30% chance to confuse the target. This move can hit a target using Bounce, Fly, or Sky Drop, or is under the effect of Sky Drop. If the weather is Primordial Sea or Rain Dance, this move does not check accuracy. If the weather is Desolate Land or Sunny Day, this move's accuracy is 50%.",
     "generation": 5
   },
@@ -10225,11 +9504,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "flinch",
-      "chance": 10
-    },
+    "effect": { "type": "volatile-status", "status": "flinch", "chance": 10 },
     "description": "Has a 10% chance to make the target flinch.",
     "generation": 1
   },
@@ -10297,13 +9572,8 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "defense",
-          "stages": -1
-        }
-      ],
-      "target": "self",
+      "changes": [{ "stat": "defense", "stages": -1 }],
+      "target": "foe",
       "chance": 100
     },
     "description": "Lowers the user's Defense by 1 stage. This move cannot be used successfully unless the user's current form, while considering Transform, is Hoopa Unbound. If this move is successful, it breaks through the target's Detect, King's Shield, Protect, or Spiky Shield for this turn, allowing other Pokemon to attack the target normally. If the target's side is protected by Crafty Shield, Mat Block, Quick Guard, or Wide Guard, that protection is also broken for this turn and other Pokemon may attack the target's side normally.",
@@ -10371,10 +9641,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-guaranteed",
-      "status": "sleep"
-    },
+    "effect": { "type": "status-guaranteed", "status": "sleep" },
     "description": "Causes the target to fall asleep.",
     "generation": 1
   },
@@ -10440,11 +9707,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "freeze",
-      "chance": 10
-    },
+    "effect": { "type": "status-chance", "status": "freeze", "chance": 10 },
     "description": "Has a 10% chance to freeze the target.",
     "generation": 1
   },
@@ -10480,15 +9743,8 @@
     "effect": {
       "type": "multi",
       "effects": [
-        {
-          "type": "two-turn",
-          "firstTurn": "charge"
-        },
-        {
-          "type": "status-chance",
-          "status": "burn",
-          "chance": 30
-        }
+        { "type": "two-turn", "firstTurn": "charge" },
+        { "type": "status-chance", "status": "burn", "chance": 30 }
       ]
     },
     "description": "Has a 30% chance to burn the target. This attack charges on the first turn and executes on the second. If the user is holding a Power Herb, the move completes in one turn.",
@@ -10526,16 +9782,8 @@
     "effect": {
       "type": "multi",
       "effects": [
-        {
-          "type": "status-chance",
-          "status": "freeze",
-          "chance": 10
-        },
-        {
-          "type": "volatile-status",
-          "status": "flinch",
-          "chance": 10
-        }
+        { "type": "status-chance", "status": "freeze", "chance": 10 },
+        { "type": "volatile-status", "status": "flinch", "chance": 10 }
       ]
     },
     "description": "Has a 10% chance to freeze the target and a 10% chance to make it flinch.",
@@ -10570,11 +9818,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "freeze",
-      "chance": 10
-    },
+    "effect": { "type": "status-chance", "status": "freeze", "chance": 10 },
     "description": "Has a 10% chance to freeze the target.",
     "generation": 1
   },
@@ -10640,11 +9884,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "flinch",
-      "chance": 30
-    },
+    "effect": { "type": "volatile-status", "status": "flinch", "chance": 30 },
     "description": "Has a 30% chance to make the target flinch.",
     "generation": 5
   },
@@ -10677,11 +9917,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "multi-hit",
-      "min": 2,
-      "max": 5
-    },
+    "effect": { "type": "multi-hit", "min": 2, "max": 5 },
     "description": "Hits two to five times. Has a 35% chance to hit two or three times and a 15% chance to hit four or five times. If one of the hits breaks the target's substitute, it will take damage for the remaining hits. If the user has the Skill Link Ability, this move will always hit five times.",
     "generation": 3
   },
@@ -10716,12 +9952,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "speed",
-          "stages": -1
-        }
-      ],
+      "changes": [{ "stat": "speed", "stages": -1 }],
       "target": "foe",
       "chance": 100
     },
@@ -10823,11 +10054,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "burn",
-      "chance": 100
-    },
+    "effect": { "type": "status-chance", "status": "burn", "chance": 100 },
     "description": "Has a 100% chance to burn the target.",
     "generation": 5
   },
@@ -10961,12 +10188,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "defense",
-          "stages": 2
-        }
-      ],
+      "changes": [{ "stat": "defense", "stages": 2 }],
       "target": "self",
       "chance": 100
     },
@@ -11002,11 +10224,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "flinch",
-      "chance": 30
-    },
+    "effect": { "type": "volatile-status", "status": "flinch", "chance": 30 },
     "description": "Has a 30% chance to make the target flinch.",
     "generation": 4
   },
@@ -11041,12 +10259,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "defense",
-          "stages": -1
-        }
-      ],
+      "changes": [{ "stat": "defense", "stages": -1 }],
       "target": "foe",
       "chance": 30
     },
@@ -11184,13 +10397,8 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "accuracy",
-          "stages": -1
-        }
-      ],
-      "target": "self",
+      "changes": [{ "stat": "accuracy", "stages": -1 }],
+      "target": "foe",
       "chance": 100
     },
     "description": "Lowers the target's accuracy by 1 stage.",
@@ -11357,11 +10565,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "burn",
-      "chance": 30
-    },
+    "effect": { "type": "status-chance", "status": "burn", "chance": 30 },
     "description": "Has a 30% chance to burn the target.",
     "generation": 4
   },
@@ -11429,12 +10633,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "spAttack",
-          "stages": -2
-        }
-      ],
+      "changes": [{ "stat": "spAttack", "stages": -2 }],
       "target": "self",
       "chance": 100
     },
@@ -11472,12 +10671,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "accuracy",
-          "stages": -1
-        }
-      ],
+      "changes": [{ "stat": "accuracy", "stages": -1 }],
       "target": "foe",
       "chance": 50
     },
@@ -11513,10 +10707,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "drain",
-      "amount": 0.5
-    },
+    "effect": { "type": "drain", "amount": 0.5 },
     "description": "The user recovers 1/2 the HP lost by the target, rounded half up. If Big Root is held by the user, the HP recovered is 1.3x normal, rounded half down.",
     "generation": 1
   },
@@ -11549,11 +10740,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "leech-seed",
-      "chance": 100
-    },
+    "effect": { "type": "volatile-status", "status": "leech-seed", "chance": 100 },
     "description": "The Pokemon at the user's position steals 1/8 of the target's maximum HP, rounded down, at the end of each turn. If Big Root is held by the recipient, the HP recovered is 1.3x normal, rounded half down. If the target uses Baton Pass, the replacement will continue being leeched. If the target switches out or uses Rapid Spin successfully, the effect ends. Grass-type Pokemon are immune to this move on use, but not its effect.",
     "generation": 1
   },
@@ -11588,13 +10775,8 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "defense",
-          "stages": -1
-        }
-      ],
-      "target": "self",
+      "changes": [{ "stat": "defense", "stages": -1 }],
+      "target": "foe",
       "chance": 100
     },
     "description": "Lowers the target's Defense by 1 stage.",
@@ -11629,11 +10811,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "paralysis",
-      "chance": 30
-    },
+    "effect": { "type": "status-chance", "status": "paralysis", "chance": 30 },
     "description": "Has a 30% chance to paralyze the target.",
     "generation": 1
   },
@@ -11666,11 +10844,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "screen",
-      "screen": "light-screen",
-      "turns": 5
-    },
+    "effect": { "type": "screen", "screen": "light-screen", "turns": 5 },
     "description": "For 5 turns, the user and its party members take 0.5x damage from special attacks, or 0.66x damage if in a Double or Triple Battle. Critical hits ignore this effect. It is removed from the user's side if the user or an ally is successfully hit by Brick Break or Defog. Lasts for 8 turns if the user is holding Light Clay. Fails if the effect is already active on the user's side.",
     "generation": 1
   },
@@ -11736,10 +10910,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-guaranteed",
-      "status": "sleep"
-    },
+    "effect": { "type": "status-guaranteed", "status": "sleep" },
     "description": "Causes the target to fall asleep.",
     "generation": 1
   },
@@ -11807,12 +10978,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "speed",
-          "stages": -1
-        }
-      ],
+      "changes": [{ "stat": "speed", "stages": -1 }],
       "target": "foe",
       "chance": 100
     },
@@ -11916,12 +11082,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "spDefense",
-          "stages": -1
-        }
-      ],
+      "changes": [{ "stat": "spDefense", "stages": -1 }],
       "target": "foe",
       "chance": 50
     },
@@ -12221,10 +11382,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "custom",
-      "handler": "magnitude"
-    },
+    "effect": { "type": "custom", "handler": "magnitude" },
     "description": "The power of this move varies; 5% chances for 10 and 150 power, 10% chances for 30 and 110 power, 20% chances for 50 and 90 power, and 30% chance for 70 power. Damage doubles if the target is using Dig.",
     "generation": 2
   },
@@ -12358,12 +11516,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "attack",
-          "stages": 1
-        }
-      ],
+      "changes": [{ "stat": "attack", "stages": 1 }],
       "target": "self",
       "chance": 100
     },
@@ -12399,10 +11552,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "drain",
-      "amount": 0.5
-    },
+    "effect": { "type": "drain", "amount": 0.5 },
     "description": "The user recovers 1/2 the HP lost by the target, rounded half up. If Big Root is held by the user, the HP recovered is 1.3x normal, rounded half down.",
     "generation": 1
   },
@@ -12536,17 +11686,8 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "attack",
-          "stages": -2
-        },
-        {
-          "stat": "spAttack",
-          "stages": -2
-        }
-      ],
-      "target": "self",
+      "changes": [{ "stat": "attack", "stages": -2 }, { "stat": "spAttack", "stages": -2 }],
+      "target": "foe",
       "chance": 100
     },
     "description": "Lowers the target's Attack and Special Attack by 2 stages. The user faints unless this move misses or there is no target. Fails entirely if this move hits a substitute, but does not fail if the target's stats cannot be changed.",
@@ -12616,12 +11757,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "attack",
-          "stages": 1
-        }
-      ],
+      "changes": [{ "stat": "attack", "stages": 1 }],
       "target": "self",
       "chance": 10,
       "fromSecondary": true
@@ -12660,13 +11796,8 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "spDefense",
-          "stages": -2
-        }
-      ],
-      "target": "self",
+      "changes": [{ "stat": "spDefense", "stages": -2 }],
+      "target": "foe",
       "chance": 100
     },
     "description": "Lowers the target's Special Defense by 2 stages.",
@@ -12703,13 +11834,8 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "attack",
-          "stages": 1
-        }
-      ],
-      "target": "self",
+      "changes": [{ "stat": "attack", "stages": 1 }],
+      "target": "foe",
       "chance": 20,
       "fromSecondary": true
     },
@@ -12745,10 +11871,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "custom",
-      "handler": "metronome"
-    },
+    "effect": { "type": "custom", "handler": "metronome" },
     "description": "A random move is selected for use, other than After You, Assist, Belch, Bestow, Celebrate, Chatter, Copycat, Counter, Covet, Crafty Shield, Destiny Bond, Detect, Diamond Storm, Dragon Ascent, Endure, Feint, Focus Punch, Follow Me, Freeze Shock, Helping Hand, Hold Hands, Hyperspace Fury, Hyperspace Hole, Ice Burn, King's Shield, Light of Ruin, Mat Block, Me First, Metronome, Mimic, Mirror Coat, Mirror Move, Nature Power, Origin Pulse, Precipice Blades, Protect, Quash, Quick Guard, Rage Powder, Relic Song, Secret Sword, Sketch, Sleep Talk, Snarl, Snatch, Snore, Spiky Shield, Steam Eruption, Struggle, Switcheroo, Techno Blast, Thief, Thousand Arrows, Thousand Waves, Transform, Trick, V-create, or Wide Guard.",
     "generation": 1
   },
@@ -12781,10 +11904,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "heal",
-      "amount": 0.5
-    },
+    "effect": { "type": "heal", "amount": 0.5 },
     "description": "The user restores 1/2 of its maximum HP, rounded half up.",
     "generation": 2
   },
@@ -12885,12 +12005,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "evasion",
-          "stages": 2
-        }
-      ],
+      "changes": [{ "stat": "evasion", "stages": 2 }],
       "target": "self",
       "chance": 100
     },
@@ -12992,10 +12107,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "custom",
-      "handler": "mirror-move"
-    },
+    "effect": { "type": "custom", "handler": "mirror-move" },
     "description": "The user uses the last move used by the target. The copied move is used against that target, if possible. Fails if the target has not made a move, or if the last move used cannot be copied by this move.",
     "generation": 1
   },
@@ -13030,12 +12142,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "accuracy",
-          "stages": -1
-        }
-      ],
+      "changes": [{ "stat": "accuracy", "stages": -1 }],
       "target": "foe",
       "chance": 30
     },
@@ -13106,12 +12213,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "spAttack",
-          "stages": -1
-        }
-      ],
+      "changes": [{ "stat": "spAttack", "stages": -1 }],
       "target": "foe",
       "chance": 50
     },
@@ -13182,12 +12284,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "spAttack",
-          "stages": -1
-        }
-      ],
+      "changes": [{ "stat": "spAttack", "stages": -1 }],
       "target": "foe",
       "chance": 30
     },
@@ -13223,10 +12320,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "custom",
-      "handler": "moonlight"
-    },
+    "effect": { "type": "custom", "handler": "moonlight" },
     "description": "The user restores 1/2 of its maximum HP if Delta Stream or no weather conditions are in effect, 2/3 of its maximum HP if the weather is Desolate Land or Sunny Day, and 1/4 of its maximum HP if the weather is Hail, Primordial Sea, Rain Dance, or Sandstorm, all rounded half down.",
     "generation": 2
   },
@@ -13259,10 +12353,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "custom",
-      "handler": "morning-sun"
-    },
+    "effect": { "type": "custom", "handler": "morning-sun" },
     "description": "The user restores 1/2 of its maximum HP if Delta Stream or no weather conditions are in effect, 2/3 of its maximum HP if the weather is Desolate Land or Sunny Day, and 1/4 of its maximum HP if the weather is Hail, Primordial Sea, Rain Dance, or Sandstorm, all rounded half down.",
     "generation": 2
   },
@@ -13297,12 +12388,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "accuracy",
-          "stages": -1
-        }
-      ],
+      "changes": [{ "stat": "accuracy", "stages": -1 }],
       "target": "foe",
       "chance": 30
     },
@@ -13340,12 +12426,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "speed",
-          "stages": -1
-        }
-      ],
+      "changes": [{ "stat": "speed", "stages": -1 }],
       "target": "foe",
       "chance": 100
     },
@@ -13383,12 +12464,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "accuracy",
-          "stages": -1
-        }
-      ],
+      "changes": [{ "stat": "accuracy", "stages": -1 }],
       "target": "foe",
       "chance": 100
     },
@@ -13459,12 +12535,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "accuracy",
-          "stages": -1
-        }
-      ],
+      "changes": [{ "stat": "accuracy", "stages": -1 }],
       "target": "foe",
       "chance": 30
     },
@@ -13502,12 +12573,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "spAttack",
-          "stages": -1
-        }
-      ],
+      "changes": [{ "stat": "spAttack", "stages": -1 }],
       "target": "foe",
       "chance": 100
     },
@@ -13545,12 +12611,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "spAttack",
-          "stages": 2
-        }
-      ],
+      "changes": [{ "stat": "spAttack", "stages": 2 }],
       "target": "self",
       "chance": 100
     },
@@ -13652,11 +12713,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "flinch",
-      "chance": 30
-    },
+    "effect": { "type": "volatile-status", "status": "flinch", "chance": 30 },
     "description": "Has a 30% chance to make the target flinch.",
     "generation": 3
   },
@@ -13691,12 +12748,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "accuracy",
-          "stages": -1
-        }
-      ],
+      "changes": [{ "stat": "accuracy", "stages": -1 }],
       "target": "foe",
       "chance": 40
     },
@@ -13732,9 +12784,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "level-damage"
-    },
+    "effect": { "type": "level-damage" },
     "description": "Deals damage to the target equal to the user's level.",
     "generation": 1
   },
@@ -13800,11 +12850,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "nightmare",
-      "chance": 100
-    },
+    "effect": { "type": "volatile-status", "status": "nightmare", "chance": 100 },
     "description": "Causes the target to lose 1/4 of its maximum HP, rounded down, at the end of each turn as long as it is asleep. This move does not affect the target unless it is asleep. The effect ends when the target wakes up, even if it falls asleep again in the same turn.",
     "generation": 2
   },
@@ -13839,17 +12885,8 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "attack",
-          "stages": -1
-        },
-        {
-          "stat": "spAttack",
-          "stages": -1
-        }
-      ],
-      "target": "self",
+      "changes": [{ "stat": "attack", "stages": -1 }, { "stat": "spAttack", "stages": -1 }],
+      "target": "foe",
       "chance": 100
     },
     "description": "Lowers the target's Attack and Special Attack by 1 stage.",
@@ -13884,11 +12921,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "paralysis",
-      "chance": 100
-    },
+    "effect": { "type": "status-chance", "status": "paralysis", "chance": 100 },
     "description": "Has a 100% chance to paralyze the target.",
     "generation": 6
   },
@@ -13921,10 +12954,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "drain",
-      "amount": 0.75
-    },
+    "effect": { "type": "drain", "amount": 0.75 },
     "description": "The user recovers 3/4 the HP lost by the target, rounded half up. If Big Root is held by the user, the HP recovered is 1.3x normal, rounded half down.",
     "generation": 6
   },
@@ -13959,12 +12989,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "accuracy",
-          "stages": -1
-        }
-      ],
+      "changes": [{ "stat": "accuracy", "stages": -1 }],
       "target": "foe",
       "chance": 50
     },
@@ -14036,28 +13061,13 @@
     "effect": {
       "type": "stat-change",
       "changes": [
-        {
-          "stat": "attack",
-          "stages": 1
-        },
-        {
-          "stat": "defense",
-          "stages": 1
-        },
-        {
-          "stat": "spAttack",
-          "stages": 1
-        },
-        {
-          "stat": "spDefense",
-          "stages": 1
-        },
-        {
-          "stat": "speed",
-          "stages": 1
-        }
+        { "stat": "attack", "stages": 1 },
+        { "stat": "defense", "stages": 1 },
+        { "stat": "spAttack", "stages": 1 },
+        { "stat": "spDefense", "stages": 1 },
+        { "stat": "speed", "stages": 1 }
       ],
-      "target": "self",
+      "target": "foe",
       "chance": 10,
       "fromSecondary": true
     },
@@ -14161,12 +13171,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "spAttack",
-          "stages": -2
-        }
-      ],
+      "changes": [{ "stat": "spAttack", "stages": -2 }],
       "target": "self",
       "chance": 100
     },
@@ -14202,10 +13207,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "custom",
-      "handler": "pain-split"
-    },
+    "effect": { "type": "custom", "handler": "pain-split" },
     "description": "The user and the target's HP become the average of their current HP, rounded down, but not more than the maximum HP of either one.",
     "generation": 2
   },
@@ -14238,10 +13240,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "drain",
-      "amount": 0.5
-    },
+    "effect": { "type": "drain", "amount": 0.5 },
     "description": "The user recovers 1/2 the HP lost by the target, rounded half up. If Big Root is held by the user, the HP recovered is 1.3x normal, rounded half down.",
     "generation": 6
   },
@@ -14274,10 +13273,7 @@
       "charge": false,
       "bypassSubstitute": true
     },
-    "effect": {
-      "type": "switch-out",
-      "who": "self"
-    },
+    "effect": { "type": "switch-out", "who": "self" },
     "description": "Lowers the target's Attack and Special Attack by 1 stage. If this move is successful, the user switches out even if it is trapped and is replaced immediately by a selected party member. The user does not switch out if there are no unfainted party members.",
     "generation": 6
   },
@@ -14409,10 +13405,7 @@
       "charge": false,
       "bypassSubstitute": true
     },
-    "effect": {
-      "type": "custom",
-      "handler": "perish-song"
-    },
+    "effect": { "type": "custom", "handler": "perish-song" },
     "description": "Each active Pokemon receives a perish count of 4 if it doesn't already have a perish count. At the end of each turn including the turn used, the perish count of all active Pokemon lowers by 1 and Pokemon faint if the number reaches 0. The perish count is removed from Pokemon that switch out. If a Pokemon uses Baton Pass while it has a perish count, the replacement will gain the perish count and continue to count down.",
     "generation": 2
   },
@@ -14511,10 +13504,7 @@
       "charge": true,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "two-turn",
-      "firstTurn": "charge"
-    },
+    "effect": { "type": "two-turn", "firstTurn": "charge" },
     "description": "If this move is successful, it breaks through the target's Detect, King's Shield, Protect, or Spiky Shield for this turn, allowing other Pokemon to attack the target normally. If the target's side is protected by Crafty Shield, Mat Block, Quick Guard, or Wide Guard, that protection is also broken for this turn and other Pokemon may attack the target's side normally. This attack charges on the first turn and executes on the second. On the first turn, the user avoids all attacks. If the user is holding a Power Herb, the move completes in one turn. Damage doubles and no accuracy check is done if the target has used Minimize while active.",
     "generation": 6
   },
@@ -14547,11 +13537,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "multi-hit",
-      "min": 2,
-      "max": 5
-    },
+    "effect": { "type": "multi-hit", "min": 2, "max": 5 },
     "description": "Hits two to five times. Has a 35% chance to hit two or three times and a 15% chance to hit four or five times. If one of the hits breaks the target's substitute, it will take damage for the remaining hits. If the user has the Skill Link Ability, this move will always hit five times.",
     "generation": 1
   },
@@ -14586,13 +13572,8 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "attack",
-          "stages": -1
-        }
-      ],
-      "target": "self",
+      "changes": [{ "stat": "attack", "stages": -1 }],
+      "target": "foe",
       "chance": 100
     },
     "description": "Lowers the target's Attack by 1 stage.",
@@ -14629,12 +13610,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "attack",
-          "stages": -1
-        }
-      ],
+      "changes": [{ "stat": "attack", "stages": -1 }],
       "target": "foe",
       "chance": 10
     },
@@ -14703,11 +13679,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "badly-poisoned",
-      "chance": 50
-    },
+    "effect": { "type": "status-chance", "status": "badly-poisoned", "chance": 50 },
     "description": "Has a 50% chance to badly poison the target.",
     "generation": 3
   },
@@ -14740,10 +13712,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-guaranteed",
-      "status": "poison"
-    },
+    "effect": { "type": "status-guaranteed", "status": "poison" },
     "description": "Poisons the target.",
     "generation": 1
   },
@@ -14776,11 +13745,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "poison",
-      "chance": 30
-    },
+    "effect": { "type": "status-chance", "status": "poison", "chance": 30 },
     "description": "Has a 30% chance to poison the target.",
     "generation": 4
   },
@@ -14813,10 +13778,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-guaranteed",
-      "status": "poison"
-    },
+    "effect": { "type": "status-guaranteed", "status": "poison" },
     "description": "Poisons the target.",
     "generation": 1
   },
@@ -14849,11 +13811,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "poison",
-      "chance": 30
-    },
+    "effect": { "type": "status-chance", "status": "poison", "chance": 30 },
     "description": "Has a 30% chance to poison the target.",
     "generation": 1
   },
@@ -14886,11 +13844,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "poison",
-      "chance": 10
-    },
+    "effect": { "type": "status-chance", "status": "poison", "chance": 10 },
     "description": "Has a 10% chance to poison the target and a higher chance for a critical hit.",
     "generation": 3
   },
@@ -14989,11 +13943,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "freeze",
-      "chance": 10
-    },
+    "effect": { "type": "status-chance", "status": "freeze", "chance": 10 },
     "description": "Has a 10% chance to freeze the target.",
     "generation": 2
   },
@@ -15160,13 +14110,8 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "attack",
-          "stages": 1
-        }
-      ],
-      "target": "self",
+      "changes": [{ "stat": "attack", "stages": 1 }],
+      "target": "foe",
       "chance": 100,
       "fromSecondary": true
     },
@@ -15268,10 +14213,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "custom",
-      "handler": "present"
-    },
+    "effect": { "type": "custom", "handler": "present" },
     "description": "If this move is successful, it deals damage or heals the target. 40% chance for 40 power, 30% chance for 80 power, 10% chance for 120 power, and 20% chance to heal the target by 1/4 of its maximum HP, rounded down.",
     "generation": 2
   },
@@ -15304,10 +14246,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "protect",
-      "variant": "standard"
-    },
+    "effect": { "type": "protect", "variant": "standard" },
     "description": "The user is protected from most attacks made by other Pokemon during this turn. This move has a 1/X chance of being successful, where X starts at 1 and triples each time this move is successfully used. X resets to 1 if this move fails, if the user's last move used is not Detect, Endure, King's Shield, Protect, Quick Guard, Spiky Shield, or Wide Guard, or if it was one of those moves and the user's protection was broken. Fails if the user moves last this turn.",
     "generation": 2
   },
@@ -15340,11 +14279,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "confusion",
-      "chance": 10
-    },
+    "effect": { "type": "volatile-status", "status": "confusion", "chance": 10 },
     "description": "Has a 10% chance to confuse the target.",
     "generation": 1
   },
@@ -15377,10 +14312,7 @@
       "charge": false,
       "bypassSubstitute": true
     },
-    "effect": {
-      "type": "custom",
-      "handler": "psych-up"
-    },
+    "effect": { "type": "custom", "handler": "psych-up" },
     "description": "The user copies all of the target's current stat stage changes.",
     "generation": 2
   },
@@ -15415,12 +14347,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "spDefense",
-          "stages": -1
-        }
-      ],
+      "changes": [{ "stat": "spDefense", "stages": -1 }],
       "target": "foe",
       "chance": 10
     },
@@ -15458,12 +14385,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "spAttack",
-          "stages": -2
-        }
-      ],
+      "changes": [{ "stat": "spAttack", "stages": -2 }],
       "target": "self",
       "chance": 100
     },
@@ -15697,10 +14619,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "custom",
-      "handler": "pursuit"
-    },
+    "effect": { "type": "custom", "handler": "pursuit" },
     "description": "If an adjacent opposing Pokemon switches out this turn, this move hits that Pokemon before it leaves the field, even if it was not the original target. If the user moves after an opponent using Parting Shot, U-turn, or Volt Switch, but not Baton Pass, it will hit that opponent before it leaves the field. Power doubles and no accuracy check is done if the user hits an opponent switching out, and the user's turn is over; if an opponent faints from this, the replacement Pokemon does not become active until the end of the turn.",
     "generation": 2
   },
@@ -15835,18 +14754,9 @@
     "effect": {
       "type": "stat-change",
       "changes": [
-        {
-          "stat": "spAttack",
-          "stages": 1
-        },
-        {
-          "stat": "spDefense",
-          "stages": 1
-        },
-        {
-          "stat": "speed",
-          "stages": 1
-        }
+        { "stat": "spAttack", "stages": 1 },
+        { "stat": "spDefense", "stages": 1 },
+        { "stat": "speed", "stages": 1 }
       ],
       "target": "self",
       "chance": 100
@@ -15949,11 +14859,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "weather",
-      "weather": "rain",
-      "turns": 5
-    },
+    "effect": { "type": "weather", "weather": "rain", "turns": 5 },
     "description": "For 5 turns, the weather becomes Rain Dance. The damage of Water-type attacks is multiplied by 1.5 and the damage of Fire-type attacks is multiplied by 0.5 during the effect. Lasts for 8 turns if the user is holding Damp Rock. Fails if the current weather is Rain Dance.",
     "generation": 2
   },
@@ -15986,10 +14892,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "custom",
-      "handler": "rapid-spin"
-    },
+    "effect": { "type": "custom", "handler": "rapid-spin" },
     "description": "If this move is successful and the user has not fainted, the effects of Leech Seed and binding moves end for the user, and all hazards are removed from the user's side of the field.",
     "generation": 2
   },
@@ -16057,12 +14960,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "defense",
-          "stages": -1
-        }
-      ],
+      "changes": [{ "stat": "defense", "stages": -1 }],
       "target": "foe",
       "chance": 50
     },
@@ -16098,10 +14996,7 @@
       "charge": true,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "two-turn",
-      "firstTurn": "charge"
-    },
+    "effect": { "type": "two-turn", "firstTurn": "charge" },
     "description": "Has a higher chance for a critical hit. This attack charges on the first turn and executes on the second. If the user is holding a Power Herb, the move completes in one turn.",
     "generation": 1
   },
@@ -16134,10 +15029,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "heal",
-      "amount": 0.5
-    },
+    "effect": { "type": "heal", "amount": 0.5 },
     "description": "The user restores 1/2 of its maximum HP, rounded half up.",
     "generation": 1
   },
@@ -16203,11 +15095,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "screen",
-      "screen": "reflect",
-      "turns": 5
-    },
+    "effect": { "type": "screen", "screen": "reflect", "turns": 5 },
     "description": "For 5 turns, the user and its party members take 0.5x damage from physical attacks, or 0.66x damage if in a Double or Triple Battle. Critical hits ignore this effect. It is removed from the user's side if the user or an ally is successfully hit by Brick Break or Defog. Lasts for 8 turns if the user is holding Light Clay. Fails if the effect is already active on the user's side.",
     "generation": 1
   },
@@ -16306,11 +15194,7 @@
       "charge": false,
       "bypassSubstitute": true
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "sleep",
-      "chance": 10
-    },
+    "effect": { "type": "status-chance", "status": "sleep", "chance": 10 },
     "description": "Has a 10% chance to cause the target to fall asleep. If this move is successful on at least one target and the user is a Meloetta, it changes to Pirouette Forme if it is currently in Aria Forme, or changes to Aria Forme if it is currently in Pirouette Forme. This forme change does not happen if the Meloetta has the Sheer Force Ability. The Pirouette Forme reverts to Aria Forme when Meloetta is not active.",
     "generation": 5
   },
@@ -16409,10 +15293,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "custom",
-      "handler": "return"
-    },
+    "effect": { "type": "custom", "handler": "return" },
     "description": "Power is equal to the greater of (user's Happiness * 2/5), rounded down, or 1.",
     "generation": 2
   },
@@ -16577,11 +15458,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "multi-hit",
-      "min": 2,
-      "max": 5
-    },
+    "effect": { "type": "multi-hit", "min": 2, "max": 5 },
     "description": "Hits two to five times. Has a 35% chance to hit two or three times and a 15% chance to hit four or five times. If one of the hits breaks the target's substitute, it will take damage for the remaining hits. If the user has the Skill Link Ability, this move will always hit five times.",
     "generation": 3
   },
@@ -16614,11 +15491,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "confusion",
-      "chance": 20
-    },
+    "effect": { "type": "volatile-status", "status": "confusion", "chance": 20 },
     "description": "Has a 20% chance to confuse the target.",
     "generation": 4
   },
@@ -16653,12 +15526,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "speed",
-          "stages": 2
-        }
-      ],
+      "changes": [{ "stat": "speed", "stages": 2 }],
       "target": "self",
       "chance": 100
     },
@@ -16694,11 +15562,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "flinch",
-      "chance": 30
-    },
+    "effect": { "type": "volatile-status", "status": "flinch", "chance": 30 },
     "description": "Has a 30% chance to make the target flinch.",
     "generation": 1
   },
@@ -16733,12 +15597,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "defense",
-          "stages": -1
-        }
-      ],
+      "changes": [{ "stat": "defense", "stages": -1 }],
       "target": "foe",
       "chance": 50
     },
@@ -16809,12 +15668,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "speed",
-          "stages": -1
-        }
-      ],
+      "changes": [{ "stat": "speed", "stages": -1 }],
       "target": "foe",
       "chance": 100
     },
@@ -16916,11 +15770,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "flinch",
-      "chance": 30
-    },
+    "effect": { "type": "volatile-status", "status": "flinch", "chance": 30 },
     "description": "Has a 30% chance to make the target flinch.",
     "generation": 1
   },
@@ -16986,10 +15836,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "heal",
-      "amount": 0.5
-    },
+    "effect": { "type": "heal", "amount": 0.5 },
     "description": "The user restores 1/2 of its maximum HP, rounded half up. Until the end of the turn, Flying-type users lose their Flying type and pure Flying-type users become Normal type. Does nothing if the user's HP is full.",
     "generation": 4
   },
@@ -17088,11 +15935,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "burn",
-      "chance": 50
-    },
+    "effect": { "type": "status-chance", "status": "burn", "chance": 50 },
     "description": "Has a 50% chance to burn the target.",
     "generation": 2
   },
@@ -17193,13 +16036,8 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "accuracy",
-          "stages": -1
-        }
-      ],
-      "target": "self",
+      "changes": [{ "stat": "accuracy", "stages": -1 }],
+      "target": "foe",
       "chance": 100
     },
     "description": "Lowers the target's accuracy by 1 stage.",
@@ -17267,11 +16105,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "weather",
-      "weather": "sand",
-      "turns": 5
-    },
+    "effect": { "type": "weather", "weather": "sand", "turns": 5 },
     "description": "For 5 turns, the weather becomes Sandstorm. At the end of each turn except the last, all active Pokemon lose 1/16 of their maximum HP, rounded down, unless they are a Ground, Rock, or Steel type, or have the Magic Guard, Overcoat, Sand Force, Sand Rush, or Sand Veil Abilities. During the effect, the Special Defense of Rock-type Pokemon is multiplied by 1.5 when taking damage from a special attack. Lasts for 8 turns if the user is holding Smooth Rock. Fails if the current weather is Sandstorm.",
     "generation": 2
   },
@@ -17304,11 +16138,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "burn",
-      "chance": 30
-    },
+    "effect": { "type": "status-chance", "status": "burn", "chance": 30 },
     "description": "Has a 30% chance to burn the target. The target thaws out if it is frozen.",
     "generation": 5
   },
@@ -17343,13 +16173,8 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "speed",
-          "stages": -2
-        }
-      ],
-      "target": "self",
+      "changes": [{ "stat": "speed", "stages": -2 }],
+      "target": "foe",
       "chance": 100
     },
     "description": "Lowers the target's Speed by 2 stages.",
@@ -17419,13 +16244,8 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "defense",
-          "stages": -2
-        }
-      ],
-      "target": "self",
+      "changes": [{ "stat": "defense", "stages": -2 }],
+      "target": "foe",
       "chance": 100
     },
     "description": "Lowers the target's Defense by 2 stages.",
@@ -17460,11 +16280,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "burn",
-      "chance": 30
-    },
+    "effect": { "type": "status-chance", "status": "burn", "chance": 30 },
     "description": "Has a 30% chance to burn the target.",
     "generation": 5
   },
@@ -17497,11 +16313,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "paralysis",
-      "chance": 30
-    },
+    "effect": { "type": "status-chance", "status": "paralysis", "chance": 30 },
     "description": "Has a 30% chance to cause a secondary effect on the target based on the battle terrain. Causes paralysis on the regular Wi-Fi terrain, causes paralysis during Electric Terrain, lowers Special Attack by 1 stage during Misty Terrain, and causes sleep during Grassy Terrain.",
     "generation": 3
   },
@@ -17602,12 +16414,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "spDefense",
-          "stages": -2
-        }
-      ],
+      "changes": [{ "stat": "spDefense", "stages": -2 }],
       "target": "foe",
       "chance": 40
     },
@@ -17643,9 +16450,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "level-damage"
-    },
+    "effect": { "type": "level-damage" },
     "description": "Deals damage to the target equal to the user's level.",
     "generation": 1
   },
@@ -17713,12 +16518,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "spDefense",
-          "stages": -1
-        }
-      ],
+      "changes": [{ "stat": "spDefense", "stages": -1 }],
       "target": "foe",
       "chance": 20
     },
@@ -17787,10 +16587,7 @@
       "charge": true,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "two-turn",
-      "firstTurn": "charge"
-    },
+    "effect": { "type": "two-turn", "firstTurn": "charge" },
     "description": "If this move is successful, it breaks through the target's Detect, King's Shield, Protect, or Spiky Shield for this turn, allowing other Pokemon to attack the target normally. If the target's side is protected by Crafty Shield, Mat Block, Quick Guard, or Wide Guard, that protection is also broken for this turn and other Pokemon may attack the target's side normally. This attack charges on the first turn and executes on the second. On the first turn, the user avoids all attacks. If the user is holding a Power Herb, the move completes in one turn. Damage doubles and no accuracy check is done if the target has used Minimize while active.",
     "generation": 4
   },
@@ -17891,12 +16688,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "attack",
-          "stages": 1
-        }
-      ],
+      "changes": [{ "stat": "attack", "stages": 1 }],
       "target": "self",
       "chance": 100
     },
@@ -17932,9 +16724,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "ohko"
-    },
+    "effect": { "type": "ohko" },
     "description": "Deals damage to the target equal to the target's maximum HP. Ignores accuracy and evasiveness modifiers. This attack's accuracy is equal to (user's level - target's level + 30)%, and fails if the target is at a higher level. Pokemon with the Sturdy Ability are immune.",
     "generation": 3
   },
@@ -17970,26 +16760,11 @@
     "effect": {
       "type": "stat-change",
       "changes": [
-        {
-          "stat": "defense",
-          "stages": -1
-        },
-        {
-          "stat": "spDefense",
-          "stages": -1
-        },
-        {
-          "stat": "attack",
-          "stages": 2
-        },
-        {
-          "stat": "spAttack",
-          "stages": 2
-        },
-        {
-          "stat": "speed",
-          "stages": 2
-        }
+        { "stat": "defense", "stages": -1 },
+        { "stat": "spDefense", "stages": -1 },
+        { "stat": "attack", "stages": 2 },
+        { "stat": "spAttack", "stages": 2 },
+        { "stat": "speed", "stages": 2 }
       ],
       "target": "self",
       "chance": 100
@@ -18028,16 +16803,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "speed",
-          "stages": 2
-        },
-        {
-          "stat": "attack",
-          "stages": 1
-        }
-      ],
+      "changes": [{ "stat": "speed", "stages": 2 }, { "stat": "attack", "stages": 1 }],
       "target": "self",
       "chance": 100
     },
@@ -18106,11 +16872,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "confusion",
-      "chance": 10
-    },
+    "effect": { "type": "volatile-status", "status": "confusion", "chance": 10 },
     "description": "Has a 10% chance to confuse the target.",
     "generation": 3
   },
@@ -18146,28 +16908,13 @@
     "effect": {
       "type": "stat-change",
       "changes": [
-        {
-          "stat": "attack",
-          "stages": 1
-        },
-        {
-          "stat": "defense",
-          "stages": 1
-        },
-        {
-          "stat": "spAttack",
-          "stages": 1
-        },
-        {
-          "stat": "spDefense",
-          "stages": 1
-        },
-        {
-          "stat": "speed",
-          "stages": 1
-        }
+        { "stat": "attack", "stages": 1 },
+        { "stat": "defense", "stages": 1 },
+        { "stat": "spAttack", "stages": 1 },
+        { "stat": "spDefense", "stages": 1 },
+        { "stat": "speed", "stages": 1 }
       ],
-      "target": "self",
+      "target": "foe",
       "chance": 10,
       "fromSecondary": true
     },
@@ -18236,10 +16983,7 @@
       "charge": false,
       "bypassSubstitute": true
     },
-    "effect": {
-      "type": "status-guaranteed",
-      "status": "sleep"
-    },
+    "effect": { "type": "status-guaranteed", "status": "sleep" },
     "description": "Causes the target to fall asleep.",
     "generation": 1
   },
@@ -18272,10 +17016,7 @@
       "charge": false,
       "bypassSubstitute": true
     },
-    "effect": {
-      "type": "custom",
-      "handler": "sketch"
-    },
+    "effect": { "type": "custom", "handler": "sketch" },
     "description": "This move is permanently replaced by the last move used by the target. The copied move has the maximum PP for that move. Fails if the target has not made a move, if the user has Transformed, or if the move is Chatter, Sketch, Struggle, or any move the user knows.",
     "generation": 2
   },
@@ -18341,10 +17082,7 @@
       "charge": true,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "two-turn",
-      "firstTurn": "charge"
-    },
+    "effect": { "type": "two-turn", "firstTurn": "charge" },
     "description": "This attack charges on the first turn and executes on the second. Raises the user's Defense by 1 stage on the first turn. If the user is holding a Power Herb, the move completes in one turn.",
     "generation": 1
   },
@@ -18380,15 +17118,8 @@
     "effect": {
       "type": "multi",
       "effects": [
-        {
-          "type": "two-turn",
-          "firstTurn": "charge"
-        },
-        {
-          "type": "volatile-status",
-          "status": "flinch",
-          "chance": 30
-        }
+        { "type": "two-turn", "firstTurn": "charge" },
+        { "type": "volatile-status", "status": "flinch", "chance": 30 }
       ]
     },
     "description": "Has a 30% chance to make the target flinch and a higher chance for a critical hit. This attack charges on the first turn and executes on the second. If the user is holding a Power Herb, the move completes in one turn.",
@@ -18423,10 +17154,7 @@
       "charge": true,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "two-turn",
-      "firstTurn": "charge"
-    },
+    "effect": { "type": "two-turn", "firstTurn": "charge" },
     "description": "This attack takes the target into the air with the user on the first turn and executes on the second. Pokemon weighing 200 kg or more cannot be lifted. On the first turn, the user and the target avoid all attacks other than Gust, Hurricane, Sky Uppercut, Smack Down, Thousand Arrows, Thunder, and Twister. The user and the target cannot make a move between turns, but the target can select a move to use. This move cannot damage Flying-type Pokemon. Fails on the first turn if the target is an ally, if the target has a substitute, or if the target is using Bounce, Dig, Dive, Fly, Phantom Force, Shadow Force, or Sky Drop.",
     "generation": 5
   },
@@ -18492,10 +17220,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "heal",
-      "amount": 0.5
-    },
+    "effect": { "type": "heal", "amount": 0.5 },
     "description": "The user restores 1/2 of its maximum HP, rounded half up.",
     "generation": 3
   },
@@ -18594,10 +17319,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-guaranteed",
-      "status": "sleep"
-    },
+    "effect": { "type": "status-guaranteed", "status": "sleep" },
     "description": "Causes the target to fall asleep.",
     "generation": 1
   },
@@ -18630,10 +17352,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "custom",
-      "handler": "sleep-talk"
-    },
+    "effect": { "type": "custom", "handler": "sleep-talk" },
     "description": "One of the user's known moves, besides this move, is selected for use at random. Fails if the user is not asleep. The selected move does not have PP deducted from it, and can currently have 0 PP. This move cannot select Assist, Belch, Bide, Celebrate, Chatter, Copycat, Focus Punch, Hold Hands, Me First, Metronome, Mimic, Mirror Move, Nature Power, Sketch, Sleep Talk, Struggle, Uproar, or any two-turn move.",
     "generation": 2
   },
@@ -18666,11 +17385,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "poison",
-      "chance": 30
-    },
+    "effect": { "type": "status-chance", "status": "poison", "chance": 30 },
     "description": "Has a 30% chance to poison the target.",
     "generation": 1
   },
@@ -18703,11 +17418,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "poison",
-      "chance": 30
-    },
+    "effect": { "type": "status-chance", "status": "poison", "chance": 30 },
     "description": "Has a 30% chance to poison the target.",
     "generation": 2
   },
@@ -18740,11 +17451,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "poison",
-      "chance": 10
-    },
+    "effect": { "type": "status-chance", "status": "poison", "chance": 10 },
     "description": "Has a 10% chance to poison the target.",
     "generation": 5
   },
@@ -18843,11 +17550,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "poison",
-      "chance": 40
-    },
+    "effect": { "type": "status-chance", "status": "poison", "chance": 40 },
     "description": "Has a 40% chance to poison the target.",
     "generation": 1
   },
@@ -18882,13 +17585,8 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "accuracy",
-          "stages": -1
-        }
-      ],
-      "target": "self",
+      "changes": [{ "stat": "accuracy", "stages": -1 }],
+      "target": "foe",
       "chance": 100
     },
     "description": "Lowers the target's accuracy by 1 stage.",
@@ -18925,12 +17623,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "spAttack",
-          "stages": -1
-        }
-      ],
+      "changes": [{ "stat": "spAttack", "stages": -1 }],
       "target": "foe",
       "chance": 100
     },
@@ -18999,11 +17692,7 @@
       "charge": false,
       "bypassSubstitute": true
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "flinch",
-      "chance": 30
-    },
+    "effect": { "type": "volatile-status", "status": "flinch", "chance": 30 },
     "description": "Has a 30% chance to make the target flinch. Fails if the user is not asleep.",
     "generation": 2
   },
@@ -19069,10 +17758,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "heal",
-      "amount": 0.5
-    },
+    "effect": { "type": "heal", "amount": 0.5 },
     "description": "The user restores 1/2 of its maximum HP, rounded half up.",
     "generation": 1
   },
@@ -19105,10 +17791,7 @@
       "charge": true,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "two-turn",
-      "firstTurn": "solar-beam"
-    },
+    "effect": { "type": "two-turn", "firstTurn": "solar-beam" },
     "description": "This attack charges on the first turn and executes on the second. Power is halved if the weather is Hail, Primordial Sea, Rain Dance, or Sandstorm. If the user is holding a Power Herb or the weather is Desolate Land or Sunny Day, the move completes in one turn.",
     "generation": 1
   },
@@ -19141,10 +17824,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "fixed-damage",
-      "damage": 20
-    },
+    "effect": { "type": "fixed-damage", "damage": 20 },
     "description": "Deals 20 HP of damage to the target.",
     "generation": 1
   },
@@ -19210,11 +17890,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "paralysis",
-      "chance": 30
-    },
+    "effect": { "type": "status-chance", "status": "paralysis", "chance": 30 },
     "description": "Has a 30% chance to paralyze the target.",
     "generation": 2
   },
@@ -19280,11 +17956,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "multi-hit",
-      "min": 2,
-      "max": 5
-    },
+    "effect": { "type": "multi-hit", "min": 2, "max": 5 },
     "description": "Hits two to five times. Has a 35% chance to hit two or three times and a 15% chance to hit four or five times. If one of the hits breaks the target's substitute, it will take damage for the remaining hits. If the user has the Skill Link Ability, this move will always hit five times.",
     "generation": 1
   },
@@ -19317,10 +17989,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "entry-hazard",
-      "hazard": "spikes"
-    },
+    "effect": { "type": "entry-hazard", "hazard": "spikes" },
     "description": "Sets up a hazard on the opposing side of the field, damaging each opposing Pokemon that switches in, unless it is a Flying-type Pokemon or has the Levitate Ability. Can be used up to three times before failing. Opponents lose 1/8 of their maximum HP with one layer, 1/6 of their maximum HP with two layers, and 1/4 of their maximum HP with three layers, all rounded down. Can be removed from the opposing side if any opposing Pokemon uses Rapid Spin or Defog successfully, or is hit by Defog.",
     "generation": 2
   },
@@ -19419,10 +18088,7 @@
       "charge": false,
       "bypassSubstitute": true
     },
-    "effect": {
-      "type": "custom",
-      "handler": "spite"
-    },
+    "effect": { "type": "custom", "handler": "spite" },
     "description": "Causes the target's last move used to lose 4 PP. Fails if the target has not made a move, if the move has 0 PP, or if it no longer knows the move.",
     "generation": 2
   },
@@ -19488,10 +18154,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-guaranteed",
-      "status": "sleep"
-    },
+    "effect": { "type": "status-guaranteed", "status": "sleep" },
     "description": "Causes the target to fall asleep.",
     "generation": 1
   },
@@ -19557,11 +18220,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "burn",
-      "chance": 30
-    },
+    "effect": { "type": "status-chance", "status": "burn", "chance": 30 },
     "description": "Has a 30% chance to burn the target. The target thaws out if it is frozen.",
     "generation": 6
   },
@@ -19594,11 +18253,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "flinch",
-      "chance": 30
-    },
+    "effect": { "type": "volatile-status", "status": "flinch", "chance": 30 },
     "description": "Has a 30% chance to make the target flinch. Damage doubles and no accuracy check is done if the target has used Minimize while active.",
     "generation": 5
   },
@@ -19633,12 +18288,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "defense",
-          "stages": 1
-        }
-      ],
+      "changes": [{ "stat": "defense", "stages": 1 }],
       "target": "self",
       "chance": 10,
       "fromSecondary": true
@@ -19741,11 +18391,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "flinch",
-      "chance": 30
-    },
+    "effect": { "type": "volatile-status", "status": "flinch", "chance": 30 },
     "description": "Has a 30% chance to make the target flinch. Damage doubles and no accuracy check is done if the target has used Minimize while active.",
     "generation": 1
   },
@@ -19912,13 +18558,8 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "speed",
-          "stages": -2
-        }
-      ],
-      "target": "self",
+      "changes": [{ "stat": "speed", "stages": -2 }],
+      "target": "foe",
       "chance": 100
     },
     "description": "Lowers the target's Speed by 2 stages.",
@@ -19988,12 +18629,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "spAttack",
-          "stages": -1
-        }
-      ],
+      "changes": [{ "stat": "spAttack", "stages": -1 }],
       "target": "foe",
       "chance": 100
     },
@@ -20029,10 +18665,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-guaranteed",
-      "status": "paralysis"
-    },
+    "effect": { "type": "status-guaranteed", "status": "paralysis" },
     "description": "Paralyzes the target.",
     "generation": 1
   },
@@ -20065,10 +18698,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "recoil",
-      "amount": 0.25
-    },
+    "effect": { "type": "recoil", "amount": 0.25 },
     "description": "If the target lost HP, the user takes recoil damage equal to 1/4 the HP lost by the target, rounded half up, but not less than 1 HP.",
     "generation": 1
   },
@@ -20101,11 +18731,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "substitute",
-      "chance": 100
-    },
+    "effect": { "type": "volatile-status", "status": "substitute", "chance": 100 },
     "description": "The user takes 1/4 of its maximum HP, rounded down, and puts it into a substitute to take its place in battle. The substitute is removed once enough damage is inflicted on it, or if the user switches out or faints. Baton Pass can be used to transfer the substitute to an ally, and the substitute will keep its remaining HP. Until the substitute is broken, it receives damage from all attacks made by other Pokemon and shields the user from status effects and stat stage changes caused by other Pokemon. Sound-based moves and Pokemon with the Infiltrator Ability ignore substitutes. The user still takes normal damage from weather and status effects while behind its substitute. If the substitute breaks during a multi-hit attack, the user will take damage from any remaining hits. If a substitute is created while the user is trapped by a binding move, the binding effect ends immediately. Fails if the user does not have enough HP remaining to create a substitute without fainting, or if it already has a substitute.",
     "generation": 1
   },
@@ -20171,11 +18797,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "weather",
-      "weather": "sun",
-      "turns": 5
-    },
+    "effect": { "type": "weather", "weather": "sun", "turns": 5 },
     "description": "For 5 turns, the weather becomes Sunny Day. The damage of Fire-type attacks is multiplied by 1.5 and the damage of Water-type attacks is multiplied by 0.5 during the effect. Lasts for 8 turns if the user is holding Heat Rock. Fails if the current weather is Sunny Day.",
     "generation": 2
   },
@@ -20243,16 +18865,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "attack",
-          "stages": -1
-        },
-        {
-          "stat": "defense",
-          "stages": -1
-        }
-      ],
+      "changes": [{ "stat": "attack", "stages": -1 }, { "stat": "defense", "stages": -1 }],
       "target": "self",
       "chance": 100
     },
@@ -20288,11 +18901,7 @@
       "charge": false,
       "bypassSubstitute": true
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "confusion",
-      "chance": 100
-    },
+    "effect": { "type": "volatile-status", "status": "confusion", "chance": 100 },
     "description": "Causes the target to become confused.",
     "generation": 1
   },
@@ -20361,19 +18970,10 @@
     "effect": {
       "type": "multi",
       "effects": [
-        {
-          "type": "volatile-status",
-          "status": "confusion",
-          "chance": 100
-        },
+        { "type": "volatile-status", "status": "confusion", "chance": 100 },
         {
           "type": "stat-change",
-          "changes": [
-            {
-              "stat": "attack",
-              "stages": 2
-            }
-          ],
+          "changes": [{ "stat": "attack", "stages": 2 }],
           "target": "foe",
           "chance": 100
         }
@@ -20444,11 +19044,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "confusion",
-      "chance": 100
-    },
+    "effect": { "type": "volatile-status", "status": "confusion", "chance": 100 },
     "description": "Causes the target to become confused.",
     "generation": 2
   },
@@ -20483,13 +19079,8 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "evasion",
-          "stages": -2
-        }
-      ],
-      "target": "self",
+      "changes": [{ "stat": "evasion", "stages": -2 }],
+      "target": "foe",
       "chance": 100
     },
     "description": "Lowers the target's evasiveness by 2 stages.",
@@ -20592,12 +19183,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "attack",
-          "stages": 2
-        }
-      ],
+      "changes": [{ "stat": "attack", "stages": 2 }],
       "target": "self",
       "chance": 100
     },
@@ -20666,10 +19252,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "custom",
-      "handler": "synthesis"
-    },
+    "effect": { "type": "custom", "handler": "synthesis" },
     "description": "The user restores 1/2 of its maximum HP if Delta Stream or no weather conditions are in effect, 2/3 of its maximum HP if the weather is Desolate Land or Sunny Day, and 1/4 of its maximum HP if the weather is Hail, Primordial Sea, Rain Dance, or Sandstorm, all rounded half down.",
     "generation": 2
   },
@@ -20737,12 +19320,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "spAttack",
-          "stages": 3
-        }
-      ],
+      "changes": [{ "stat": "spAttack", "stages": 3 }],
       "target": "self",
       "chance": 100
     },
@@ -20778,11 +19356,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "multi-hit",
-      "min": 2,
-      "max": 5
-    },
+    "effect": { "type": "multi-hit", "min": 2, "max": 5 },
     "description": "Hits two to five times. Has a 35% chance to hit two or three times and a 15% chance to hit four or five times. If one of the hits breaks the target's substitute, it will take damage for the remaining hits. If the user has the Skill Link Ability, this move will always hit five times.",
     "generation": 5
   },
@@ -20817,13 +19391,8 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "defense",
-          "stages": -1
-        }
-      ],
-      "target": "self",
+      "changes": [{ "stat": "defense", "stages": -1 }],
+      "target": "foe",
       "chance": 100
     },
     "description": "Lowers the target's Defense by 1 stage.",
@@ -20891,10 +19460,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "recoil",
-      "amount": 0.25
-    },
+    "effect": { "type": "recoil", "amount": 0.25 },
     "description": "If the target lost HP, the user takes recoil damage equal to 1/4 the HP lost by the target, rounded half up, but not less than 1 HP.",
     "generation": 1
   },
@@ -20927,11 +19493,7 @@
       "charge": false,
       "bypassSubstitute": true
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "taunt",
-      "chance": 100
-    },
+    "effect": { "type": "volatile-status", "status": "taunt", "chance": 100 },
     "description": "Prevents the target from using non-damaging moves for its next three turns. Pokemon with the Oblivious Ability or protected by the Aroma Veil Ability are immune.",
     "generation": 3
   },
@@ -20997,11 +19559,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "confusion",
-      "chance": 100
-    },
+    "effect": { "type": "volatile-status", "status": "confusion", "chance": 100 },
     "description": "Causes the target to become confused.",
     "generation": 3
   },
@@ -21100,10 +19658,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "custom",
-      "handler": "thief"
-    },
+    "effect": { "type": "custom", "handler": "thief" },
     "description": "If this attack was successful and the user has not fainted, it steals the target's held item if the user is not holding one. The target's item is not stolen if it is a Mail, or if the target is a Kyogre holding a Blue Orb, a Groudon holding a Red Orb, a Giratina holding a Griseous Orb, an Arceus holding a Plate, a Genesect holding a Drive, or a Pokemon that can Mega Evolve holding the Mega Stone for its species. Items lost to this move cannot be regained with Recycle or the Harvest Ability.",
     "generation": 2
   },
@@ -21235,11 +19790,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "paralysis",
-      "chance": 30
-    },
+    "effect": { "type": "status-chance", "status": "paralysis", "chance": 30 },
     "description": "Has a 30% chance to paralyze the target. This move can hit a target using Bounce, Fly, or Sky Drop, or is under the effect of Sky Drop. If the weather is Primordial Sea or Rain Dance, this move does not check accuracy. If the weather is Desolate Land or Sunny Day, this move's accuracy is 50%.",
     "generation": 1
   },
@@ -21275,16 +19826,8 @@
     "effect": {
       "type": "multi",
       "effects": [
-        {
-          "type": "status-chance",
-          "status": "paralysis",
-          "chance": 10
-        },
-        {
-          "type": "volatile-status",
-          "status": "flinch",
-          "chance": 10
-        }
+        { "type": "status-chance", "status": "paralysis", "chance": 10 },
+        { "type": "volatile-status", "status": "flinch", "chance": 10 }
       ]
     },
     "description": "Has a 10% chance to paralyze the target and a 10% chance to make it flinch.",
@@ -21319,11 +19862,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "paralysis",
-      "chance": 10
-    },
+    "effect": { "type": "status-chance", "status": "paralysis", "chance": 10 },
     "description": "Has a 10% chance to paralyze the target.",
     "generation": 1
   },
@@ -21356,11 +19895,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "paralysis",
-      "chance": 10
-    },
+    "effect": { "type": "status-chance", "status": "paralysis", "chance": 10 },
     "description": "Has a 10% chance to paralyze the target.",
     "generation": 1
   },
@@ -21393,10 +19928,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-guaranteed",
-      "status": "paralysis"
-    },
+    "effect": { "type": "status-guaranteed", "status": "paralysis" },
     "description": "Paralyzes the target. This move does not ignore type immunity.",
     "generation": 1
   },
@@ -21429,11 +19961,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "paralysis",
-      "chance": 10
-    },
+    "effect": { "type": "status-chance", "status": "paralysis", "chance": 10 },
     "description": "Has a 10% chance to paralyze the target.",
     "generation": 1
   },
@@ -21468,17 +19996,8 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "attack",
-          "stages": -1
-        },
-        {
-          "stat": "defense",
-          "stages": -1
-        }
-      ],
-      "target": "self",
+      "changes": [{ "stat": "attack", "stages": -1 }, { "stat": "defense", "stages": -1 }],
+      "target": "foe",
       "chance": 100
     },
     "description": "Lowers the target's Attack and Defense by 1 stage.",
@@ -21579,10 +20098,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-guaranteed",
-      "status": "badly-poisoned"
-    },
+    "effect": { "type": "status-guaranteed", "status": "badly-poisoned" },
     "description": "Badly poisons the target. If a Poison-type Pokemon uses this move, the target cannot avoid the attack, even if the target is in the middle of a two-turn move.",
     "generation": 1
   },
@@ -21648,10 +20164,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "custom",
-      "handler": "transform"
-    },
+    "effect": { "type": "custom", "handler": "transform" },
     "description": "The user transforms into the target. The target's current stats, stat stages, types, moves, Ability, weight, gender, and sprite are copied. The user's level and HP remain the same and each copied move receives only 5 PP, with a maximum of 5 PP each. The user can no longer change formes if it would have the ability to do so. This move fails if it hits a substitute, if either the user or the target is already transformed, or if either is behind an Illusion.",
     "generation": 1
   },
@@ -21816,11 +20329,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "multi-hit",
-      "min": 3,
-      "max": 3
-    },
+    "effect": { "type": "multi-hit", "min": 3, "max": 3 },
     "description": "Hits three times. Power increases to 20 for the second hit and 30 for the third. This move checks accuracy for each hit, and the attack ends if the target avoids a hit. If one of the hits breaks the target's substitute, it will take damage for the remaining hits. If the user has the Skill Link Ability, this move will always hit three times.",
     "generation": 2
   },
@@ -21886,11 +20395,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "multi-hit",
-      "min": 2,
-      "max": 2
-    },
+    "effect": { "type": "multi-hit", "min": 2, "max": 2 },
     "description": "Hits twice, with each hit having a 20% chance to poison the target. If the first hit breaks the target's substitute, it will take damage for the second hit.",
     "generation": 1
   },
@@ -21923,11 +20428,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "flinch",
-      "chance": 20
-    },
+    "effect": { "type": "volatile-status", "status": "flinch", "chance": 20 },
     "description": "Has a 20% chance to make the target flinch. Power doubles if the target is using Bounce, Fly, or Sky Drop, or is under the effect of Sky Drop.",
     "generation": 2
   },
@@ -21960,10 +20461,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "switch-out",
-      "who": "self"
-    },
+    "effect": { "type": "switch-out", "who": "self" },
     "description": "If this move is successful and the user has not fainted, the user switches out even if it is trapped and is replaced immediately by a selected party member. The user does not switch out if there are no unfainted party members, or if the target switched out using an Eject Button.",
     "generation": 4
   },
@@ -22032,18 +20530,9 @@
     "effect": {
       "type": "stat-change",
       "changes": [
-        {
-          "stat": "speed",
-          "stages": -1
-        },
-        {
-          "stat": "defense",
-          "stages": -1
-        },
-        {
-          "stat": "spDefense",
-          "stages": -1
-        }
+        { "stat": "speed", "stages": -1 },
+        { "stat": "defense", "stages": -1 },
+        { "stat": "spDefense", "stages": -1 }
       ],
       "target": "self",
       "chance": 100
@@ -22278,10 +20767,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "switch-out",
-      "who": "self"
-    },
+    "effect": { "type": "switch-out", "who": "self" },
     "description": "If this move is successful and the user has not fainted, the user switches out even if it is trapped and is replaced immediately by a selected party member. The user does not switch out if there are no unfainted party members, or if the target switched out using an Eject Button.",
     "generation": 5
   },
@@ -22317,15 +20803,8 @@
     "effect": {
       "type": "multi",
       "effects": [
-        {
-          "type": "recoil",
-          "amount": 0.33
-        },
-        {
-          "type": "status-chance",
-          "status": "paralysis",
-          "chance": 10
-        }
+        { "type": "recoil", "amount": 0.33 },
+        { "type": "status-chance", "status": "paralysis", "chance": 10 }
       ]
     },
     "description": "Has a 10% chance to paralyze the target. If the target lost HP, the user takes recoil damage equal to 33% the HP lost by the target, rounded half up, but not less than 1 HP.",
@@ -22459,11 +20938,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "confusion",
-      "chance": 20
-    },
+    "effect": { "type": "volatile-status", "status": "confusion", "chance": 20 },
     "description": "Has a 20% chance to confuse the target.",
     "generation": 3
   },
@@ -22496,11 +20971,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "multi-hit",
-      "min": 2,
-      "max": 5
-    },
+    "effect": { "type": "multi-hit", "min": 2, "max": 5 },
     "description": "Hits two to five times. Has a 35% chance to hit two or three times and a 15% chance to hit four or five times. If one of the hits breaks the target's substitute, it will take damage for the remaining hits. If the user has the Skill Link Ability, this move will always hit five times.",
     "generation": 6
   },
@@ -22599,11 +21070,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "flinch",
-      "chance": 20
-    },
+    "effect": { "type": "volatile-status", "status": "flinch", "chance": 20 },
     "description": "Has a 20% chance to make the target flinch.",
     "generation": 1
   },
@@ -22768,10 +21235,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "recoil",
-      "amount": 0.25
-    },
+    "effect": { "type": "recoil", "amount": 0.25 },
     "description": "If the target lost HP, the user takes recoil damage equal to 1/4 the HP lost by the target, rounded half up, but not less than 1 HP.",
     "generation": 5
   },
@@ -22804,10 +21268,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-guaranteed",
-      "status": "burn"
-    },
+    "effect": { "type": "status-guaranteed", "status": "burn" },
     "description": "Burns the target.",
     "generation": 3
   },
@@ -22908,12 +21369,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "defense",
-          "stages": 1
-        }
-      ],
+      "changes": [{ "stat": "defense", "stages": 1 }],
       "target": "self",
       "chance": 100
     },
@@ -22982,10 +21438,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "recoil",
-      "amount": 0.33
-    },
+    "effect": { "type": "recoil", "amount": 0.33 },
     "description": "If the target lost HP, the user takes recoil damage equal to 33% the HP lost by the target, rounded half up, but not less than 1 HP.",
     "generation": 4
   },
@@ -23020,16 +21473,7 @@
     },
     "effect": {
       "type": "stat-change",
-      "changes": [
-        {
-          "stat": "attack",
-          "stages": 1
-        },
-        {
-          "stat": "spAttack",
-          "stages": 1
-        }
-      ],
+      "changes": [{ "stat": "attack", "stages": 1 }, { "stat": "spAttack", "stages": 1 }],
       "target": "self",
       "chance": 100
     },
@@ -23197,11 +21641,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "yawn",
-      "chance": 100
-    },
+    "effect": { "type": "volatile-status", "status": "yawn", "chance": 100 },
     "description": "Causes the target to fall asleep at the end of the next turn. Fails when used if the target cannot fall asleep or if it already has a non-volatile status condition. At the end of the next turn, if the target is still active, does not have a non-volatile status condition, and can fall asleep, it falls asleep. If the target becomes affected, this effect cannot be prevented by Safeguard or a substitute, or by falling asleep and waking up during the effect.",
     "generation": 3
   },
@@ -23234,11 +21674,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "status-chance",
-      "status": "paralysis",
-      "chance": 100
-    },
+    "effect": { "type": "status-chance", "status": "paralysis", "chance": 100 },
     "description": "Has a 100% chance to paralyze the target.",
     "generation": 2
   },
@@ -23271,11 +21707,7 @@
       "charge": false,
       "bypassSubstitute": false
     },
-    "effect": {
-      "type": "volatile-status",
-      "status": "flinch",
-      "chance": 20
-    },
+    "effect": { "type": "volatile-status", "status": "flinch", "chance": 20 },
     "description": "Has a 20% chance to make the target flinch.",
     "generation": 4
   }

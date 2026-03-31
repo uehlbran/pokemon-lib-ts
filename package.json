@@ -2,6 +2,9 @@
   "name": "pokemon-lib-ts",
   "private": true,
   "packageManager": "npm@11.9.0",
+  "engines": {
+    "node": ">=20"
+  },
   "workspaces": [
     "packages/*",
     "tools/*"
@@ -48,9 +51,11 @@
     "oracle:stats": "tsx tools/oracle-validation/src/runner.ts --suite stats",
     "oracle:groundtruth": "tsx tools/oracle-validation/src/runner.ts --suite groundTruth",
     "oracle:fast": "tsx tools/oracle-validation/src/runner.ts --suite fast",
+    "proof:preview": "tsx tools/oracle-validation/src/changed-mechanics.ts",
+    "proof:audit:mutation": "tsx tools/oracle-validation/src/direct-mutation-audit.ts",
     "smoke": "tsx tools/oracle-validation/src/runner.ts --suite smoke",
     "compliance": "tsx tools/oracle-validation/src/runner.ts --suite all",
-    "test:oracle": "vitest run --config tools/oracle-validation/vitest.config.ts",
+    "test:oracle": "npm run test --workspace oracle-validation",
     "validate:pret": "tsx tools/data-importer/src/pret-overrides/validate-committed-data.ts",
     "test:mutant": "stryker run stryker.config.mjs",
     "test:mutant:core": "stryker run stryker.config.mjs",
