@@ -314,6 +314,7 @@
         "packages/gen8/src/Gen8Weather.ts",
         "packages/gen8/src/index.ts",
         "packages/gen8/src/internal.ts",
+        "packages/gen8/src/data/**",
         "packages/gen8/data/**"
       ],
       "mechanicIds": ["gen8.runtime.ruleset"],
@@ -359,6 +360,7 @@
         "packages/gen9/src/constants/mechanics.ts",
         "packages/gen9/src/index.ts",
         "packages/gen9/src/internal.ts",
+        "packages/gen9/src/data/**",
         "packages/gen9/data/**"
       ],
       "mechanicIds": ["gen9.runtime.ruleset"],

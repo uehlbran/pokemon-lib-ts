@@ -102,4 +102,28 @@ describe("control plane ownership mapping", () => {
     expect(classification.ownershipKeys).toEqual(["gen9:leaf-mechanic:ruleset-and-handlers"]);
     expect(classification.ruleMatches).toHaveLength(1);
   });
+
+  it("maps Gen 8 src/data files into the coarse ruleset owner", () => {
+    const controlPlane = loadControlPlane(repoRoot);
+    const classification = classifyRepoFile(
+      controlPlane,
+      "packages/gen8/src/data/reference-ids.ts",
+    );
+
+    expect(classification.fileClass).toBe("runtime-owning");
+    expect(classification.ownershipKeys).toEqual(["gen8:leaf-mechanic:ruleset-and-handlers"]);
+    expect(classification.ruleMatches).toHaveLength(1);
+  });
+
+  it("maps Gen 9 src/data files into the coarse ruleset owner", () => {
+    const controlPlane = loadControlPlane(repoRoot);
+    const classification = classifyRepoFile(
+      controlPlane,
+      "packages/gen9/src/data/reference-ids.ts",
+    );
+
+    expect(classification.fileClass).toBe("runtime-owning");
+    expect(classification.ownershipKeys).toEqual(["gen9:leaf-mechanic:ruleset-and-handlers"]);
+    expect(classification.ruleMatches).toHaveLength(1);
+  });
 });
