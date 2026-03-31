@@ -6,10 +6,10 @@
       "id": "gen1-stab-4x-super-effective",
       "description": "STAB + 4x super effective: Fire/Flying vs Grass/Bug - tests stacked multipliers with sequential floor (ERRATA #3C)",
       "attacker": { "species": "Charizard", "level": 50, "dvs": { "atk": 15, "spc": 15 } },
-      "defender": { "species": "Butterfree", "level": 50, "dvs": { "def": 15 } },
+      "defender": { "species": "Paras", "level": 50, "dvs": { "def": 15 } },
       "move": "Flamethrower",
       "expected_type_effectiveness": 4,
-      "note": "STAB Fire vs Grass/Bug type — both 2x, sequential floor means product may differ from 4x directly. Source: pret/pokered engine/battle/core.asm TypeEffectiveness"
+      "note": "STAB Fire vs Bug/Grass type — both 2x, sequential floor means product may differ from 4x directly. Paras is Bug/Grass in Gen 1. Source: pret/pokered engine/battle/core.asm TypeEffectiveness"
     },
     {
       "id": "gen1-critical-hit",

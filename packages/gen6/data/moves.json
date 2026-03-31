@@ -524,7 +524,7 @@
         { "stat": "spDefense", "stages": 1 },
         { "stat": "speed", "stages": 1 }
       ],
-      "target": "foe",
+      "target": "self",
       "chance": 10,
       "fromSecondary": true
     },
@@ -11758,7 +11758,7 @@
     "effect": {
       "type": "stat-change",
       "changes": [{ "stat": "attack", "stages": 1 }],
-      "target": "foe",
+      "target": "self",
       "chance": 10,
       "fromSecondary": true
     },
@@ -18289,7 +18289,7 @@
     "effect": {
       "type": "stat-change",
       "changes": [{ "stat": "defense", "stages": 1 }],
-      "target": "foe",
+      "target": "self",
       "chance": 10,
       "fromSecondary": true
     },

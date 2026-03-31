@@ -494,18 +494,20 @@ function evaluateDynamaxHPCase(testCase: DynamaxHPCase): string | null {
 function evaluateAbilityCheckCase(
   testCase: AbilityCheckCase,
   moves: readonly LocalMove[],
-): string | null {
+): { flagFailure: string | null; hasExpectedBoost: boolean } {
   // Validates that every move in affectedMoves has the flag corresponding to
   // this ability in our moves.json. ABILITY_FLAG_MAP maps ability IDs to flag names.
-  // NOTE: testCase.expectedBoost is intentionally not verified here — this is a
-  // data-level check only (flag presence). Verifying the boost multiplier requires
-  // engine integration (battle simulation), which is Phase 6 scope.
+  // The flag check is a real oracle check (pass/fail).
+  // testCase.expectedBoost cannot be verified here — verifying the boost multiplier
+  // requires engine integration (battle simulation). It is explicitly deferred with a note.
   const flagName = ABILITY_FLAG_MAP[testCase.abilityId];
   if (flagName === undefined) {
-    return (
-      `${testCase.id}: ability "${testCase.abilityId}" not in ABILITY_FLAG_MAP — ` +
-      `add explicit mapping in compare-ground-truth.ts (${testCase.source})`
-    );
+    return {
+      flagFailure:
+        `${testCase.id}: ability "${testCase.abilityId}" not in ABILITY_FLAG_MAP — ` +
+        `add explicit mapping in compare-ground-truth.ts (${testCase.source})`,
+      hasExpectedBoost: true,
+    };
   }
 
   const movesById = new Map(moves.map((m) => [m.id, m]));
@@ -523,12 +525,15 @@ function evaluateAbilityCheckCase(
   }
 
   if (missingFlag.length > 0) {
-    return (
-      `${testCase.id}: ability "${testCase.abilityId}" — ` +
-      `affected moves missing "${flagName}" flag: ${missingFlag.join(", ")} (${testCase.source})`
-    );
+    return {
+      flagFailure:
+        `${testCase.id}: ability "${testCase.abilityId}" — ` +
+        `affected moves missing "${flagName}" flag: ${missingFlag.join(", ")} (${testCase.source})`,
+      hasExpectedBoost: true,
+    };
   }
-  return null;
+  // expectedBoost is always present (required field in schema)
+  return { flagFailure: null, hasExpectedBoost: true };
 }
 
 function evaluateMoveRecoilCheckCase(
@@ -670,7 +675,15 @@ export function runGroundTruthSuite(
       // mechanic-documentation — documentation-only, no evaluation needed
       // statusSpeedCheck, terrainBoostCheck — require engine integration (deferred)
       if (testCase.kind === "abilityCheck") {
-        failure = evaluateAbilityCheckCase(testCase, moves);
+        const abilityResult = evaluateAbilityCheckCase(testCase, moves);
+        failure = abilityResult.flagFailure;
+        if (abilityResult.hasExpectedBoost) {
+          deferredCases += 1;
+          notes.push(
+            `${testCase.id}: expectedBoost=${testCase.expectedBoost} not validated — ` +
+              `requires battle engine (Phase 6 scope)`,
+          );
+        }
       } else if (testCase.kind === "moveRecoilCheck") {
         failure = evaluateMoveRecoilCheckCase(testCase, moves, notes);
       } else if (testCase.kind === "maxMovePowerCheck") {

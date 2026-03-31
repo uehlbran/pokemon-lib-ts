@@ -17,12 +17,12 @@
     },
     {
       "id": "gen3-levitate-ground-immunity",
-      "description": "Levitate grants immunity to Ground-type moves",
+      "type": "mechanic-documentation",
+      "description": "Levitate grants immunity to Ground-type moves (ability-based, not type chart)",
       "attacker": { "species": "Golem", "level": 50 },
       "defender": { "species": "Gengar", "level": 50, "ability": "Levitate" },
       "move": "Earthquake",
-      "expected_type_effectiveness": 0,
-      "note": "Levitate: Ground moves deal 0 damage. Source: pret/pokeemerald src/battle_script_commands.c Levitate"
+      "note": "Levitate: Ground moves deal 0 damage to Levitate bearers. This is an ability override — the type chart alone gives 2x (Ground super-effective vs Poison in Gengar's Ghost/Poison typing). Cannot be validated without battle engine. Source: pret/pokeemerald src/battle_script_commands.c Levitate"
     },
     {
       "id": "gen3-thick-fat-fire-ice-resist",

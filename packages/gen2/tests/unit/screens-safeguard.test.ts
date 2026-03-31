@@ -6,6 +6,7 @@ import type {
 } from "@pokemon-lib-ts/battle";
 import { BATTLE_EFFECT_TARGETS } from "@pokemon-lib-ts/battle";
 import {
+  CORE_MOVE_EFFECT_TARGETS,
   CORE_MOVE_EFFECT_TYPES,
   CORE_POKEMON_DEFAULTS,
   CORE_SCREEN_IDS,
@@ -693,9 +694,11 @@ describe("Gen 2 Screens and Safeguard", () => {
       ]);
 
       // Growl-like effect: stat-change targeting defender
+      // Use CORE_MOVE_EFFECT_TARGETS.foe ("foe") — StatChangeEffect["target"] is "self"|"foe"|"ally",
+      // not the battle-layer "opponent" value from BATTLE_EFFECT_TARGETS
       const statChangeEffect = {
         type: CORE_MOVE_EFFECT_TYPES.statChange,
-        target: BATTLE_EFFECT_TARGETS.opponent,
+        target: CORE_MOVE_EFFECT_TARGETS.foe,
         chance: 100,
         changes: [{ stat: CORE_STAT_IDS.attack, stages: -1 }],
       };

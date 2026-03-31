@@ -25,6 +25,7 @@ import {
   type MoveEffectResult,
   type MoveEffectSideTarget,
   type MoveEffectSideTargetWithBoth,
+  resolveStatChangeTarget,
 } from "@pokemon-lib-ts/battle";
 import type {
   BattleStat,
@@ -176,10 +177,7 @@ function applyMoveEffect(
       }
       for (const change of effect.changes) {
         result.statChanges.push({
-          target:
-            effect.target === BATTLE_EFFECT_TARGETS.self
-              ? BATTLE_EFFECT_TARGETS.attacker
-              : BATTLE_EFFECT_TARGETS.defender,
+          target: resolveStatChangeTarget(effect.target),
           stat: change.stat,
           stages: change.stages,
         });

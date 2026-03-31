@@ -293,7 +293,7 @@
           "stages": 1
         }
       ],
-      "target": "foe",
+      "target": "self",
       "chance": 10
     },
     "description": "Has a 10% chance to raise the user's Attack, Defense, Special Attack, Special Defense, and Speed by 1 stage.",
@@ -5046,7 +5046,7 @@
           "stages": 1
         }
       ],
-      "target": "foe",
+      "target": "self",
       "chance": 10
     },
     "description": "Has a 10% chance to raise the user's Attack by 1 stage.",
@@ -8130,7 +8130,7 @@
           "stages": 1
         }
       ],
-      "target": "foe",
+      "target": "self",
       "chance": 10
     },
     "description": "Has a 10% chance to raise the user's Defense by 1 stage.",

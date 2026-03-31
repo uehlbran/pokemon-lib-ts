@@ -98,6 +98,7 @@ const DAMAGE_SUITE_NAME = "damage";
  * Filtered per-gen to skip species that don't exist in that generation.
  */
 const REPRESENTATIVE_SPECIES = [
+  // Gen 1 originals
   "Charizard",
   "Blastoise",
   "Venusaur",
@@ -118,6 +119,50 @@ const REPRESENTATIVE_SPECIES = [
   "Clefable",
   "Slowbro",
   "Hitmonlee",
+  // Gen 1 additional
+  "Starmie",
+  "Electabuzz",
+  "Magmar",
+  "Tauros",
+  "Exeggutor",
+  // Gen 2 additions (Gen 1 gens will skip these automatically)
+  "Scizor",
+  "Tyranitar",
+  "Espeon",
+  "Umbreon",
+  "Ampharos",
+  "Feraligatr",
+  // Gen 3 additions
+  "Gardevoir",
+  "Salamence",
+  "Metagross",
+  "Blaziken",
+  "Breloom",
+  // Gen 4 additions
+  "Garchomp",
+  "Lucario",
+  "Togekiss",
+  "Infernape",
+  "Weavile",
+  // Gen 5 additions
+  "Excadrill",
+  "Hydreigon",
+  "Volcarona",
+  "Chandelure",
+  "Conkeldurr",
+  // Gen 6 additions
+  "Greninja",
+  "Talonflame",
+  "Sylveon",
+  // Gen 7 additions
+  "Toxapex",
+  "Kommo-o",
+  // Gen 8 additions
+  "Corviknight",
+  "Cinderace",
+  // Gen 9 additions
+  "Roaring Moon",
+  "Iron Bundle",
 ] as const;
 
 /** Generic defender for all oracle scenarios: Snorlax (good bulk, single type). */
@@ -425,6 +470,10 @@ function buildSmogonPokemonGen3Plus(gen: GenerationNum, speciesName: string): Sm
   return new SmogonPokemon(gen, speciesName, {
     level: ORACLE_LEVEL,
     nature: "Hardy",
+    // "No Ability" prevents smogon from applying species default abilities (e.g. Hustle on
+    // Togekiss) that our oracle's calculateLocalDamage doesn't apply. Without this, the
+    // comparison is ability-vs-no-ability rather than comparing damage formulas.
+    ability: "No Ability",
     ivs: { hp: MAX_IV, atk: MAX_IV, def: MAX_IV, spa: MAX_IV, spd: MAX_IV, spe: MAX_IV },
     evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
   });

@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { runReplaySuite } from "./battle-replay.js";
 import { runDamageSuite } from "./compare-damage.js";
 import { runDataSuite } from "./compare-data.js";
+import { runEdgeCasesSuite } from "./compare-edge-cases.js";
 import { runGimmicksSuite } from "./compare-gimmicks.js";
 import { runGroundTruthSuite } from "./compare-ground-truth.js";
 import { runMechanicsSuite } from "./compare-mechanics.js";
@@ -24,6 +25,7 @@ type SupportedSuite =
   | "mechanics"
   | "terrain"
   | "gimmicks"
+  | "edgeCases"
   | "replay"
   | "damageTrace"
   | "smoke"
@@ -39,6 +41,7 @@ const SUPPORTED_SUITES: ReadonlySet<SupportedSuite> = new Set([
   "mechanics",
   "terrain",
   "gimmicks",
+  "edgeCases",
   "replay",
   "damageTrace",
   "smoke",
@@ -101,6 +104,7 @@ function expandSuites(suites: SupportedSuite[]): SupportedSuite[] {
       "mechanics",
       "terrain",
       "gimmicks",
+      "edgeCases",
       "replay",
       "damageTrace",
       "smoke",
@@ -108,7 +112,16 @@ function expandSuites(suites: SupportedSuite[]): SupportedSuite[] {
   }
   if (suites.includes("fast")) {
     // Fast gate — structural checks only, no live battle simulation
-    return ["data", "stats", "groundTruth", "damage", "mechanics", "terrain", "gimmicks"];
+    return [
+      "data",
+      "stats",
+      "groundTruth",
+      "damage",
+      "mechanics",
+      "terrain",
+      "gimmicks",
+      "edgeCases",
+    ];
   }
 
   return suites;
@@ -152,6 +165,8 @@ async function main(): Promise<void> {
           suiteResults[suite] = runTerrainSuite(generation, registry.knownDisagreements);
         } else if (suite === "gimmicks") {
           suiteResults[suite] = runGimmicksSuite(generation, registry.knownDisagreements);
+        } else if (suite === "edgeCases") {
+          suiteResults[suite] = runEdgeCasesSuite(generation, registry.knownDisagreements);
         } else if (suite === "replay") {
           suiteResults[suite] = runReplaySuite(generation, repoRoot);
         } else if (suite === "damageTrace") {

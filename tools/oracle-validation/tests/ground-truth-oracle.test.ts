@@ -52,6 +52,29 @@ describe("runGroundTruthSuite", () => {
     });
     expect(result.notes).toContain("Authority: pret/pokeemerald");
   });
+
+  it("given Gen 4 with an abilityCheck case (iron-fist), when running the suite, then flag check passes and expectedBoost is explicitly deferred", () => {
+    // The abilityCheck evaluator validates move flags but cannot validate the damage boost
+    // multiplier without running the battle engine. The expectedBoost must be deferred and
+    // NOT silently counted as evaluated. This test verifies that the deferred note is emitted.
+    const gen4 = discoverImplementedGenerations(repoRoot).find(
+      (generation) => generation.gen === 4,
+    );
+    const result = runGroundTruthSuite(gen4!, repoRoot);
+
+    // The flag check itself should still pass
+    expect(result).toMatchObject({
+      status: "pass",
+      suitePassed: true,
+      failed: 0,
+    });
+
+    // The expectedBoost portion must be explicitly deferred — not silently counted as evaluated
+    const deferredNote = result.notes.find(
+      (n) => n.includes("iron-fist-punch-boost") && n.includes("expectedBoost"),
+    );
+    expect(deferredNote).toBeDefined();
+  });
 });
 
 describe("loadGroundTruthDataset", () => {

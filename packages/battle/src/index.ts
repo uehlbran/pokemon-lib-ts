@@ -165,4 +165,5 @@ export {
   createPokemonSnapshot,
   getEffectiveStatStage,
   getPokemonName,
+  resolveStatChangeTarget,
 } from "./utils";

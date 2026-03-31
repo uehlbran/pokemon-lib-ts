@@ -366,7 +366,10 @@ export function runMechanicsSuite(
   let categoryChecked = 0;
 
   for (const move of localMoves) {
-    if (!move.category) continue;
+    if (!move.category)
+      throw new Error(
+        `compare-mechanics: move "${move.id}" has empty/falsy category — data is corrupt`,
+      );
     const moveId = normalizeMoveId(move.id);
     const oracleMove = oracle.moves.get(moveId);
     if (!oracleMove?.exists) continue;
@@ -420,7 +423,11 @@ export function runMechanicsSuite(
   let ppChecked = 0;
 
   for (const move of localMoves) {
-    if (!move.pp) continue;
+    // pp=0 is falsy but valid; only null/undefined indicates corrupt data
+    if (move.pp == null)
+      throw new Error(
+        `compare-mechanics: move "${move.id}" has null/undefined pp — data is corrupt`,
+      );
     const moveId = normalizeMoveId(move.id);
     const oracleMove = oracle.moves.get(moveId);
     if (!oracleMove?.exists) continue;
@@ -457,6 +464,7 @@ export function runMechanicsSuite(
   let flagMoveChecked = 0;
 
   for (const move of localMoves) {
+    // flags is genuinely optional — moves with no flags object have no flags to check
     if (!move.flags) continue;
     const moveId = normalizeMoveId(move.id);
     const oracleMove = oracle.moves.get(moveId);
