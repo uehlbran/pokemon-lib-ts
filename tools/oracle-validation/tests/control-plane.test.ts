@@ -24,6 +24,24 @@ describe("control plane ownership mapping", () => {
     expect(classification.fileClass).toBe("evidence-only");
   });
 
+  it("allows explicit shared-file ownership for battle contract types", () => {
+    const controlPlane = loadControlPlane(repoRoot);
+    const classification = classifyRepoFile(controlPlane, "packages/battle/src/context/types.ts");
+
+    expect(classification.fileClass).toBe("runtime-owning");
+    expect(classification.ownershipKeys).toEqual([
+      "battle:contract:ability-context-result",
+      "battle:contract:damage-context",
+      "battle:contract:field-effect-results",
+      "battle:contract:hit-check-contexts",
+      "battle:contract:item-context-result",
+      "battle:contract:move-effect-context",
+      "battle:contract:move-effect-result",
+    ]);
+    expect(classification.ruleMatches).toHaveLength(7);
+    expect(classification.ruleMatches.every((rule) => rule.allowSharedFile)).toBe(true);
+  });
+
   it("expands importer changes into runtime and oracle tooling ownership", () => {
     const controlPlane = loadControlPlane(repoRoot);
     const expanded = expandOwnershipKeys(controlPlane, [

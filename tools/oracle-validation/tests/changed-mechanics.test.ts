@@ -4,9 +4,11 @@ import { describe, expect, it } from "vitest";
 import {
   buildImpactsReport,
   computeBaseRefCandidates,
+  isLowConfidenceClassification,
   listChangedFiles,
   resolveBaseRefFromCandidates,
 } from "../src/changed-mechanics.js";
+import { classifyRepoFile, loadControlPlane } from "../src/control-plane.js";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 
@@ -72,5 +74,21 @@ describe("buildImpactsReport", () => {
     expect(report.requestedBaseRef).toBe("HEAD");
     expect(report.resolvedBaseRef).toBe("HEAD");
     expect(report.usedFallbackBaseRef).toBe(false);
+  });
+
+  it("does not flag explicitly shared ownership files as low-confidence", () => {
+    const controlPlane = loadControlPlane(repoRoot);
+    const classification = classifyRepoFile(controlPlane, "packages/battle/src/context/types.ts");
+
+    expect(classification.ownershipKeys).toEqual([
+      "battle:contract:ability-context-result",
+      "battle:contract:damage-context",
+      "battle:contract:field-effect-results",
+      "battle:contract:hit-check-contexts",
+      "battle:contract:item-context-result",
+      "battle:contract:move-effect-context",
+      "battle:contract:move-effect-result",
+    ]);
+    expect(isLowConfidenceClassification(classification)).toBe(false);
   });
 });

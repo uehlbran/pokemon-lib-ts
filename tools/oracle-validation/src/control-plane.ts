@@ -14,6 +14,7 @@ const ownershipRuleSchema = z.strictObject({
   ownershipKey: z.string().min(1),
   ownerKind: ownerKindSchema,
   patterns: z.array(z.string().min(1)).min(1),
+  allowSharedFile: z.boolean().default(false),
   mechanicIds: z.array(z.string().min(1)).default([]),
   authorityKeys: z.array(z.string().min(1)).default([]),
   propagatesTo: z.array(z.string().min(1)).default([]),

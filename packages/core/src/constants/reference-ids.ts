@@ -342,9 +342,11 @@ export const CORE_ITEM_TRIGGER_IDS = {
   beforeMove: "before-move",
   beforeTurnOrder: "before-turn-order",
   endOfTurn: "end-of-turn",
+  onFoeStatChange: "on-foe-stat-change",
   onDamageTaken: "on-damage-taken",
   onContact: "on-contact",
   onHit: "on-hit",
+  onStatChange: "on-stat-change",
   statBoostBetweenTurns: "stat-boost-between-turns",
 } as const;
 

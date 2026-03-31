@@ -186,6 +186,20 @@ function makeContext(overrides: {
   } as ItemContext;
 }
 
+function makeSwitchableState(pokemon: ActivePokemon, hasBench: boolean): BattleState {
+  return {
+    ...createSyntheticBattleState(),
+    sides: [
+      {
+        active: [pokemon],
+        bench: hasBench ? [createOnFieldPokemon({ heldItem: null })] : [],
+        entryHazards: {},
+      } as unknown as BattleSide,
+      { active: [], bench: [], entryHazards: {} } as unknown as BattleSide,
+    ],
+  } as BattleState;
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // Choice Items
 // ═══════════════════════════════════════════════════════════════════════════
@@ -783,6 +797,91 @@ describe("getConsumableItemEffect", () => {
   it("given passive item, when getting effect, then returns null", () => {
     const result = getConsumableItemEffect(ITEMS.leftovers, {});
     expect(result).toBe(null);
+  });
+});
+
+describe("applyGen8HeldItem -- on-stat-change", () => {
+  it("given Eject Pack and an applied stat drop, when on-stat-change fires, then forces a self switch and consumes", () => {
+    const pokemon = createOnFieldPokemon({ heldItem: ITEMS.ejectPack });
+    const ctx = {
+      ...makeContext({ pokemon, state: makeSwitchableState(pokemon, true) }),
+      statChange: {
+        phase: "after",
+        source: "self",
+        attempted: [{ stat: "defense", stages: -1 }],
+        applied: [{ stat: "defense", stages: -1, currentStage: -1 }],
+        causeId: "close-combat",
+        causeType: "move",
+      },
+    } as ItemContext;
+
+    const result = applyGen8HeldItem(CORE_ITEM_TRIGGER_IDS.onStatChange, ctx);
+    expect(result.activated).toBe(true);
+    expect(result.effects).toEqual([
+      { type: "none", target: "self", value: "force-switch" },
+      { type: "consume", target: "self", value: ITEMS.ejectPack },
+    ]);
+  });
+
+  it("given Eject Pack without a legal bench replacement, when on-stat-change fires, then it does not activate", () => {
+    const pokemon = createOnFieldPokemon({ heldItem: ITEMS.ejectPack });
+    const ctx = {
+      ...makeContext({ pokemon, state: makeSwitchableState(pokemon, false) }),
+      statChange: {
+        phase: "after",
+        source: "self",
+        attempted: [{ stat: "defense", stages: -1 }],
+        applied: [{ stat: "defense", stages: -1, currentStage: -1 }],
+        causeId: "close-combat",
+        causeType: "move",
+      },
+    } as ItemContext;
+
+    const result = applyGen8HeldItem(CORE_ITEM_TRIGGER_IDS.onStatChange, ctx);
+    expect(result).toEqual({ activated: false, effects: [], messages: [] });
+  });
+
+  it("given Adrenaline Orb and an opponent Intimidate attack drop, when on-stat-change fires, then raises Speed and consumes", () => {
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEMS.adrenalineOrb,
+      speed: 100,
+    });
+    const ctx = {
+      ...makeContext({ pokemon }),
+      statChange: {
+        phase: "after",
+        source: "opponent",
+        attempted: [{ stat: "attack", stages: -1 }],
+        applied: [{ stat: "attack", stages: -1, currentStage: -1 }],
+        causeId: "intimidate",
+        causeType: "ability",
+      },
+    } as ItemContext;
+
+    const result = applyGen8HeldItem(CORE_ITEM_TRIGGER_IDS.onStatChange, ctx);
+    expect(result.activated).toBe(true);
+    expect(result.effects).toEqual([
+      { type: "stat-boost", target: "self", value: "speed" },
+      { type: "consume", target: "self", value: ITEMS.adrenalineOrb },
+    ]);
+  });
+
+  it("given Adrenaline Orb and an Intimidate drop that applies no Attack reduction, when on-stat-change fires, then it does not activate", () => {
+    const pokemon = createOnFieldPokemon({ heldItem: ITEMS.adrenalineOrb });
+    const ctx = {
+      ...makeContext({ pokemon }),
+      statChange: {
+        phase: "after",
+        source: "opponent",
+        attempted: [{ stat: "attack", stages: -1 }],
+        applied: [],
+        causeId: "intimidate",
+        causeType: "ability",
+      },
+    } as ItemContext;
+
+    const result = applyGen8HeldItem(CORE_ITEM_TRIGGER_IDS.onStatChange, ctx);
+    expect(result).toEqual({ activated: false, effects: [], messages: [] });
   });
 });
 

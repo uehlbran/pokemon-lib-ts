@@ -1,6 +1,15 @@
-import { CORE_ITEM_TRIGGER_IDS, CORE_MOVE_IDS, CORE_STAT_IDS } from "@pokemon-lib-ts/core";
+import {
+  CORE_ITEM_IDS,
+  CORE_ITEM_TRIGGER_IDS,
+  CORE_MOVE_IDS,
+  CORE_STAT_IDS,
+} from "@pokemon-lib-ts/core";
 import { GEN9_ITEM_IDS, GEN9_SPECIES_IDS } from "@pokemon-lib-ts/gen9/data";
-import { BATTLE_EFFECT_TARGETS, BATTLE_ITEM_EFFECT_TYPES } from "../../../src";
+import {
+  BATTLE_EFFECT_TARGETS,
+  BATTLE_ITEM_EFFECT_TYPES,
+  BATTLE_ITEM_EFFECT_VALUES,
+} from "../../../src";
 import type { BattleConfig, ItemContext } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent, StatChangeEvent } from "../../../src/events";
@@ -68,6 +77,69 @@ class HeldItemStatBoostRuleset extends MockRuleset {
   }
 }
 
+class StatChangeBlockRuleset extends MockRuleset {
+  readonly capturedPhases: string[] = [];
+
+  override hasHeldItems(): boolean {
+    return true;
+  }
+
+  override applyHeldItem(trigger: string, context: ItemContext) {
+    if (trigger !== CORE_ITEM_TRIGGER_IDS.onStatChange || !context.statChange) {
+      return { activated: false, effects: [], messages: [] };
+    }
+
+    this.capturedPhases.push(context.statChange.phase);
+    if (
+      context.statChange.phase === "before" &&
+      context.pokemon.pokemon.heldItem === GEN9_ITEM_IDS.weaknessPolicy
+    ) {
+      return {
+        activated: true,
+        effects: [],
+        messages: ["Clear Amulet blocked the drop!"],
+        blockedStatChanges: [CORE_STAT_IDS.defense],
+      };
+    }
+
+    return { activated: false, effects: [], messages: [] };
+  }
+}
+
+class StatChangeForceSwitchRuleset extends MockRuleset {
+  override hasHeldItems(): boolean {
+    return true;
+  }
+
+  override applyHeldItem(trigger: string, context: ItemContext) {
+    if (
+      trigger === CORE_ITEM_TRIGGER_IDS.onStatChange &&
+      context.statChange?.phase === "after" &&
+      context.pokemon.pokemon.heldItem === CORE_ITEM_IDS.leftovers &&
+      context.statChange.applied.some((change) => change.stages < 0)
+    ) {
+      return {
+        activated: true,
+        effects: [
+          {
+            type: BATTLE_ITEM_EFFECT_TYPES.none,
+            target: BATTLE_EFFECT_TARGETS.self,
+            value: BATTLE_ITEM_EFFECT_VALUES.forceSwitch,
+          },
+          {
+            type: BATTLE_ITEM_EFFECT_TYPES.consume,
+            target: BATTLE_EFFECT_TARGETS.self,
+            value: CORE_ITEM_IDS.leftovers,
+          },
+        ],
+        messages: ["Eject Pack activated!"],
+      };
+    }
+
+    return { activated: false, effects: [], messages: [] };
+  }
+}
+
 function createHeldItemStatBoostEngine(ruleset: HeldItemStatBoostRuleset) {
   const config: BattleConfig = {
     generation: 9,
@@ -87,6 +159,57 @@ function createHeldItemStatBoostEngine(ruleset: HeldItemStatBoostRuleset) {
           uid: "blastoise-1",
           nickname: "Blastoise",
           heldItem: GEN9_ITEM_IDS.weaknessPolicy,
+          moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
+          calculatedStats: createStats(200, 80),
+          currentHp: 200,
+        }),
+      ],
+    ],
+    seed: 42,
+  };
+
+  ruleset.setGenerationForTest(config.generation);
+  return new BattleEngine(config, ruleset, createMockDataManager());
+}
+
+function createStatChangeEngine(
+  ruleset: MockRuleset,
+  side0HeldItem: string | null,
+  side1HeldItem: string | null,
+  includeBenchOnSide0 = false,
+) {
+  const side0Team = [
+    createTestPokemon(GEN9_SPECIES_IDS.charizard, 50, {
+      uid: "charizard-1",
+      nickname: "Charizard",
+      heldItem: side0HeldItem,
+      moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
+      calculatedStats: createStats(200, 120),
+      currentHp: 200,
+    }),
+  ];
+  if (includeBenchOnSide0) {
+    side0Team.push(
+      createTestPokemon(GEN9_SPECIES_IDS.pikachu, 50, {
+        uid: "pikachu-1",
+        nickname: "Pikachu",
+        moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
+        calculatedStats: createStats(120, 90),
+        currentHp: 120,
+      }),
+    );
+  }
+
+  const config: BattleConfig = {
+    generation: 9,
+    format: "singles",
+    teams: [
+      side0Team,
+      [
+        createTestPokemon(GEN9_SPECIES_IDS.blastoise, 50, {
+          uid: "blastoise-1",
+          nickname: "Blastoise",
+          heldItem: side1HeldItem,
           moves: [{ moveId: CORE_MOVE_IDS.tackle, currentPP: 35, maxPP: 35, ppUps: 0 }],
           calculatedStats: createStats(200, 80),
           currentHp: 200,
@@ -126,5 +249,45 @@ describe("BattleEngine held-item stat boosts", () => {
     expect(defender!.statStages.attack).toBe(2);
     expect(defender!.statStages.spAttack).toBe(2);
     expect(ruleset.itemTriggers).toContain(CORE_ITEM_TRIGGER_IDS.onDamageTaken);
+  });
+
+  it("given a pre-apply stat-change item, when the move tries to lower the holder's stat, then the engine blocks the change before emitting stat-change", () => {
+    const ruleset = new StatChangeBlockRuleset();
+    ruleset.setMoveEffectResult({
+      statChanges: [
+        { target: BATTLE_EFFECT_TARGETS.defender, stat: CORE_STAT_IDS.defense, stages: -1 },
+      ],
+    });
+    const engine = createStatChangeEngine(ruleset, null, GEN9_ITEM_IDS.weaknessPolicy);
+    const events: BattleEvent[] = [];
+    engine.on((event) => events.push(event));
+    engine.start();
+
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    expect(events.filter((event) => event.type === "stat-change")).toHaveLength(0);
+    expect(engine.state.sides[1].active[0]?.statStages.defense).toBe(0);
+    expect(ruleset.capturedPhases).toContain("before");
+  });
+
+  it("given a post-apply stat-change item that forces a switch, when the holder lowers its own stat, then the engine enters switch-prompt and applies the replacement after selection", () => {
+    const ruleset = new StatChangeForceSwitchRuleset();
+    ruleset.setMoveEffectResult({
+      statChanges: [
+        { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.defense, stages: -1 },
+      ],
+    });
+    const engine = createStatChangeEngine(ruleset, CORE_ITEM_IDS.leftovers, null, true);
+    engine.start();
+
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    expect(engine.getPhase()).toBe("switch-prompt");
+    engine.submitSwitch(0, 1);
+
+    expect(engine.getPhase()).toBe("action-select");
+    expect(engine.state.sides[0].active[0]?.pokemon.uid).toBe("pikachu-1");
   });
 });

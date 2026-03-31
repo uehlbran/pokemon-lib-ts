@@ -221,7 +221,7 @@ function handlePainSplit(ctx: MoveEffectContext): MoveEffectResult {
   return result as unknown as MoveEffectResult;
 }
 
-function handleWeatherHeal(ctx: MoveEffectContext, moveId: string): MoveEffectResult {
+function handleWeatherHeal(ctx: MoveEffectContext, _moveId: string): MoveEffectResult {
   // Weather-dependent healing
   // Source: Showdown Gen 4 — sun: 2/3, rain/sand/hail: 1/4, else: 1/2
   // Source: Bulbapedia — Weather-based HP recovery moves

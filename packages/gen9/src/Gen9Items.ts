@@ -40,10 +40,54 @@ const ITEM_EFFECT = BATTLE_ITEM_EFFECT_TYPES;
 const EFFECT_TARGET = BATTLE_EFFECT_TARGETS;
 const ITEM_EFFECT_VALUE = BATTLE_ITEM_EFFECT_VALUES;
 const ITEM_IDS = GEN9_ITEM_IDS;
+// Source: Showdown data/items.ts clearamulet.onTryBoost special-cases effect.id === "octolock".
+// Octolock is absent from the shipped Gen 9 move bundle, so this guard uses the canonical move id.
+const OCTOLOCK_MOVE_ID = "octolock";
 const BLACK_SLUDGE_EFFECT_TYPES = {
   heal: "heal",
   damage: "damage",
 } as const;
+
+function hasSecondaryStatDropEffect(effect: MoveEffect | null): boolean {
+  if (!effect) return false;
+  switch (effect.type) {
+    case "stat-change":
+      return (
+        effect.target === CORE_MOVE_EFFECT_TARGETS.foe &&
+        effect.changes.some((change) => change.stages < 0) &&
+        (effect.chance > 0 || effect.fromSecondary === true)
+      );
+    case "multi":
+      return effect.effects.some((nestedEffect) => hasSecondaryStatDropEffect(nestedEffect));
+    default:
+      return false;
+  }
+}
+
+function canHolderSwitchOut(context: ItemContext): boolean {
+  const side = context.state.sides.find((candidate) =>
+    candidate.active?.some((active) => active === context.pokemon),
+  );
+  if (!side) return true;
+  const sideState = side as unknown as {
+    team?: Array<{ currentHp: number }>;
+    bench?: Array<{ pokemon?: { currentHp: number }; currentHp?: number }>;
+  };
+
+  if (Array.isArray(sideState.team)) {
+    return sideState.team.some(
+      (teamPokemon, index) => teamPokemon.currentHp > 0 && index !== context.pokemon.teamSlot,
+    );
+  }
+
+  if (Array.isArray(sideState.bench)) {
+    return sideState.bench.some(
+      (benchPokemon) => (benchPokemon.pokemon?.currentHp ?? benchPokemon.currentHp ?? 0) > 0,
+    );
+  }
+
+  return false;
+}
 
 const CONSUMABLE_ITEM_STAT_IDS = {
   none: "none",
@@ -817,6 +861,9 @@ export function applyGen9HeldItem(trigger: string, context: ItemContext): ItemRe
     case CORE_ITEM_TRIGGER_IDS.endOfTurn:
       result = handleEndOfTurn(item, context);
       break;
+    case CORE_ITEM_TRIGGER_IDS.onFoeStatChange:
+      result = handleOnFoeStatChange(item, context);
+      break;
     case CORE_ITEM_TRIGGER_IDS.onDamageTaken:
       result = handleOnDamageTaken(item, context);
       break;
@@ -825,6 +872,9 @@ export function applyGen9HeldItem(trigger: string, context: ItemContext): ItemRe
       break;
     case CORE_ITEM_TRIGGER_IDS.onHit:
       result = handleOnHit(item, context);
+      break;
+    case CORE_ITEM_TRIGGER_IDS.onStatChange:
+      result = handleOnStatChange(item, context);
       break;
     default:
       result = NO_ACTIVATION;
@@ -1909,6 +1959,148 @@ function handleOnHit(item: string, context: ItemContext): ItemResult {
         };
       }
       return NO_ACTIVATION;
+    }
+
+    default:
+      return NO_ACTIVATION;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// on-stat-change / on-foe-stat-change
+// ---------------------------------------------------------------------------
+
+function handleOnStatChange(item: string, context: ItemContext): ItemResult {
+  const statChange = context.statChange;
+  if (!statChange) return NO_ACTIVATION;
+
+  const pokemon = context.pokemon;
+  const pokemonName = pokemon.pokemon.nickname ?? `Pokemon #${pokemon.pokemon.speciesId}`;
+
+  switch (item) {
+    // Clear Amulet: block opponent-caused stat drops before they apply.
+    // Source: Showdown data/items.ts -- clearamulet.onTryBoost
+    case ITEM_IDS.clearAmulet: {
+      const blockedStats = statChange.attempted
+        .filter(
+          (change) =>
+            statChange.phase === "before" &&
+            statChange.source === EFFECT_TARGET.opponent &&
+            change.stages < 0,
+        )
+        .map((change) => change.stat);
+      if (blockedStats.length === 0) return NO_ACTIVATION;
+      const shouldShowMessage =
+        statChange.causeId !== OCTOLOCK_MOVE_ID &&
+        !hasSecondaryStatDropEffect(context.move?.effect ?? null);
+
+      return {
+        activated: true,
+        effects: [],
+        messages: shouldShowMessage
+          ? [`${pokemonName}'s Clear Amulet prevented its stats from being lowered!`]
+          : [],
+        blockedStatChanges: blockedStats,
+      };
+    }
+
+    // Eject Pack: consume and force the holder out after one of its stats is lowered.
+    // Source: Showdown data/items.ts -- ejectpack.onAfterBoost
+    case ITEM_IDS.ejectPack: {
+      if (
+        statChange.phase !== "after" ||
+        statChange.causeId === GEN9_MOVE_IDS.partingShot ||
+        !statChange.applied.some((change) => change.stages < 0) ||
+        !canHolderSwitchOut(context)
+      ) {
+        return NO_ACTIVATION;
+      }
+
+      return {
+        activated: true,
+        effects: [
+          {
+            type: ITEM_EFFECT.none,
+            target: EFFECT_TARGET.self,
+            value: ITEM_EFFECT_VALUE.forceSwitch,
+          },
+          { type: ITEM_EFFECT.consume, target: EFFECT_TARGET.self, value: ITEM_IDS.ejectPack },
+        ],
+        messages: [`${pokemonName}'s Eject Pack activated!`],
+      };
+    }
+
+    // Adrenaline Orb: +1 Speed after an Intimidate-style Attack drop from the foe.
+    // Source: Showdown data/items.ts -- adrenalineorb.onAfterBoost
+    case ITEM_IDS.adrenalineOrb: {
+      const appliedAttackDrop = statChange.applied.some(
+        (change) => change.stat === CORE_STAT_IDS.attack && change.stages < 0,
+      );
+      const currentSpeedStage = pokemon.statStages[CORE_STAT_IDS.speed] ?? 0;
+      if (
+        statChange.phase !== "after" ||
+        statChange.source !== EFFECT_TARGET.opponent ||
+        statChange.causeId !== GEN9_ABILITY_IDS.intimidate ||
+        !appliedAttackDrop ||
+        currentSpeedStage >= 6
+      ) {
+        return NO_ACTIVATION;
+      }
+
+      return {
+        activated: true,
+        effects: [
+          {
+            type: ITEM_EFFECT.statBoost,
+            target: EFFECT_TARGET.self,
+            value: CORE_STAT_IDS.speed,
+          },
+          { type: ITEM_EFFECT.consume, target: EFFECT_TARGET.self, value: ITEM_IDS.adrenalineOrb },
+        ],
+        messages: [`${pokemonName}'s Adrenaline Orb raised its Speed!`],
+      };
+    }
+
+    default:
+      return NO_ACTIVATION;
+  }
+}
+
+function handleOnFoeStatChange(item: string, context: ItemContext): ItemResult {
+  const statChange = context.statChange;
+  if (!statChange) return NO_ACTIVATION;
+
+  const pokemon = context.pokemon;
+  const pokemonName = pokemon.pokemon.nickname ?? `Pokemon #${pokemon.pokemon.speciesId}`;
+
+  switch (item) {
+    // Mirror Herb: copy the foe's positive boosts once, then consume.
+    // Source: Showdown data/items.ts -- mirrorherb.onFoeAfterBoost
+    case ITEM_IDS.mirrorHerb: {
+      if (
+        statChange.phase !== "foe-after" ||
+        statChange.causeId === GEN9_ABILITY_IDS.opportunist ||
+        statChange.causeId === ITEM_IDS.mirrorHerb
+      ) {
+        return NO_ACTIVATION;
+      }
+
+      const copiedBoosts = statChange.applied.filter((change) => change.stages > 0);
+      if (copiedBoosts.length === 0) return NO_ACTIVATION;
+
+      return {
+        activated: true,
+        effects: [
+          ...copiedBoosts.map((change) => ({
+            type: ITEM_EFFECT.statBoost,
+            target: EFFECT_TARGET.self,
+            value: change.stat,
+            stages: change.stages,
+          })),
+          { type: ITEM_EFFECT.consume, target: EFFECT_TARGET.self, value: ITEM_IDS.mirrorHerb },
+        ],
+        messages: [`${pokemonName}'s Mirror Herb copied the foe's stat boosts!`],
+      };
     }
 
     default:

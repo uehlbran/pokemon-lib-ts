@@ -12,6 +12,9 @@ import {
 import { createGen9DataManager } from "../../src/data";
 
 const dataManager = createGen9DataManager();
+// Source: Showdown data/items.ts clearamulet.onTryBoost special-cases effect.id === "octolock".
+// Octolock is not present in the shipped Gen 9 move bundle, so tests use the canonical move id directly.
+const OCTOLOCK_MOVE_ID = "octolock";
 
 function requireItemId(displayName: string): string {
   const item = dataManager.getAllItems().find((entry) => entry.displayName === displayName);
@@ -52,6 +55,7 @@ export const TEST_FIXED_POINT = {
 
 export const TEST_ITEM_IDS = {
   absorbBulb: requireItemId("Absorb Bulb"),
+  adrenalineOrb: requireItemId("Adrenaline Orb"),
   airBalloon: requireItemId("Air Balloon"),
   aspearBerry: requireItemId("Aspear Berry"),
   assaultVest: requireItemId("Assault Vest"),
@@ -67,6 +71,7 @@ export const TEST_ITEM_IDS = {
   choiceScarf: requireItemId("Choice Scarf"),
   choiceSpecs: requireItemId("Choice Specs"),
   covertCloak: requireItemId("Covert Cloak"),
+  clearAmulet: requireItemId("Clear Amulet"),
   custapBerry: requireItemId("Custap Berry"),
   dampRock: requireItemId("Damp Rock"),
   ejectButton: requireItemId("Eject Button"),
@@ -86,6 +91,7 @@ export const TEST_ITEM_IDS = {
   lumBerry: requireItemId("Lum Berry"),
   marangaBerry: requireItemId("Maranga Berry"),
   mentalHerb: requireItemId("Mental Herb"),
+  mirrorHerb: requireItemId("Mirror Herb"),
   mysticWater: requireItemId("Mystic Water"),
   occaBerry: requireItemId("Occa Berry"),
   oranBerry: requireItemId("Oran Berry"),
@@ -112,10 +118,12 @@ export const TEST_ITEM_IDS = {
 } as const;
 
 export const TEST_MOVE_IDS = {
+  crunch: requireMoveId("Crunch"),
   earthquake: requireMoveId("Earthquake"),
   flamethrower: requireMoveId("Flamethrower"),
   hyperVoice: requireMoveId("Hyper Voice"),
   iceBeam: requireMoveId("Ice Beam"),
+  octolock: OCTOLOCK_MOVE_ID,
   surf: requireMoveId("Surf"),
   tackle: requireMoveId("Tackle"),
   thunderbolt: requireMoveId("Thunderbolt"),
@@ -170,7 +178,9 @@ export const TEST_TRIGGER_IDS = {
   endOfTurn: "end-of-turn",
   onContact: "on-contact",
   onDamageTaken: "on-damage-taken",
+  onFoeStatChange: "on-foe-stat-change",
   onHit: "on-hit",
+  onStatChange: "on-stat-change",
   unknown: "unknown-trigger",
 } as const;
 

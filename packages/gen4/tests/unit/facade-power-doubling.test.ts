@@ -22,7 +22,7 @@
  */
 
 import type { ActivePokemon, DamageContext } from "@pokemon-lib-ts/battle";
-import type { MoveData, PokemonType, StatBlock, TypeChart } from "@pokemon-lib-ts/core";
+import type { MoveData, PokemonType, StatBlock } from "@pokemon-lib-ts/core";
 import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_SLOTS,
@@ -37,7 +37,6 @@ import {
   GEN4_MOVE_IDS,
   GEN4_NATURE_IDS,
   GEN4_SPECIES_IDS,
-  GEN4_TYPES,
 } from "../../src";
 import { calculateGen4Damage } from "../../src/Gen4DamageCalc";
 import { GEN4_TYPE_CHART } from "../../src/Gen4TypeChart";

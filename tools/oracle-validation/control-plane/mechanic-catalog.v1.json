@@ -46,7 +46,62 @@
       "obligationSeed": "contract"
     },
     {
+      "mechanicId": "shared.contract.hit-check-contexts",
+      "cluster": "protocol-completeness",
+      "topologies": ["singles"],
+      "orderingSensitive": false,
+      "persistent": false,
+      "proofStatus": "legacy-unproven",
+      "authorityKey": "shared.engine-contracts",
+      "requiredSuites": ["typecheck:contracts"],
+      "obligationSeed": "contract"
+    },
+    {
+      "mechanicId": "shared.contract.move-effect-context",
+      "cluster": "protocol-completeness",
+      "topologies": ["singles"],
+      "orderingSensitive": false,
+      "persistent": false,
+      "proofStatus": "legacy-unproven",
+      "authorityKey": "shared.engine-contracts",
+      "requiredSuites": ["typecheck:contracts"],
+      "obligationSeed": "contract"
+    },
+    {
       "mechanicId": "shared.contract.move-effect-result",
+      "cluster": "protocol-completeness",
+      "topologies": ["singles", "bench", "serialization"],
+      "orderingSensitive": false,
+      "persistent": true,
+      "proofStatus": "legacy-unproven",
+      "authorityKey": "shared.engine-contracts",
+      "requiredSuites": ["typecheck:contracts"],
+      "obligationSeed": "contract"
+    },
+    {
+      "mechanicId": "shared.contract.ability-context-result",
+      "cluster": "protocol-completeness",
+      "topologies": ["singles"],
+      "orderingSensitive": false,
+      "persistent": false,
+      "proofStatus": "legacy-unproven",
+      "authorityKey": "shared.engine-contracts",
+      "requiredSuites": ["typecheck:contracts"],
+      "obligationSeed": "contract"
+    },
+    {
+      "mechanicId": "shared.contract.item-context-result",
+      "cluster": "protocol-completeness",
+      "topologies": ["singles", "switch-legality"],
+      "orderingSensitive": false,
+      "persistent": false,
+      "proofStatus": "legacy-unproven",
+      "authorityKey": "shared.engine-contracts",
+      "requiredSuites": ["typecheck:contracts"],
+      "obligationSeed": "contract"
+    },
+    {
+      "mechanicId": "shared.contract.field-effect-results",
       "cluster": "protocol-completeness",
       "topologies": ["singles", "bench", "serialization"],
       "orderingSensitive": false,

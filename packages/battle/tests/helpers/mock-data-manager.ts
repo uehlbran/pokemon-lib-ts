@@ -105,6 +105,8 @@ function getMockItems(): ItemData[] {
     GEN4_DATA_MANAGER.getItem(GEN4_ITEM_IDS.focusSash),
     GEN4_DATA_MANAGER.getItem(GEN4_ITEM_IDS.toxicOrb),
     GEN5_DATA_MANAGER.getItem(GEN5_ITEM_IDS.airBalloon),
+    GEN5_DATA_MANAGER.getItem(GEN5_ITEM_IDS.ejectButton),
+    GEN5_DATA_MANAGER.getItem(GEN5_ITEM_IDS.redCard),
     GEN6_DATA_MANAGER.getItem(GEN6_ITEM_IDS.weaknessPolicy),
     EXP_SHARE_ITEM,
   ];

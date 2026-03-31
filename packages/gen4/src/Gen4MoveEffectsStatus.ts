@@ -259,7 +259,7 @@ function handleRest(ctx: MoveEffectContext): MoveEffectResult {
   });
 }
 
-function handleHealBellAromatherapy(ctx: MoveEffectContext, moveId: string): MoveEffectResult {
+function handleHealBellAromatherapy(_ctx: MoveEffectContext, moveId: string): MoveEffectResult {
   // Cure all party members' status conditions (attacker's side only — not the foe's party)
   // Source: Showdown Gen 4 — Heal Bell / Aromatherapy cures user's team status
   // Source: Bulbapedia — "Heal Bell cures all status conditions of the user and the user's party"

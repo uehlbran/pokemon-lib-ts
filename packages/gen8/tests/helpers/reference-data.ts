@@ -95,6 +95,7 @@ export const GEN8_TEST_VALUES = {
     status: CORE_MOVE_CATEGORIES.status,
   },
   items: {
+    adrenalineOrb: requireItemId("Adrenaline Orb"),
     assaultVest: requireItemId("Assault Vest"),
     airBalloon: requireItemId("Air Balloon"),
     blackSludge: requireItemId("Black Sludge"),
