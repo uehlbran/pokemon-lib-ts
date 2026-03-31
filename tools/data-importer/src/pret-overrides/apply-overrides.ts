@@ -10,7 +10,7 @@
  * - showdownValue mismatch: warning (Showdown may have been updated)
  */
 
-import { GEN_NUMBERS } from "@pokemon-lib-ts/core";
+import { GEN_NUMBERS } from "../../../../packages/core/src/constants/reference-ids";
 import type { MoveOverride, PokemonOverride, PretOverride } from "./types";
 
 // ---------------------------------------------------------------------------
