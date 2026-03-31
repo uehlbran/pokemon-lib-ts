@@ -13,6 +13,7 @@ export function validateComplianceWorkflow(repoRoot) {
   for (const expected of [
     "ready_for_review",
     "converted_to_draft",
+    "fetch-depth: 0",
     "npm run proof:preview -- --mode fast",
     "npm run proof:preview -- --mode full",
     "npm run proof:audit:mutation -- --mode fast",

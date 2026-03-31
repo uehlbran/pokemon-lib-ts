@@ -15,6 +15,12 @@ interface Args {
   readonly mode: string;
 }
 
+interface BaseRefResolution {
+  readonly requestedBaseRef: string;
+  readonly resolvedBaseRef: string;
+  readonly usedFallbackBaseRef: boolean;
+}
+
 function parseArgs(argv: string[]): Args {
   let baseRef = "origin/main";
   let mode = "local-preview";
@@ -40,6 +46,61 @@ function git(repoRoot: string, ...args: string[]): string {
     cwd: repoRoot,
     encoding: "utf8",
   }).trim();
+}
+
+function tryGit(repoRoot: string, ...args: string[]): string | null {
+  try {
+    return git(repoRoot, ...args);
+  } catch {
+    return null;
+  }
+}
+
+function computeBaseRefCandidates(requestedBaseRef: string): string[] {
+  const githubBaseRef = process.env.GITHUB_BASE_REF?.trim();
+  const baseCandidates = [
+    requestedBaseRef,
+    githubBaseRef ? `origin/${githubBaseRef}` : null,
+    githubBaseRef,
+    requestedBaseRef.startsWith("origin/") ? requestedBaseRef.slice("origin/".length) : null,
+    "origin/main",
+    "main",
+  ];
+
+  return [
+    ...new Set(baseCandidates.filter((candidate): candidate is string => Boolean(candidate))),
+  ];
+}
+
+function refExists(repoRoot: string, ref: string): boolean {
+  return tryGit(repoRoot, "rev-parse", "--verify", `${ref}^{commit}`) !== null;
+}
+
+export function resolveBaseRefFromCandidates(
+  requestedBaseRef: string,
+  candidates: readonly string[],
+  exists: (candidate: string) => boolean,
+): BaseRefResolution {
+  for (const candidate of candidates) {
+    if (!exists(candidate)) continue;
+    return {
+      requestedBaseRef,
+      resolvedBaseRef: candidate,
+      usedFallbackBaseRef: candidate !== requestedBaseRef,
+    };
+  }
+
+  throw new Error(
+    `Could not resolve a git base ref for changed-mechanics. Tried: ${candidates.join(", ")}. ` +
+      "Ensure the checkout fetched the PR base branch (for GitHub Actions, use actions/checkout with fetch-depth: 0).",
+  );
+}
+
+export function resolveBaseRef(repoRoot: string, requestedBaseRef: string): BaseRefResolution {
+  const candidates = computeBaseRefCandidates(requestedBaseRef);
+  return resolveBaseRefFromCandidates(requestedBaseRef, candidates, (candidate) =>
+    refExists(repoRoot, candidate),
+  );
 }
 
 function listChangedFiles(repoRoot: string, baseRef: string): string[] {
@@ -93,7 +154,8 @@ function resolveRequiredSuites(
 
 function buildImpactsReport(repoRoot: string, args: Args): ImpactsReport {
   const controlPlane = loadControlPlane(repoRoot);
-  const changedFiles = listChangedFiles(repoRoot, args.baseRef);
+  const baseRefResolution = resolveBaseRef(repoRoot, args.baseRef);
+  const changedFiles = listChangedFiles(repoRoot, baseRefResolution.resolvedBaseRef);
   const classifications = changedFiles.map((filePath) => classifyRepoFile(controlPlane, filePath));
   const unmappedRuntimeOwningFiles = classifications
     .filter(
@@ -139,7 +201,9 @@ function buildImpactsReport(repoRoot: string, args: Args): ImpactsReport {
     gitSha: git(repoRoot, "rev-parse", "HEAD"),
     timestamp: new Date().toISOString(),
     mode: args.mode,
-    baseRef: args.baseRef,
+    requestedBaseRef: baseRefResolution.requestedBaseRef,
+    resolvedBaseRef: baseRefResolution.resolvedBaseRef,
+    usedFallbackBaseRef: baseRefResolution.usedFallbackBaseRef,
     changedFiles,
     unmappedRuntimeOwningFiles,
     directOwnershipKeys,
@@ -182,10 +246,15 @@ function main(): void {
   }
 
   console.log(`Changed mechanics report written to ${join(resultsDir, "impacts.v1.json")}`);
+  if (report.usedFallbackBaseRef) {
+    console.log(
+      `Requested base ref ${report.requestedBaseRef} was unavailable; using ${report.resolvedBaseRef} instead.`,
+    );
+  }
   console.log(`Direct ownership keys: ${report.directOwnershipKeys.join(", ") || "(none)"}`);
   console.log(`Required suites: ${report.requiredSuites.join(", ")}`);
 }
 
 main();
 
-export { buildImpactsReport };
+export { buildImpactsReport, computeBaseRefCandidates };
