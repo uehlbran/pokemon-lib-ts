@@ -453,7 +453,8 @@ export class Gen2Ruleset implements GenerationRuleset {
       move.id === "fury-cutter" ||
       move.id === "snore" ||
       move.id === "triple-kick" ||
-      move.id === "present"
+      move.id === "present" ||
+      move.id === "rest"
     ) {
       handleCustomEffect(move, result, context, this._presentHealPending);
       this._presentHealPending = false;
