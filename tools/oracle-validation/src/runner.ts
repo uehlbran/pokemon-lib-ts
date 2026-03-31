@@ -193,9 +193,11 @@ async function main(): Promise<void> {
     process.env.VERCEL_GIT_COMMIT_SHA ??
     execFileSync("git", ["rev-parse", "HEAD"], { cwd: repoRoot, encoding: "utf8" }).trim();
   const controlPlane = loadControlPlane(repoRoot);
-  const runtimeMechanicMetadataEntries = new Map<
-    number,
+  const runtimeMechanicMetadataByMechanicId = new Map<
+    string,
     {
+      generation: number;
+      mechanicId: string;
       mechanicIds: string[];
       authorityKeys: string[];
       clusters: string[];
@@ -212,34 +214,20 @@ async function main(): Promise<void> {
     }
 
     const gen = Number.parseInt(match[1] ?? "", 10);
-    const existingMetadata = runtimeMechanicMetadataEntries.get(gen) ?? {
-      mechanicIds: [],
-      authorityKeys: [],
-      clusters: [],
-      topologies: [],
-    };
-    existingMetadata.mechanicIds.push(mechanic.mechanicId);
-    existingMetadata.authorityKeys.push(mechanic.authorityKey);
-    existingMetadata.clusters.push(mechanic.cluster);
-    existingMetadata.topologies.push(...mechanic.topologies);
-    runtimeMechanicMetadataEntries.set(gen, existingMetadata);
+    runtimeMechanicMetadataByMechanicId.set(mechanic.mechanicId, {
+      generation: gen,
+      mechanicId: mechanic.mechanicId,
+      mechanicIds: [mechanic.mechanicId],
+      authorityKeys: [mechanic.authorityKey],
+      clusters: [mechanic.cluster],
+      topologies: [...mechanic.topologies],
+    });
   }
-  const runtimeMechanicMetadataByGeneration = new Map(
-    [...runtimeMechanicMetadataEntries.entries()].map(([gen, metadata]) => [
-      gen,
-      {
-        mechanicIds: [...new Set(metadata.mechanicIds)].sort(),
-        authorityKeys: [...new Set(metadata.authorityKeys)].sort(),
-        clusters: [...new Set(metadata.clusters)].sort(),
-        topologies: [...new Set(metadata.topologies)].sort(),
-      },
-    ]),
-  );
   const { summary, checks } = buildProofSummary(
     gitSha,
     suites,
     generationResults,
-    runtimeMechanicMetadataByGeneration,
+    runtimeMechanicMetadataByMechanicId,
   );
   const resultsDir = writeProofArtifacts(repoRoot, gitSha, summary, checks);
   console.log(formatRunnerOutput(summary));
