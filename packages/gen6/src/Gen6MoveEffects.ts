@@ -43,6 +43,25 @@ function createBaseResult(): MoveEffectResult {
   };
 }
 
+function handleTelekinesis(ctx: MoveEffectContext): MoveEffectResult {
+  if (
+    ctx.defender.volatileStatuses.has(CORE_VOLATILE_IDS.telekinesis) ||
+    ctx.state.gravity?.active
+  ) {
+    return {
+      ...createBaseResult(),
+      messages: ["But it failed!"],
+    };
+  }
+
+  return {
+    ...createBaseResult(),
+    volatileInflicted: CORE_VOLATILE_IDS.telekinesis,
+    volatileData: { turnsLeft: 3 },
+    messages: [`${ctx.defender.pokemon.nickname ?? "The target"} was hurled into the air!`],
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Protect Variant Handlers
 // ---------------------------------------------------------------------------
@@ -385,6 +404,8 @@ export function executeGen6MoveEffect(
   rollProtectSuccess: (consecutiveProtects: number, rng: SeededRandom) => boolean,
 ): MoveEffectResult | null {
   switch (ctx.move.id) {
+    case GEN6_MOVE_IDS.telekinesis:
+      return handleTelekinesis(ctx);
     case GEN6_MOVE_IDS.kingsShield:
       return handleKingsShield(ctx, rng, rollProtectSuccess);
     case GEN6_MOVE_IDS.spikyShield:

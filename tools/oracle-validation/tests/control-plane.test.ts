@@ -75,4 +75,12 @@ describe("control plane ownership mapping", () => {
     expect(expanded).toContain("oracle:tooling:runner");
     expect(expanded).toContain("gen8:leaf-mechanic:ruleset-and-handlers");
   });
+
+  it("maps the data importer workspace manifest into importer tooling ownership", () => {
+    const controlPlane = loadControlPlane(repoRoot);
+    const classification = classifyRepoFile(controlPlane, "tools/data-importer/package.json");
+
+    expect(classification.fileClass).toBe("runtime-owning");
+    expect(classification.ownershipKeys).toContain("data-importer:tooling:importer-and-overrides");
+  });
 });

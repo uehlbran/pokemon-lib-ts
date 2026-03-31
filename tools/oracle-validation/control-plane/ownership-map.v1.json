@@ -269,7 +269,7 @@
     {
       "ownershipKey": "data-importer:tooling:importer-and-overrides",
       "ownerKind": "tooling",
-      "patterns": ["tools/data-importer/src/**"],
+      "patterns": ["tools/data-importer/src/**", "tools/data-importer/package.json"],
       "mechanicIds": ["shared.tooling.changed-mechanics.reporting"],
       "authorityKeys": ["shared.control-plane"],
       "propagatesTo": [

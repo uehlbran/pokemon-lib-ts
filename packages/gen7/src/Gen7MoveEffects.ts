@@ -41,6 +41,7 @@ import {
   type VolatileStatus,
 } from "@pokemon-lib-ts/core";
 import { GEN7_ABILITY_IDS, GEN7_ITEM_IDS, GEN7_MOVE_IDS } from "./data/reference-ids.js";
+import { UNSUPPRESSABLE_ABILITIES } from "./Gen7AbilitiesSwitch.js";
 
 // ---------------------------------------------------------------------------
 // Default empty result
@@ -104,6 +105,38 @@ function handleSpectralThiefPreDamage(ctx: MoveEffectContext): MoveEffectResult 
   return {
     ...createBaseResult(),
     statChanges,
+  };
+}
+
+function handleCoreEnforcer(ctx: MoveEffectContext): MoveEffectResult {
+  if (
+    !ctx.defender.movedThisTurn ||
+    ctx.defender.suppressedAbility !== null ||
+    UNSUPPRESSABLE_ABILITIES.has(ctx.defender.ability)
+  ) {
+    return createBaseResult();
+  }
+
+  return {
+    ...createBaseResult(),
+    abilitySuppress: { target: BATTLE_EFFECT_TARGETS.defender },
+    messages: [`${ctx.defender.pokemon.nickname ?? "The target"}'s ability was suppressed!`],
+  };
+}
+
+function handleTelekinesis(ctx: MoveEffectContext): MoveEffectResult {
+  if (
+    ctx.defender.volatileStatuses.has(CORE_VOLATILE_IDS.telekinesis) ||
+    ctx.state.gravity?.active
+  ) {
+    return createBaseResult();
+  }
+
+  return {
+    ...createBaseResult(),
+    volatileInflicted: CORE_VOLATILE_IDS.telekinesis,
+    volatileData: { turnsLeft: 3 },
+    messages: [`${ctx.defender.pokemon.nickname ?? "The target"} was hurled into the air!`],
   };
 }
 
@@ -787,6 +820,10 @@ export function executeGen7MoveEffect(
   rollProtectSuccess: (consecutiveProtects: number, rng: SeededRandom) => boolean,
 ): MoveEffectResult | null {
   switch (ctx.move.id) {
+    case GEN7_MOVE_IDS.coreEnforcer:
+      return handleCoreEnforcer(ctx);
+    case GEN7_MOVE_IDS.telekinesis:
+      return handleTelekinesis(ctx);
     case GEN7_MOVE_IDS.auroraVeil:
       return handleAuroraVeil(ctx);
     case GEN7_MOVE_IDS.banefulBunker:

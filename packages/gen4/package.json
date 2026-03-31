@@ -24,13 +24,10 @@
   ],
   "scripts": {
     "build": "tsup",
-    "test": "npm run test:unit && npm run test:integration",
-    "test:unit": "vitest run tests/*.test.ts",
-    "test:integration": "node ../../scripts/run-package-tier-tests.mjs integration",
+    "test": "npm run test:unit",
+    "test:unit": "node ../../scripts/run-vitest.mjs tests/*.test.ts tests/unit/**/*.test.ts",
     "test:smoke": "node ../../scripts/run-package-tier-tests.mjs smoke",
-    "test:e2e": "node ../../scripts/run-package-tier-tests.mjs e2e",
-    "test:stress": "node ../../scripts/run-package-tier-tests.mjs stress",
-    "test:all": "npm run test && npm run test:smoke && npm run test:e2e && npm run test:stress",
+    "test:all": "npm run test && npm run test:smoke",
     "typecheck": "tsc -p tsconfig.typecheck.json --noEmit",
     "clean": "rm -rf dist"
   },

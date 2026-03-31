@@ -26,7 +26,6 @@ import {
   type MoveEffectResult,
 } from "@pokemon-lib-ts/battle";
 import {
-  CORE_ABILITY_IDS,
   CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
@@ -248,18 +247,11 @@ function handleIncinerate(ctx: MoveEffectContext): MoveEffectResult {
   const targetItem = ctx.defender.pokemon.heldItem;
   if (isBerry(targetItem)) {
     const item = targetItem as string;
-    ctx.defender.pokemon.heldItem = null;
-
-    // Unburden: if the target has Unburden, set the volatile to double Speed.
-    // Source: Showdown data/abilities.ts -- Unburden activates when item is lost
-    if (
-      ctx.defender.ability === CORE_ABILITY_IDS.unburden &&
-      !ctx.defender.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)
-    ) {
-      ctx.defender.volatileStatuses.set(CORE_VOLATILE_IDS.unburden, { turnsLeft: -1 });
-    }
-
     return makeResult({
+      itemChange: {
+        target: BATTLE_EFFECT_TARGETS.defender,
+        item: null,
+      },
       messages: [`${ctx.defender.pokemon.nickname ?? "The target"}'s ${item} was incinerated!`],
     });
   }
@@ -422,18 +414,19 @@ function handleWorrySeed(ctx: MoveEffectContext): MoveEffectResult {
     return makeResult({ messages: ["But it failed!"] });
   }
 
-  // Source: Showdown data/moves.ts worryseed.onHit -- cure sleep if asleep
-  // Direct mutation: if the target is asleep, cure it before setting the ability.
   const messages: string[] = [];
-  if (ctx.defender.pokemon.status === CORE_STATUS_IDS.sleep) {
-    ctx.defender.pokemon.status = null as never;
-    ctx.defender.volatileStatuses.delete(CORE_VOLATILE_IDS.sleepCounter);
+  const wokeTarget = ctx.defender.pokemon.status === CORE_STATUS_IDS.sleep;
+  if (wokeTarget) {
     messages.push(`${ctx.defender.pokemon.nickname ?? "The target"} woke up!`);
   }
 
   messages.push(`${ctx.defender.pokemon.nickname ?? "The target"} acquired Insomnia!`);
 
   return makeResult({
+    statusCuredOnly: wokeTarget ? { target: BATTLE_EFFECT_TARGETS.defender } : null,
+    volatilesToClear: wokeTarget
+      ? [{ target: BATTLE_EFFECT_TARGETS.defender, volatile: CORE_VOLATILE_IDS.sleepCounter }]
+      : [],
     abilityChange: {
       target: BATTLE_EFFECT_TARGETS.defender,
       ability: GEN5_ABILITY_IDS.insomnia,
@@ -470,12 +463,10 @@ function handleGastroAcid(ctx: MoveEffectContext): MoveEffectResult {
     return makeResult({ messages: ["But it failed!"] });
   }
 
-  // Direct mutation: store original ability and clear active ability.
-  // Source: Gen4MoveEffects.ts lines 1517-1518 -- same pattern
-  ctx.defender.suppressedAbility = ctx.defender.ability;
-  ctx.defender.ability = "";
-
   return makeResult({
+    abilitySuppress: {
+      target: BATTLE_EFFECT_TARGETS.defender,
+    },
     messages: [`${ctx.defender.pokemon.nickname ?? "The target"}'s ability was suppressed!`],
   });
 }
@@ -562,12 +553,8 @@ function handleSkillSwap(ctx: MoveEffectContext): MoveEffectResult {
     return makeResult({ messages: ["But it failed!"] });
   }
 
-  // Direct mutation: swap abilities simultaneously.
-  // Source: Showdown sim/battle.ts skillSwap -- source.ability = targetAbility; target.ability = sourceAbility
-  ctx.attacker.ability = targetAbility;
-  ctx.defender.ability = sourceAbility;
-
   return makeResult({
+    abilitySwap: true,
     messages: [
       `${ctx.attacker.pokemon.nickname ?? "The user"} swapped abilities with ${ctx.defender.pokemon.nickname ?? "the target"}!`,
     ],
@@ -584,6 +571,21 @@ function handleRound(_ctx: MoveEffectContext): MoveEffectResult {
   // not in the effect handler.
   return makeResult({
     messages: [],
+  });
+}
+
+function handleTelekinesis(ctx: MoveEffectContext): MoveEffectResult {
+  if (
+    ctx.defender.volatileStatuses.has(CORE_VOLATILE_IDS.telekinesis) ||
+    ctx.state.gravity?.active
+  ) {
+    return makeResult({ messages: ["But it failed!"] });
+  }
+
+  return makeResult({
+    volatileInflicted: CORE_VOLATILE_IDS.telekinesis,
+    volatileData: { turnsLeft: 3 },
+    messages: [`${ctx.defender.pokemon.nickname ?? "The target"} was hurled into the air!`],
   });
 }
 
@@ -631,6 +633,8 @@ export function handleGen5StatusMove(ctx: MoveEffectContext): MoveEffectResult |
       return handleSkillSwap(ctx);
     case "round":
       return handleRound(ctx);
+    case "telekinesis":
+      return handleTelekinesis(ctx);
     default:
       return null;
   }

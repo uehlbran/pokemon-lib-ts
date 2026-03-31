@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import process from "node:process";
 import { validateTestTierDirectory } from "./lib/test-tier-gate.mjs";
+import { buildVitestRunArgs } from "./lib/vitest-runner.mjs";
 
 const tier = process.argv[2];
 const result = validateTestTierDirectory({ cwd: process.cwd(), tier });
@@ -11,14 +12,11 @@ if (!result.isValid) {
 }
 
 const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
-const testRun = spawnSync(
-  npmCommand,
-  ["exec", "--", "vitest", "run", result.testDir, "--passWithNoTests"],
-  {
-    stdio: "inherit",
-    cwd: process.cwd(),
-  },
-);
+const testRun = spawnSync(npmCommand, buildVitestRunArgs([result.testDir]), {
+  stdio: "inherit",
+  cwd: process.cwd(),
+  env: process.env,
+});
 
 if (testRun.error) {
   console.error(`Failed to launch vitest for tests/${tier}: ${testRun.error.message}`);

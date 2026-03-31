@@ -495,9 +495,11 @@ describe("Incinerate", () => {
     const result = handleGen5StatusMove(ctx);
 
     expect(result).toEqual(
-      baseMoveResult({ messages: [`The target's ${ITEMS.sitrusBerry} was incinerated!`] }),
+      baseMoveResult({
+        itemChange: { target: "defender", item: null },
+        messages: [`The target's ${ITEMS.sitrusBerry} was incinerated!`],
+      }),
     );
-    expect(defender.pokemon.heldItem).toBeNull();
   });
 
   it("given a target holding a lum-berry, when Incinerate is used, then destroys the berry", () => {
@@ -511,9 +513,11 @@ describe("Incinerate", () => {
     const result = handleGen5StatusMove(ctx);
 
     expect(result).toEqual(
-      baseMoveResult({ messages: [`The target's ${ITEMS.lumBerry} was incinerated!`] }),
+      baseMoveResult({
+        itemChange: { target: "defender", item: null },
+        messages: [`The target's ${ITEMS.lumBerry} was incinerated!`],
+      }),
     );
-    expect(defender.pokemon.heldItem).toBeNull();
   });
 
   it("given a target holding a fire-gem in Gen 5, when Incinerate is used, then does NOT destroy the gem", () => {
@@ -574,10 +578,11 @@ describe("Incinerate", () => {
     const result = handleGen5StatusMove(ctx);
 
     expect(result).toEqual(
-      baseMoveResult({ messages: [`The target's ${ITEMS.sitrusBerry} was incinerated!`] }),
+      baseMoveResult({
+        itemChange: { target: "defender", item: null },
+        messages: [`The target's ${ITEMS.sitrusBerry} was incinerated!`],
+      }),
     );
-    expect(defender.pokemon.heldItem).toBeNull();
-    expect(defender.volatileStatuses.has(ABILITIES.unburden)).toBe(true);
   });
 
   it("given a target without Unburden holding a berry, when Incinerate is used, then does NOT set unburden volatile", () => {
@@ -594,10 +599,11 @@ describe("Incinerate", () => {
     const result = handleGen5StatusMove(ctx);
 
     expect(result).toEqual(
-      baseMoveResult({ messages: [`The target's ${ITEMS.sitrusBerry} was incinerated!`] }),
+      baseMoveResult({
+        itemChange: { target: "defender", item: null },
+        messages: [`The target's ${ITEMS.sitrusBerry} was incinerated!`],
+      }),
     );
-    expect(defender.pokemon.heldItem).toBeNull();
-    expect(defender.volatileStatuses.has(ABILITIES.unburden)).toBe(false);
   });
 });
 

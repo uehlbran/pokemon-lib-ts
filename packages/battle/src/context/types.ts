@@ -286,6 +286,12 @@ export interface MoveEffectResult {
   }>;
   readonly clearSideHazards?: MoveEffectSideTarget;
   readonly itemTransfer?: { from: MoveEffectSideTarget; to: MoveEffectSideTarget };
+  /** Set, restore, or clear the held item on the attacker or defender. */
+  readonly itemChange?: {
+    target: MoveEffectSideTarget;
+    item: string | null;
+    clearLastItem?: boolean;
+  } | null;
   /** Gen 1: Clear screens from the specified side(s) (Haze or setter switching out) */
   readonly screensCleared?: MoveEffectSideTargetWithBoth | null;
   /**
@@ -319,6 +325,10 @@ export interface MoveEffectResult {
     target: MoveEffectSideTarget;
     ability: string;
   } | null;
+  /** Suppress the target's current active ability until switch-out or restoration. */
+  readonly abilitySuppress?: { target: MoveEffectSideTarget } | null;
+  /** Swap the attacker's and defender's current active abilities. */
+  readonly abilitySwap?: boolean;
   /** Primary status to inflict on the ATTACKER (e.g., Rest's self-sleep) */
   readonly selfStatusInflicted?: PrimaryStatus | null;
   /** Volatile status to inflict on the ATTACKER */
@@ -964,6 +974,7 @@ export interface BattleGimmick {
  * - `flame-orb-activation` — Flame Orb burns holder at end of turn
  * - `slow-start-countdown` — Slow Start 5-turn counter decrement
  * - `magnet-rise-countdown` — Magnet Rise levitation duration countdown
+ * - `telekinesis-countdown` — Telekinesis airborne duration countdown
  * - `salt-cure` — Salt Cure end-of-turn residual damage (Gen 9)
  */
 export type EndOfTurnEffect =
@@ -1013,6 +1024,7 @@ export type EndOfTurnEffect =
   | "heal-block-countdown"
   | "embargo-countdown"
   | "magnet-rise-countdown"
+  | "telekinesis-countdown"
   | "salt-cure";
 
 /**

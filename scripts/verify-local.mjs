@@ -1,110 +1,78 @@
 #!/usr/bin/env node
 
-import { spawn, spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { buildTurboOptions, runVerification } from "./lib/verification-runner.mjs";
 
-function runStep(label, npmArgs) {
-  return new Promise((resolve) => {
-    const proc = spawn("npm", npmArgs, { stdio: "inherit", env: process.env });
-    proc.on("error", (err) => {
-      console.error(`\n==> FAILED: ${label} (spawn error: ${err.message})`);
-      process.exit(1);
-    });
-    proc.on("close", (code) => {
-      if (code !== 0) {
-        console.error(`\n==> FAILED: ${label}`);
-        process.exit(code ?? 1);
-      }
-      console.log(`==> PASSED: ${label}`);
-      resolve();
-    });
-  });
-}
-
-if (!existsSync("node_modules")) {
-  console.log("\n==> bootstrap dependencies");
-  const bootstrap = spawnSync("npm", ["ci"], { stdio: "inherit" });
-  if (bootstrap.status !== 0) {
-    process.exit(bootstrap.status ?? 1);
-  }
-}
-
-// Phase 1: Build first (other steps depend on build output)
-console.log("\n==> build");
-const buildResult = spawnSync("npm", ["run", "build"], { stdio: "inherit", env: process.env });
-if (buildResult.status !== 0) {
-  console.error("\n==> FAILED: build");
-  process.exit(buildResult.status ?? 1);
-}
-console.log("==> PASSED: build");
-
-// Phase 2: Run independent steps in parallel
-console.log("\n==> running lint, typecheck, tests, and boundaries in parallel...");
-
-await Promise.all([
-  runStep("proof preview", ["run", "proof:preview"]),
-  runStep("direct mutation audit", ["run", "proof:audit:mutation"]),
-  runStep("oracle fast", ["run", "oracle:fast"]),
-  runStep("workflow validator tests", ["run", "test:workflow"]),
-  runStep("lint", ["run", "lint:check"]),
-  runStep("tests (unit + integration)", ["run", "test"]),
-  runStep("typecheck", ["run", "typecheck"]),
-  runStep("contract typecheck", ["run", "typecheck:contracts"]),
-  runStep("package boundaries", ["run", "ci:package-boundaries"]),
-  runStep("pret committed-data validation", ["run", "validate:pret"]),
-]);
-
-// Phase 3: Changeset gate (last — depends on nothing but runs fast)
-console.log("\n==> changeset gate");
-const changesetResult = spawnSync("npm", ["run", "changeset:check"], {
-  stdio: "inherit",
-  env: process.env,
-});
-if (changesetResult.status !== 0) {
-  console.error("\n==> FAILED: changeset gate");
-  process.exit(changesetResult.status ?? 1);
-}
-console.log("==> PASSED: changeset gate");
-
-console.log("\n==> impacts enforcement");
-const enforceResult = spawnSync(
-  "npm",
-  [
-    "run",
-    "proof:enforce",
-    "--",
-    "--mode",
-    "local-preview",
-    "--executed-suite",
-    "changeset-check",
-    "--executed-suite",
-    "lint",
-    "--executed-suite",
-    "oracle-fast",
-    "--executed-suite",
-    "package-boundaries",
-    "--executed-suite",
-    "pret-validate",
-    "--executed-suite",
-    "proof-preview",
-    "--executed-suite",
-    "test",
-    "--executed-suite",
-    "typecheck",
-    "--executed-suite",
-    "typecheck:contracts",
-    "--executed-suite",
-    "workflow-contract",
-  ],
-  {
-    stdio: "inherit",
-    env: process.env,
+const turboBuildConcurrency = process.env.VERIFY_LOCAL_TURBO_BUILD_CONCURRENCY ?? "3";
+const turboTaskConcurrency = process.env.VERIFY_LOCAL_TURBO_TASK_CONCURRENCY ?? "2";
+await runVerification({
+  env: {
+    VERIFY_LOCAL: "1",
+    VERIFY_LOCAL_VITEST_MAX_CONCURRENCY: process.env.VERIFY_LOCAL_VITEST_MAX_CONCURRENCY ?? "2",
   },
-);
-if (enforceResult.status !== 0) {
-  console.error("\n==> FAILED: impacts enforcement");
-  process.exit(enforceResult.status ?? 1);
-}
-console.log("==> PASSED: impacts enforcement");
-
-console.log("\nLocal verification passed.");
+  steps: [
+    {
+      label: "build",
+      npmArgs: ["run", "build", "--", ...buildTurboOptions({ concurrency: turboBuildConcurrency })],
+    },
+    { label: "proof preview", npmArgs: ["run", "proof:preview"] },
+    { label: "direct mutation audit", npmArgs: ["run", "proof:audit:mutation"] },
+    { label: "workflow validator tests", npmArgs: ["run", "test:workflow"] },
+    { label: "lint", npmArgs: ["run", "lint:check"] },
+    {
+      label: "tests (all declared committed tiers)",
+      npmArgs: [
+        "run",
+        "test:all",
+        "--",
+        ...buildTurboOptions({ concurrency: turboTaskConcurrency }),
+      ],
+    },
+    {
+      label: "typecheck",
+      npmArgs: [
+        "run",
+        "typecheck",
+        "--",
+        ...buildTurboOptions({ concurrency: turboTaskConcurrency }),
+      ],
+    },
+    { label: "contract typecheck", npmArgs: ["run", "typecheck:contracts"] },
+    { label: "invariant tests", npmArgs: ["run", "test:invariants"] },
+    { label: "package boundaries", npmArgs: ["run", "ci:package-boundaries"] },
+    { label: "pret committed-data validation", npmArgs: ["run", "validate:pret"] },
+    { label: "fast oracle proof", npmArgs: ["run", "oracle:fast"] },
+    { label: "generated completeness status", npmArgs: ["run", "status:generate"] },
+    { label: "generated status honesty gate", npmArgs: ["run", "status:check"] },
+    { label: "changeset gate", npmArgs: ["run", "changeset:check"] },
+    {
+      label: "impacts enforcement",
+      npmArgs: [
+        "run",
+        "proof:enforce",
+        "--",
+        "--mode",
+        "local-preview",
+        "--executed-suite",
+        "changeset-check",
+        "--executed-suite",
+        "lint",
+        "--executed-suite",
+        "oracle-fast",
+        "--executed-suite",
+        "package-boundaries",
+        "--executed-suite",
+        "pret-validate",
+        "--executed-suite",
+        "proof-preview",
+        "--executed-suite",
+        "test",
+        "--executed-suite",
+        "typecheck",
+        "--executed-suite",
+        "typecheck:contracts",
+        "--executed-suite",
+        "workflow-contract",
+      ],
+    },
+  ],
+});

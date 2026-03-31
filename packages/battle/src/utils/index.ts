@@ -1,5 +1,6 @@
 export {
   clonePokemonInstance,
+  consumeHeldItem,
   createBattleSide,
   createBattleState,
   createDefaultStatStages,

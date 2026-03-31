@@ -47,6 +47,14 @@ function createMockRng(intReturnValue: number, chanceResult = false) {
   };
 }
 
+function createMove(id: string): MoveData {
+  const move = dataManager.getMove(id);
+  if (!move) {
+    throw new Error(`Unknown move: ${id}`);
+  }
+  return move;
+}
+
 function createActivePokemon(opts: {
   types: PokemonType[];
   status?: string | null;
@@ -743,5 +751,22 @@ describe("Gen 3 executeMoveEffect — Pursuit", () => {
       switchOut: false,
       messages: [],
     });
+  });
+});
+
+describe("Gen 3 executeMoveEffect — Stockpile family", () => {
+  it("given Stockpile in Gen 3, when executeMoveEffect is called, then it tracks only layers without adding defensive stat changes", () => {
+    // Source: Showdown data/mods/gen3/moves.ts — Stockpile in Gen 3 only tracks layers.
+    // Source: Bulbapedia — Defense / Sp. Def boosts were added in Gen 4.
+    const attacker = createActivePokemon({ types: [T.normal] });
+    const defender = createActivePokemon({ types: [T.normal] });
+    const move = createMove(M.stockpile);
+    const context = createContext(attacker, defender, move, 0, createMockRng(0));
+
+    const result = ruleset.executeMoveEffect(context);
+
+    expect(result.selfVolatileInflicted).toBe(V.stockpile);
+    expect(result.selfVolatileData).toMatchObject({ turnsLeft: -1, data: { layers: 1 } });
+    expect(result.statChanges).toHaveLength(0);
   });
 });

@@ -184,6 +184,14 @@ export interface DamageSystem {
   ): PreExecutionMoveFailure | null;
 
   /**
+   * Returns whether the move should proceed through the damage pipeline.
+   *
+   * Most damaging moves have non-null power, but some moves derive power at
+   * runtime from battle state (for example, Spit Up uses Stockpile layers).
+   */
+  isMoveDamaging?(move: MoveData): boolean;
+
+  /**
    * Returns `true` if the given move, when used by the given actor, can bypass Protect-type
    * volatile statuses and hit the defender for reduced (0.25x) damage.
    *

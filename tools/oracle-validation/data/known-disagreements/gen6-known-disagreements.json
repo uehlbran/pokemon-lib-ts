@@ -1,1 +1,28 @@
-[]
+[
+  {
+    "id": "gen6:data:moves:thousandarrows:exists",
+    "gen": 6,
+    "suite": "data",
+    "description": "Thousand Arrows is intentionally present in local Gen 6 battle data even though the oracle dataset omits it.",
+    "ourValue": true,
+    "oracleValue": false,
+    "resolution": "enhancement-deferred",
+    "source": "Pokemon Showdown move data / repo-supported Gen 6 surface",
+    "sourceUrl": "https://github.com/smogon/pokemon-showdown/blob/master/data/moves.ts",
+    "oracleVersion": "@pkmn/dex current",
+    "addedDate": "2026-03-30"
+  },
+  {
+    "id": "gen6:data:moves:thousandwaves:exists",
+    "gen": 6,
+    "suite": "data",
+    "description": "Thousand Waves is intentionally present in local Gen 6 battle data even though the oracle dataset omits it.",
+    "ourValue": true,
+    "oracleValue": false,
+    "resolution": "enhancement-deferred",
+    "source": "Pokemon Showdown move data / repo-supported Gen 6 surface",
+    "sourceUrl": "https://github.com/smogon/pokemon-showdown/blob/master/data/moves.ts",
+    "oracleVersion": "@pkmn/dex current",
+    "addedDate": "2026-03-30"
+  }
+]

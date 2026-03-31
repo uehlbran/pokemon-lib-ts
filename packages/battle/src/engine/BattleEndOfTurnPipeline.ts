@@ -474,6 +474,11 @@ export function processEndOfTurnPipeline(host: BattleEndOfTurnPipelineHost): voi
         // Source: Showdown Gen 4 mod — Magnet Rise lasts 5 turns
         processSimpleVolatileCountdown(host, CORE_VOLATILE_IDS.magnetRise);
         break;
+      case CORE_END_OF_TURN_EFFECT_IDS.telekinesisCountdown:
+        // Telekinesis volatile countdown — remove when turnsLeft reaches 0
+        // Source: Showdown data/moves.ts -- telekinesis condition: duration 3
+        processSimpleVolatileCountdown(host, CORE_VOLATILE_IDS.telekinesis);
+        break;
       case CORE_VOLATILE_IDS.uproar: {
         // Source: pret/pokeemerald -- Uproar: countdown duration, wake sleeping Pokemon
         // Source: Bulbapedia — Uproar prevents sleep while the user is in uproar

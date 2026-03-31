@@ -47,6 +47,22 @@ export interface PokemonInstance {
   /** Held item ID (null = no item) */
   heldItem: string | null;
 
+  /**
+   * Most recently consumed held item.
+   * Persists through switches so mechanics like Recycle can restore it later.
+   * Cleared when the stored item is successfully restored.
+   * Source: Showdown sim/pokemon.ts -- pokemon.lastItem
+   */
+  lastItem?: string | null;
+
+  /**
+   * Whether this Pokemon has eaten a Berry at any point this battle.
+   * Persists through switches and remains true for the rest of the battle.
+   * Used by Belch's move-availability gate.
+   * Source: Showdown sim/pokemon.ts -- pokemon.ateBerry
+   */
+  ateBerry?: boolean;
+
   /** Primary status condition (null = healthy) */
   status: PrimaryStatus | null;
 

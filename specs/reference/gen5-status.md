@@ -2,7 +2,7 @@
 # Gen5 Implementation Status
 
 **Last updated:** 2026-03-22
-**Overall estimate:** ~100% complete (all tracked mechanics + bugs done)
+**Generated completeness status:** `tools/oracle-validation/results/completeness-status.md`
 **Architecture:** Extends `BaseRuleset`
 **Primary source:** Pokemon Showdown (Gen 5 has no complete disassembly)
 

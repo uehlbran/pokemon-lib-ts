@@ -2,7 +2,7 @@
 # Gen3 Implementation Status
 
 **Last updated:** 2026-03-22
-**Overall estimate:** ~98% complete (Flash Fire fix merged PR #591; only doubles-only issue remains)
+**Generated completeness status:** `tools/oracle-validation/results/completeness-status.md`
 **Architecture:** Extends `BaseRuleset`
 
 ---

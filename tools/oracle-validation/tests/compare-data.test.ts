@@ -34,6 +34,8 @@ function createTempGenerationData(): ImplementedGeneration {
       },
     ]),
   );
+  writeFileSync(join(dataDir, "moves.json"), JSON.stringify([]));
+  writeFileSync(join(dataDir, "items.json"), JSON.stringify([]));
   writeFileSync(
     join(dataDir, "type-chart.json"),
     JSON.stringify({
@@ -110,6 +112,78 @@ describe("runDataSuite", () => {
     ).toBe(true);
     expect(
       result.failures.some((failure) => failure.includes("gen1:data:species:bulbasaur:types")),
+    ).toBe(false);
+  });
+
+  it("emits move existence checks so local-only known disagreements are exercised", () => {
+    const generation = {
+      ...createTempGenerationData(),
+      gen: 6 as const,
+      packageName: "@pokemon-lib-ts/gen6",
+    };
+
+    writeFileSync(
+      join(generation.dataDir, "moves.json"),
+      JSON.stringify([
+        {
+          id: "totallyfake",
+        },
+      ]),
+    );
+    writeFileSync(
+      join(generation.dataDir, "type-chart.json"),
+      JSON.stringify(
+        Object.fromEntries(
+          [
+            "normal",
+            "fire",
+            "water",
+            "electric",
+            "grass",
+            "ice",
+            "fighting",
+            "poison",
+            "ground",
+            "flying",
+            "psychic",
+            "bug",
+            "rock",
+            "ghost",
+            "dragon",
+            "dark",
+            "steel",
+            "fairy",
+          ].map((attacker) => [attacker, Object.fromEntries([[attacker, 1]])]),
+        ),
+      ),
+    );
+
+    const knownDisagreements: KnownDisagreement[] = [
+      {
+        id: "gen6:data:moves:totallyfake:exists",
+        gen: 6,
+        suite: "data",
+        description: "Synthetic local-only move for exercising the existence registry path",
+        ourValue: true,
+        oracleValue: false,
+        resolution: "enhancement-deferred",
+        source: "test fixture",
+        sourceUrl: "https://example.com/totallyfake",
+        oracleVersion: "test",
+        addedDate: "2026-03-30",
+      },
+    ];
+
+    const result = runDataSuite(generation, knownDisagreements);
+
+    expect(
+      result.oracleChecks.some((check) => check.id === "gen6:data:moves:totallyfake:exists"),
+    ).toBe(true);
+    expect(result.matchedKnownDisagreements).toContain("gen6:data:moves:totallyfake:exists");
+    expect(
+      result.failures.some((failure) =>
+        failure.includes("KNOWN DISAGREEMENT NOT EXERCISED: gen6:data:moves:totallyfake:exists"),
+      ),
     ).toBe(false);
   });
 });

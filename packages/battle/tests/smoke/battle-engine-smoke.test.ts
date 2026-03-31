@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { BATTLE_EVENT_TYPES } from "../../src/constants/reference-ids";
 import type { BattleConfig } from "../../src/context";
 import { BattleEngine } from "../../src/engine";
 import { createTestPokemon } from "../../src/utils";
@@ -23,7 +24,34 @@ describe("BattleEngine smoke", () => {
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
+    const eventLog = engine.getEventLog();
+
     expect(engine.getPhase()).toBe("action-select");
-    expect(engine.getEventLog().length).toBeGreaterThan(0);
+    expect(eventLog).toHaveLength(8);
+    expect(eventLog.map((event) => event.type)).toEqual([
+      BATTLE_EVENT_TYPES.battleStart,
+      BATTLE_EVENT_TYPES.switchIn,
+      BATTLE_EVENT_TYPES.switchIn,
+      BATTLE_EVENT_TYPES.turnStart,
+      BATTLE_EVENT_TYPES.moveStart,
+      BATTLE_EVENT_TYPES.damage,
+      BATTLE_EVENT_TYPES.moveStart,
+      BATTLE_EVENT_TYPES.damage,
+    ]);
+    expect(eventLog[4]).toMatchObject({
+      type: BATTLE_EVENT_TYPES.moveStart,
+      side: 0,
+      pokemon: "Charizard",
+      move: "tackle",
+    });
+    expect(eventLog[5]).toMatchObject({
+      type: BATTLE_EVENT_TYPES.damage,
+      side: 1,
+      pokemon: "Blastoise",
+      amount: 10,
+      currentHp: 144,
+      maxHp: 154,
+      source: "tackle",
+    });
   });
 });

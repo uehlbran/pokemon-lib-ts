@@ -786,6 +786,7 @@ export class Gen6Ruleset extends BaseRuleset {
       CORE_END_OF_TURN_EFFECT_IDS.healBlockCountdown,
       CORE_END_OF_TURN_EFFECT_IDS.embargoCountdown,
       CORE_END_OF_TURN_EFFECT_IDS.magnetRiseCountdown,
+      CORE_END_OF_TURN_EFFECT_IDS.telekinesisCountdown,
       CORE_END_OF_TURN_EFFECT_IDS.perishSong,
       CORE_END_OF_TURN_EFFECT_IDS.screenCountdown,
       CORE_END_OF_TURN_EFFECT_IDS.safeguardCountdown,

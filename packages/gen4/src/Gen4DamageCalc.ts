@@ -4,6 +4,7 @@ import type {
   DamageContext,
   DamageResult,
 } from "@pokemon-lib-ts/battle";
+import { consumeHeldItem } from "@pokemon-lib-ts/battle";
 import type { MoveEffect, PokemonType, TypeChart } from "@pokemon-lib-ts/core";
 import {
   BASE_PINCH_ABILITY_TYPES,
@@ -35,6 +36,28 @@ const MAROWAK_SPECIES_ID = 105;
 const DIALGA_SPECIES_ID = 483;
 const PALKIA_SPECIES_ID = 484;
 const GIRATINA_SPECIES_ID = 487;
+
+function getPowerTrickAdjustedBaseStat(
+  pokemon: ActivePokemon,
+  statKey: "attack" | "defense" | "spAttack" | "spDefense",
+): number {
+  const stats = pokemon.pokemon.calculatedStats;
+  if (!stats) {
+    return 100;
+  }
+
+  if (!pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.powerTrick)) {
+    return stats[statKey];
+  }
+
+  if (statKey === "attack") {
+    return stats.defense;
+  }
+  if (statKey === "defense") {
+    return stats.attack;
+  }
+  return stats[statKey];
+}
 
 // ─── Type-Boosting Items ────────────────────────────────────────────────────
 
@@ -252,8 +275,7 @@ function getAttackStat(
   weather?: string | null,
 ): number {
   const statKey = isPhysical ? "attack" : "spAttack";
-  const stats = attacker.pokemon.calculatedStats;
-  let rawStat = stats ? stats[statKey] : 100;
+  let rawStat = getPowerTrickAdjustedBaseStat(attacker, statKey);
 
   const ability = attacker.ability;
   const attackerItem = attacker.pokemon.heldItem;
@@ -424,8 +446,7 @@ function getDefenseStat(
   attacker?: ActivePokemon,
 ): number {
   const statKey = isPhysical ? "defense" : "spDefense";
-  const stats = defender.pokemon.calculatedStats;
-  let baseStat = stats ? stats[statKey] : 100;
+  let baseStat = getPowerTrickAdjustedBaseStat(defender, statKey);
 
   // Species-specific held item boosts on defense side
   const defenderItem = defender.pokemon.heldItem;
@@ -567,10 +588,15 @@ function getDefenseStat(
  */
 export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart): DamageResult {
   const { attacker, defender, move, rng, isCrit } = context;
+  const isSpitUp = move.id === GEN4_MOVE_IDS.spitUp;
 
   // 1. Status moves / power=0 → no damage
   // Source: Showdown sim/battle.ts — status moves skip damage calc
-  if (move.category === CORE_MOVE_CATEGORIES.status || move.power === null || move.power === 0) {
+  if (
+    move.category === CORE_MOVE_CATEGORIES.status ||
+    (!isSpitUp && move.power === null) ||
+    (!isSpitUp && move.power === 0)
+  ) {
     return {
       damage: 0,
       effectiveness: 1,
@@ -580,9 +606,15 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   }
 
   const level = attacker.pokemon.level;
-  let power = move.power;
+  let power = move.power ?? 0;
   const defenderAbility = defender.ability;
   const attackerAbility = attacker.ability;
+  if (isSpitUp) {
+    const stockpileLayers = Number(
+      attacker.volatileStatuses.get(CORE_VOLATILE_IDS.stockpile)?.data?.layers ?? 0,
+    );
+    power = stockpileLayers > 0 ? stockpileLayers * 100 : 0;
+  }
   // Cloud Nine / Air Lock suppress weather for damage calculation purposes.
   // Source: pret/pokeplatinum — WEATHER_HAS_EFFECT check gates all weather-based damage modifiers
   const rawWeather = context.state.weather?.type ?? null;
@@ -1260,11 +1292,9 @@ export function calculateGen4Damage(context: DamageContext, typeChart: TypeChart
   const finalDamage = Math.max(1, baseDamage);
 
   // Consume the type-resist berry if it activated.
-  // Direct mutation is consistent with other item consumption patterns in this codebase
-  // (e.g., Knock Off removes items via direct mutation in Gen4MoveEffects.ts).
   // Unburden: if defender has Unburden ability and loses its item, activate the volatile.
   if (typeResistBerryConsumed) {
-    defender.pokemon.heldItem = null;
+    consumeHeldItem(defender, typeResistBerryConsumed);
     if (
       defender.ability === GEN4_ABILITY_IDS.unburden &&
       !defender.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)

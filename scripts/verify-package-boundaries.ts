@@ -304,7 +304,7 @@ async function verifyPackContents(
 async function buildSmokeImports(
   packages: Array<{ pkg: PublishablePackage; exportTargets: ExportTarget[] }>,
 ): Promise<void> {
-  const tempDir = await mkdtemp(path.join(repoRoot, ".tmp-package-boundaries-"));
+  const tempDir = await mkdtemp(path.join(repoRoot, "node_modules", ".tmp-package-boundaries-"));
 
   try {
     const importSpecifiers = new Set<string>();

@@ -350,6 +350,8 @@ export function createTestPokemon(
     ability: CORE_ABILITY_IDS.blaze,
     abilitySlot: CORE_POKEMON_DEFAULTS.abilitySlot,
     heldItem: null,
+    lastItem: null,
+    ateBerry: false,
     status: null,
     friendship: DEFAULT_TEST_POKEMON_FRIENDSHIP,
     gender: CORE_GENDERS.male,
@@ -362,4 +364,31 @@ export function createTestPokemon(
     calculatedStats: { ...DEFAULT_TEST_POKEMON_STATS },
     ...overrides,
   };
+}
+
+function isBerryItemId(itemId: string): boolean {
+  return itemId.endsWith("-berry");
+}
+
+/**
+ * Persist battle-long "consumed item" state before removing the holder's item.
+ *
+ * Mirrors Showdown's `lastItem` tracking for Recycle, with explicit `ateBerry`
+ * updates only for true "berry was eaten" paths used by Belch.
+ */
+export function consumeHeldItem(
+  pokemon: ActivePokemon,
+  consumedItemId: string | null | undefined = pokemon.pokemon.heldItem,
+  options: { markAteBerry?: boolean } = {},
+): string | null {
+  if (!consumedItemId) {
+    return null;
+  }
+
+  pokemon.pokemon.lastItem = consumedItemId;
+  if (options.markAteBerry === true && isBerryItemId(consumedItemId)) {
+    pokemon.pokemon.ateBerry = true;
+  }
+  pokemon.pokemon.heldItem = null;
+  return consumedItemId;
 }

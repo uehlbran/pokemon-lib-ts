@@ -1555,3 +1555,37 @@ describe("Gen 3 Damage Calculation", () => {
     });
   });
 });
+
+describe("Gen 3 Damage Calculation — Spit Up edge cases", () => {
+  it("given Spit Up without any stockpiled layers, when damage is calculated, then it deals zero damage", () => {
+    // Source: Showdown data/mods/gen3/moves.ts — Spit Up fails unless Stockpile is active.
+    const attacker = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: [typeIds.normal],
+    });
+    const defender = createActivePokemon({
+      level: 50,
+      attack: 100,
+      defense: 100,
+      spAttack: 100,
+      spDefense: 100,
+      types: [typeIds.normal],
+    });
+
+    const result = calculateGen3Damage(
+      createDamageContext({
+        attacker,
+        defender,
+        move: createMove(GEN3_MOVE_IDS.spitUp),
+        rng: createMockRng(100),
+      }),
+      createNeutralTypeChart(),
+    );
+
+    expect(result.damage).toBe(0);
+  });
+});

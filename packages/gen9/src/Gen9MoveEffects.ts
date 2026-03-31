@@ -138,6 +138,14 @@ export function handleMakeItRain(ctx: MoveEffectContext): MoveEffectResult {
   };
 }
 
+export function handlePsychicNoise(_ctx: MoveEffectContext): MoveEffectResult {
+  return {
+    ...createBaseResult(),
+    volatileInflicted: CORE_VOLATILE_IDS.healBlock,
+    volatileData: { turnsLeft: 2 },
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Revival Blessing
 // ---------------------------------------------------------------------------
@@ -376,10 +384,6 @@ export function handleShedTail(ctx: MoveEffectContext): MoveEffectResult {
   const maxHp = ctx.attacker.pokemon.calculatedStats?.hp ?? ctx.attacker.pokemon.currentHp;
   const cost = calculateShedTailCost(maxHp);
 
-  // Deduct HP from the user
-  // Source: Showdown data/moves.ts:16784 -- this.directDamage(Math.ceil(target.maxhp / 2))
-  ctx.attacker.pokemon.currentHp -= cost;
-
   // The substitute HP for the switch-in is floor(maxHP/4)
   // Source: Showdown data/conditions.ts substitute.onStart -- this.effectState.hp = Math.floor(target.maxhp / 4)
   const subHp = Math.floor(maxHp / 4);
@@ -398,6 +402,7 @@ export function handleShedTail(ctx: MoveEffectContext): MoveEffectResult {
 
   return {
     ...base,
+    recoilDamage: cost,
     switchOut: true,
     shedTail: true,
     messages: [`${attackerName} shed its tail to create a decoy!`],
@@ -605,6 +610,9 @@ export function executeGen9MoveEffect(ctx: MoveEffectContext): MoveEffectResult 
 
     case GEN9_MOVE_IDS.makeItRain:
       return handleMakeItRain(ctx);
+
+    case GEN9_MOVE_IDS.psychicNoise:
+      return handlePsychicNoise(ctx);
 
     case GEN9_MOVE_IDS.revivalBlessing:
       return handleRevivalBlessing(ctx);

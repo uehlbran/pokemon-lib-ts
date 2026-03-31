@@ -40,7 +40,7 @@ import type {
   DamageContext,
   DamageResult,
 } from "@pokemon-lib-ts/battle";
-import { getEffectiveStatStage } from "@pokemon-lib-ts/battle";
+import { consumeHeldItem, getEffectiveStatStage } from "@pokemon-lib-ts/battle";
 import type {
   MoveEffect,
   PokemonType,
@@ -88,6 +88,28 @@ const LATIOS_SPECIES_ID = 381;
 const CLAMPERL_SPECIES_ID = 366;
 const PIKACHU_SPECIES_ID = 25;
 const CUBONE_SPECIES_ID = 104;
+
+function getPowerTrickAdjustedBaseStat(
+  pokemon: ActivePokemon,
+  statKey: "attack" | "defense" | "spAttack" | "spDefense",
+): number {
+  const stats = pokemon.pokemon.calculatedStats;
+  if (!stats) {
+    return 100;
+  }
+
+  if (!pokemon.volatileStatuses.has(CORE_VOLATILE_IDS.powerTrick)) {
+    return stats[statKey];
+  }
+
+  if (statKey === CORE_STAT_IDS.attack) {
+    return stats.defense;
+  }
+  if (statKey === CORE_STAT_IDS.defense) {
+    return stats.attack;
+  }
+  return stats[statKey];
+}
 const MAROWAK_SPECIES_ID = 105;
 const DIALGA_SPECIES_ID = 483;
 const PALKIA_SPECIES_ID = 484;
@@ -375,8 +397,10 @@ function getAttackStat(
     statKey = isPhysical ? CORE_STAT_IDS.attack : CORE_STAT_IDS.spAttack;
   }
 
-  const stats = attacker.pokemon.calculatedStats;
-  let rawStat = stats ? stats[statKey as keyof typeof stats] : 100;
+  let rawStat = getPowerTrickAdjustedBaseStat(
+    attacker,
+    statKey as "attack" | "defense" | "spAttack" | "spDefense",
+  );
 
   const ability = attacker.ability;
   const attackerItem = attacker.pokemon.heldItem;
@@ -531,8 +555,7 @@ function getDefenseStat(
   ignoreDefenseStages?: boolean,
 ): number {
   const statKey = isPhysical ? CORE_STAT_IDS.defense : CORE_STAT_IDS.spDefense;
-  const stats = defender.pokemon.calculatedStats;
-  let baseStat = stats ? stats[statKey] : 100;
+  let baseStat = getPowerTrickAdjustedBaseStat(defender, statKey);
 
   const defenderItem = defender.pokemon.heldItem;
   const defenderSpecies = defender.pokemon.speciesId;
@@ -741,10 +764,15 @@ export function calculateGen9Damage(
   typeChart: TypeChartLookup,
 ): DamageResult {
   const { attacker, defender, move, rng, isCrit } = context;
+  const isSpitUp = move.id === GEN9_MOVE_IDS.spitUp;
 
   // 1. Status moves / power=0 -> no damage
   // Source: Showdown sim/battle-actions.ts -- status moves skip damage calc
-  if (move.category === CORE_MOVE_CATEGORIES.status || move.power === null || move.power === 0) {
+  if (
+    move.category === CORE_MOVE_CATEGORIES.status ||
+    (!isSpitUp && move.power === null) ||
+    (!isSpitUp && move.power === 0)
+  ) {
     return {
       damage: 0,
       effectiveness: 1,
@@ -754,7 +782,15 @@ export function calculateGen9Damage(
   }
 
   const level = attacker.pokemon.level;
-  let power = move.power;
+  let power = move.power ?? 0;
+
+  if (isSpitUp) {
+    const stockpileLayers = Number(
+      attacker.volatileStatuses.get(CORE_VOLATILE_IDS.stockpile)?.data?.layers ?? 0,
+    );
+    // Source: Showdown data/moves.ts — Spit Up base power is 100 per Stockpile layer.
+    power = stockpileLayers > 0 ? stockpileLayers * 100 : 0;
+  }
 
   // Rage Fist: base power scales with times the user has been attacked (min 50, max 350)
   // Source: Showdown data/moves.ts -- rage-fist basePowerCallback: 50 + 50 * timesAttacked, cap 350
@@ -1573,7 +1609,7 @@ export function calculateGen9Damage(
   // Consume type-resist berry if activated
   // Source: Showdown data/items.ts -- type-resist berries: consumed after activation
   if (typeResistBerryConsumed) {
-    defender.pokemon.heldItem = null;
+    consumeHeldItem(defender, typeResistBerryConsumed);
     if (
       defender.ability === CORE_ABILITY_IDS.unburden &&
       !defender.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)
@@ -1590,7 +1626,7 @@ export function calculateGen9Damage(
   // Consume gem if activated; trigger Unburden
   // Source: Showdown data/abilities.ts -- Unburden: onAfterUseItem speed doubling
   if (gemConsumed) {
-    attacker.pokemon.heldItem = null;
+    consumeHeldItem(attacker, attackerItem);
     if (
       attacker.ability === CORE_ABILITY_IDS.unburden &&
       !attacker.volatileStatuses.has(CORE_VOLATILE_IDS.unburden)

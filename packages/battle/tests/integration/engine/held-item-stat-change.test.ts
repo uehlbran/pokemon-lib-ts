@@ -164,7 +164,7 @@ class CompetingSwitchItemRuleset extends MockRuleset {
           {
             type: BATTLE_ITEM_EFFECT_TYPES.consume,
             target: BATTLE_EFFECT_TARGETS.self,
-            value: CORE_ITEM_IDS.ejectButton,
+            value: GEN9_ITEM_IDS.ejectButton,
           },
         ],
         messages: ["Blastoise's Eject Button activated!"],
@@ -605,7 +605,7 @@ describe("BattleEngine held-item stat boosts", () => {
     const engine = createStatChangeEngine(
       ruleset,
       CORE_ITEM_IDS.leftovers,
-      CORE_ITEM_IDS.ejectButton,
+      GEN9_ITEM_IDS.ejectButton,
       true,
       true,
     );
@@ -619,6 +619,7 @@ describe("BattleEngine held-item stat boosts", () => {
     expect(engine.getPhase()).toBe("switch-prompt");
     expect(engine.state.sides[0].active[0]?.pokemon.uid).toBe("charizard-1");
     expect(engine.state.sides[0].active[0]?.pokemon.heldItem).toBe(CORE_ITEM_IDS.leftovers);
+    expect(engine.state.sides[1].active[0]?.pokemon.uid).toBe("blastoise-1");
     expect(engine.state.sides[1].active[0]?.pokemon.heldItem).toBeNull();
     expect(
       events.some(

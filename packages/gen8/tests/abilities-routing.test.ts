@@ -423,12 +423,13 @@ describe("Gen 8 applyAbility dispatch (Bug C1)", () => {
 describe("Gen 8 getEndOfTurnOrder (Bug C2)", () => {
   const ruleset = new Gen8Ruleset();
 
-  it("given Gen 8 ruleset, when getEndOfTurnOrder called, then returns full 40-effect list (not BaseRuleset's 18)", () => {
+  it("given Gen 8 ruleset, when getEndOfTurnOrder called, then returns the full 41-effect list including Telekinesis countdown", () => {
     // Source: Showdown data/conditions.ts -- residual order for Gen 8
     // Before fix: inherited BaseRuleset's 18-effect list
     const order = ruleset.getEndOfTurnOrder();
-    // Gen 7/8 list has 40 effects
-    expect(order.length).toBe(40);
+    // Gen 7/8 list has 41 effects once Telekinesis countdown is included with the
+    // other modern residual countdowns.
+    expect(order.length).toBe(41);
   });
 
   it("given Gen 8 EoT order, when checked for Speed Boost, then includes it", () => {
