@@ -68,6 +68,7 @@ export function validateCiWorkflow(repoRoot) {
     "npm run changeset:check",
     "npm run proof:preview -- --mode ci-preview",
     "npm run proof:audit:mutation -- --mode ci-preview",
+    "npm run proof:audit:workflow -- --mode ci-preview",
     "npm run test:workflow",
     "npm run oracle:fast",
     "npm run proof:enforce -- --mode ci-preview",

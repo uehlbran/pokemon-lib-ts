@@ -71,6 +71,20 @@ describe("evaluateImpactsEnforcement", () => {
     expect(result.requiredSuites).toEqual(["proof-preview"]);
   });
 
+  it("passes when proof-preview is satisfied by an artifact-backed suite", () => {
+    const result = evaluateImpactsEnforcement(
+      createImpactsReport(),
+      [],
+      knownSuites,
+      [],
+      [],
+      null,
+      new Map([["proof-preview", "pass" as const]]),
+    );
+
+    expect(result.errors).toEqual([]);
+  });
+
   it("fails when a required suite was not executed", () => {
     const result = evaluateImpactsEnforcement(
       createImpactsReport({ requiredSuites: ["proof-preview", "workflow-contract"] }),
@@ -81,6 +95,42 @@ describe("evaluateImpactsEnforcement", () => {
     expect(result.errors).toContain(
       "Required suite workflow-contract was not executed for mode local-preview.",
     );
+  });
+
+  it("fails when an artifact-backed workflow contract suite does not pass", () => {
+    const result = evaluateImpactsEnforcement(
+      createImpactsReport({ requiredSuites: ["proof-preview", "workflow-contract"] }),
+      [],
+      knownSuites,
+      [],
+      [],
+      null,
+      new Map([
+        ["proof-preview", "pass" as const],
+        ["workflow-contract", "fail" as const],
+      ]),
+    );
+
+    expect(result.errors).toContain(
+      "Artifact-backed suite workflow-contract did not pass for mode local-preview.",
+    );
+  });
+
+  it("passes when all artifact-backed required suites pass", () => {
+    const result = evaluateImpactsEnforcement(
+      createImpactsReport({ requiredSuites: ["proof-preview", "workflow-contract"] }),
+      [],
+      knownSuites,
+      [],
+      [],
+      null,
+      new Map([
+        ["proof-preview", "pass" as const],
+        ["workflow-contract", "pass" as const],
+      ]),
+    );
+
+    expect(result.errors).toEqual([]);
   });
 
   it("fails on unknown required suite ids", () => {

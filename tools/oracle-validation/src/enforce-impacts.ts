@@ -11,6 +11,8 @@ import {
   type ProofSummary,
   proofCheckSchema,
   proofSummarySchema,
+  type WorkflowContractArtifact,
+  workflowContractArtifactSchema,
 } from "./proof-artifact-schema.js";
 import { validateControlPlane } from "./validate-control-plane.js";
 
@@ -29,6 +31,8 @@ interface OracleFastEvidence {
   readonly summary: ProofSummary;
   readonly checks: readonly ProofCheck[];
 }
+
+type ArtifactBackedSuiteStatus = "pass" | "fail";
 
 function parseArgs(argv: string[]): Args {
   let mode = "local-preview";
@@ -74,6 +78,7 @@ export function evaluateImpactsEnforcement(
   controlPlaneErrors: readonly string[] = [],
   touchedOracleMechanicIds: readonly string[] = [],
   oracleFastEvidence: OracleFastEvidence | null = null,
+  artifactBackedSuites: ReadonlyMap<string, ArtifactBackedSuiteStatus> = new Map(),
 ): EnforcementResult {
   const errors: string[] = [...controlPlaneErrors];
   const canonicalExecutedSuites = [...new Set(executedSuites.map(canonicalizeSuiteId))].sort();
@@ -88,6 +93,13 @@ export function evaluateImpactsEnforcement(
   for (const suiteId of requiredSuites) {
     if (!knownSuites.has(suiteId)) {
       errors.push(`Unknown required suite id in impacts.v1.json: ${suiteId}`);
+      continue;
+    }
+    const artifactBackedStatus = artifactBackedSuites.get(suiteId);
+    if (artifactBackedStatus) {
+      if (artifactBackedStatus !== "pass") {
+        errors.push(`Artifact-backed suite ${suiteId} did not pass for mode ${impacts.mode}.`);
+      }
       continue;
     }
     if (!canonicalExecutedSuites.includes(suiteId)) {
@@ -236,6 +248,37 @@ function loadImpactsReport(repoRoot: string, mode: string): ImpactsReport {
   return impactsReportSchema.parse(parsedJson);
 }
 
+function loadWorkflowContractArtifact(repoRoot: string, mode: string): WorkflowContractArtifact {
+  const gitSha = git(repoRoot, "rev-parse", "HEAD");
+  const artifactPath = join(
+    repoRoot,
+    "tools",
+    "oracle-validation",
+    "results",
+    gitSha,
+    mode,
+    "workflow-contract.v1.json",
+  );
+
+  let rawJson: string;
+  try {
+    rawJson = readFileSync(artifactPath, "utf8");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`Missing workflow contract artifact at ${artifactPath}: ${message}`);
+  }
+
+  let parsedJson: unknown;
+  try {
+    parsedJson = JSON.parse(rawJson);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`Invalid workflow contract artifact JSON at ${artifactPath}: ${message}`);
+  }
+
+  return workflowContractArtifactSchema.parse(parsedJson);
+}
+
 function main(): void {
   const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
   const args = parseArgs(process.argv.slice(2));
@@ -244,6 +287,13 @@ function main(): void {
   const controlPlaneResult = validateControlPlane(controlPlane, {
     touchedMechanicIds: impacts.transitiveMechanicIds,
   });
+  const artifactBackedSuites = new Map<string, ArtifactBackedSuiteStatus>([
+    ["proof-preview", "pass"],
+  ]);
+  if (impacts.requiredSuites.map(canonicalizeSuiteId).includes("workflow-contract")) {
+    const workflowContractArtifact = loadWorkflowContractArtifact(repoRoot, args.mode);
+    artifactBackedSuites.set("workflow-contract", workflowContractArtifact.status);
+  }
   const result = evaluateImpactsEnforcement(
     impacts,
     args.executedSuites,
@@ -258,6 +308,7 @@ function main(): void {
           checks: loadProofChecks(repoRoot, "fast"),
         }
       : null,
+    artifactBackedSuites,
   );
 
   if (result.errors.length > 0) {
