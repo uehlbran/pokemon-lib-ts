@@ -51,6 +51,11 @@ function sameMembers(actual: readonly string[], expected: readonly string[]): bo
   return actualSorted.every((value, index) => value === expectedSorted[index]);
 }
 
+function missingMembers(actual: readonly string[], expected: readonly string[]): string[] {
+  const actualSet = new Set(actual);
+  return [...new Set(expected)].filter((value) => !actualSet.has(value)).sort();
+}
+
 function activeWaiverMechanicIds(controlPlane: ControlPlane, now: Date): Set<string> {
   const active = new Set<string>();
 
@@ -79,15 +84,24 @@ export function validateControlPlane(
   const obligationClusters = new Set(
     controlPlane.obligationCatalog.clusters.map((entry) => entry.cluster),
   );
-  const protocolClusters = new Set(
-    controlPlane.protocolCapabilityMatrix.clusters.map((entry) => entry.cluster),
-  );
+  const protocolClusterEntries = controlPlane.protocolCapabilityMatrix.clusters;
+  const protocolClusters = new Set(protocolClusterEntries.map((entry) => entry.cluster));
   const authorityKeySet = new Set(authorityKeys);
   const mechanicIdSet = new Set(mechanicIds);
   const ownershipKeySet = new Set(ownershipKeys);
   const activeWaivers = activeWaiverMechanicIds(controlPlane, now);
   const mechanicById = new Map(
     controlPlane.mechanicCatalog.mechanics.map((entry) => [entry.mechanicId, entry] as const),
+  );
+  const protocolClusterByName = new Map(
+    protocolClusterEntries.map((entry) => [entry.cluster, entry] as const),
+  );
+  const mechanicIdsByCluster = new Map<string, string[]>();
+  const ownershipMechanicIdsByKey = new Map(
+    controlPlane.ownershipMap.ownershipRules.map((entry) => [
+      entry.ownershipKey,
+      new Set(entry.mechanicIds),
+    ]),
   );
 
   for (const duplicate of duplicateValues(authorityKeys)) {
@@ -104,10 +118,22 @@ export function validateControlPlane(
   )) {
     errors.push(`Duplicate cluster in obligation-catalog.v1.json: ${duplicate}`);
   }
-  for (const duplicate of duplicateValues(
-    controlPlane.protocolCapabilityMatrix.clusters.map((entry) => entry.cluster),
-  )) {
+  for (const duplicate of duplicateValues(protocolClusterEntries.map((entry) => entry.cluster))) {
     errors.push(`Duplicate cluster in protocol-capability-matrix.v1.json: ${duplicate}`);
+  }
+  for (const missing of missingMembers(
+    protocolClusterEntries.map((entry) => entry.cluster),
+    controlPlane.obligationCatalog.clusters.map((entry) => entry.cluster),
+  )) {
+    errors.push(
+      `Obligation cluster ${missing} is missing from protocol-capability-matrix.v1.json.`,
+    );
+  }
+  for (const extra of missingMembers(
+    controlPlane.obligationCatalog.clusters.map((entry) => entry.cluster),
+    protocolClusterEntries.map((entry) => entry.cluster),
+  )) {
+    errors.push(`Protocol cluster ${extra} has no matching obligation cluster.`);
   }
   for (const duplicate of duplicateValues(
     controlPlane.bootstrapWaivers.waivers.map((entry) => entry.waiverId),
@@ -139,6 +165,23 @@ export function validateControlPlane(
   for (const duplicate of duplicateValues(controlPlane.proofSchema.conclusions)) {
     errors.push(`Duplicate conclusion in proof-schema.v1.json: ${duplicate}`);
   }
+  for (const protocolCluster of protocolClusterEntries) {
+    for (const duplicate of duplicateValues(protocolCluster.operations)) {
+      errors.push(
+        `Protocol cluster ${protocolCluster.cluster} duplicates operation ${duplicate} in protocol-capability-matrix.v1.json.`,
+      );
+    }
+    for (const duplicate of duplicateValues(protocolCluster.supportedTopologies)) {
+      errors.push(
+        `Protocol cluster ${protocolCluster.cluster} duplicates supported topology ${duplicate} in protocol-capability-matrix.v1.json.`,
+      );
+    }
+    for (const duplicate of duplicateValues(protocolCluster.engineOwners)) {
+      errors.push(
+        `Protocol cluster ${protocolCluster.cluster} duplicates engine owner ${duplicate} in protocol-capability-matrix.v1.json.`,
+      );
+    }
+  }
   if (!sameMembers(controlPlane.proofSchema.checkStatuses, CHECK_STATUS_VALUES)) {
     errors.push(
       "proof-schema.v1.json checkStatuses must match proof-artifact-schema.ts checkStatusSchema exactly.",
@@ -161,6 +204,9 @@ export function validateControlPlane(
   }
 
   for (const mechanic of controlPlane.mechanicCatalog.mechanics) {
+    const mechanicsInCluster = mechanicIdsByCluster.get(mechanic.cluster) ?? [];
+    mechanicsInCluster.push(mechanic.mechanicId);
+    mechanicIdsByCluster.set(mechanic.cluster, mechanicsInCluster);
     if (!authorityKeySet.has(mechanic.authorityKey)) {
       errors.push(
         `Mechanic ${mechanic.mechanicId} references unknown authorityKey ${mechanic.authorityKey}.`,
@@ -180,6 +226,27 @@ export function validateControlPlane(
       if (!knownSuites.has(suiteId)) {
         errors.push(`Mechanic ${mechanic.mechanicId} requires unknown suite ${suiteId}.`);
       }
+    }
+    const protocolCluster = protocolClusterByName.get(mechanic.cluster);
+    if (!protocolCluster) {
+      continue;
+    }
+
+    for (const topology of mechanic.topologies) {
+      if (!protocolCluster.supportedTopologies.includes(topology)) {
+        errors.push(
+          `Mechanic ${mechanic.mechanicId} topology ${topology} is not covered by protocol cluster ${mechanic.cluster}.`,
+        );
+      }
+    }
+
+    const coveredByOwner = protocolCluster.engineOwners.some((engineOwner) =>
+      ownershipMechanicIdsByKey.get(engineOwner)?.has(mechanic.mechanicId),
+    );
+    if (!coveredByOwner) {
+      errors.push(
+        `Mechanic ${mechanic.mechanicId} is not covered by any protocol engineOwner declared for cluster ${mechanic.cluster}.`,
+      );
     }
   }
 
@@ -264,10 +331,17 @@ export function validateControlPlane(
     }
   }
 
-  for (const protocolCluster of controlPlane.protocolCapabilityMatrix.clusters) {
-    if (!ownershipKeySet.has(protocolCluster.engineOwner)) {
+  for (const protocolCluster of protocolClusterEntries) {
+    for (const engineOwner of protocolCluster.engineOwners) {
+      if (!ownershipKeySet.has(engineOwner)) {
+        errors.push(
+          `Protocol cluster ${protocolCluster.cluster} references unknown engineOwner ${engineOwner}.`,
+        );
+      }
+    }
+    if ((mechanicIdsByCluster.get(protocolCluster.cluster) ?? []).length === 0) {
       errors.push(
-        `Protocol cluster ${protocolCluster.cluster} references unknown engineOwner ${protocolCluster.engineOwner}.`,
+        `Protocol cluster ${protocolCluster.cluster} has no mechanics assigned in mechanic-catalog.v1.json.`,
       );
     }
   }

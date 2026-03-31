@@ -25,6 +25,11 @@
       "cluster": "move-effect-ownership",
       "requiredProofs": ["source", "semantic", "runtime", "behavior"],
       "requiredSuites": ["test", "oracle-fast"]
+    },
+    {
+      "cluster": "support-utils",
+      "requiredProofs": ["source", "semantic", "runtime"],
+      "requiredSuites": ["test"]
     }
   ]
 }

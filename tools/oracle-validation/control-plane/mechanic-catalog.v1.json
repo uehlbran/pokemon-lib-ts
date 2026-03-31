@@ -135,7 +135,7 @@
     },
     {
       "mechanicId": "shared.engine.support-utils",
-      "cluster": "workflow-integrity",
+      "cluster": "support-utils",
       "topologies": ["singles"],
       "orderingSensitive": false,
       "persistent": false,

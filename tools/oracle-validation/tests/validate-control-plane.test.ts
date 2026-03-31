@@ -85,7 +85,7 @@ function createControlPlane(overrides: Partial<ControlPlane> = {}): ControlPlane
           cluster: "effective-speed-order",
           operations: ["effectiveSpeed"],
           supportedTopologies: ["singles"],
-          engineOwner: "battle:shared-seam:engine",
+          engineOwners: ["battle:shared-seam:engine"],
         },
       ],
     },
@@ -285,7 +285,7 @@ describe("validateControlPlane", () => {
             cluster: "effective-speed-order",
             operations: ["effectiveSpeed"],
             supportedTopologies: ["singles"],
-            engineOwner: "battle:shared-seam:missing",
+            engineOwners: ["battle:shared-seam:missing"],
           },
         ],
       },
@@ -322,6 +322,89 @@ describe("validateControlPlane", () => {
     );
     expect(errors).toContain(
       "proof-schema.v1.json conclusions must match proof-artifact-schema.ts runConclusionSchema exactly.",
+    );
+  });
+
+  it("fails when an obligation cluster is missing from the protocol matrix", () => {
+    const controlPlane = createControlPlane({
+      protocolCapabilityMatrix: {
+        version: 1,
+        clusters: [],
+      },
+    });
+
+    expect(validateControlPlane(controlPlane).errors).toContain(
+      "Obligation cluster effective-speed-order is missing from protocol-capability-matrix.v1.json.",
+    );
+  });
+
+  it("fails when protocol topologies do not cover the mechanic topologies", () => {
+    const controlPlane = createControlPlane({
+      mechanicCatalog: {
+        version: 1,
+        mechanics: [
+          {
+            mechanicId: "shared.engine.turn-order",
+            cluster: "effective-speed-order",
+            topologies: ["singles", "switch-legality"],
+            orderingSensitive: true,
+            persistent: false,
+            proofStatus: "proved",
+            authorityKey: "shared.engine-contracts",
+            requiredSuites: ["test"],
+            obligationSeed: "turn-order",
+          },
+        ],
+      },
+    });
+
+    expect(validateControlPlane(controlPlane).errors).toContain(
+      "Mechanic shared.engine.turn-order topology switch-legality is not covered by protocol cluster effective-speed-order.",
+    );
+  });
+
+  it("fails when protocol engine owners do not cover the mechanics in their cluster", () => {
+    const controlPlane = createControlPlane({
+      protocolCapabilityMatrix: {
+        version: 1,
+        clusters: [
+          {
+            cluster: "effective-speed-order",
+            operations: ["effectiveSpeed"],
+            supportedTopologies: ["singles"],
+            engineOwners: ["unknown:owner"],
+          },
+        ],
+      },
+    });
+
+    const errors = validateControlPlane(controlPlane).errors;
+
+    expect(errors).toContain(
+      "Protocol cluster effective-speed-order references unknown engineOwner unknown:owner.",
+    );
+    expect(errors).toContain(
+      "Mechanic shared.engine.turn-order is not covered by any protocol engineOwner declared for cluster effective-speed-order.",
+    );
+  });
+
+  it("fails when a protocol cluster duplicates engine owners", () => {
+    const controlPlane = createControlPlane({
+      protocolCapabilityMatrix: {
+        version: 1,
+        clusters: [
+          {
+            cluster: "effective-speed-order",
+            operations: ["effectiveSpeed"],
+            supportedTopologies: ["singles"],
+            engineOwners: ["battle:shared-seam:engine", "battle:shared-seam:engine"],
+          },
+        ],
+      },
+    });
+
+    expect(validateControlPlane(controlPlane).errors).toContain(
+      "Protocol cluster effective-speed-order duplicates engine owner battle:shared-seam:engine in protocol-capability-matrix.v1.json.",
     );
   });
 });
