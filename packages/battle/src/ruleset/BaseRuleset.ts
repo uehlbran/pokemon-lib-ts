@@ -566,6 +566,8 @@ export abstract class BaseRuleset implements GenerationRuleset {
 
         const maxHp =
           context.attacker.pokemon.calculatedStats?.hp ?? context.attacker.pokemon.currentHp;
+        // Source: Showdown data/moves.ts — Swallow heals 1/4, 1/2, or full HP
+        // for Stockpile layers 1, 2, and 3 respectively.
         const healFractions = [0.25, 0.5, 1];
         const healFraction = healFractions[stockpileState.layers - 1] ?? 1;
 

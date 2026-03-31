@@ -788,6 +788,7 @@ export function calculateGen9Damage(
     const stockpileLayers = Number(
       attacker.volatileStatuses.get(CORE_VOLATILE_IDS.stockpile)?.data?.layers ?? 0,
     );
+    // Source: Showdown data/moves.ts — Spit Up base power is 100 per Stockpile layer.
     power = stockpileLayers > 0 ? stockpileLayers * 100 : 0;
   }
 

@@ -38,6 +38,7 @@ jobs:
       - run: npm run test:workflow
       - run: npm run test:all
       - run: npm run test:invariants
+      - run: npm run build
       - run: npm run oracle:fast
       - run: npm run status:generate
       - run: npm run status:check

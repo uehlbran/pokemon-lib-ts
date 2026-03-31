@@ -7,6 +7,8 @@ const SIGNAL_EXIT_CODES = {
   SIGTERM: 143,
   SIGHUP: 129,
 };
+const FORCE_KILL_DELAY_MS = 1500;
+const EXIT_GRACE_DELAY_MS = 2000;
 
 function terminateChildProcessTree(child, signal) {
   if (!child.pid) {
@@ -46,24 +48,34 @@ export async function runVerification({ bootstrap = true, env = {}, steps }) {
   const childEnv = { ...process.env, ...env };
   const activeChildren = new Set();
   let shuttingDown = false;
+  let exitTimer = null;
 
   function cleanupActiveChildren() {
     shuttingDown = true;
 
     for (const child of activeChildren) {
       terminateChildProcessTree(child, "SIGTERM");
-      setTimeout(() => terminateChildProcessTree(child, "SIGKILL"), 1500).unref();
+      setTimeout(() => terminateChildProcessTree(child, "SIGKILL"), FORCE_KILL_DELAY_MS);
     }
+  }
+
+  function scheduleProcessExit(exitCode) {
+    if (exitTimer) {
+      return;
+    }
+
+    process.exitCode = exitCode;
+    exitTimer = setTimeout(() => {
+      process.exit(exitCode);
+    }, EXIT_GRACE_DELAY_MS);
   }
 
   for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
     process.on(signal, () => {
       cleanupActiveChildren();
-      process.exit(SIGNAL_EXIT_CODES[signal]);
+      scheduleProcessExit(SIGNAL_EXIT_CODES[signal]);
     });
   }
-
-  process.on("exit", cleanupActiveChildren);
 
   function runStep(label, stepArgs, command = npmCommand) {
     return new Promise((resolve, reject) => {
@@ -113,6 +125,7 @@ export async function runVerification({ bootstrap = true, env = {}, steps }) {
   } catch (error) {
     cleanupActiveChildren();
     console.error(`\n==> ${error instanceof Error ? error.message : String(error)}`);
-    process.exit(1);
+    scheduleProcessExit(1);
+    return new Promise(() => {});
   }
 }

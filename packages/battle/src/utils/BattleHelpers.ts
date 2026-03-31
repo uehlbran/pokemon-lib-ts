@@ -373,18 +373,20 @@ function isBerryItemId(itemId: string): boolean {
 /**
  * Persist battle-long "consumed item" state before removing the holder's item.
  *
- * Mirrors Showdown's `lastItem` / `ateBerry` tracking for Recycle and Belch.
+ * Mirrors Showdown's `lastItem` tracking for Recycle, with explicit `ateBerry`
+ * updates only for true "berry was eaten" paths used by Belch.
  */
 export function consumeHeldItem(
   pokemon: ActivePokemon,
   consumedItemId: string | null | undefined = pokemon.pokemon.heldItem,
+  options: { markAteBerry?: boolean } = {},
 ): string | null {
   if (!consumedItemId) {
     return null;
   }
 
   pokemon.pokemon.lastItem = consumedItemId;
-  if (isBerryItemId(consumedItemId)) {
+  if (options.markAteBerry === true && isBerryItemId(consumedItemId)) {
     pokemon.pokemon.ateBerry = true;
   }
   pokemon.pokemon.heldItem = null;

@@ -4493,7 +4493,7 @@ export class BattleEngine implements BattleEventEmitter {
     if (result.attackerItemConsumed) {
       const consumedItemId = attacker.pokemon.heldItem;
       if (consumedItemId) {
-        consumeHeldItem(attacker, consumedItemId);
+        consumeHeldItem(attacker, consumedItemId, { markAteBerry: false });
         this.emit({
           type: BATTLE_EVENT_TYPES.itemConsumed,
           side: attackerSide,
@@ -5941,7 +5941,9 @@ export class BattleEngine implements BattleEventEmitter {
               data: { berryId: consumedItemId },
             });
           }
-          consumeHeldItem(pokemon, consumedItemId);
+          consumeHeldItem(pokemon, consumedItemId, {
+            markAteBerry: consumedItemId?.endsWith("-berry"),
+          });
           this.emit({
             type: BATTLE_EVENT_TYPES.itemConsumed,
             side,

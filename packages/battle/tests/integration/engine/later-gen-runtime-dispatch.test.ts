@@ -85,6 +85,8 @@ describe("later-gen runtime dispatch regressions", () => {
     engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
     engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
 
+    // Source: Showdown data/moves.ts — Embargo starts at 5 turns and ticks down at
+    // the end of the application turn, leaving 4 turns remaining here.
     expect(target.volatileStatuses.has(CORE_VOLATILE_IDS.embargo)).toBe(true);
     expect(target.volatileStatuses.get(CORE_VOLATILE_IDS.embargo)?.turnsLeft).toBe(4);
 

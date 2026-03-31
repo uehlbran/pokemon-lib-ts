@@ -174,6 +174,34 @@ describe("BattleEngine — attackerItemConsumed contract", () => {
     const attacker = engine.state.sides[0].active[0];
     expect(attacker?.pokemon.heldItem).toBe(CORE_ITEM_IDS.airBalloon);
   });
+
+  it("given a berry removed through the generic attackerItemConsumed engine path, when the turn executes, then the item is tracked for Recycle but does not mark ateBerry for Belch", () => {
+    const custapBerry = "custap-berry";
+    const { engine, ruleset } = createTestEngine({
+      team1: [
+        createTestPokemon(6, 50, {
+          uid: "berry-consumer",
+          nickname: "Ambipom",
+          heldItem: custapBerry,
+          moves: [createMockMoveSlot(CORE_MOVE_IDS.tackle)],
+        }),
+      ],
+    });
+
+    ruleset.setMoveEffectResult({
+      attackerItemConsumed: true,
+      messages: ["Ambipom used Fling!"],
+    });
+
+    engine.start();
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    const attacker = engine.state.sides[0].active[0];
+    expect(attacker?.pokemon.heldItem).toBeNull();
+    expect(attacker?.pokemon.lastItem).toBe(custapBerry);
+    expect(attacker?.pokemon.ateBerry).toBe(false);
+  });
 });
 
 // ---------------------------------------------------------------------------
