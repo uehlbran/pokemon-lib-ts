@@ -27,7 +27,13 @@ import type {
   SeededRandom,
   VolatileStatus,
 } from "@pokemon-lib-ts/core";
-import { CORE_MOVE_CATEGORIES, CORE_STAT_IDS, CORE_VOLATILE_IDS } from "@pokemon-lib-ts/core";
+import {
+  CORE_MOVE_CATEGORIES,
+  CORE_STAT_IDS,
+  CORE_STATUS_IDS,
+  CORE_TYPE_IDS,
+  CORE_VOLATILE_IDS,
+} from "@pokemon-lib-ts/core";
 import { GEN2_MOVE_IDS } from "./data/reference-ids";
 import { canInflictGen2Status } from "./Gen2Status";
 
@@ -178,6 +184,10 @@ export function applyMoveEffect(
 
     case "volatile-status": {
       if (move.category !== CORE_MOVE_CATEGORIES.status && !rollEffectChance(effect.chance, rng)) {
+        break;
+      }
+      if (move.id === GEN2_MOVE_IDS.curse) {
+        handleCustomEffect(move, result, context);
         break;
       }
       // Encore and Disable have custom failure conditions and volatile data —
@@ -344,6 +354,30 @@ export function handleCustomEffect(
       break;
     }
 
+    case "rest": {
+      // Rest: fail at full HP; otherwise cure status, clear the Gen 2 Toxic counter,
+      // heal to full, and self-inflict a fixed 2-turn sleep.
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm:6055-6108
+      const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
+      if (attacker.pokemon.currentHp >= maxHp) {
+        result.messages.push("HP is full!");
+        break;
+      }
+
+      result.healAmount = maxHp;
+      result.statusCuredOnly = { target: BATTLE_EFFECT_TARGETS.attacker };
+      result.volatilesToClear = [
+        ...(result.volatilesToClear ?? []),
+        {
+          target: BATTLE_EFFECT_TARGETS.attacker,
+          volatile: CORE_VOLATILE_IDS.toxicCounter,
+        },
+      ];
+      result.selfStatusInflicted = CORE_STATUS_IDS.sleep;
+      result.selfVolatileData = { turnsLeft: 2 };
+      break;
+    }
+
     case "encore": {
       // Force target to repeat its last used move for 2-6 turns
       // Source: pret/pokecrystal engine/battle/effect_commands.asm EncoreEffect
@@ -415,6 +449,75 @@ export function handleCustomEffect(
         side: BATTLE_EFFECT_TARGETS.attacker,
       };
       result.messages.push(`${pokemonName}'s party is protected by Safeguard!`);
+      break;
+    }
+
+    case "perish-song": {
+      // Perish Song: mark each battler not already affected with a 4-count volatile.
+      // The engine's same-turn residual pass decrements 4 -> 3 after application.
+      // Source: pret/pokecrystal engine/battle/move_effects/perish_song.asm
+      const attackerMarked = attacker.volatileStatuses.has(CORE_VOLATILE_IDS.perishSong);
+      const defenderMarked = defender.volatileStatuses.has(CORE_VOLATILE_IDS.perishSong);
+
+      if (attackerMarked && defenderMarked) {
+        result.messages.push("But it failed!");
+        break;
+      }
+
+      if (!attackerMarked) {
+        result.selfVolatileInflicted = CORE_VOLATILE_IDS.perishSong;
+        result.selfVolatileData = { turnsLeft: 4, data: { counter: 4 } };
+      }
+      if (!defenderMarked) {
+        result.volatileInflicted = CORE_VOLATILE_IDS.perishSong;
+        result.volatileData = { turnsLeft: 4, data: { counter: 4 } };
+      }
+      break;
+    }
+
+    case "curse": {
+      // Curse branches on whether the user is Ghost-type in Gen 2.
+      // Source: pret/pokecrystal engine/battle/effect_commands.asm CurseEffect
+      const isGhostUser = attacker.types.includes(CORE_TYPE_IDS.ghost);
+
+      if (!isGhostUser) {
+        const attackStage = attacker.statStages.attack;
+        const defenseStage = attacker.statStages.defense;
+        if (attackStage >= 6 && defenseStage >= 6) {
+          result.messages.push("But it failed!");
+          break;
+        }
+
+        result.statChanges.push({
+          target: BATTLE_EFFECT_TARGETS.attacker,
+          stat: CORE_STAT_IDS.speed,
+          stages: -1,
+        });
+        if (attackStage < 6) {
+          result.statChanges.push({
+            target: BATTLE_EFFECT_TARGETS.attacker,
+            stat: CORE_STAT_IDS.attack,
+            stages: 1,
+          });
+        }
+        if (defenseStage < 6) {
+          result.statChanges.push({
+            target: BATTLE_EFFECT_TARGETS.attacker,
+            stat: CORE_STAT_IDS.defense,
+            stages: 1,
+          });
+        }
+        break;
+      }
+
+      if (defender.substituteHp > 0 || defender.volatileStatuses.has(CORE_VOLATILE_IDS.curse)) {
+        result.messages.push("But it failed!");
+        break;
+      }
+
+      const maxHp = attacker.pokemon.calculatedStats?.hp ?? attacker.pokemon.currentHp;
+      result.recoilDamage = Math.floor(maxHp / 2);
+      result.volatileInflicted = CORE_VOLATILE_IDS.curse;
       break;
     }
 
