@@ -53,8 +53,8 @@ describe("buildWorkflowContractArtifact", () => {
 });
 
 describe("collectWorkflowValidations", () => {
-  it("covers every audited workflow file in the repo", () => {
-    const validations = collectWorkflowValidations(repoRoot);
+  it("covers every audited workflow file in the repo", async () => {
+    const validations = await collectWorkflowValidations(repoRoot);
 
     expect(validations.map((validation) => validation.workflow)).toEqual([
       "compliance.yml",

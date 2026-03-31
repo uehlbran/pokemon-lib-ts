@@ -1,6 +1,5 @@
 import { execFileSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
-import { createRequire } from "node:module";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -32,9 +31,10 @@ interface WorkflowContractModule {
   readonly validateCiWorkflow: (repoRoot: string) => WorkflowValidationResult;
 }
 
-const require = createRequire(import.meta.url);
-const { validateCiWorkflow, validateComplianceWorkflow, validatePrTriggerWorkflow } =
-  require("../../../scripts/lib/workflow-contract.mjs") as WorkflowContractModule;
+async function loadWorkflowContractModule(): Promise<WorkflowContractModule> {
+  const moduleUrl = new URL("../../../scripts/lib/workflow-contract.mjs", import.meta.url).href;
+  return (await import(moduleUrl)) as WorkflowContractModule;
+}
 
 function parseArgs(argv: readonly string[]): Args {
   let mode = "local-preview";
@@ -74,7 +74,9 @@ function buildWorkflowContractArtifact(
   });
 }
 
-function collectWorkflowValidations(repoRoot: string): WorkflowValidation[] {
+async function collectWorkflowValidations(repoRoot: string): Promise<WorkflowValidation[]> {
+  const { validateCiWorkflow, validateComplianceWorkflow, validatePrTriggerWorkflow } =
+    await loadWorkflowContractModule();
   const compliance = validateComplianceWorkflow(repoRoot);
   const ci = validateCiWorkflow(repoRoot);
   const prReview = validatePrTriggerWorkflow(repoRoot, "pr-review.yml");
@@ -88,11 +90,11 @@ function collectWorkflowValidations(repoRoot: string): WorkflowValidation[] {
   ];
 }
 
-function main(): void {
+async function main(): Promise<void> {
   const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
   const args = parseArgs(process.argv.slice(2));
   const gitSha = git(repoRoot, "rev-parse", "HEAD");
-  const validations = collectWorkflowValidations(repoRoot);
+  const validations = await collectWorkflowValidations(repoRoot);
   const artifact = buildWorkflowContractArtifact(gitSha, args.mode, validations);
   const resultsDir = join(repoRoot, "tools", "oracle-validation", "results", gitSha, args.mode);
   mkdirSync(resultsDir, { recursive: true });
@@ -115,7 +117,7 @@ function main(): void {
 
 const entrypoint = process.argv[1];
 if (entrypoint && import.meta.url === pathToFileURL(resolve(entrypoint)).href) {
-  main();
+  void main();
 }
 
 export { buildWorkflowContractArtifact, collectWorkflowValidations };
