@@ -21,6 +21,8 @@ interface BaseRefResolution {
   readonly usedFallbackBaseRef: boolean;
 }
 
+const CHANGED_FILE_DIFF_FILTER = "ACDMRTUXB";
+
 function parseArgs(argv: string[]): Args {
   let baseRef = "origin/main";
   let mode = "local-preview";
@@ -103,30 +105,45 @@ export function resolveBaseRef(repoRoot: string, requestedBaseRef: string): Base
   );
 }
 
-function listChangedFiles(repoRoot: string, baseRef: string): string[] {
+export function listChangedFiles(
+  repoRoot: string,
+  baseRef: string,
+  gitRunner: (repoRoot: string, ...args: string[]) => string = git,
+): string[] {
   const files = new Set<string>();
-  const branchDiff = git(
+  const branchDiff = gitRunner(
     repoRoot,
     "diff",
     "--name-only",
-    "--diff-filter=ACMRTUXB",
+    `--diff-filter=${CHANGED_FILE_DIFF_FILTER}`,
     `${baseRef}...HEAD`,
   );
   for (const filePath of branchDiff.split("\n")) {
     if (filePath.trim().length > 0) files.add(resolveRepoRelativePath(repoRoot, filePath.trim()));
   }
 
-  const staged = git(repoRoot, "diff", "--name-only", "--cached", "--diff-filter=ACMRTUXB");
+  const staged = gitRunner(
+    repoRoot,
+    "diff",
+    "--name-only",
+    "--cached",
+    `--diff-filter=${CHANGED_FILE_DIFF_FILTER}`,
+  );
   for (const filePath of staged.split("\n")) {
     if (filePath.trim().length > 0) files.add(resolveRepoRelativePath(repoRoot, filePath.trim()));
   }
 
-  const unstaged = git(repoRoot, "diff", "--name-only", "--diff-filter=ACMRTUXB");
+  const unstaged = gitRunner(
+    repoRoot,
+    "diff",
+    "--name-only",
+    `--diff-filter=${CHANGED_FILE_DIFF_FILTER}`,
+  );
   for (const filePath of unstaged.split("\n")) {
     if (filePath.trim().length > 0) files.add(resolveRepoRelativePath(repoRoot, filePath.trim()));
   }
 
-  const untracked = git(repoRoot, "ls-files", "--others", "--exclude-standard");
+  const untracked = gitRunner(repoRoot, "ls-files", "--others", "--exclude-standard");
   for (const filePath of untracked.split("\n")) {
     if (filePath.trim().length > 0) files.add(resolveRepoRelativePath(repoRoot, filePath.trim()));
   }

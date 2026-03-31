@@ -15,6 +15,7 @@ export const suiteStatusSchema = z.enum([
   "fail",
   "skip",
   "incomplete",
+  "deferred",
   "advisory",
   "interrupted",
 ]);
@@ -29,7 +30,9 @@ export const checkCountSchema = z.strictObject({
   failed: z.number().int().nonnegative(),
   skipped: z.number().int().nonnegative(),
   incomplete: z.number().int().nonnegative(),
+  deferred: z.number().int().nonnegative(),
   advisory: z.number().int().nonnegative(),
+  interrupted: z.number().int().nonnegative(),
 });
 
 export const proofCheckSchema = z.strictObject({

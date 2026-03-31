@@ -28,7 +28,9 @@ function createEmptyCounts() {
     failed: 0,
     skipped: 0,
     incomplete: 0,
+    deferred: 0,
     advisory: 0,
+    interrupted: 0,
   };
 }
 
@@ -84,7 +86,7 @@ function createProofChecks(
   return checks;
 }
 
-function summarizeSuite(
+export function summarizeSuite(
   suiteName: string,
   suiteResult: SuiteResult,
   checks: readonly ProofCheck[],
@@ -107,6 +109,8 @@ function summarizeSuite(
     else if (check.status === "fail") counts.failed += 1;
     else if (check.status === "skip") counts.skipped += 1;
     else if (check.status === "incomplete") counts.incomplete += 1;
+    else if (check.status === "deferred") counts.deferred += 1;
+    else if (check.status === "interrupted") counts.interrupted += 1;
     else counts.advisory += 1;
   }
 
@@ -117,6 +121,12 @@ function summarizeSuite(
     status = "skip";
   } else if (suiteResult.failed > 0 || requiredCounts.failed > 0) {
     status = "fail";
+  } else if (requiredCounts.interrupted > 0) {
+    status = "interrupted";
+  } else if (requiredCounts.incomplete > 0) {
+    status = "incomplete";
+  } else if (requiredCounts.deferred > 0) {
+    status = "deferred";
   } else if (!hasProofChecks) {
     status = enforcement === "advisory" ? "advisory" : "pass";
   } else if (
@@ -168,7 +178,14 @@ function summarizeGeneration(generation: LegacyGenerationRun): {
   let conclusion: ProofSummary["generations"][number]["conclusion"] = "compliant";
   if (suiteEntries.some((entry) => entry.result.status === "fail")) {
     conclusion = "fail";
-  } else if (suiteEntries.some((entry) => entry.result.status === "incomplete")) {
+  } else if (
+    suiteEntries.some(
+      (entry) =>
+        entry.result.status === "incomplete" ||
+        entry.result.status === "interrupted" ||
+        entry.result.status === "deferred",
+    )
+  ) {
     conclusion = "interrupted";
   } else if (suiteEntries.every((entry) => entry.result.enforcement === "advisory")) {
     conclusion = "provisional-pass";

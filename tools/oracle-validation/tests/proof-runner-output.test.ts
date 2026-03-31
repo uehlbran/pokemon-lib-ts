@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildProofSummary } from "../src/proof-runner-output.js";
+import { buildProofSummary, summarizeSuite } from "../src/proof-runner-output.js";
 
 describe("buildProofSummary", () => {
   it("preserves legacy pass suites that do not emit proof checks yet", () => {
@@ -139,5 +139,38 @@ describe("buildProofSummary", () => {
     }
     expect(suite.status).toBe("advisory");
     expect(summary.conclusion).toBe("provisional-pass");
+  });
+
+  it("surfaces deferred required checks at the suite level", () => {
+    const suite = summarizeSuite(
+      "mechanics",
+      {
+        status: "pass",
+        suitePassed: true,
+        failed: 0,
+        skipped: 0,
+        failures: [],
+        notes: [],
+        matchedKnownDisagreements: [],
+        staleDisagreements: [],
+        oracleChecks: [],
+      },
+      [
+        {
+          checkId: "gen5:mechanics:oracle:expected-boost",
+          generation: 5,
+          suite: "mechanics",
+          status: "deferred",
+          enforcement: "required",
+          description: "Expected boost requires engine-backed validation",
+          sourceRole: "authoritative",
+          normalizationIds: [],
+        },
+      ],
+    );
+
+    expect(suite.status).toBe("deferred");
+    expect(suite.requiredCounts.deferred).toBe(1);
+    expect(suite.requiredCounts.executed).toBe(1);
   });
 });

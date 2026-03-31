@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { z } from "zod";
 
 import { buildImpactsReport } from "./changed-mechanics.js";
@@ -21,17 +21,31 @@ const directMutationAuditSchema = z.strictObject({
   findings: z.array(directMutationFindingSchema),
 });
 
+const assignmentOperatorPattern = String.raw`(?:\+\+|--|(?:\+\+|--)\s*|(?:\+|-|\*|\/|%|<<|>>|>>>|&|\^|\||\*\*)?=(?!=))`;
+const propertyAccessPattern = String.raw`(?:\.[A-Za-z_$][\w$]*|\[[^\]\n]+\])+`;
+const stateTargetPattern = String.raw`ctx\.state${propertyAccessPattern}`;
+const activePokemonTargetPattern = String.raw`ctx\.(?:attacker|defender)(?:\.pokemon)?${propertyAccessPattern}`;
+
 const suspiciousPatterns: { name: string; regex: RegExp }[] = [
   {
     name: "ctx-state-mutation",
-    regex: /\bctx\.state\.[^;\n]*=/,
+    regex: new RegExp(
+      String.raw`(?:\+\+|--)\s*${stateTargetPattern}|${stateTargetPattern}\s*${assignmentOperatorPattern}`,
+    ),
   },
   {
     name: "active-pokemon-mutation",
-    regex:
-      /\bctx\.(attacker|defender)(?:\.pokemon)?\.(status|item|ability|suppressedAbility|types|speciesId|currentHp|maxHp)\s*=/,
+    regex: new RegExp(
+      String.raw`(?:\+\+|--)\s*${activePokemonTargetPattern}|${activePokemonTargetPattern}\s*${assignmentOperatorPattern}`,
+    ),
   },
 ];
+
+export function detectDirectMutationPatterns(line: string): string[] {
+  return suspiciousPatterns
+    .filter((pattern) => pattern.regex.test(line))
+    .map((pattern) => pattern.name);
+}
 
 function parseArgs(argv: string[]): { mode: string } {
   let mode = "local-preview";
@@ -63,12 +77,11 @@ function inspectFile(repoRoot: string, filePath: string) {
   const findings: z.infer<typeof directMutationFindingSchema>[] = [];
   const lines = contents.split("\n");
   for (const [index, line] of lines.entries()) {
-    for (const pattern of suspiciousPatterns) {
-      if (!pattern.regex.test(line)) continue;
+    for (const pattern of detectDirectMutationPatterns(line)) {
       findings.push({
         filePath,
         line: index + 1,
-        pattern: pattern.name,
+        pattern,
         excerpt: line.trim(),
       });
     }
@@ -108,4 +121,7 @@ function main(): void {
   console.log(`Direct mutation audit written to ${outputPath}`);
 }
 
-main();
+const entrypoint = process.argv[1];
+if (entrypoint && import.meta.url === pathToFileURL(resolve(entrypoint)).href) {
+  main();
+}

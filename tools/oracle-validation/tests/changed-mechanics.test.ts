@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildImpactsReport,
   computeBaseRefCandidates,
+  listChangedFiles,
   resolveBaseRefFromCandidates,
 } from "../src/changed-mechanics.js";
 
@@ -12,16 +13,22 @@ const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 describe("base ref resolution", () => {
   it("includes GitHub base branch fallbacks in candidate order", () => {
     const originalBaseRef = process.env.GITHUB_BASE_REF;
-    process.env.GITHUB_BASE_REF = "feature-base";
+    try {
+      process.env.GITHUB_BASE_REF = "feature-base";
 
-    expect(computeBaseRefCandidates("origin/main")).toEqual([
-      "origin/main",
-      "origin/feature-base",
-      "feature-base",
-      "main",
-    ]);
-
-    process.env.GITHUB_BASE_REF = originalBaseRef;
+      expect(computeBaseRefCandidates("origin/main")).toEqual([
+        "origin/main",
+        "origin/feature-base",
+        "feature-base",
+        "main",
+      ]);
+    } finally {
+      if (originalBaseRef === undefined) {
+        delete process.env.GITHUB_BASE_REF;
+      } else {
+        process.env.GITHUB_BASE_REF = originalBaseRef;
+      }
+    }
   });
 
   it("falls back to the first available candidate when the requested ref is unavailable", () => {
@@ -40,6 +47,22 @@ describe("base ref resolution", () => {
 });
 
 describe("buildImpactsReport", () => {
+  it("includes deleted files in every tracked diff invocation", () => {
+    const calls: string[][] = [];
+
+    listChangedFiles(repoRoot, "origin/main", (_repoRoot, ...args) => {
+      calls.push(args);
+      return "";
+    });
+
+    expect(calls).toEqual([
+      ["diff", "--name-only", "--diff-filter=ACDMRTUXB", "origin/main...HEAD"],
+      ["diff", "--name-only", "--cached", "--diff-filter=ACDMRTUXB"],
+      ["diff", "--name-only", "--diff-filter=ACDMRTUXB"],
+      ["ls-files", "--others", "--exclude-standard"],
+    ]);
+  });
+
   it("records the requested and resolved base refs in the impacts artifact", () => {
     const report = buildImpactsReport(repoRoot, {
       baseRef: "HEAD",
