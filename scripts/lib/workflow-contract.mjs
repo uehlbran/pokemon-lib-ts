@@ -54,3 +54,27 @@ export function validatePrTriggerWorkflow(repoRoot, workflowFile) {
     errors,
   };
 }
+
+export function validateCiWorkflow(repoRoot) {
+  const workflow = readWorkflow(repoRoot, "ci.yml");
+  const errors = [];
+
+  for (const expected of [
+    "ready_for_review",
+    "converted_to_draft",
+    "proof-gate:",
+    "npm run proof:preview -- --mode ci-preview",
+    "npm run test:workflow",
+    "npm run oracle:fast",
+    "npm run proof:enforce -- --mode ci-preview",
+  ]) {
+    if (!workflow.includes(expected)) {
+      errors.push(`Missing expected CI workflow contract snippet: ${expected}`);
+    }
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+}

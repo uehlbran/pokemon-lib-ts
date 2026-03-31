@@ -20,7 +20,7 @@
       "persistent": true,
       "proofStatus": "proved",
       "authorityKey": "shared.control-plane",
-      "requiredSuites": ["oracle-runner"],
+      "requiredSuites": ["oracle-fast"],
       "obligationSeed": "artifacts"
     },
     {

@@ -44,6 +44,7 @@ console.log("\n==> running lint, typecheck, tests, and boundaries in parallel...
 await Promise.all([
   runStep("proof preview", ["run", "proof:preview"]),
   runStep("direct mutation audit", ["run", "proof:audit:mutation"]),
+  runStep("oracle fast", ["run", "oracle:fast"]),
   runStep("workflow validator tests", ["run", "test:workflow"]),
   runStep("lint", ["run", "lint:check"]),
   runStep("tests (unit + integration)", ["run", "test"]),
@@ -64,5 +65,46 @@ if (changesetResult.status !== 0) {
   process.exit(changesetResult.status ?? 1);
 }
 console.log("==> PASSED: changeset gate");
+
+console.log("\n==> impacts enforcement");
+const enforceResult = spawnSync(
+  "npm",
+  [
+    "run",
+    "proof:enforce",
+    "--",
+    "--mode",
+    "local-preview",
+    "--executed-suite",
+    "changeset-check",
+    "--executed-suite",
+    "lint",
+    "--executed-suite",
+    "oracle-fast",
+    "--executed-suite",
+    "package-boundaries",
+    "--executed-suite",
+    "pret-validate",
+    "--executed-suite",
+    "proof-preview",
+    "--executed-suite",
+    "test",
+    "--executed-suite",
+    "typecheck",
+    "--executed-suite",
+    "typecheck:contracts",
+    "--executed-suite",
+    "workflow-contract",
+  ],
+  {
+    stdio: "inherit",
+    env: process.env,
+  },
+);
+if (enforceResult.status !== 0) {
+  console.error("\n==> FAILED: impacts enforcement");
+  process.exit(enforceResult.status ?? 1);
+}
+console.log("==> PASSED: impacts enforcement");
 
 console.log("\nLocal verification passed.");
