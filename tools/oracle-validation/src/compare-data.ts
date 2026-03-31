@@ -19,6 +19,50 @@ interface LocalSpecies {
   readonly baseStats: Record<string, number>;
 }
 
+interface LocalMoveEffect {
+  readonly type: string;
+  readonly target?: string;
+}
+
+interface LocalMove {
+  readonly id: string;
+  readonly target: string;
+  readonly effect: LocalMoveEffect | null;
+}
+
+/**
+ * Maps every Showdown move target to the expected StatChangeEffect.target value.
+ * Every entry must be named explicitly — no silent default fallback.
+ * Source: @pkmn/data move.target vocabulary.
+ */
+export const STAT_CHANGE_TARGET_MAP: Record<string, string> = {
+  self: "self",
+  adjacentAllyOrSelf: "self",
+  adjacentAlly: "ally",
+  normal: "foe",
+  adjacentFoe: "foe",
+  allAdjacentFoes: "foe",
+  allAdjacent: "foe",
+  allySide: "foe",
+  allyTeam: "foe",
+  foeSide: "foe",
+  all: "foe",
+  randomNormal: "foe",
+  any: "foe",
+  scripted: "foe",
+  allies: "self",
+};
+
+export function mapStatChangeTarget(showdownTarget: string): string {
+  const mapped = STAT_CHANGE_TARGET_MAP[showdownTarget];
+  if (mapped === undefined) {
+    throw new Error(
+      `Unknown Showdown target for stat-change mapping: "${showdownTarget}" — add explicit handling to STAT_CHANGE_TARGET_MAP in compare-data.ts`,
+    );
+  }
+  return mapped;
+}
+
 type LocalTypeChart = Record<string, Record<string, number>>;
 interface OracleSpeciesRecord {
   readonly id: string;
@@ -31,6 +75,10 @@ const ORACLE_GENERATIONS = new Generations(Dex);
 const DATA_SUITE_NAME = "data";
 
 function normalizeSpeciesId(id: string): string {
+  return id.toLowerCase().replaceAll(/[^a-z0-9]/g, "");
+}
+
+function normalizeMoveId(id: string): string {
   return id.toLowerCase().replaceAll(/[^a-z0-9]/g, "");
 }
 
@@ -69,6 +117,10 @@ export function runDataSuite(
   const localTypeChart = JSON.parse(
     readFileSync(join(generation.dataDir, "type-chart.json"), "utf8"),
   ) as LocalTypeChart;
+  const localMoves = JSON.parse(
+    readFileSync(join(generation.dataDir, "moves.json"), "utf8"),
+  ) as LocalMove[];
+  const localMovesById = new Map(localMoves.map((m) => [normalizeMoveId(m.id), m]));
 
   const oracle = ORACLE_GENERATIONS.get(generation.gen);
   const oracleSpecies = normalizeOracleSpecies(generation);
@@ -157,6 +209,34 @@ export function runDataSuite(
         oracleValue,
       });
     }
+  }
+
+  // Stat-change target checks: verify effect.target on pure stat-change moves matches oracle.
+  // Uses exhaustive STAT_CHANGE_TARGET_MAP — no silent default. Unknown targets throw.
+  for (const oracleMove of oracle.moves) {
+    if (!oracleMove.boosts || oracleMove.basePower) continue;
+    const moveId = oracleMove.id;
+    const localMove = localMovesById.get(moveId);
+    if (!localMove) continue;
+    if (localMove.effect?.type !== "stat-change") continue;
+
+    let expectedTarget: string;
+    try {
+      expectedTarget = mapStatChangeTarget(oracleMove.target);
+    } catch {
+      failures.push(
+        `Gen ${generation.gen}: unknown oracle target "${oracleMove.target}" for move ${moveId} — update STAT_CHANGE_TARGET_MAP`,
+      );
+      continue;
+    }
+
+    oracleChecks.push({
+      id: buildCheckId(generation, "moves", moveId, "stat-change-target"),
+      suite: DATA_SUITE_NAME,
+      description: `Move ${moveId} stat-change effect.target matches oracle (oracle target: ${oracleMove.target})`,
+      ourValue: localMove.effect?.target ?? null,
+      oracleValue: expectedTarget,
+    });
   }
 
   const resolvedOracleChecks = resolveOracleChecks(

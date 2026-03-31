@@ -18,6 +18,7 @@ import { getTypeEffectiveness } from "../../../packages/core/src/logic/type-effe
 import { createGen1DataManager } from "../../../packages/gen1/src/data/index.js";
 import { getGen1CritRate } from "../../../packages/gen1/src/Gen1CritCalc.js";
 import { calculateGen1Stats } from "../../../packages/gen1/src/Gen1StatCalc.js";
+import { getMaxMovePower } from "../../../packages/gen8/src/Gen8MaxMoves.js";
 import type { ImplementedGeneration } from "./gen-discovery.js";
 import type { SuiteResult } from "./result-schema.js";
 
@@ -139,13 +140,24 @@ const mechanicDocumentationCaseSchema = z
   .object({ id: z.string().min(1), kind: z.literal("mechanic-documentation") })
   .passthrough();
 
-const abilityCheckCaseSchema = z
-  .object({ id: z.string().min(1), kind: z.literal("abilityCheck") })
-  .passthrough();
+const abilityCheckCaseSchema = z.object({
+  id: z.string().min(1),
+  kind: z.literal("abilityCheck"),
+  abilityId: z.string().min(1),
+  expectedBoost: z.number(),
+  affectedMoves: z.array(z.string().min(1)),
+  source: z.string().min(1),
+  note: z.string().optional(),
+});
 
-const moveRecoilCheckCaseSchema = z
-  .object({ id: z.string().min(1), kind: z.literal("moveRecoilCheck") })
-  .passthrough();
+const moveRecoilCheckCaseSchema = z.object({
+  id: z.string().min(1),
+  kind: z.literal("moveRecoilCheck"),
+  moveId: z.string().min(1),
+  expectedRecoilFraction: z.number(),
+  source: z.string().min(1),
+  note: z.string().optional(),
+});
 
 const statusSpeedCheckCaseSchema = z
   .object({ id: z.string().min(1), kind: z.literal("statusSpeedCheck") })
@@ -155,9 +167,15 @@ const terrainBoostCheckCaseSchema = z
   .object({ id: z.string().min(1), kind: z.literal("terrainBoostCheck") })
   .passthrough();
 
-const maxMovePowerCheckCaseSchema = z
-  .object({ id: z.string().min(1), kind: z.literal("maxMovePowerCheck") })
-  .passthrough();
+const maxMovePowerCheckCaseSchema = z.object({
+  id: z.string().min(1),
+  kind: z.literal("maxMovePowerCheck"),
+  sourceBP: z.number().int().min(0),
+  moveType: z.string().min(1),
+  expectedPower: z.number().int().min(0),
+  source: z.string().min(1),
+  note: z.string().optional(),
+});
 
 const groundTruthCaseSchema = z.discriminatedUnion("kind", [
   typeChartCaseSchema,
@@ -195,15 +213,35 @@ type MovePriorityCheckCase = z.infer<typeof movePriorityCheckCaseSchema>;
 type MovePowerCheckCase = z.infer<typeof movePowerCheckCaseSchema>;
 type ZMoveCase = z.infer<typeof zMoveCaseSchema>;
 type DynamaxHPCase = z.infer<typeof dynamaxHPCheckCaseSchema>;
+type AbilityCheckCase = z.infer<typeof abilityCheckCaseSchema>;
+type MoveRecoilCheckCase = z.infer<typeof moveRecoilCheckCaseSchema>;
+type MaxMovePowerCheckCase = z.infer<typeof maxMovePowerCheckCaseSchema>;
 type GroundTruthDataset = z.infer<typeof groundTruthDatasetSchema>;
 type LoadedTypeChart = Record<string, Record<string, number>>;
+
+interface LocalMoveEffect {
+  readonly type: string;
+  readonly amount?: number;
+}
 
 interface LocalMove {
   readonly id: string;
   readonly category: "physical" | "special" | "status";
   readonly power: number | null;
   readonly priority: number;
+  readonly flags?: Readonly<Record<string, boolean>>;
+  readonly effect?: LocalMoveEffect | null;
 }
+
+// Maps ability IDs to the move flag they govern.
+// Extend this map whenever new abilityCheck ground-truth cases are added.
+const ABILITY_FLAG_MAP: Readonly<Record<string, string>> = {
+  "iron-fist": "punch",
+  "strong-jaw": "bite",
+  bulletproof: "bullet",
+  soundproof: "sound",
+  powder: "powder",
+};
 
 // ── Z-Move power table ────────────────────────────────────────────────────────
 // Source: smogon/pokemon-showdown sim/moves.ts getZMovePower (ERRATA #15)
@@ -453,6 +491,95 @@ function evaluateDynamaxHPCase(testCase: DynamaxHPCase): string | null {
   return null;
 }
 
+function evaluateAbilityCheckCase(
+  testCase: AbilityCheckCase,
+  moves: readonly LocalMove[],
+): string | null {
+  // Validates that every move in affectedMoves has the flag corresponding to
+  // this ability in our moves.json. ABILITY_FLAG_MAP maps ability IDs to flag names.
+  const flagName = ABILITY_FLAG_MAP[testCase.abilityId];
+  if (flagName === undefined) {
+    return (
+      `${testCase.id}: ability "${testCase.abilityId}" not in ABILITY_FLAG_MAP — ` +
+      `add explicit mapping in compare-ground-truth.ts (${testCase.source})`
+    );
+  }
+
+  const movesById = new Map(moves.map((m) => [m.id, m]));
+  const missingFlag: string[] = [];
+
+  for (const moveId of testCase.affectedMoves) {
+    const move = movesById.get(moveId);
+    if (!move) {
+      missingFlag.push(`${moveId} (not found in data)`);
+      continue;
+    }
+    if (!move.flags?.[flagName]) {
+      missingFlag.push(`${moveId} (flag "${flagName}" is false/absent)`);
+    }
+  }
+
+  if (missingFlag.length > 0) {
+    return (
+      `${testCase.id}: ability "${testCase.abilityId}" — ` +
+      `affected moves missing "${flagName}" flag: ${missingFlag.join(", ")} (${testCase.source})`
+    );
+  }
+  return null;
+}
+
+function evaluateMoveRecoilCheckCase(
+  testCase: MoveRecoilCheckCase,
+  moves: readonly LocalMove[],
+  notes: string[],
+): string | null {
+  const move = moves.find((m) => m.id === testCase.moveId);
+  if (!move) {
+    return `${testCase.id}: move "${testCase.moveId}" not found in moves.json (${testCase.source})`;
+  }
+
+  // Struggle's recoil is engine-level (BaseRuleset.calculateStruggleRecoil) — not stored
+  // as a recoil effect in moves.json. It's validated by integration tests.
+  if (testCase.moveId === "struggle") {
+    notes.push(
+      `${testCase.id}: Struggle recoil (${testCase.expectedRecoilFraction}× max HP) is engine-level — validated by integration tests`,
+    );
+    return null;
+  }
+
+  const effect = move.effect;
+  if (!effect || effect.type !== "recoil") {
+    return (
+      `${testCase.id}: move "${testCase.moveId}" expected recoil effect, ` +
+      `got ${effect?.type ?? "null"} (${testCase.source})`
+    );
+  }
+
+  const actual = Math.round((effect.amount ?? 0) * 1000) / 1000;
+  const expected = Math.round(testCase.expectedRecoilFraction * 1000) / 1000;
+
+  if (actual !== expected) {
+    return (
+      `${testCase.id}: move "${testCase.moveId}" recoil fraction ${actual} !== ` +
+      `expected ${expected} (${testCase.source})`
+    );
+  }
+  return null;
+}
+
+function evaluateMaxMovePowerCheckCase(testCase: MaxMovePowerCheckCase): string | null {
+  // Calls our Gen 8 getMaxMovePower implementation with the case inputs.
+  // Source: smogon/pokemon-showdown data/moves.ts ERRATA #20
+  const actual = getMaxMovePower(testCase.sourceBP, testCase.moveType as PokemonType);
+  if (actual !== testCase.expectedPower) {
+    return (
+      `${testCase.id}: getMaxMovePower(${testCase.sourceBP} BP, ${testCase.moveType}) = ${actual}, ` +
+      `expected ${testCase.expectedPower} (${testCase.source})`
+    );
+  }
+  return null;
+}
+
 // ── Public API ────────────────────────────────────────────────────────────────
 
 export function loadGroundTruthDataset(repoRoot: string, gen = 1): GroundTruthDataset {
@@ -537,10 +664,18 @@ export function runGroundTruthSuite(
     } else if (testCase.kind === "dynamaxHPCheck") {
       failure = evaluateDynamaxHPCase(testCase);
     } else {
-      // mechanic-documentation, abilityCheck, moveRecoilCheck, statusSpeedCheck,
-      // terrainBoostCheck, maxMovePowerCheck — deferred to engine/replay suite
-      deferredCases += 1;
-      continue;
+      // mechanic-documentation — documentation-only, no evaluation needed
+      // statusSpeedCheck, terrainBoostCheck — require engine integration (deferred)
+      if (testCase.kind === "abilityCheck") {
+        failure = evaluateAbilityCheckCase(testCase, moves);
+      } else if (testCase.kind === "moveRecoilCheck") {
+        failure = evaluateMoveRecoilCheckCase(testCase, moves, notes);
+      } else if (testCase.kind === "maxMovePowerCheck") {
+        failure = evaluateMaxMovePowerCheckCase(testCase);
+      } else {
+        deferredCases += 1;
+        continue;
+      }
     }
 
     if (failure !== null) {

@@ -706,14 +706,14 @@ describe("Gen8Dynamax", () => {
 
     it("given dynamaxed pokemon with damage move, when modifying, then converts to Max Move with scaled power", () => {
       // Source: Showdown sim/battle-actions.ts -- damage moves become Max Moves
-      // Fire + BP 90 -> Max Flare with BP 125 (standard table: 85-90 -> 125)
+      // Fire + BP 90 -> Max Flare with BP 130 (ERRATA #20: standard table 75-109 -> 130)
       const pokemon = createGen8OnFieldPokemon({}, { isDynamaxed: true });
       const result = dynamax.modifyMove(FLAMETHROWER_MOVE, pokemon);
 
       // Source: Showdown sim/battle-actions.ts -- Fire-type Max Move display name is "Max Flare"
       expect(result.displayName).toBe("Max Flare");
-      // Source: Showdown data/moves.ts -- Max Flare base power for BP 85-90 source moves is 125
-      expect(result.power).toBe(125);
+      // Source: Showdown sim/dex-moves.ts:517-549 -- Max Flare base power for BP 75-109 source moves is 130
+      expect(result.power).toBe(130);
       // Source: Showdown sim/battle-actions.ts -- Max Moves always have null accuracy (never miss)
       expect(result.accuracy).toBeNull();
     });

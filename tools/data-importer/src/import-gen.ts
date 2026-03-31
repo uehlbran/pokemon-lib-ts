@@ -512,13 +512,35 @@ function buildMoveEffect(move: Move): object | null {
     }
   }
 
-  // Self-boost moves (e.g., Swords Dance)
+  // Pure stat-change moves (e.g., Swords Dance, Aromatic Mist, Growl)
+  // Source: @pkmn/data move.target — adjacentAlly targets the ally, self targets the user,
+  // everything else (normal, adjacentFoe, etc.) targets the foe.
   if (move.boosts && !move.basePower) {
     const changes = Object.entries(move.boosts).map(([stat, stages]) => ({
       stat: mapBoostStat(stat),
       stages,
     }));
-    return { type: "stat-change", changes, target: CORE_MOVE_EFFECT_TARGETS.self, chance: 100 };
+    const localTarget = mapTarget(move.target);
+    const STAT_CHANGE_TARGET_MAP: Record<string, string> = {
+      self: CORE_MOVE_EFFECT_TARGETS.self,
+      "adjacent-ally": CORE_MOVE_EFFECT_TARGETS.ally,
+      "adjacent-foe": CORE_MOVE_EFFECT_TARGETS.foe,
+      "all-adjacent-foes": CORE_MOVE_EFFECT_TARGETS.foe,
+      "all-adjacent": CORE_MOVE_EFFECT_TARGETS.foe,
+      "user-field": CORE_MOVE_EFFECT_TARGETS.foe,
+      "user-and-allies": CORE_MOVE_EFFECT_TARGETS.foe,
+      "foe-field": CORE_MOVE_EFFECT_TARGETS.foe,
+      "entire-field": CORE_MOVE_EFFECT_TARGETS.foe,
+      "random-foe": CORE_MOVE_EFFECT_TARGETS.foe,
+      any: CORE_MOVE_EFFECT_TARGETS.foe,
+    };
+    const effectTarget = STAT_CHANGE_TARGET_MAP[localTarget];
+    if (!effectTarget) {
+      throw new Error(
+        `Unknown move target for stat-change effect mapping: "${localTarget}" (move: ${move.id}, Showdown target: ${move.target}) — add explicit handling to STAT_CHANGE_TARGET_MAP`,
+      );
+    }
+    return { type: "stat-change", changes, target: effectTarget, chance: 100 };
   }
 
   // Entry hazards — check BEFORE screens

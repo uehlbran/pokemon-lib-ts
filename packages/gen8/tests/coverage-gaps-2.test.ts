@@ -328,180 +328,184 @@ const typeChart = GEN8_TYPE_CHART;
 // ===========================================================================
 
 describe("Gen8MaxMoves -- getMaxMovePower standard type table (all ranges)", () => {
-  // Source: Showdown data/moves.ts -- maxMove.basePower standard table
+  // Source: Showdown sim/dex-moves.ts:517-549 -- ERRATA #20: correct dual power tables
+  // Standard table: <45→90, 45-54→100, 55-64→110, 65-74→120, 75-109→130, 110-149→140, ≥150→150
+  // Prior tests used a fabricated per-10-unit table that was never in Showdown source.
 
   it("given basePower=0 (status move) and normal type, when getMaxMovePower called, then returns 0", () => {
-    // Source: Showdown data/moves.ts -- status moves have 0 Max Move power
+    // Source: Showdown sim/dex-moves.ts -- status moves have 0 Max Move power
     expect(getMaxMovePower(0, typeIds.normal)).toBe(0);
   });
 
   it("given basePower=40 and normal type, when getMaxMovePower called, then returns 90", () => {
-    // Source: Showdown data/moves.ts -- maxMove.basePower: BP <= 40 -> 90
+    // Source: Showdown sim/dex-moves.ts:517-549 -- <45 -> 90
     expect(getMaxMovePower(40, typeIds.normal)).toBe(90);
   });
 
   it("given basePower=50 and fire type, when getMaxMovePower called, then returns 100", () => {
-    // Source: Showdown data/moves.ts -- maxMove.basePower: BP <= 50 -> 100
+    // Source: Showdown sim/dex-moves.ts:517-549 -- 45-54 -> 100
     expect(getMaxMovePower(50, typeIds.fire)).toBe(100);
   });
 
   it("given basePower=60 and water type, when getMaxMovePower called, then returns 110", () => {
-    // Source: Showdown data/moves.ts -- maxMove.basePower: BP <= 60 -> 110
+    // Source: Showdown sim/dex-moves.ts:517-549 -- 55-64 -> 110
     expect(getMaxMovePower(60, typeIds.water)).toBe(110);
   });
 
-  it("given basePower=70 and normal type, when getMaxMovePower called, then returns 115", () => {
-    // Source: Showdown data/moves.ts -- maxMove.basePower: BP <= 70 -> 115
-    expect(getMaxMovePower(70, typeIds.normal)).toBe(115);
+  it("given basePower=70 and normal type, when getMaxMovePower called, then returns 120", () => {
+    // Source: Showdown sim/dex-moves.ts:517-549 -- 65-74 -> 120
+    expect(getMaxMovePower(70, typeIds.normal)).toBe(120);
   });
 
-  it("given basePower=65 and electric type, when getMaxMovePower called, then returns 115", () => {
-    // Source: Showdown data/moves.ts -- maxMove.basePower: 61-70 -> 115
-    expect(getMaxMovePower(65, typeIds.electric)).toBe(115);
+  it("given basePower=65 and electric type, when getMaxMovePower called, then returns 120", () => {
+    // Source: Showdown sim/dex-moves.ts:517-549 -- 65-74 -> 120
+    expect(getMaxMovePower(65, typeIds.electric)).toBe(120);
   });
 
-  it("given basePower=80 and grass type, when getMaxMovePower called, then returns 120", () => {
-    // Source: Showdown data/moves.ts -- maxMove.basePower: BP <= 80 -> 120
-    expect(getMaxMovePower(80, typeIds.grass)).toBe(120);
+  it("given basePower=80 and grass type, when getMaxMovePower called, then returns 130", () => {
+    // Source: Showdown sim/dex-moves.ts:517-549 -- 75-109 -> 130
+    expect(getMaxMovePower(80, typeIds.grass)).toBe(130);
   });
 
-  it("given basePower=90 and ice type, when getMaxMovePower called, then returns 125", () => {
-    // Source: Showdown data/moves.ts -- maxMove.basePower: BP <= 90 -> 125
-    expect(getMaxMovePower(90, typeIds.ice)).toBe(125);
+  it("given basePower=90 and ice type, when getMaxMovePower called, then returns 130", () => {
+    // Source: Showdown sim/dex-moves.ts:517-549 -- 75-109 -> 130 (Flamethrower 90 BP = Max Flare 130)
+    expect(getMaxMovePower(90, typeIds.ice)).toBe(130);
   });
 
   it("given basePower=100 and ground type, when getMaxMovePower called, then returns 130", () => {
-    // Source: Showdown data/moves.ts -- maxMove.basePower: BP <= 100 -> 130
+    // Source: Showdown sim/dex-moves.ts:517-549 -- 75-109 -> 130
     expect(getMaxMovePower(100, typeIds.ground)).toBe(130);
   });
 
-  it("given basePower=110 and flying type, when getMaxMovePower called, then returns 135", () => {
-    // Source: Showdown data/moves.ts -- maxMove.basePower: BP <= 110 -> 135
-    expect(getMaxMovePower(110, typeIds.flying)).toBe(135);
+  it("given basePower=110 and flying type, when getMaxMovePower called, then returns 140", () => {
+    // Source: Showdown sim/dex-moves.ts:517-549 -- 110-149 -> 140
+    expect(getMaxMovePower(110, typeIds.flying)).toBe(140);
   });
 
-  it("given basePower=105 and psychic type, when getMaxMovePower called, then returns 135", () => {
-    // Source: Showdown data/moves.ts -- maxMove.basePower: 101-110 -> 135
-    expect(getMaxMovePower(105, typeIds.psychic)).toBe(135);
+  it("given basePower=105 and psychic type, when getMaxMovePower called, then returns 130", () => {
+    // Source: Showdown sim/dex-moves.ts:517-549 -- 75-109 -> 130
+    expect(getMaxMovePower(105, typeIds.psychic)).toBe(130);
   });
 
   it("given basePower=120 and bug type, when getMaxMovePower called, then returns 140", () => {
-    // Source: Showdown data/moves.ts -- maxMove.basePower: BP <= 120 -> 140
+    // Source: Showdown sim/dex-moves.ts:517-549 -- 110-149 -> 140
     expect(getMaxMovePower(120, typeIds.bug)).toBe(140);
   });
 
-  it("given basePower=130 and rock type, when getMaxMovePower called, then returns 145", () => {
-    // Source: Showdown data/moves.ts -- maxMove.basePower: BP <= 130 -> 145
-    expect(getMaxMovePower(130, typeIds.rock)).toBe(145);
+  it("given basePower=130 and rock type, when getMaxMovePower called, then returns 140", () => {
+    // Source: Showdown sim/dex-moves.ts:517-549 -- 110-149 -> 140
+    expect(getMaxMovePower(130, typeIds.rock)).toBe(140);
   });
 
-  it("given basePower=125 and ghost type, when getMaxMovePower called, then returns 145", () => {
-    // Source: Showdown data/moves.ts -- maxMove.basePower: 121-130 -> 145
-    expect(getMaxMovePower(125, typeIds.ghost)).toBe(145);
+  it("given basePower=125 and ghost type, when getMaxMovePower called, then returns 140", () => {
+    // Source: Showdown sim/dex-moves.ts:517-549 -- 110-149 -> 140
+    expect(getMaxMovePower(125, typeIds.ghost)).toBe(140);
   });
 
-  it("given basePower=140 and dragon type, when getMaxMovePower called, then returns 150", () => {
-    // Source: Showdown data/moves.ts -- maxMove.basePower: BP <= 140 -> 150
-    expect(getMaxMovePower(140, typeIds.dragon)).toBe(150);
+  it("given basePower=140 and dragon type, when getMaxMovePower called, then returns 140", () => {
+    // Source: Showdown sim/dex-moves.ts:517-549 -- 110-149 -> 140
+    expect(getMaxMovePower(140, typeIds.dragon)).toBe(140);
   });
 
-  it("given basePower=135 and dark type, when getMaxMovePower called, then returns 150", () => {
-    // Source: Showdown data/moves.ts -- maxMove.basePower: 131-140 -> 150
-    expect(getMaxMovePower(135, typeIds.dark)).toBe(150);
+  it("given basePower=135 and dark type, when getMaxMovePower called, then returns 140", () => {
+    // Source: Showdown sim/dex-moves.ts:517-549 -- 110-149 -> 140
+    expect(getMaxMovePower(135, typeIds.dark)).toBe(140);
   });
 
   it("given basePower=150 and steel type, when getMaxMovePower called, then returns 150 (cap)", () => {
-    // Source: Showdown data/moves.ts -- maxMove.basePower: BP >= 141 -> 150
+    // Source: Showdown sim/dex-moves.ts:517-549 -- >=150 -> 150
     expect(getMaxMovePower(150, typeIds.steel)).toBe(150);
   });
 
   it("given basePower=200 and fairy type, when getMaxMovePower called, then returns 150 (cap)", () => {
-    // Source: Showdown data/moves.ts -- maxMove.basePower: BP >= 141 -> 150
+    // Source: Showdown sim/dex-moves.ts:517-549 -- >=150 -> 150
     expect(getMaxMovePower(200, typeIds.fairy)).toBe(150);
   });
 });
 
 describe("Gen8MaxMoves -- getMaxMovePower Poison/Fighting table (all ranges)", () => {
-  // Source: Showdown data/moves.ts -- maxMove.basePower Poison/Fighting table
+  // Source: Showdown sim/dex-moves.ts:517-549 -- ERRATA #20: correct dual power tables
+  // Poison/Fighting table: <45→70, 45-54→75, 55-64→80, 65-74→85, 75-109→90, 110-149→95, ≥150→100
+  // Prior tests used a fabricated per-10-unit table that was never in Showdown source.
 
   it("given basePower=40 and poison type, when getMaxMovePower called, then returns 70", () => {
-    // Source: Showdown data/moves.ts -- Poison/Fighting: BP <= 40 -> 70
+    // Source: Showdown sim/dex-moves.ts:517-549 -- Poison/Fighting: <45 -> 70
     expect(getMaxMovePower(40, typeIds.poison)).toBe(70);
   });
 
   it("given basePower=50 and fighting type, when getMaxMovePower called, then returns 75", () => {
-    // Source: Showdown data/moves.ts -- Poison/Fighting: BP <= 50 -> 75
+    // Source: Showdown sim/dex-moves.ts:517-549 -- Poison/Fighting: 45-54 -> 75
     expect(getMaxMovePower(50, typeIds.fighting)).toBe(75);
   });
 
   it("given basePower=60 and poison type, when getMaxMovePower called, then returns 80", () => {
-    // Source: Showdown data/moves.ts -- Poison/Fighting: BP <= 60 -> 80
+    // Source: Showdown sim/dex-moves.ts:517-549 -- Poison/Fighting: 55-64 -> 80
     expect(getMaxMovePower(60, typeIds.poison)).toBe(80);
   });
 
   it("given basePower=70 and fighting type, when getMaxMovePower called, then returns 85", () => {
-    // Source: Showdown data/moves.ts -- Poison/Fighting: BP <= 70 -> 85
+    // Source: Showdown sim/dex-moves.ts:517-549 -- Poison/Fighting: 65-74 -> 85
     expect(getMaxMovePower(70, typeIds.fighting)).toBe(85);
   });
 
   it("given basePower=80 and poison type, when getMaxMovePower called, then returns 90", () => {
-    // Source: Showdown data/moves.ts -- Poison/Fighting: BP <= 80 -> 90
+    // Source: Showdown sim/dex-moves.ts:517-549 -- Poison/Fighting: 75-109 -> 90
     expect(getMaxMovePower(80, typeIds.poison)).toBe(90);
   });
 
-  it("given basePower=90 and fighting type, when getMaxMovePower called, then returns 95", () => {
-    // Source: Showdown data/moves.ts -- Poison/Fighting: BP <= 90 -> 95
-    expect(getMaxMovePower(90, typeIds.fighting)).toBe(95);
+  it("given basePower=90 and fighting type, when getMaxMovePower called, then returns 90", () => {
+    // Source: Showdown sim/dex-moves.ts:517-549 -- Poison/Fighting: 75-109 -> 90 (Close Combat 120→95, Focus Blast 120→95)
+    expect(getMaxMovePower(90, typeIds.fighting)).toBe(90);
   });
 
-  it("given basePower=100 and poison type, when getMaxMovePower called, then returns 100", () => {
-    // Source: Showdown data/moves.ts -- Poison/Fighting: BP <= 100 -> 100
-    expect(getMaxMovePower(100, typeIds.poison)).toBe(100);
+  it("given basePower=100 and poison type, when getMaxMovePower called, then returns 90", () => {
+    // Source: Showdown sim/dex-moves.ts:517-549 -- Poison/Fighting: 75-109 -> 90
+    expect(getMaxMovePower(100, typeIds.poison)).toBe(90);
   });
 
-  it("given basePower=110 and fighting type, when getMaxMovePower called, then returns 105", () => {
-    // Source: Showdown data/moves.ts -- Poison/Fighting: BP <= 110 -> 105
-    expect(getMaxMovePower(110, typeIds.fighting)).toBe(105);
+  it("given basePower=110 and fighting type, when getMaxMovePower called, then returns 95", () => {
+    // Source: Showdown sim/dex-moves.ts:517-549 -- Poison/Fighting: 110-149 -> 95
+    expect(getMaxMovePower(110, typeIds.fighting)).toBe(95);
   });
 
-  it("given basePower=105 and poison type, when getMaxMovePower called, then returns 105", () => {
-    // Source: Showdown data/moves.ts -- Poison/Fighting: 101-110 -> 105
-    expect(getMaxMovePower(105, typeIds.poison)).toBe(105);
+  it("given basePower=105 and poison type, when getMaxMovePower called, then returns 90", () => {
+    // Source: Showdown sim/dex-moves.ts:517-549 -- Poison/Fighting: 75-109 -> 90
+    expect(getMaxMovePower(105, typeIds.poison)).toBe(90);
   });
 
-  it("given basePower=120 and fighting type, when getMaxMovePower called, then returns 110", () => {
-    // Source: Showdown data/moves.ts -- Poison/Fighting: BP <= 120 -> 110
-    expect(getMaxMovePower(120, typeIds.fighting)).toBe(110);
+  it("given basePower=120 and fighting type, when getMaxMovePower called, then returns 95", () => {
+    // Source: Showdown sim/dex-moves.ts:517-549 -- Poison/Fighting: 110-149 -> 95
+    expect(getMaxMovePower(120, typeIds.fighting)).toBe(95);
   });
 
-  it("given basePower=130 and poison type, when getMaxMovePower called, then returns 115", () => {
-    // Source: Showdown data/moves.ts -- Poison/Fighting: BP <= 130 -> 115
-    expect(getMaxMovePower(130, typeIds.poison)).toBe(115);
+  it("given basePower=130 and poison type, when getMaxMovePower called, then returns 95", () => {
+    // Source: Showdown sim/dex-moves.ts:517-549 -- Poison/Fighting: 110-149 -> 95
+    expect(getMaxMovePower(130, typeIds.poison)).toBe(95);
   });
 
-  it("given basePower=125 and fighting type, when getMaxMovePower called, then returns 115", () => {
-    // Source: Showdown data/moves.ts -- Poison/Fighting: 121-130 -> 115
-    expect(getMaxMovePower(125, typeIds.fighting)).toBe(115);
+  it("given basePower=125 and fighting type, when getMaxMovePower called, then returns 95", () => {
+    // Source: Showdown sim/dex-moves.ts:517-549 -- Poison/Fighting: 110-149 -> 95
+    expect(getMaxMovePower(125, typeIds.fighting)).toBe(95);
   });
 
-  it("given basePower=140 and poison type, when getMaxMovePower called, then returns 120", () => {
-    // Source: Showdown data/moves.ts -- Poison/Fighting: BP <= 140 -> 120
-    expect(getMaxMovePower(140, typeIds.poison)).toBe(120);
+  it("given basePower=140 and poison type, when getMaxMovePower called, then returns 95", () => {
+    // Source: Showdown sim/dex-moves.ts:517-549 -- Poison/Fighting: 110-149 -> 95
+    expect(getMaxMovePower(140, typeIds.poison)).toBe(95);
   });
 
-  it("given basePower=150 and fighting type, when getMaxMovePower called, then returns 125", () => {
-    // Source: Showdown data/moves.ts -- Poison/Fighting: BP <= 150 -> 125
-    expect(getMaxMovePower(150, typeIds.fighting)).toBe(125);
+  it("given basePower=150 and fighting type, when getMaxMovePower called, then returns 100 (cap)", () => {
+    // Source: Showdown sim/dex-moves.ts:517-549 -- Poison/Fighting: >=150 -> 100
+    expect(getMaxMovePower(150, typeIds.fighting)).toBe(100);
   });
 
-  it("given basePower=160 and poison type, when getMaxMovePower called, then returns 130 (cap)", () => {
-    // Source: Showdown data/moves.ts -- Poison/Fighting: BP >= 151 -> 130
-    expect(getMaxMovePower(160, typeIds.poison)).toBe(130);
+  it("given basePower=160 and poison type, when getMaxMovePower called, then returns 100 (cap)", () => {
+    // Source: Showdown sim/dex-moves.ts:517-549 -- Poison/Fighting: >=150 -> 100
+    expect(getMaxMovePower(160, typeIds.poison)).toBe(100);
   });
 
-  it("given basePower=250 and fighting type, when getMaxMovePower called, then returns 130 (cap)", () => {
-    // Source: Showdown data/moves.ts -- Poison/Fighting: BP >= 151 -> 130
-    expect(getMaxMovePower(250, typeIds.fighting)).toBe(130);
+  it("given basePower=250 and fighting type, when getMaxMovePower called, then returns 100 (cap)", () => {
+    // Source: Showdown sim/dex-moves.ts:517-549 -- Poison/Fighting: >=150 -> 100
+    expect(getMaxMovePower(250, typeIds.fighting)).toBe(100);
   });
 });
 
