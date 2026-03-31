@@ -1,6 +1,12 @@
+import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { type ControlPlane, loadControlPlane, type ProofSchemaRegistry } from "./control-plane.js";
+import {
+  type ControlPlane,
+  classifyRepoFile,
+  loadControlPlane,
+  type ProofSchemaRegistry,
+} from "./control-plane.js";
 import {
   CHECK_STATUS_VALUES,
   RUN_CONCLUSION_VALUES,
@@ -68,6 +74,28 @@ function activeWaiverMechanicIds(controlPlane: ControlPlane, now: Date): Set<str
   }
 
   return active;
+}
+
+function stripComments(source: string): string {
+  return source.replaceAll(/\/\*[\s\S]*?\*\//g, "").replaceAll(/\/\/.*$/gm, "");
+}
+
+function camelizeTriggerId(triggerId: string): string {
+  return triggerId.replace(/-([a-z])/g, (_, char: string) => char.toUpperCase());
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function hasRoutedAbilityTrigger(source: string, triggerId: string): boolean {
+  const constantName = camelizeTriggerId(triggerId);
+  const escapedTrigger = escapeRegExp(triggerId);
+  const escapedConstant = escapeRegExp(constantName);
+  const routePattern = new RegExp(
+    `(?:case\\s+|trigger\\s*[!=]==?\\s*)(?:CORE_ABILITY_TRIGGER_IDS\\.${escapedConstant}|"${escapedTrigger}")`,
+  );
+  return routePattern.test(stripComments(source));
 }
 
 export function validateControlPlane(
@@ -153,6 +181,11 @@ export function validateControlPlane(
     controlPlane.normalizationRegistry.normalizations.map((entry) => entry.normalizationId),
   )) {
     errors.push(`Duplicate normalizationId in normalization-registry.v1.json: ${duplicate}`);
+  }
+  for (const duplicate of duplicateValues(
+    controlPlane.abilityTriggerSurfaces.surfaces.map((entry) => entry.runtimeOwner),
+  )) {
+    errors.push(`Duplicate runtimeOwner in ability-trigger-surfaces.v1.json: ${duplicate}`);
   }
   for (const duplicate of duplicateValues(controlPlane.proofSchema.suiteIds)) {
     errors.push(`Duplicate suiteId in proof-schema.v1.json: ${duplicate}`);
@@ -358,6 +391,77 @@ export function validateControlPlane(
     }
   }
 
+  const abilityTriggerSurfaceByOwner = new Map(
+    controlPlane.abilityTriggerSurfaces.surfaces.map(
+      (entry) => [entry.runtimeOwner, entry] as const,
+    ),
+  );
+
+  for (const surface of controlPlane.abilityTriggerSurfaces.surfaces) {
+    const runtimeOwner = ownershipRuleByKey.get(surface.runtimeOwner);
+    if (!runtimeOwner) {
+      errors.push(
+        `Ability trigger surface ${surface.runtimeOwner} references unknown runtimeOwner in ownership-map.v1.json.`,
+      );
+      continue;
+    }
+    if (runtimeOwner.ownerKind !== "leaf-mechanic") {
+      errors.push(
+        `Ability trigger surface ${surface.runtimeOwner} must reference a leaf-mechanic ownership key.`,
+      );
+    }
+    if (!authorityKeySet.has(surface.authorityKey)) {
+      errors.push(
+        `Ability trigger surface ${surface.runtimeOwner} references unknown authorityKey ${surface.authorityKey}.`,
+      );
+    }
+    if (!runtimeOwner.authorityKeys.includes(surface.authorityKey)) {
+      errors.push(
+        `Ability trigger surface ${surface.runtimeOwner} must use one of the ownership rule authority keys.`,
+      );
+    }
+
+    const dispatcherClassification = classifyRepoFile(controlPlane, surface.dispatcherPath);
+    if (dispatcherClassification.fileClass !== "runtime-owning") {
+      errors.push(
+        `Ability trigger surface ${surface.runtimeOwner} dispatcher ${surface.dispatcherPath} must classify as runtime-owning.`,
+      );
+      continue;
+    }
+    if (!dispatcherClassification.ownershipKeys.includes(surface.runtimeOwner)) {
+      errors.push(
+        `Ability trigger surface ${surface.runtimeOwner} dispatcher ${surface.dispatcherPath} is not owned by ${surface.runtimeOwner}.`,
+      );
+    }
+
+    let dispatcherSource = "";
+    try {
+      dispatcherSource = readFileSync(
+        resolve(controlPlane.repoRoot, surface.dispatcherPath),
+        "utf8",
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      errors.push(
+        `Ability trigger surface ${surface.runtimeOwner} dispatcher ${surface.dispatcherPath} could not be read: ${message}`,
+      );
+      continue;
+    }
+
+    for (const duplicate of duplicateValues(surface.routedTriggers)) {
+      errors.push(
+        `Ability trigger surface ${surface.runtimeOwner} duplicates routed trigger ${duplicate}.`,
+      );
+    }
+    for (const triggerId of surface.routedTriggers) {
+      if (!hasRoutedAbilityTrigger(dispatcherSource, triggerId)) {
+        errors.push(
+          `Ability trigger surface ${surface.runtimeOwner} dispatcher ${surface.dispatcherPath} is missing routed trigger ${triggerId}.`,
+        );
+      }
+    }
+  }
+
   for (const ownershipKey of [...new Set(options.touchedOwnershipKeys ?? [])].sort()) {
     const rule = ownershipRuleByKey.get(ownershipKey);
     if (!rule) {
@@ -374,6 +478,14 @@ export function validateControlPlane(
     if (!hasLineageContract) {
       errors.push(
         `Touched runtime owner ${ownershipKey} has no lineage contracts in lineage-contracts.v1.json.`,
+      );
+    }
+    if (
+      ownershipKey.endsWith(":ability-trigger-surface") &&
+      !abilityTriggerSurfaceByOwner.has(ownershipKey)
+    ) {
+      errors.push(
+        `Touched ability trigger surface ${ownershipKey} has no entry in ability-trigger-surfaces.v1.json.`,
       );
     }
   }

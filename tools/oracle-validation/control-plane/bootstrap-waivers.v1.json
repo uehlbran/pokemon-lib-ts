@@ -1,4 +1,59 @@
 {
   "version": 1,
-  "waivers": []
+  "waivers": [
+    {
+      "waiverId": "waiver.shared.contracts.transitive-proof",
+      "mechanicIds": [
+        "shared.contract.ability-context-result",
+        "shared.contract.damage-context",
+        "shared.contract.field-effect-results",
+        "shared.contract.hit-check-contexts",
+        "shared.contract.item-context-result",
+        "shared.contract.move-effect-context",
+        "shared.contract.move-effect-result"
+      ],
+      "issueNumber": 1278,
+      "owner": "codex",
+      "approver": "maintainer",
+      "expiresOn": "2026-04-30",
+      "missingProofs": ["source", "semantic", "runtime", "behavior"]
+    },
+    {
+      "waiverId": "waiver.shared.engine.transitive-proof",
+      "mechanicIds": ["shared.engine.switch-legality", "shared.engine.turn-order"],
+      "issueNumber": 1278,
+      "owner": "codex",
+      "approver": "maintainer",
+      "expiresOn": "2026-04-30",
+      "missingProofs": ["source", "runtime", "behavior"]
+    },
+    {
+      "waiverId": "waiver.gen.runtime.rulesets.transitive-proof",
+      "mechanicIds": [
+        "gen1.runtime.ruleset",
+        "gen2.runtime.ruleset",
+        "gen3.runtime.ruleset",
+        "gen4.runtime.ruleset",
+        "gen5.runtime.ruleset",
+        "gen6.runtime.ruleset",
+        "gen7.runtime.ruleset",
+        "gen8.runtime.ruleset",
+        "gen9.runtime.ruleset"
+      ],
+      "issueNumber": 1274,
+      "owner": "codex",
+      "approver": "maintainer",
+      "expiresOn": "2026-04-30",
+      "missingProofs": ["runtime", "behavior"]
+    },
+    {
+      "waiverId": "waiver.gen4.ability-trigger-surface",
+      "mechanicIds": ["gen4.runtime.ability-trigger-surface"],
+      "issueNumber": 1274,
+      "owner": "codex",
+      "approver": "maintainer",
+      "expiresOn": "2026-04-30",
+      "missingProofs": ["runtime", "behavior"]
+    }
+  ]
 }

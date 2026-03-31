@@ -269,8 +269,31 @@
     {
       "ownershipKey": "gen4:leaf-mechanic:ruleset-and-handlers",
       "ownerKind": "leaf-mechanic",
-      "patterns": ["packages/gen4/src/**", "packages/gen4/data/**"],
+      "patterns": [
+        "packages/gen4/src/Gen4CritCalc.ts",
+        "packages/gen4/src/Gen4DamageCalc.ts",
+        "packages/gen4/src/Gen4ItemMoveData.ts",
+        "packages/gen4/src/Gen4Items.ts",
+        "packages/gen4/src/Gen4MoveEffects.ts",
+        "packages/gen4/src/Gen4MoveEffectsBehavior.ts",
+        "packages/gen4/src/Gen4MoveEffectsCombat.ts",
+        "packages/gen4/src/Gen4MoveEffectsField.ts",
+        "packages/gen4/src/Gen4MoveEffectsStatus.ts",
+        "packages/gen4/src/Gen4Ruleset.ts",
+        "packages/gen4/src/Gen4TypeChart.ts",
+        "packages/gen4/src/Gen4Weather.ts",
+        "packages/gen4/src/index.ts",
+        "packages/gen4/data/**"
+      ],
       "mechanicIds": ["gen4.runtime.ruleset"],
+      "authorityKeys": ["gen4.mixed-runtime"],
+      "propagatesTo": ["oracle:tooling:runner"]
+    },
+    {
+      "ownershipKey": "gen4:leaf-mechanic:ability-trigger-surface",
+      "ownerKind": "leaf-mechanic",
+      "patterns": ["packages/gen4/src/Gen4Abilities.ts"],
+      "mechanicIds": ["gen4.runtime.ability-trigger-surface"],
       "authorityKeys": ["gen4.mixed-runtime"],
       "propagatesTo": ["oracle:tooling:runner"]
     },
@@ -301,6 +324,7 @@
     {
       "ownershipKey": "gen8:leaf-mechanic:ruleset-and-handlers",
       "ownerKind": "leaf-mechanic",
+      "allowSharedFile": true,
       "patterns": [
         "packages/gen8/src/Gen8CritCalc.ts",
         "packages/gen8/src/Gen8DamageCalc.ts",
@@ -324,7 +348,8 @@
     {
       "ownershipKey": "gen8:leaf-mechanic:ability-trigger-surface",
       "ownerKind": "leaf-mechanic",
-      "patterns": ["packages/gen8/src/Gen8Abilities*.ts"],
+      "allowSharedFile": true,
+      "patterns": ["packages/gen8/src/Gen8Abilities*.ts", "packages/gen8/src/Gen8Ruleset.ts"],
       "mechanicIds": ["gen8.runtime.ruleset"],
       "authorityKeys": ["gen8.showdown-runtime"],
       "propagatesTo": ["oracle:tooling:runner"]

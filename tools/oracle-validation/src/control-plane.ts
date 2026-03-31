@@ -155,6 +155,18 @@ const lineageContractsSchema = z.strictObject({
   contracts: z.array(lineageContractSchema),
 });
 
+const abilityTriggerSurfaceSchema = z.strictObject({
+  runtimeOwner: z.string().min(1),
+  authorityKey: z.string().min(1),
+  dispatcherPath: z.string().min(1),
+  routedTriggers: z.array(z.string().min(1)).min(1),
+});
+
+const abilityTriggerSurfaceRegistrySchema = z.strictObject({
+  version: z.literal(1),
+  surfaces: z.array(abilityTriggerSurfaceSchema),
+});
+
 const proofSchemaRegistrySchema = z.strictObject({
   version: z.literal(1),
   checkIdPattern: z.string().min(1),
@@ -184,6 +196,7 @@ export type OwnershipMap = z.infer<typeof ownershipMapSchema>;
 export type MechanicCatalog = z.infer<typeof mechanicCatalogSchema>;
 export type AuthorityManifest = z.infer<typeof authorityManifestSchema>;
 export type ObligationCatalog = z.infer<typeof obligationCatalogSchema>;
+export type AbilityTriggerSurfaceRegistry = z.infer<typeof abilityTriggerSurfaceRegistrySchema>;
 export type ProofSchemaRegistry = z.infer<typeof proofSchemaRegistrySchema>;
 
 export interface ControlPlane {
@@ -196,6 +209,7 @@ export interface ControlPlane {
   readonly divergenceRegistry: z.infer<typeof divergenceRegistrySchema>;
   readonly normalizationRegistry: z.infer<typeof normalizationRegistrySchema>;
   readonly lineageContracts: z.infer<typeof lineageContractsSchema>;
+  readonly abilityTriggerSurfaces: AbilityTriggerSurfaceRegistry;
   readonly proofSchema: ProofSchemaRegistry;
   readonly protocolCapabilityMatrix: z.infer<typeof protocolCapabilityMatrixSchema>;
 }
@@ -251,6 +265,10 @@ export function loadControlPlane(repoRoot: string): ControlPlane {
     lineageContracts: readJsonFile(
       join(baseDir, "lineage-contracts.v1.json"),
       lineageContractsSchema,
+    ),
+    abilityTriggerSurfaces: readJsonFile(
+      join(baseDir, "ability-trigger-surfaces.v1.json"),
+      abilityTriggerSurfaceRegistrySchema,
     ),
     proofSchema: readJsonFile(join(baseDir, "proof-schema.v1.json"), proofSchemaRegistrySchema),
     protocolCapabilityMatrix: readJsonFile(

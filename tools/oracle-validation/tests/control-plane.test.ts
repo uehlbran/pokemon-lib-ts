@@ -94,6 +94,28 @@ describe("control plane ownership mapping", () => {
     expect(classification.ruleMatches).toHaveLength(1);
   });
 
+  it("shares Gen 8 ruleset ownership between the coarse runtime owner and ability trigger surface", () => {
+    const controlPlane = loadControlPlane(repoRoot);
+    const classification = classifyRepoFile(controlPlane, "packages/gen8/src/Gen8Ruleset.ts");
+
+    expect(classification.fileClass).toBe("runtime-owning");
+    expect(classification.ownershipKeys).toEqual([
+      "gen8:leaf-mechanic:ability-trigger-surface",
+      "gen8:leaf-mechanic:ruleset-and-handlers",
+    ]);
+    expect(classification.ruleMatches).toHaveLength(2);
+    expect(classification.ruleMatches.every((rule) => rule.allowSharedFile)).toBe(true);
+  });
+
+  it("maps Gen 4 ability files into the dedicated ability trigger ownership key", () => {
+    const controlPlane = loadControlPlane(repoRoot);
+    const classification = classifyRepoFile(controlPlane, "packages/gen4/src/Gen4Abilities.ts");
+
+    expect(classification.fileClass).toBe("runtime-owning");
+    expect(classification.ownershipKeys).toEqual(["gen4:leaf-mechanic:ability-trigger-surface"]);
+    expect(classification.ruleMatches).toHaveLength(1);
+  });
+
   it("keeps Gen 9 ruleset files in the coarse ruleset owner without low-confidence overlap", () => {
     const controlPlane = loadControlPlane(repoRoot);
     const classification = classifyRepoFile(controlPlane, "packages/gen9/src/Gen9Ruleset.ts");

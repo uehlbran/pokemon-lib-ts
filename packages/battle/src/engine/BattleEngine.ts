@@ -1827,7 +1827,13 @@ export class BattleEngine implements BattleEventEmitter {
         });
       }
       if (hazardResult.statusInflicted && !active.pokemon.status) {
-        this.applyPrimaryStatus(active, hazardResult.statusInflicted, side.index);
+        this.applyPrimaryStatus(
+          active,
+          hazardResult.statusInflicted,
+          side.index,
+          undefined,
+          "toxic-spikes",
+        );
       }
       // Source: Showdown data/moves.ts — stickyweb: this.boost({spe: -1}, pokemon,
       //   pokemon.side.foe.active[0], this.dex.getActiveMove('stickyweb'))
@@ -4310,6 +4316,7 @@ export class BattleEngine implements BattleEventEmitter {
     status: PrimaryStatus,
     side: 0 | 1,
     sleepTurnsOverride?: number,
+    statusSourceEffectId?: string,
   ): void {
     // Terrain-based status immunity check (Gen 6+)
     // Source: Showdown data/conditions.ts -- electricterrain/mistyterrain.onSetStatus
@@ -4369,6 +4376,7 @@ export class BattleEngine implements BattleEventEmitter {
             state: this.state,
             rng: this.state.rng,
             trigger: CORE_ABILITY_TRIGGER_IDS.onStatusInflicted,
+            statusSourceEffectId,
           },
         );
         if (statusInflictedResult.activated) {

@@ -301,9 +301,7 @@ function main(): void {
     args.executedSuites,
     new Set(controlPlane.proofSchema.suiteIds),
     controlPlaneResult.errors,
-    impacts.transitiveMechanicIds.filter((mechanicId) =>
-      /^gen\d+\.runtime\.ruleset$/.test(mechanicId),
-    ),
+    impacts.transitiveMechanicIds.filter((mechanicId) => /^gen\d+\.runtime\./.test(mechanicId)),
     args.executedSuites.map(canonicalizeSuiteId).includes("oracle-fast")
       ? {
           summary: loadProofSummary(repoRoot, "fast"),

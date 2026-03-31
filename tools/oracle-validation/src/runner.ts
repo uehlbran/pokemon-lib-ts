@@ -193,35 +193,45 @@ async function main(): Promise<void> {
     process.env.VERCEL_GIT_COMMIT_SHA ??
     execFileSync("git", ["rev-parse", "HEAD"], { cwd: repoRoot, encoding: "utf8" }).trim();
   const controlPlane = loadControlPlane(repoRoot);
-  const runtimeMechanicMetadataEntries: Array<
-    readonly [
-      number,
-      {
-        readonly mechanicIds: readonly string[];
-        readonly authorityKeys: readonly string[];
-        readonly clusters: readonly string[];
-        readonly topologies: readonly string[];
-      },
-    ]
-  > = [];
+  const runtimeMechanicMetadataEntries = new Map<
+    number,
+    {
+      mechanicIds: string[];
+      authorityKeys: string[];
+      clusters: string[];
+      topologies: string[];
+    }
+  >();
   for (const mechanic of controlPlane.mechanicCatalog.mechanics) {
-    const match = /^gen(\d+)\.runtime\.ruleset$/.exec(mechanic.mechanicId);
+    const match = /^gen(\d+)\.runtime\./.exec(mechanic.mechanicId);
     if (!match) {
       continue;
     }
 
     const gen = Number.parseInt(match[1] ?? "", 10);
-    runtimeMechanicMetadataEntries.push([
+    const existingMetadata = runtimeMechanicMetadataEntries.get(gen) ?? {
+      mechanicIds: [],
+      authorityKeys: [],
+      clusters: [],
+      topologies: [],
+    };
+    existingMetadata.mechanicIds.push(mechanic.mechanicId);
+    existingMetadata.authorityKeys.push(mechanic.authorityKey);
+    existingMetadata.clusters.push(mechanic.cluster);
+    existingMetadata.topologies.push(...mechanic.topologies);
+    runtimeMechanicMetadataEntries.set(gen, existingMetadata);
+  }
+  const runtimeMechanicMetadataByGeneration = new Map(
+    [...runtimeMechanicMetadataEntries.entries()].map(([gen, metadata]) => [
       gen,
       {
-        mechanicIds: [mechanic.mechanicId],
-        authorityKeys: [mechanic.authorityKey],
-        clusters: [mechanic.cluster],
-        topologies: mechanic.topologies,
+        mechanicIds: [...new Set(metadata.mechanicIds)].sort(),
+        authorityKeys: [...new Set(metadata.authorityKeys)].sort(),
+        clusters: [...new Set(metadata.clusters)].sort(),
+        topologies: [...new Set(metadata.topologies)].sort(),
       },
-    ]);
-  }
-  const runtimeMechanicMetadataByGeneration = new Map(runtimeMechanicMetadataEntries);
+    ]),
+  );
   const { summary, checks } = buildProofSummary(
     gitSha,
     suites,

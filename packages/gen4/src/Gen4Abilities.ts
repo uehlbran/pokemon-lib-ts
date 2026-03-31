@@ -18,7 +18,12 @@ import {
   CORE_WEATHER_IDS,
   TYPE_EFFECTIVENESS_MULTIPLIERS,
 } from "@pokemon-lib-ts/core";
-import { GEN4_ABILITY_IDS, GEN4_ITEM_IDS, GEN4_MOVE_IDS } from "./data/reference-ids";
+import {
+  GEN4_ABILITY_IDS,
+  GEN4_ITEM_IDS,
+  GEN4_MOVE_IDS,
+  GEN4_SPECIES_IDS,
+} from "./data/reference-ids";
 import { canInflictGen4Status, isVolatileBlockedByAbility } from "./Gen4MoveEffects";
 import { GEN4_TYPE_CHART } from "./Gen4TypeChart";
 
@@ -100,6 +105,19 @@ export const PLATE_TO_TYPE: Record<string, PokemonType> = {
   [GEN4_ITEM_IDS.ironPlate]: CORE_TYPE_IDS.steel,
 };
 
+function getForecastTypeGen4(weather: string | null): PokemonType {
+  switch (weather) {
+    case CORE_WEATHER_IDS.sun:
+      return CORE_TYPE_IDS.fire;
+    case CORE_WEATHER_IDS.rain:
+      return CORE_TYPE_IDS.water;
+    case CORE_WEATHER_IDS.hail:
+      return CORE_TYPE_IDS.ice;
+    default:
+      return CORE_TYPE_IDS.normal;
+  }
+}
+
 /**
  * Gen 4 Abilities — applyAbility dispatch.
  *
@@ -115,6 +133,10 @@ export const PLATE_TO_TYPE: Record<string, PokemonType> = {
  *                         Flash Fire (with volatile boost), Levitate
  *   - "on-flinch": Steadfast
  *   - "on-after-move-hit": (no Gen 4 abilities use this trigger)
+ *   - "on-before-move": Truant
+ *   - "on-damage-taken": Color Change
+ *   - "on-status-inflicted": Synchronize
+ *   - "on-weather-change": Forecast
  *
  * Stat-modifying abilities (damage calc / speed calc integration):
  *   - Solar Power: 1.5x SpAtk in sun (damage calc) + 1/8 HP chip (turn-end)
@@ -161,6 +183,14 @@ export function applyGen4Ability(
       return handleOnFlinch(abilityId, context);
     case CORE_ABILITY_TRIGGER_IDS.onAfterMoveHit:
       return handleOnAfterMoveHit(abilityId, context);
+    case CORE_ABILITY_TRIGGER_IDS.onBeforeMove:
+      return handleOnBeforeMove(abilityId, context);
+    case CORE_ABILITY_TRIGGER_IDS.onDamageTaken:
+      return handleOnDamageTaken(abilityId, context);
+    case CORE_ABILITY_TRIGGER_IDS.onStatusInflicted:
+      return handleOnStatusInflicted(abilityId, context);
+    case CORE_ABILITY_TRIGGER_IDS.onWeatherChange:
+      return handleOnWeatherChange(abilityId, context);
     default:
       return { activated: false, effects: [], messages: [] };
   }
@@ -522,6 +552,36 @@ function handleSwitchIn(
         activated: true,
         effects: [effect],
         messages: [`${name} transformed into the ${typeName} type!`],
+      };
+    }
+
+    case GEN4_ABILITY_IDS.forecast: {
+      // Forecast: Castform changes type on switch-in to match the active weather.
+      // Weather suppression keeps Castform Normal.
+      // Source: Showdown Gen 4 mod — Forecast on switch-in
+      // Source: Bulbapedia — Forecast changes Castform's type with weather
+      if (
+        context.pokemon.pokemon.speciesId !== GEN4_SPECIES_IDS.castform ||
+        context.pokemon.transformed
+      ) {
+        return { activated: false, effects: [], messages: [] };
+      }
+
+      const weather = context.state.weather?.type ?? null;
+      const effectiveWeather = isWeatherSuppressedGen4(context.pokemon, context.opponent)
+        ? null
+        : weather;
+      const newType = getForecastTypeGen4(effectiveWeather);
+      if (context.pokemon.types.length === 1 && context.pokemon.types[0] === newType) {
+        return { activated: false, effects: [], messages: [] };
+      }
+
+      return {
+        activated: true,
+        effects: [
+          { effectType: ABILITY_EFFECT.typeChange, target: EFFECT_TARGET.self, types: [newType] },
+        ],
+        messages: [`${name} transformed into the ${newType} type!`],
       };
     }
 
@@ -1181,4 +1241,171 @@ function handleOnFlinch(abilityId: string, context: AbilityContext): AbilityResu
  */
 function handleOnAfterMoveHit(_abilityId: string, _context: AbilityContext): AbilityResult {
   return { activated: false, effects: [], messages: [] };
+}
+
+// ---------------------------------------------------------------------------
+// on-before-move
+// ---------------------------------------------------------------------------
+
+function handleOnBeforeMove(abilityId: string, context: AbilityContext): AbilityResult {
+  const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
+
+  if (abilityId !== GEN4_ABILITY_IDS.truant) {
+    return { activated: false, effects: [], messages: [] };
+  }
+  // Truant toggles on move attempt, not at end of turn.
+  // Source: Showdown data/abilities.ts — truant.onBeforeMove removes existing
+  //   volatile to loaf, otherwise adds it after allowing the move
+  // Source: Showdown Truant regression tests
+  // Source: Bulbapedia — Truant allows acting only every other turn
+  if (context.pokemon.volatileStatuses.has("truant-turn")) {
+    return {
+      activated: true,
+      movePrevented: true,
+      effects: [
+        {
+          effectType: ABILITY_EFFECT.volatileRemove,
+          target: EFFECT_TARGET.self,
+          volatile: "truant-turn",
+        },
+      ],
+      messages: [`${name} is loafing around!`],
+    };
+  }
+
+  return {
+    activated: true,
+    movePrevented: false,
+    effects: [
+      {
+        effectType: ABILITY_EFFECT.volatileInflict,
+        target: EFFECT_TARGET.self,
+        volatile: "truant-turn",
+        data: { turnsLeft: -1 },
+      },
+    ],
+    messages: [],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// on-damage-taken
+// ---------------------------------------------------------------------------
+
+function handleOnDamageTaken(abilityId: string, context: AbilityContext): AbilityResult {
+  const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
+
+  if (abilityId !== GEN4_ABILITY_IDS.colorChange) {
+    return { activated: false, effects: [], messages: [] };
+  }
+
+  // Color Change adopts the type of the damaging move that just hit the holder.
+  // Source: Showdown Gen 4 abilities mod — colorchange onDamagingHit
+  // Source: Bulbapedia — Color Change changes the user's type to the move's type
+  const moveType = context.move?.type;
+  if (!moveType) return { activated: false, effects: [], messages: [] };
+  if (context.pokemon.types.includes(moveType)) {
+    return { activated: false, effects: [], messages: [] };
+  }
+
+  return {
+    activated: true,
+    effects: [
+      {
+        effectType: ABILITY_EFFECT.typeChange,
+        target: EFFECT_TARGET.self,
+        types: [moveType],
+      },
+    ],
+    messages: [`${name}'s Color Change made it the ${moveType} type!`],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// on-status-inflicted
+// ---------------------------------------------------------------------------
+
+function handleOnStatusInflicted(abilityId: string, context: AbilityContext): AbilityResult {
+  const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
+
+  if (abilityId !== GEN4_ABILITY_IDS.synchronize) {
+    return { activated: false, effects: [], messages: [] };
+  }
+
+  // Synchronize mirrors burn, paralysis, and poison. Bad poison mirrors as
+  // regular poison; sleep and freeze are not mirrored.
+  // Source: pret/pokeemerald battle_scripts_1.s — MOVEEND_SYNCHRONIZE_TARGET
+  // Source: Showdown Gen 4 mod — synchronize.onAfterSetStatus skips toxicspikes
+  // Source: Bulbapedia — Synchronize only mirrors burn/paralysis/poison
+  const status = context.pokemon.pokemon.status;
+  if (!status) return { activated: false, effects: [], messages: [] };
+  if (context.statusSourceEffectId === "toxic-spikes") {
+    return { activated: false, effects: [], messages: [] };
+  }
+  if (
+    status !== CORE_STATUS_IDS.burn &&
+    status !== CORE_STATUS_IDS.paralysis &&
+    status !== CORE_STATUS_IDS.poison &&
+    status !== CORE_STATUS_IDS.badlyPoisoned
+  ) {
+    return { activated: false, effects: [], messages: [] };
+  }
+  if (!context.opponent) return { activated: false, effects: [], messages: [] };
+
+  const mirroredStatus = status === CORE_STATUS_IDS.badlyPoisoned ? CORE_STATUS_IDS.poison : status;
+  if (!canInflictGen4Status(mirroredStatus, context.opponent, context.state)) {
+    return { activated: false, effects: [], messages: [] };
+  }
+
+  const oppName = context.opponent.pokemon.nickname ?? String(context.opponent.pokemon.speciesId);
+  return {
+    activated: true,
+    effects: [
+      {
+        effectType: ABILITY_EFFECT.statusInflict,
+        target: EFFECT_TARGET.opponent,
+        status: mirroredStatus,
+      },
+    ],
+    messages: [`${name}'s Synchronize shared its ${mirroredStatus} with ${oppName}!`],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// on-weather-change
+// ---------------------------------------------------------------------------
+
+function handleOnWeatherChange(abilityId: string, context: AbilityContext): AbilityResult {
+  const name = context.pokemon.pokemon.nickname ?? String(context.pokemon.pokemon.speciesId);
+
+  if (abilityId !== GEN4_ABILITY_IDS.forecast) {
+    return { activated: false, effects: [], messages: [] };
+  }
+  if (
+    context.pokemon.pokemon.speciesId !== GEN4_SPECIES_IDS.castform ||
+    context.pokemon.transformed
+  ) {
+    return { activated: false, effects: [], messages: [] };
+  }
+
+  // Forecast updates Castform whenever weather changes, unless weather is
+  // suppressed by Cloud Nine / Air Lock.
+  // Source: Showdown Gen 4 abilities mod — Forecast weather-change behavior
+  // Source: Bulbapedia — Forecast changes Castform with weather changes
+  const weather = context.state.weather?.type ?? null;
+  const effectiveWeather = isWeatherSuppressedGen4(context.pokemon, context.opponent)
+    ? null
+    : weather;
+  const newType = getForecastTypeGen4(effectiveWeather);
+  if (context.pokemon.types.length === 1 && context.pokemon.types[0] === newType) {
+    return { activated: false, effects: [], messages: [] };
+  }
+
+  return {
+    activated: true,
+    effects: [
+      { effectType: ABILITY_EFFECT.typeChange, target: EFFECT_TARGET.self, types: [newType] },
+    ],
+    messages: [`${name} transformed into the ${newType} type!`],
+  };
 }

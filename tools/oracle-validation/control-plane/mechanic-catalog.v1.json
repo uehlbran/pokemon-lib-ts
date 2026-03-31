@@ -189,6 +189,17 @@
       "obligationSeed": "ruleset"
     },
     {
+      "mechanicId": "gen4.runtime.ability-trigger-surface",
+      "cluster": "move-effect-ownership",
+      "topologies": ["singles"],
+      "orderingSensitive": true,
+      "persistent": false,
+      "proofStatus": "legacy-partial",
+      "authorityKey": "gen4.mixed-runtime",
+      "requiredSuites": ["test", "oracle-fast"],
+      "obligationSeed": "ability-trigger-surface"
+    },
+    {
       "mechanicId": "gen4.runtime.ruleset",
       "cluster": "move-effect-ownership",
       "topologies": ["singles"],

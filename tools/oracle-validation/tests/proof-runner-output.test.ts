@@ -270,4 +270,60 @@ describe("buildProofSummary", () => {
     expect(checks[0]?.clusters).toEqual(["move-effect-ownership"]);
     expect(checks[0]?.topologies).toEqual(["singles"]);
   });
+
+  it("preserves multiple runtime mechanic ids on runtime evidence checks", () => {
+    const { checks } = buildProofSummary(
+      "abc123",
+      ["fast"],
+      [
+        {
+          gen: 4,
+          packageName: "@pokemon-lib-ts/gen4",
+          suites: {
+            mechanics: {
+              status: "pass",
+              suitePassed: true,
+              failed: 0,
+              skipped: 0,
+              failures: [],
+              notes: [],
+              matchedKnownDisagreements: [],
+              staleDisagreements: [],
+              oracleChecks: [
+                {
+                  id: "gen4:mechanics:sample",
+                  suite: "mechanics",
+                  description: "Sample split runtime check",
+                  ourValue: 1,
+                  oracleValue: 1,
+                },
+              ],
+            },
+          },
+          registry: {
+            knownDisagreements: [],
+            knownOracleBugs: [],
+          },
+          staleDisagreements: [],
+        },
+      ],
+      new Map([
+        [
+          4,
+          {
+            mechanicIds: ["gen4.runtime.ability-trigger-surface", "gen4.runtime.ruleset"],
+            authorityKeys: ["gen4.mixed-runtime"],
+            clusters: ["move-effect-ownership"],
+            topologies: ["singles"],
+          },
+        ],
+      ]),
+    );
+
+    expect(checks).toHaveLength(1);
+    expect(checks[0]?.mechanicIds).toEqual([
+      "gen4.runtime.ability-trigger-surface",
+      "gen4.runtime.ruleset",
+    ]);
+  });
 });

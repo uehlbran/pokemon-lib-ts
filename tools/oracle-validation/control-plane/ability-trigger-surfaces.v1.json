@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "surfaces": [
+    {
+      "runtimeOwner": "gen4:leaf-mechanic:ability-trigger-surface",
+      "authorityKey": "gen4.mixed-runtime",
+      "dispatcherPath": "packages/gen4/src/Gen4Abilities.ts",
+      "routedTriggers": [
+        "on-switch-in",
+        "on-turn-end",
+        "on-contact",
+        "passive-immunity",
+        "on-flinch",
+        "on-after-move-hit",
+        "on-before-move",
+        "on-damage-taken",
+        "on-status-inflicted",
+        "on-weather-change"
+      ]
+    },
+    {
+      "runtimeOwner": "gen8:leaf-mechanic:ability-trigger-surface",
+      "authorityKey": "gen8.showdown-runtime",
+      "dispatcherPath": "packages/gen8/src/Gen8Ruleset.ts",
+      "routedTriggers": [
+        "on-switch-in",
+        "on-switch-out",
+        "on-contact",
+        "on-status-inflicted",
+        "on-before-move",
+        "on-turn-end",
+        "on-priority-check",
+        "on-after-move-used",
+        "on-flinch",
+        "on-item-use",
+        "passive-immunity",
+        "on-stat-change",
+        "on-damage-taken"
+      ]
+    },
+    {
+      "runtimeOwner": "gen9:leaf-mechanic:ability-trigger-surface",
+      "authorityKey": "gen9.showdown-runtime",
+      "dispatcherPath": "packages/gen9/src/Gen9Abilities.ts",
+      "routedTriggers": [
+        "on-switch-in",
+        "on-switch-out",
+        "on-contact",
+        "on-status-inflicted",
+        "on-turn-end",
+        "on-priority-check"
+      ]
+    }
+  ]
+}
