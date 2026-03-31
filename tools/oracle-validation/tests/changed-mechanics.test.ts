@@ -42,11 +42,12 @@ describe("base ref resolution", () => {
 describe("buildImpactsReport", () => {
   it("records the requested and resolved base refs in the impacts artifact", () => {
     const report = buildImpactsReport(repoRoot, {
-      baseRef: "origin/main",
+      baseRef: "HEAD",
       mode: "test-preview",
     });
 
-    expect(report.requestedBaseRef).toBe("origin/main");
-    expect(report.resolvedBaseRef.length).toBeGreaterThan(0);
+    expect(report.requestedBaseRef).toBe("HEAD");
+    expect(report.resolvedBaseRef).toBe("HEAD");
+    expect(report.usedFallbackBaseRef).toBe(false);
   });
 });
