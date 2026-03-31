@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import {
   classifyRepoFile,
   expandOwnershipKeys,
@@ -255,6 +255,9 @@ function main(): void {
   console.log(`Required suites: ${report.requiredSuites.join(", ")}`);
 }
 
-main();
+const entrypoint = process.argv[1];
+if (entrypoint && import.meta.url === pathToFileURL(resolve(entrypoint)).href) {
+  main();
+}
 
 export { buildImpactsReport, computeBaseRefCandidates };
