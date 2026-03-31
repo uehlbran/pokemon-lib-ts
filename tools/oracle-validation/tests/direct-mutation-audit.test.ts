@@ -84,6 +84,27 @@ describe("scanSourceForDirectMutations", () => {
 
     expect(findings).toEqual([]);
   });
+
+  it("tracks aliases introduced by for-of loops over tracked state", () => {
+    const findings = scanSourceForDirectMutations(
+      `
+      function sample(ctx: MoveEffectContext) {
+        for (const side of ctx.state.sides) {
+          side.conditions = {};
+          for (const active of side.active) {
+            active.substituteHp = 0;
+          }
+        }
+      }
+      `,
+      "packages/gen9/src/Gen9MoveEffects.ts",
+    );
+
+    expect(findings.map((finding) => finding.pattern)).toEqual([
+      "ctx-state-mutation",
+      "ctx-state-mutation",
+    ]);
+  });
 });
 
 describe("shouldInspect", () => {

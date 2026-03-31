@@ -189,6 +189,24 @@ function recordAliasFromDeclaration(
   }
 }
 
+function recordAliasFromBindingName(
+  name: ts.BindingName,
+  rootKind: MutationRootKind,
+  aliases: Map<string, MutationRootKind>,
+): void {
+  if (ts.isIdentifier(name)) {
+    aliases.set(name.text, rootKind);
+    return;
+  }
+
+  for (const element of name.elements) {
+    if (ts.isOmittedExpression(element) || element.dotDotDotToken) {
+      continue;
+    }
+    recordAliasFromBindingName(element.name, rootKind, aliases);
+  }
+}
+
 function findingPatternForRoot(rootKind: MutationRootKind): string {
   return rootKind === "state" ? "ctx-state-mutation" : "active-pokemon-mutation";
 }
@@ -224,6 +242,23 @@ export function scanSourceForDirectMutations(
   }
 
   function visit(node: ts.Node, aliases: Map<string, MutationRootKind>): void {
+    if (ts.isForOfStatement(node) || ts.isForInStatement(node)) {
+      visit(node.expression, aliases);
+
+      const loopAliases = new Map(aliases);
+      if (ts.isVariableDeclarationList(node.initializer)) {
+        const rootKind = resolveMutationRootKind(node.expression, aliases);
+        if (rootKind) {
+          for (const declaration of node.initializer.declarations) {
+            recordAliasFromBindingName(declaration.name, rootKind, loopAliases);
+          }
+        }
+      }
+
+      visit(node.statement, loopAliases);
+      return;
+    }
+
     if (ts.isVariableDeclaration(node)) {
       recordAliasFromDeclaration(node, aliases);
     }
