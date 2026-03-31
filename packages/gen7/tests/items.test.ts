@@ -852,6 +852,29 @@ describe("applyGen7HeldItem -- on-stat-change", () => {
     const result = applyGen7HeldItem(ITEM_TRIGGERS.onStatChange, ctx);
     expect(result).toEqual({ activated: false, effects: [], messages: [] });
   });
+
+  it("given Adrenaline Orb and an active Contrary override at the positive cap, when on-stat-change fires, then it uses the active ability field", () => {
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.adrenalineOrb,
+      ability: ABILITY_IDS.none,
+    });
+    pokemon.ability = ABILITY_IDS.contrary;
+    pokemon.statStages.attack = 6;
+    const ctx = {
+      ...createItemContext({ pokemon }),
+      statChange: {
+        phase: "after",
+        source: "opponent",
+        attempted: [{ stat: "attack", stages: -1 }],
+        applied: [],
+        causeId: ABILITY_IDS.intimidate,
+        causeType: "ability",
+      },
+    } as ItemContext;
+
+    const result = applyGen7HeldItem(ITEM_TRIGGERS.onStatChange, ctx);
+    expect(result).toEqual({ activated: false, effects: [], messages: [] });
+  });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════

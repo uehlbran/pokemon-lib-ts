@@ -1621,7 +1621,7 @@ function handleOnStatChange(item: string, context: ItemContext): ItemResult {
         !appliedAttackDrop &&
         (!attemptedAttackDrop ||
           currentAttackStage <= -6 ||
-          (pokemon.pokemon.ability === GEN7_ABILITY_IDS.contrary && currentAttackStage >= 6));
+          (pokemon.ability === GEN7_ABILITY_IDS.contrary && currentAttackStage >= 6));
       const currentSpeedStage = pokemon.statStages[CORE_STAT_IDS.speed] ?? 0;
       if (
         statChange.phase !== "after" ||

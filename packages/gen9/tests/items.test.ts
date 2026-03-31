@@ -1739,6 +1739,29 @@ describe("Consumable Items", () => {
       expect(result).toEqual({ activated: false, effects: [], messages: [] });
     });
 
+    it("given Adrenaline Orb and an active Contrary override at the positive cap, when on-stat-change fires, then it uses the active ability field", () => {
+      const pokemon = createOnFieldPokemon({
+        heldItem: TEST_ITEM_IDS.adrenalineOrb,
+        ability: TEST_DEFAULTS.ability,
+      });
+      pokemon.ability = GEN9_ABILITY_IDS.contrary;
+      pokemon.statStages.attack = 6;
+      const ctx = {
+        ...createItemContext({ pokemon }),
+        statChange: {
+          phase: "after",
+          source: "opponent",
+          attempted: [{ stat: TEST_STAT_IDS.attack, stages: -1 }],
+          applied: [],
+          causeId: "intimidate",
+          causeType: "ability",
+        },
+      } as ItemContext;
+
+      const result = applyGen9HeldItem(TEST_TRIGGER_IDS.onStatChange, ctx);
+      expect(result).toEqual({ activated: false, effects: [], messages: [] });
+    });
+
     it("given Mirror Herb and a foe's positive boosts, when on-foe-stat-change fires, then copies each boost and consumes", () => {
       const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.mirrorHerb });
       const opponent = createOnFieldPokemon({});
