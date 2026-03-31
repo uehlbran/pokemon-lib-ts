@@ -1,4 +1,155 @@
 {
   "version": 1,
-  "contracts": []
+  "contracts": [
+    {
+      "gen": 1,
+      "entityType": "ruleset",
+      "entityId": "runtime-root",
+      "triggerPath": "runtime.dispatch.root",
+      "runtimeOwner": "gen1:leaf-mechanic:ruleset-and-handlers",
+      "authorityTag": "pret",
+      "descendantPolicy": "new-in-gen",
+      "proofIds": []
+    },
+    {
+      "gen": 2,
+      "entityType": "ruleset",
+      "entityId": "runtime-root",
+      "triggerPath": "runtime.dispatch.root",
+      "runtimeOwner": "gen2:leaf-mechanic:ruleset-and-handlers",
+      "authorityTag": "pret",
+      "descendantPolicy": "inherit-with-delta",
+      "proofIds": []
+    },
+    {
+      "gen": 3,
+      "entityType": "ruleset",
+      "entityId": "runtime-root",
+      "triggerPath": "runtime.dispatch.root",
+      "runtimeOwner": "gen3:leaf-mechanic:ruleset-and-handlers",
+      "authorityTag": "pret",
+      "descendantPolicy": "inherit-with-delta",
+      "proofIds": []
+    },
+    {
+      "gen": 4,
+      "entityType": "ruleset",
+      "entityId": "runtime-root",
+      "triggerPath": "runtime.dispatch.root",
+      "runtimeOwner": "gen4:leaf-mechanic:ruleset-and-handlers",
+      "authorityTag": "mixed",
+      "descendantPolicy": "mixed-authority-manual",
+      "proofIds": []
+    },
+    {
+      "gen": 5,
+      "entityType": "ruleset",
+      "entityId": "runtime-root",
+      "triggerPath": "runtime.dispatch.root",
+      "runtimeOwner": "gen5:leaf-mechanic:ruleset-and-handlers",
+      "authorityTag": "showdown",
+      "descendantPolicy": "inherit-with-delta",
+      "proofIds": []
+    },
+    {
+      "gen": 6,
+      "entityType": "ruleset",
+      "entityId": "runtime-root",
+      "triggerPath": "runtime.dispatch.root",
+      "runtimeOwner": "gen6:leaf-mechanic:ruleset-and-handlers",
+      "authorityTag": "showdown",
+      "descendantPolicy": "inherit-with-delta",
+      "proofIds": []
+    },
+    {
+      "gen": 7,
+      "entityType": "ruleset",
+      "entityId": "runtime-root",
+      "triggerPath": "runtime.dispatch.root",
+      "runtimeOwner": "gen7:leaf-mechanic:ruleset-and-handlers",
+      "authorityTag": "showdown",
+      "descendantPolicy": "inherit-with-delta",
+      "proofIds": []
+    },
+    {
+      "gen": 8,
+      "entityType": "ruleset",
+      "entityId": "runtime-root",
+      "triggerPath": "runtime.dispatch.root",
+      "runtimeOwner": "gen8:leaf-mechanic:ruleset-and-handlers",
+      "authorityTag": "showdown",
+      "descendantPolicy": "inherit-with-delta",
+      "proofIds": []
+    },
+    {
+      "gen": 8,
+      "entityType": "ability",
+      "entityId": "dispatch-surface",
+      "triggerPath": "ability.dispatch.surface",
+      "runtimeOwner": "gen8:leaf-mechanic:ability-trigger-surface",
+      "authorityTag": "showdown",
+      "descendantPolicy": "inherit-with-delta",
+      "proofIds": []
+    },
+    {
+      "gen": 8,
+      "entityType": "item",
+      "entityId": "trigger-surface",
+      "triggerPath": "item.trigger.surface",
+      "runtimeOwner": "gen8:leaf-mechanic:item-trigger-surface",
+      "authorityTag": "showdown",
+      "descendantPolicy": "inherit-with-delta",
+      "proofIds": []
+    },
+    {
+      "gen": 8,
+      "entityType": "move",
+      "entityId": "effect-dispatch",
+      "triggerPath": "move.effect.dispatch.surface",
+      "runtimeOwner": "gen8:leaf-mechanic:move-effect-surface",
+      "authorityTag": "showdown",
+      "descendantPolicy": "inherit-with-delta",
+      "proofIds": []
+    },
+    {
+      "gen": 9,
+      "entityType": "ruleset",
+      "entityId": "runtime-root",
+      "triggerPath": "runtime.dispatch.root",
+      "runtimeOwner": "gen9:leaf-mechanic:ruleset-and-handlers",
+      "authorityTag": "showdown",
+      "descendantPolicy": "inherit-with-delta",
+      "proofIds": []
+    },
+    {
+      "gen": 9,
+      "entityType": "ability",
+      "entityId": "dispatch-surface",
+      "triggerPath": "ability.dispatch.surface",
+      "runtimeOwner": "gen9:leaf-mechanic:ability-trigger-surface",
+      "authorityTag": "showdown",
+      "descendantPolicy": "inherit-with-delta",
+      "proofIds": []
+    },
+    {
+      "gen": 9,
+      "entityType": "item",
+      "entityId": "trigger-surface",
+      "triggerPath": "item.trigger.surface",
+      "runtimeOwner": "gen9:leaf-mechanic:item-trigger-surface",
+      "authorityTag": "showdown",
+      "descendantPolicy": "inherit-with-delta",
+      "proofIds": []
+    },
+    {
+      "gen": 9,
+      "entityType": "move",
+      "entityId": "effect-dispatch",
+      "triggerPath": "move.effect.dispatch.surface",
+      "runtimeOwner": "gen9:leaf-mechanic:move-effect-surface",
+      "authorityTag": "showdown",
+      "descendantPolicy": "inherit-with-delta",
+      "proofIds": []
+    }
+  ]
 }

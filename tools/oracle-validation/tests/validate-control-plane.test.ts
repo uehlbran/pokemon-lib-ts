@@ -168,6 +168,44 @@ describe("validateControlPlane", () => {
     ).toEqual([]);
   });
 
+  it("fails when a touched leaf runtime owner has no lineage contracts", () => {
+    const controlPlane = createControlPlane({
+      ownershipMap: {
+        version: 1,
+        fileClassRules: [{ fileClass: "runtime-owning", patterns: ["packages/**"] }],
+        ownershipRules: [
+          {
+            ownershipKey: "gen8:leaf-mechanic:ability-trigger-surface",
+            ownerKind: "leaf-mechanic",
+            patterns: ["packages/gen8/src/Gen8Abilities*.ts"],
+            allowSharedFile: false,
+            mechanicIds: ["shared.engine.turn-order"],
+            authorityKeys: ["shared.engine-contracts"],
+            propagatesTo: [],
+          },
+        ],
+      },
+    });
+
+    expect(
+      validateControlPlane(controlPlane, {
+        touchedOwnershipKeys: ["gen8:leaf-mechanic:ability-trigger-surface"],
+      }).errors,
+    ).toContain(
+      "Touched runtime owner gen8:leaf-mechanic:ability-trigger-surface has no lineage contracts in lineage-contracts.v1.json.",
+    );
+  });
+
+  it("does not require lineage contracts for touched non-leaf ownership keys", () => {
+    const controlPlane = createControlPlane();
+
+    expect(
+      validateControlPlane(controlPlane, {
+        touchedOwnershipKeys: ["battle:shared-seam:engine"],
+      }).errors,
+    ).toEqual([]);
+  });
+
   it("treats expiresOn as inclusive through the stated day", () => {
     const controlPlane = createControlPlane({
       mechanicCatalog: {

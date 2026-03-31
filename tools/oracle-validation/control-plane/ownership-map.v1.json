@@ -50,6 +50,12 @@
         "gen6:leaf-mechanic:ruleset-and-handlers",
         "gen7:leaf-mechanic:ruleset-and-handlers",
         "gen8:leaf-mechanic:ruleset-and-handlers",
+        "gen8:leaf-mechanic:ability-trigger-surface",
+        "gen8:leaf-mechanic:item-trigger-surface",
+        "gen8:leaf-mechanic:move-effect-surface",
+        "gen9:leaf-mechanic:ability-trigger-surface",
+        "gen9:leaf-mechanic:item-trigger-surface",
+        "gen9:leaf-mechanic:move-effect-surface",
         "gen9:leaf-mechanic:ruleset-and-handlers"
       ]
     },
@@ -69,6 +75,12 @@
         "gen6:leaf-mechanic:ruleset-and-handlers",
         "gen7:leaf-mechanic:ruleset-and-handlers",
         "gen8:leaf-mechanic:ruleset-and-handlers",
+        "gen8:leaf-mechanic:ability-trigger-surface",
+        "gen8:leaf-mechanic:item-trigger-surface",
+        "gen8:leaf-mechanic:move-effect-surface",
+        "gen9:leaf-mechanic:ability-trigger-surface",
+        "gen9:leaf-mechanic:item-trigger-surface",
+        "gen9:leaf-mechanic:move-effect-surface",
         "gen9:leaf-mechanic:ruleset-and-handlers"
       ]
     },
@@ -88,6 +100,12 @@
         "gen6:leaf-mechanic:ruleset-and-handlers",
         "gen7:leaf-mechanic:ruleset-and-handlers",
         "gen8:leaf-mechanic:ruleset-and-handlers",
+        "gen8:leaf-mechanic:ability-trigger-surface",
+        "gen8:leaf-mechanic:item-trigger-surface",
+        "gen8:leaf-mechanic:move-effect-surface",
+        "gen9:leaf-mechanic:ability-trigger-surface",
+        "gen9:leaf-mechanic:item-trigger-surface",
+        "gen9:leaf-mechanic:move-effect-surface",
         "gen9:leaf-mechanic:ruleset-and-handlers"
       ]
     },
@@ -107,6 +125,12 @@
         "gen6:leaf-mechanic:ruleset-and-handlers",
         "gen7:leaf-mechanic:ruleset-and-handlers",
         "gen8:leaf-mechanic:ruleset-and-handlers",
+        "gen8:leaf-mechanic:ability-trigger-surface",
+        "gen8:leaf-mechanic:item-trigger-surface",
+        "gen8:leaf-mechanic:move-effect-surface",
+        "gen9:leaf-mechanic:ability-trigger-surface",
+        "gen9:leaf-mechanic:item-trigger-surface",
+        "gen9:leaf-mechanic:move-effect-surface",
         "gen9:leaf-mechanic:ruleset-and-handlers"
       ]
     },
@@ -126,6 +150,12 @@
         "gen6:leaf-mechanic:ruleset-and-handlers",
         "gen7:leaf-mechanic:ruleset-and-handlers",
         "gen8:leaf-mechanic:ruleset-and-handlers",
+        "gen8:leaf-mechanic:ability-trigger-surface",
+        "gen8:leaf-mechanic:item-trigger-surface",
+        "gen8:leaf-mechanic:move-effect-surface",
+        "gen9:leaf-mechanic:ability-trigger-surface",
+        "gen9:leaf-mechanic:item-trigger-surface",
+        "gen9:leaf-mechanic:move-effect-surface",
         "gen9:leaf-mechanic:ruleset-and-handlers"
       ]
     },
@@ -145,6 +175,12 @@
         "gen6:leaf-mechanic:ruleset-and-handlers",
         "gen7:leaf-mechanic:ruleset-and-handlers",
         "gen8:leaf-mechanic:ruleset-and-handlers",
+        "gen8:leaf-mechanic:ability-trigger-surface",
+        "gen8:leaf-mechanic:item-trigger-surface",
+        "gen8:leaf-mechanic:move-effect-surface",
+        "gen9:leaf-mechanic:ability-trigger-surface",
+        "gen9:leaf-mechanic:item-trigger-surface",
+        "gen9:leaf-mechanic:move-effect-surface",
         "gen9:leaf-mechanic:ruleset-and-handlers"
       ]
     },
@@ -164,6 +200,12 @@
         "gen6:leaf-mechanic:ruleset-and-handlers",
         "gen7:leaf-mechanic:ruleset-and-handlers",
         "gen8:leaf-mechanic:ruleset-and-handlers",
+        "gen8:leaf-mechanic:ability-trigger-surface",
+        "gen8:leaf-mechanic:item-trigger-surface",
+        "gen8:leaf-mechanic:move-effect-surface",
+        "gen9:leaf-mechanic:ability-trigger-surface",
+        "gen9:leaf-mechanic:item-trigger-surface",
+        "gen9:leaf-mechanic:move-effect-surface",
         "gen9:leaf-mechanic:ruleset-and-handlers"
       ]
     },
@@ -183,6 +225,12 @@
         "gen6:leaf-mechanic:ruleset-and-handlers",
         "gen7:leaf-mechanic:ruleset-and-handlers",
         "gen8:leaf-mechanic:ruleset-and-handlers",
+        "gen8:leaf-mechanic:ability-trigger-surface",
+        "gen8:leaf-mechanic:item-trigger-surface",
+        "gen8:leaf-mechanic:move-effect-surface",
+        "gen9:leaf-mechanic:ability-trigger-surface",
+        "gen9:leaf-mechanic:item-trigger-surface",
+        "gen9:leaf-mechanic:move-effect-surface",
         "gen9:leaf-mechanic:ruleset-and-handlers"
       ]
     },
@@ -253,7 +301,45 @@
     {
       "ownershipKey": "gen8:leaf-mechanic:ruleset-and-handlers",
       "ownerKind": "leaf-mechanic",
-      "patterns": ["packages/gen8/src/**", "packages/gen8/data/**"],
+      "patterns": [
+        "packages/gen8/src/Gen8CritCalc.ts",
+        "packages/gen8/src/Gen8DamageCalc.ts",
+        "packages/gen8/src/Gen8Dynamax.ts",
+        "packages/gen8/src/Gen8EntryHazards.ts",
+        "packages/gen8/src/Gen8GMaxMoves.ts",
+        "packages/gen8/src/Gen8MaxMoves.ts",
+        "packages/gen8/src/Gen8Ruleset.ts",
+        "packages/gen8/src/Gen8Terrain.ts",
+        "packages/gen8/src/Gen8TypeChart.ts",
+        "packages/gen8/src/Gen8Weather.ts",
+        "packages/gen8/src/index.ts",
+        "packages/gen8/src/internal.ts",
+        "packages/gen8/data/**"
+      ],
+      "mechanicIds": ["gen8.runtime.ruleset"],
+      "authorityKeys": ["gen8.showdown-runtime"],
+      "propagatesTo": ["oracle:tooling:runner"]
+    },
+    {
+      "ownershipKey": "gen8:leaf-mechanic:ability-trigger-surface",
+      "ownerKind": "leaf-mechanic",
+      "patterns": ["packages/gen8/src/Gen8Abilities*.ts"],
+      "mechanicIds": ["gen8.runtime.ruleset"],
+      "authorityKeys": ["gen8.showdown-runtime"],
+      "propagatesTo": ["oracle:tooling:runner"]
+    },
+    {
+      "ownershipKey": "gen8:leaf-mechanic:item-trigger-surface",
+      "ownerKind": "leaf-mechanic",
+      "patterns": ["packages/gen8/src/Gen8Items.ts"],
+      "mechanicIds": ["gen8.runtime.ruleset"],
+      "authorityKeys": ["gen8.showdown-runtime"],
+      "propagatesTo": ["oracle:tooling:runner"]
+    },
+    {
+      "ownershipKey": "gen8:leaf-mechanic:move-effect-surface",
+      "ownerKind": "leaf-mechanic",
+      "patterns": ["packages/gen8/src/Gen8MoveEffects.ts"],
       "mechanicIds": ["gen8.runtime.ruleset"],
       "authorityKeys": ["gen8.showdown-runtime"],
       "propagatesTo": ["oracle:tooling:runner"]
@@ -261,7 +347,44 @@
     {
       "ownershipKey": "gen9:leaf-mechanic:ruleset-and-handlers",
       "ownerKind": "leaf-mechanic",
-      "patterns": ["packages/gen9/src/**", "packages/gen9/data/**"],
+      "patterns": [
+        "packages/gen9/src/Gen9CritCalc.ts",
+        "packages/gen9/src/Gen9DamageCalc.ts",
+        "packages/gen9/src/Gen9EntryHazards.ts",
+        "packages/gen9/src/Gen9Ruleset.ts",
+        "packages/gen9/src/Gen9Terastallization.ts",
+        "packages/gen9/src/Gen9Terrain.ts",
+        "packages/gen9/src/Gen9TypeChart.ts",
+        "packages/gen9/src/Gen9Weather.ts",
+        "packages/gen9/src/constants/mechanics.ts",
+        "packages/gen9/src/index.ts",
+        "packages/gen9/src/internal.ts",
+        "packages/gen9/data/**"
+      ],
+      "mechanicIds": ["gen9.runtime.ruleset"],
+      "authorityKeys": ["gen9.showdown-runtime"],
+      "propagatesTo": ["oracle:tooling:runner"]
+    },
+    {
+      "ownershipKey": "gen9:leaf-mechanic:ability-trigger-surface",
+      "ownerKind": "leaf-mechanic",
+      "patterns": ["packages/gen9/src/Gen9Abilities*.ts"],
+      "mechanicIds": ["gen9.runtime.ruleset"],
+      "authorityKeys": ["gen9.showdown-runtime"],
+      "propagatesTo": ["oracle:tooling:runner"]
+    },
+    {
+      "ownershipKey": "gen9:leaf-mechanic:item-trigger-surface",
+      "ownerKind": "leaf-mechanic",
+      "patterns": ["packages/gen9/src/Gen9Items.ts"],
+      "mechanicIds": ["gen9.runtime.ruleset"],
+      "authorityKeys": ["gen9.showdown-runtime"],
+      "propagatesTo": ["oracle:tooling:runner"]
+    },
+    {
+      "ownershipKey": "gen9:leaf-mechanic:move-effect-surface",
+      "ownerKind": "leaf-mechanic",
+      "patterns": ["packages/gen9/src/Gen9MoveEffects.ts"],
       "mechanicIds": ["gen9.runtime.ruleset"],
       "authorityKeys": ["gen9.showdown-runtime"],
       "propagatesTo": ["oracle:tooling:runner"]
@@ -281,6 +404,12 @@
         "gen6:leaf-mechanic:ruleset-and-handlers",
         "gen7:leaf-mechanic:ruleset-and-handlers",
         "gen8:leaf-mechanic:ruleset-and-handlers",
+        "gen8:leaf-mechanic:ability-trigger-surface",
+        "gen8:leaf-mechanic:item-trigger-surface",
+        "gen8:leaf-mechanic:move-effect-surface",
+        "gen9:leaf-mechanic:ability-trigger-surface",
+        "gen9:leaf-mechanic:item-trigger-surface",
+        "gen9:leaf-mechanic:move-effect-surface",
         "gen9:leaf-mechanic:ruleset-and-handlers",
         "oracle:tooling:runner"
       ]

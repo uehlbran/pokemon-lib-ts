@@ -283,6 +283,7 @@ function main(): void {
   const controlPlane = loadControlPlane(repoRoot);
   const controlPlaneResult = validateControlPlane(controlPlane, {
     touchedMechanicIds: impacts.transitiveMechanicIds,
+    touchedOwnershipKeys: impacts.directOwnershipKeys,
   });
   const artifactBackedSuites = new Map<string, ArtifactBackedSuiteStatus>([
     ["proof-preview", "pass"],
