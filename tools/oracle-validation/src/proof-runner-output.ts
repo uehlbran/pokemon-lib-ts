@@ -22,6 +22,8 @@ export interface LegacyGenerationRun {
 }
 
 interface ProofCheckMetadata {
+  readonly generation: number;
+  readonly mechanicId: string;
   readonly mechanicIds: readonly string[];
   readonly authorityKeys: readonly string[];
   readonly clusters: readonly string[];
@@ -64,6 +66,8 @@ function classifyCheckStatus(check: OracleCheck): "pass" | "fail" {
 
 function emptyProofCheckMetadata(): ProofCheckMetadata {
   return {
+    generation: 0,
+    mechanicId: "",
     mechanicIds: [],
     authorityKeys: [],
     clusters: [],
@@ -74,25 +78,42 @@ function emptyProofCheckMetadata(): ProofCheckMetadata {
 function resolveProofCheckMetadata(
   generation: LegacyGenerationRun,
   suiteName: string,
-  runtimeMechanicMetadataByGeneration: ReadonlyMap<number, ProofCheckMetadata>,
+  runtimeMechanicMetadataByMechanicId: ReadonlyMap<string, ProofCheckMetadata>,
 ): ProofCheckMetadata {
   if (!RUNTIME_EVIDENCE_SUITES.has(suiteName)) {
     return emptyProofCheckMetadata();
   }
 
-  return runtimeMechanicMetadataByGeneration.get(generation.gen) ?? emptyProofCheckMetadata();
+  const matchingRuntimeMechanics = [...runtimeMechanicMetadataByMechanicId.values()].filter(
+    (metadata) =>
+      metadata.generation === generation.gen && metadata.mechanicId.endsWith(".runtime.ruleset"),
+  );
+  if (matchingRuntimeMechanics.length === 0) {
+    return emptyProofCheckMetadata();
+  }
+  if (matchingRuntimeMechanics.length > 1) {
+    throw new Error(
+      `Expected exactly one ruleset runtime mechanic for gen${generation.gen} ${suiteName} proof metadata, found ${matchingRuntimeMechanics
+        .map((metadata) => metadata.mechanicId)
+        .sort()
+        .join(", ")}.`,
+    );
+  }
+
+  const [metadata] = matchingRuntimeMechanics;
+  return metadata ?? emptyProofCheckMetadata();
 }
 
 function createProofChecks(
   generation: LegacyGenerationRun,
   suiteName: string,
   suiteResult: SuiteResult,
-  runtimeMechanicMetadataByGeneration: ReadonlyMap<number, ProofCheckMetadata>,
+  runtimeMechanicMetadataByMechanicId: ReadonlyMap<string, ProofCheckMetadata>,
 ): ProofCheck[] {
   const metadata = resolveProofCheckMetadata(
     generation,
     suiteName,
-    runtimeMechanicMetadataByGeneration,
+    runtimeMechanicMetadataByMechanicId,
   );
   const checks: ProofCheck[] = suiteResult.oracleChecks.map((check) => {
     const status = classifyCheckStatus(check);
@@ -211,7 +232,7 @@ export function summarizeSuite(
 
 function summarizeGeneration(
   generation: LegacyGenerationRun,
-  runtimeMechanicMetadataByGeneration: ReadonlyMap<number, ProofCheckMetadata>,
+  runtimeMechanicMetadataByMechanicId: ReadonlyMap<string, ProofCheckMetadata>,
 ): {
   summary: ProofSummary["generations"][number];
   checks: ProofCheck[];
@@ -221,7 +242,7 @@ function summarizeGeneration(
       generation,
       suiteName,
       suiteResult,
-      runtimeMechanicMetadataByGeneration,
+      runtimeMechanicMetadataByMechanicId,
     );
     return {
       suiteName,
@@ -279,7 +300,7 @@ export function buildProofSummary(
   gitSha: string,
   suitesRequested: readonly string[],
   generations: readonly LegacyGenerationRun[],
-  runtimeMechanicMetadataByGeneration: ReadonlyMap<number, ProofCheckMetadata> = new Map(),
+  runtimeMechanicMetadataByMechanicId: ReadonlyMap<string, ProofCheckMetadata> = new Map(),
 ): {
   summary: ProofSummary;
   checks: ProofCheck[];
@@ -287,7 +308,7 @@ export function buildProofSummary(
   const runMode = inferRunMode(suitesRequested);
   runModeSchema.parse(runMode);
   const summarized = generations.map((generation) =>
-    summarizeGeneration(generation, runtimeMechanicMetadataByGeneration),
+    summarizeGeneration(generation, runtimeMechanicMetadataByMechanicId),
   );
   const generationSummaries = summarized.map((entry) => entry.summary);
   const summary = proofSummarySchema.parse({

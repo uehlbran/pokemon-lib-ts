@@ -114,4 +114,15 @@ describe("buildImpactsReport", () => {
     expect(classification.ownershipKeys).toEqual(["gen8:leaf-mechanic:ability-trigger-surface"]);
     expect(isLowConfidenceClassification(classification)).toBe(false);
   });
+
+  it("does not flag explicitly shared Gen 8 ruleset ownership as low-confidence", () => {
+    const controlPlane = loadControlPlane(repoRoot);
+    const classification = classifyRepoFile(controlPlane, "packages/gen8/src/Gen8Ruleset.ts");
+
+    expect(classification.ownershipKeys).toEqual([
+      "gen8:leaf-mechanic:ability-trigger-surface",
+      "gen8:leaf-mechanic:ruleset-and-handlers",
+    ]);
+    expect(isLowConfidenceClassification(classification)).toBe(false);
+  });
 });

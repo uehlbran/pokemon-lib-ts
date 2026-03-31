@@ -73,11 +73,14 @@
         "gen1:leaf-mechanic:ruleset-and-handlers",
         "gen2:leaf-mechanic:ruleset-and-handlers",
         "gen3:leaf-mechanic:ruleset-and-handlers",
+        "gen4:leaf-mechanic:ability-trigger-surface",
         "gen4:leaf-mechanic:ruleset-and-handlers",
         "gen5:leaf-mechanic:ruleset-and-handlers",
         "gen6:leaf-mechanic:ruleset-and-handlers",
         "gen7:leaf-mechanic:ruleset-and-handlers",
+        "gen8:leaf-mechanic:ability-trigger-surface",
         "gen8:leaf-mechanic:ruleset-and-handlers",
+        "gen9:leaf-mechanic:ability-trigger-surface",
         "gen9:leaf-mechanic:ruleset-and-handlers"
       ]
     },

@@ -202,6 +202,36 @@ describe("evaluateImpactsEnforcement", () => {
     );
   });
 
+  it("requires oracle-fast evidence for split runtime mechanics as well as coarse rulesets", () => {
+    const result = evaluateImpactsEnforcement(
+      createImpactsReport({ requiredSuites: ["oracle-fast"] }),
+      ["oracle-fast"],
+      new Set([...knownSuites, "oracle-fast"]),
+      [],
+      ["gen4.runtime.ability-trigger-surface"],
+      null,
+    );
+
+    expect(result.errors).toContain(
+      "Missing oracle-fast proof artifacts for touched mechanics: gen4.runtime.ability-trigger-surface",
+    );
+  });
+
+  it("does not require oracle-fast evidence for mechanics covered by active runtime waivers", () => {
+    const result = evaluateImpactsEnforcement(
+      createImpactsReport({ requiredSuites: ["oracle-fast"] }),
+      ["oracle-fast"],
+      new Set([...knownSuites, "oracle-fast"]),
+      [],
+      ["gen4.runtime.ability-trigger-surface"],
+      null,
+      new Map(),
+      ["gen4.runtime.ability-trigger-surface"],
+    );
+
+    expect(result.errors).toEqual([]);
+  });
+
   it("fails when oracle-fast artifacts do not include required proof checks for touched mechanics", () => {
     const result = evaluateImpactsEnforcement(
       createImpactsReport({ requiredSuites: ["oracle-fast"] }),

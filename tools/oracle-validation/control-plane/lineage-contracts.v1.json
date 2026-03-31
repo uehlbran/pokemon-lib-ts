@@ -42,6 +42,16 @@
       "proofIds": []
     },
     {
+      "gen": 4,
+      "entityType": "ability",
+      "entityId": "dispatch-surface",
+      "triggerPath": "ability.dispatch.surface",
+      "runtimeOwner": "gen4:leaf-mechanic:ability-trigger-surface",
+      "authorityTag": "mixed",
+      "descendantPolicy": "mixed-authority-manual",
+      "proofIds": []
+    },
+    {
       "gen": 5,
       "entityType": "ruleset",
       "entityId": "runtime-root",

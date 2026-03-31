@@ -1827,7 +1827,13 @@ export class BattleEngine implements BattleEventEmitter {
         });
       }
       if (hazardResult.statusInflicted && !active.pokemon.status) {
-        this.applyPrimaryStatus(active, hazardResult.statusInflicted, side.index);
+        this.applyPrimaryStatus(
+          active,
+          hazardResult.statusInflicted,
+          side.index,
+          undefined,
+          CORE_HAZARD_IDS.toxicSpikes,
+        );
       }
       // Source: Showdown data/moves.ts — stickyweb: this.boost({spe: -1}, pokemon,
       //   pokemon.side.foe.active[0], this.dex.getActiveMove('stickyweb'))
@@ -4310,6 +4316,7 @@ export class BattleEngine implements BattleEventEmitter {
     status: PrimaryStatus,
     side: 0 | 1,
     sleepTurnsOverride?: number,
+    statusSourceEffectId?: string,
   ): void {
     // Terrain-based status immunity check (Gen 6+)
     // Source: Showdown data/conditions.ts -- electricterrain/mistyterrain.onSetStatus
@@ -4369,6 +4376,7 @@ export class BattleEngine implements BattleEventEmitter {
             state: this.state,
             rng: this.state.rng,
             trigger: CORE_ABILITY_TRIGGER_IDS.onStatusInflicted,
+            statusSourceEffectId,
           },
         );
         if (statusInflictedResult.activated) {
@@ -5065,7 +5073,13 @@ export class BattleEngine implements BattleEventEmitter {
         result.selfStatusInflicted === CORE_STATUS_IDS.sleep
           ? result.selfVolatileData?.turnsLeft
           : undefined;
-      this.applyPrimaryStatus(attacker, result.selfStatusInflicted, attackerSide, sleepOverride);
+      this.applyPrimaryStatus(
+        attacker,
+        result.selfStatusInflicted,
+        attackerSide,
+        sleepOverride,
+        "self-status",
+      );
     }
 
     // selfVolatileInflicted — add a volatile status to the ATTACKER
@@ -6065,7 +6079,7 @@ export class BattleEngine implements BattleEventEmitter {
         case BATTLE_ITEM_EFFECT_TYPES.statusInflict: {
           const statusToInflict = effect.value as PrimaryStatus;
           if (!pokemon.pokemon.status) {
-            this.applyPrimaryStatus(pokemon, statusToInflict, side);
+            this.applyPrimaryStatus(pokemon, statusToInflict, side, undefined, "held-item");
           }
           break;
         }
@@ -6073,7 +6087,7 @@ export class BattleEngine implements BattleEventEmitter {
           // Typed variant: status field is a PrimaryStatus (Toxic Orb, Flame Orb)
           // Source: Showdown data/items.ts -- Toxic Orb / Flame Orb onResidual
           if (!pokemon.pokemon.status) {
-            this.applyPrimaryStatus(pokemon, effect.status, side);
+            this.applyPrimaryStatus(pokemon, effect.status, side, undefined, "held-item");
           }
           break;
         }

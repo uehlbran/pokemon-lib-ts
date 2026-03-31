@@ -34,6 +34,10 @@ interface OracleFastEvidence {
 
 type ArtifactBackedSuiteStatus = "pass" | "fail";
 
+function isExpired(date: string, now: Date): boolean {
+  return new Date(`${date}T23:59:59.999Z`).getTime() < now.getTime();
+}
+
 function parseArgs(argv: string[]): Args {
   let mode = "local-preview";
   const executedSuites: string[] = [];
@@ -83,6 +87,7 @@ export function evaluateImpactsEnforcement(
   touchedOracleMechanicIds: readonly string[] = [],
   oracleFastEvidence: OracleFastEvidence | null = null,
   artifactBackedSuites: ReadonlyMap<string, ArtifactBackedSuiteStatus> = new Map(),
+  waivedOracleMechanicIds: readonly string[] = [],
 ): EnforcementResult {
   const errors: string[] = [...controlPlaneErrors];
   const canonicalExecutedSuites = [...new Set(executedSuites.map(canonicalizeSuiteId))].sort();
@@ -123,7 +128,10 @@ export function evaluateImpactsEnforcement(
     );
   }
 
-  const requiredOracleMechanicIds = [...new Set(touchedOracleMechanicIds)].sort();
+  const waivedOracleMechanicIdSet = new Set(waivedOracleMechanicIds);
+  const requiredOracleMechanicIds = [...new Set(touchedOracleMechanicIds)]
+    .filter((mechanicId) => !waivedOracleMechanicIdSet.has(mechanicId))
+    .sort();
   if (requiredOracleMechanicIds.length > 0) {
     if (!requiredSuites.includes("oracle-fast")) {
       errors.push(
@@ -296,14 +304,26 @@ function main(): void {
     const workflowContractArtifact = loadWorkflowContractArtifact(repoRoot, args.mode);
     artifactBackedSuites.set("workflow-contract", workflowContractArtifact.status);
   }
+  const now = new Date();
+  const waivedOracleMechanicIds = [
+    ...new Set(
+      controlPlane.bootstrapWaivers.waivers
+        .filter(
+          (waiver) =>
+            !isExpired(waiver.expiresOn, now) &&
+            waiver.missingProofs.some(
+              (proofLayer) => proofLayer === "runtime" || proofLayer === "behavior",
+            ),
+        )
+        .flatMap((waiver) => waiver.mechanicIds),
+    ),
+  ].sort();
   const result = evaluateImpactsEnforcement(
     impacts,
     args.executedSuites,
     new Set(controlPlane.proofSchema.suiteIds),
     controlPlaneResult.errors,
-    impacts.transitiveMechanicIds.filter((mechanicId) =>
-      /^gen\d+\.runtime\.ruleset$/.test(mechanicId),
-    ),
+    impacts.transitiveMechanicIds.filter((mechanicId) => /^gen\d+\.runtime\./.test(mechanicId)),
     args.executedSuites.map(canonicalizeSuiteId).includes("oracle-fast")
       ? {
           summary: loadProofSummary(repoRoot, "fast"),
@@ -311,6 +331,7 @@ function main(): void {
         }
       : null,
     artifactBackedSuites,
+    waivedOracleMechanicIds,
   );
 
   if (result.errors.length > 0) {

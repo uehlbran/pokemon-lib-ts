@@ -253,8 +253,10 @@ describe("buildProofSummary", () => {
       ],
       new Map([
         [
-          5,
+          "gen5.runtime.ruleset",
           {
+            generation: 5,
+            mechanicId: "gen5.runtime.ruleset",
             mechanicIds: ["gen5.runtime.ruleset"],
             authorityKeys: ["gen5.showdown-runtime"],
             clusters: ["move-effect-ownership"],
@@ -269,5 +271,136 @@ describe("buildProofSummary", () => {
     expect(checks[0]?.authorityKeys).toEqual(["gen5.showdown-runtime"]);
     expect(checks[0]?.clusters).toEqual(["move-effect-ownership"]);
     expect(checks[0]?.topologies).toEqual(["singles"]);
+  });
+
+  it("limits runtime evidence checks to ruleset runtime mechanics", () => {
+    const { checks } = buildProofSummary(
+      "abc123",
+      ["fast"],
+      [
+        {
+          gen: 4,
+          packageName: "@pokemon-lib-ts/gen4",
+          suites: {
+            mechanics: {
+              status: "pass",
+              suitePassed: true,
+              failed: 0,
+              skipped: 0,
+              failures: [],
+              notes: [],
+              matchedKnownDisagreements: [],
+              staleDisagreements: [],
+              oracleChecks: [
+                {
+                  id: "gen4:mechanics:sample",
+                  suite: "mechanics",
+                  description: "Sample split runtime check",
+                  ourValue: 1,
+                  oracleValue: 1,
+                },
+              ],
+            },
+          },
+          registry: {
+            knownDisagreements: [],
+            knownOracleBugs: [],
+          },
+          staleDisagreements: [],
+        },
+      ],
+      new Map([
+        [
+          "gen4.runtime.ruleset",
+          {
+            generation: 4,
+            mechanicId: "gen4.runtime.ruleset",
+            mechanicIds: ["gen4.runtime.ruleset"],
+            authorityKeys: ["gen4.mixed-runtime"],
+            clusters: ["move-effect-ownership"],
+            topologies: ["singles"],
+          },
+        ],
+        [
+          "gen4.runtime.ability-trigger-surface",
+          {
+            generation: 4,
+            mechanicId: "gen4.runtime.ability-trigger-surface",
+            mechanicIds: ["gen4.runtime.ability-trigger-surface"],
+            authorityKeys: ["gen4.mixed-runtime"],
+            clusters: ["move-effect-ownership"],
+            topologies: ["singles"],
+          },
+        ],
+      ]),
+    );
+
+    expect(checks).toHaveLength(1);
+    expect(checks[0]?.mechanicIds).toEqual(["gen4.runtime.ruleset"]);
+  });
+
+  it("fails closed when a generation advertises multiple ruleset runtime mechanics", () => {
+    expect(() =>
+      buildProofSummary(
+        "abc123",
+        ["fast"],
+        [
+          {
+            gen: 4,
+            packageName: "@pokemon-lib-ts/gen4",
+            suites: {
+              mechanics: {
+                status: "pass",
+                suitePassed: true,
+                failed: 0,
+                skipped: 0,
+                failures: [],
+                notes: [],
+                matchedKnownDisagreements: [],
+                staleDisagreements: [],
+                oracleChecks: [
+                  {
+                    id: "gen4:mechanics:sample",
+                    suite: "mechanics",
+                    description: "Sample split runtime check",
+                    ourValue: 1,
+                    oracleValue: 1,
+                  },
+                ],
+              },
+            },
+            registry: {
+              knownDisagreements: [],
+              knownOracleBugs: [],
+            },
+            staleDisagreements: [],
+          },
+        ],
+        new Map([
+          [
+            "gen4.runtime.ruleset",
+            {
+              generation: 4,
+              mechanicId: "gen4.runtime.ruleset",
+              mechanicIds: ["gen4.runtime.ruleset"],
+              authorityKeys: ["gen4.mixed-runtime"],
+              clusters: ["move-effect-ownership"],
+              topologies: ["singles"],
+            },
+          ],
+          [
+            "gen4.runtime.ruleset.alt",
+            {
+              generation: 4,
+              mechanicId: "gen4.alt.runtime.ruleset",
+              mechanicIds: ["gen4.runtime.ruleset.alt"],
+              authorityKeys: ["gen4.alt-runtime"],
+              clusters: ["alt-cluster"],
+              topologies: ["singles"],
+            },
+          ],
+        ]),
+      ),
+    ).toThrow("Expected exactly one ruleset runtime mechanic for gen4 mechanics proof metadata");
   });
 });

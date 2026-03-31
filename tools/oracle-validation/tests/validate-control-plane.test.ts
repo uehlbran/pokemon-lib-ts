@@ -1,6 +1,10 @@
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import type { ControlPlane } from "../src/control-plane.js";
+import { type ControlPlane, loadControlPlane } from "../src/control-plane.js";
 import { validateControlPlane } from "../src/validate-control-plane.js";
+
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 
 function createControlPlane(overrides: Partial<ControlPlane> = {}): ControlPlane {
   return {
@@ -63,6 +67,7 @@ function createControlPlane(overrides: Partial<ControlPlane> = {}): ControlPlane
     divergenceRegistry: { version: 1, divergences: [] },
     normalizationRegistry: { version: 1, normalizations: [] },
     lineageContracts: { version: 1, contracts: [] },
+    abilityTriggerSurfaces: { version: 1, surfaces: [] },
     proofSchema: {
       version: 1,
       checkIdPattern: "gen{n}:{suite}:{kind}:{identifier}",
@@ -193,6 +198,49 @@ describe("validateControlPlane", () => {
       }).errors,
     ).toContain(
       "Touched runtime owner gen8:leaf-mechanic:ability-trigger-surface has no lineage contracts in lineage-contracts.v1.json.",
+    );
+  });
+
+  it("fails when a touched ability trigger surface has no declared dispatcher surface", () => {
+    const controlPlane = createControlPlane({
+      ownershipMap: {
+        version: 1,
+        fileClassRules: [{ fileClass: "runtime-owning", patterns: ["packages/**"] }],
+        ownershipRules: [
+          {
+            ownershipKey: "gen8:leaf-mechanic:ability-trigger-surface",
+            ownerKind: "leaf-mechanic",
+            patterns: ["packages/gen8/src/Gen8Abilities*.ts"],
+            allowSharedFile: false,
+            mechanicIds: ["shared.engine.turn-order"],
+            authorityKeys: ["shared.engine-contracts"],
+            propagatesTo: [],
+          },
+        ],
+      },
+      lineageContracts: {
+        version: 1,
+        contracts: [
+          {
+            gen: 8,
+            entityType: "ability",
+            entityId: "dispatch-surface",
+            triggerPath: "ability.dispatch.surface",
+            runtimeOwner: "gen8:leaf-mechanic:ability-trigger-surface",
+            authorityTag: "showdown",
+            descendantPolicy: "inherit-with-delta",
+            proofIds: [],
+          },
+        ],
+      },
+    });
+
+    expect(
+      validateControlPlane(controlPlane, {
+        touchedOwnershipKeys: ["gen8:leaf-mechanic:ability-trigger-surface"],
+      }).errors,
+    ).toContain(
+      "Touched ability trigger surface gen8:leaf-mechanic:ability-trigger-surface has no entry in ability-trigger-surfaces.v1.json.",
     );
   });
 
@@ -443,6 +491,41 @@ describe("validateControlPlane", () => {
 
     expect(validateControlPlane(controlPlane).errors).toContain(
       "Protocol cluster effective-speed-order duplicates engine owner battle:shared-seam:engine in protocol-capability-matrix.v1.json.",
+    );
+  });
+
+  it("passes for the checked-in control plane", () => {
+    expect(validateControlPlane(loadControlPlane(repoRoot)).errors).toEqual([]);
+  });
+
+  it("fails when a checked-in ability trigger surface declares a trigger absent from the dispatcher", () => {
+    const controlPlane = loadControlPlane(repoRoot);
+    const surfaceIndex = controlPlane.abilityTriggerSurfaces.surfaces.findIndex(
+      (surface) => surface.runtimeOwner === "gen4:leaf-mechanic:ability-trigger-surface",
+    );
+    if (surfaceIndex === -1) {
+      throw new Error("Expected checked-in ability trigger surfaces to be present.");
+    }
+    const targetSurface = controlPlane.abilityTriggerSurfaces.surfaces[surfaceIndex]!;
+    const remainingSurfaces = controlPlane.abilityTriggerSurfaces.surfaces.filter(
+      (_, index) => index !== surfaceIndex,
+    );
+    const mutatedControlPlane: ControlPlane = {
+      ...controlPlane,
+      abilityTriggerSurfaces: {
+        version: 1,
+        surfaces: [
+          {
+            ...targetSurface,
+            routedTriggers: [...targetSurface.routedTriggers, "on-terrain-change"],
+          },
+          ...remainingSurfaces,
+        ],
+      },
+    };
+
+    expect(validateControlPlane(mutatedControlPlane).errors).toContain(
+      "Ability trigger surface gen4:leaf-mechanic:ability-trigger-surface dispatchers packages/gen4/src/Gen4Abilities.ts are missing routed trigger on-terrain-change.",
     );
   });
 });

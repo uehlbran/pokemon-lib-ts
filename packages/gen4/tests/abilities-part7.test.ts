@@ -7,6 +7,7 @@ import {
   CORE_GENDERS,
   CORE_ITEM_IDS,
   CORE_MOVE_IDS,
+  CORE_STATUS_IDS,
   CORE_TYPE_IDS,
   CORE_VOLATILE_IDS,
   createEvs,
@@ -106,6 +107,7 @@ function createOnFieldPokemon(overrides: {
   heldItem?: string | null;
   gender?: Gender;
   hasFlashFire?: boolean;
+  transformed?: boolean;
 }) {
   const active = {
     pokemon: createSyntheticPokemonInstance({
@@ -138,7 +140,7 @@ function createOnFieldPokemon(overrides: {
     movedThisTurn: false,
     consecutiveProtects: 0,
     substituteHp: 0,
-    transformed: false,
+    transformed: overrides.transformed ?? false,
     transformedSpecies: null,
     isMega: false,
     isDynamaxed: false,
@@ -156,9 +158,12 @@ function createOnFieldPokemon(overrides: {
 function createAbilityContext(opts: {
   ability: string;
   types?: PokemonType[];
+  speciesId?: number;
   opponent?: ReturnType<typeof createOnFieldPokemon>;
   move?: MoveData;
   hasFlashFire?: boolean;
+  statusSourceEffectId?: string;
+  transformed?: boolean;
 }): AbilityContext {
   const state = {
     phase: "turn-end",
@@ -218,7 +223,9 @@ function createAbilityContext(opts: {
   const pokemon = createOnFieldPokemon({
     ability: opts.ability,
     types: opts.types,
+    speciesId: opts.speciesId,
     hasFlashFire: opts.hasFlashFire,
+    transformed: opts.transformed,
   });
 
   return {
@@ -227,6 +234,7 @@ function createAbilityContext(opts: {
     state,
     trigger: TRIGGERS.onSwitchIn,
     move: opts.move,
+    statusSourceEffectId: opts.statusSourceEffectId,
     rng: state.rng,
   } as unknown as AbilityContext;
 }
@@ -390,6 +398,175 @@ describe("applyGen4Ability on-switch-in -- Trace", () => {
     const result = applyGen4Ability(TRIGGERS.onSwitchIn, ctx);
 
     expect(result.activated).toBe(false);
+  });
+});
+
+// ===========================================================================
+// Trigger-surface regressions
+// ===========================================================================
+
+describe("applyGen4Ability trigger-surface carry-forward coverage", () => {
+  it("given Truant already primed, when on-before-move runs, then it blocks the move", () => {
+    const ctx = createAbilityContext({ ability: ABILITIES.truant });
+    ctx.pokemon.volatileStatuses.set("truant-turn", { turnsLeft: -1 });
+
+    const result = applyGen4Ability(TRIGGERS.onBeforeMove, ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.movePrevented).toBe(true);
+    expect(result.effects).toEqual([
+      {
+        effectType: "volatile-remove",
+        target: "self",
+        volatile: "truant-turn",
+      },
+    ]);
+    expect(result.messages).toEqual(["1 is loafing around!"]);
+  });
+
+  it("given Truant on an acting turn, when on-before-move runs, then it primes the loafing turn", () => {
+    const ctx = createAbilityContext({ ability: ABILITIES.truant });
+
+    const result = applyGen4Ability(TRIGGERS.onBeforeMove, ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.movePrevented).toBe(false);
+    expect(result.messages).toEqual([]);
+    expect(result.effects).toEqual([
+      {
+        effectType: "volatile-inflict",
+        target: "self",
+        volatile: "truant-turn",
+        data: { turnsLeft: -1 },
+      },
+    ]);
+  });
+
+  it("given Color Change and a Fire hit, when on-damage-taken runs, then it changes to Fire type", () => {
+    const ctx = createAbilityContext({
+      ability: ABILITIES.colorChange,
+      move: FIRE_MOVE,
+      types: [TYPES.normal],
+    });
+
+    const result = applyGen4Ability(TRIGGERS.onDamageTaken, ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.effects[0]).toEqual({
+      effectType: "type-change",
+      target: "self",
+      types: [TYPES.fire],
+    });
+  });
+
+  it("given Synchronize and a burn, when on-status-inflicted runs, then it mirrors burn to the opponent", () => {
+    const opponent = createOnFieldPokemon({ ability: ABILITIES.blaze, types: [TYPES.normal] });
+    const ctx = createAbilityContext({
+      ability: ABILITIES.synchronize,
+      opponent,
+    });
+    ctx.pokemon.pokemon.status = CORE_STATUS_IDS.burn;
+
+    const result = applyGen4Ability(TRIGGERS.onStatusInflicted, ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.effects[0]).toEqual({
+      effectType: "status-inflict",
+      target: "opponent",
+      status: "burn",
+    });
+  });
+
+  it("given Synchronize and sleep, when on-status-inflicted runs, then it does not mirror the status", () => {
+    const opponent = createOnFieldPokemon({ ability: ABILITIES.blaze, types: [TYPES.normal] });
+    const ctx = createAbilityContext({
+      ability: ABILITIES.synchronize,
+      opponent,
+    });
+    ctx.pokemon.pokemon.status = CORE_STATUS_IDS.sleep;
+
+    const result = applyGen4Ability(TRIGGERS.onStatusInflicted, ctx);
+
+    expect(result.activated).toBe(false);
+    expect(result.effects).toEqual([]);
+  });
+
+  it("given Synchronize poisoned by Toxic Spikes, when on-status-inflicted runs, then it does not mirror poison", () => {
+    const opponent = createOnFieldPokemon({ ability: ABILITIES.blaze, types: [TYPES.normal] });
+    const ctx = createAbilityContext({
+      ability: ABILITIES.synchronize,
+      opponent,
+      statusSourceEffectId: "toxic-spikes",
+    });
+    ctx.pokemon.pokemon.status = CORE_STATUS_IDS.poison;
+
+    const result = applyGen4Ability(TRIGGERS.onStatusInflicted, ctx);
+
+    expect(result.activated).toBe(false);
+    expect(result.effects).toEqual([]);
+  });
+
+  it("given Synchronize poisoned by a held item, when on-status-inflicted runs, then it does not mirror poison", () => {
+    const opponent = createOnFieldPokemon({ ability: ABILITIES.blaze, types: [TYPES.normal] });
+    const ctx = createAbilityContext({
+      ability: ABILITIES.synchronize,
+      opponent,
+      statusSourceEffectId: "held-item",
+    });
+    ctx.pokemon.pokemon.status = CORE_STATUS_IDS.poison;
+
+    const result = applyGen4Ability(TRIGGERS.onStatusInflicted, ctx);
+
+    expect(result.activated).toBe(false);
+    expect(result.effects).toEqual([]);
+  });
+
+  it("given Synchronize inflicting its own status, when on-status-inflicted runs, then it does not mirror poison", () => {
+    const opponent = createOnFieldPokemon({ ability: ABILITIES.blaze, types: [TYPES.normal] });
+    const ctx = createAbilityContext({
+      ability: ABILITIES.synchronize,
+      opponent,
+      statusSourceEffectId: "self-status",
+    });
+    ctx.pokemon.pokemon.status = CORE_STATUS_IDS.poison;
+
+    const result = applyGen4Ability(TRIGGERS.onStatusInflicted, ctx);
+
+    expect(result.activated).toBe(false);
+    expect(result.effects).toEqual([]);
+  });
+
+  it("given Castform with Forecast in sun, when weather changes, then it becomes Fire type", () => {
+    const ctx = createAbilityContext({
+      ability: ABILITIES.forecast,
+      speciesId: SPECIES.castform,
+      types: [TYPES.normal],
+    });
+    ctx.state.weather = { type: "sun", turnsLeft: -1 } as (typeof ctx.state)["weather"];
+
+    const result = applyGen4Ability(TRIGGERS.onWeatherChange, ctx);
+
+    expect(result.activated).toBe(true);
+    expect(result.effects[0]).toEqual({
+      effectType: "type-change",
+      target: "self",
+      types: [TYPES.fire],
+    });
+  });
+
+  it("given transformed Castform with Forecast in sun, when weather changes, then it does not activate", () => {
+    const ctx = createAbilityContext({
+      ability: ABILITIES.forecast,
+      speciesId: SPECIES.castform,
+      types: [TYPES.normal],
+      transformed: true,
+    });
+    ctx.state.weather = { type: "sun", turnsLeft: -1 } as (typeof ctx.state)["weather"];
+
+    const result = applyGen4Ability(TRIGGERS.onWeatherChange, ctx);
+
+    expect(result.activated).toBe(false);
+    expect(result.effects).toEqual([]);
   });
 });
 

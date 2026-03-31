@@ -193,40 +193,41 @@ async function main(): Promise<void> {
     process.env.VERCEL_GIT_COMMIT_SHA ??
     execFileSync("git", ["rev-parse", "HEAD"], { cwd: repoRoot, encoding: "utf8" }).trim();
   const controlPlane = loadControlPlane(repoRoot);
-  const runtimeMechanicMetadataEntries: Array<
-    readonly [
-      number,
-      {
-        readonly mechanicIds: readonly string[];
-        readonly authorityKeys: readonly string[];
-        readonly clusters: readonly string[];
-        readonly topologies: readonly string[];
-      },
-    ]
-  > = [];
+  const runtimeMechanicMetadataByMechanicId = new Map<
+    string,
+    {
+      generation: number;
+      mechanicId: string;
+      mechanicIds: string[];
+      authorityKeys: string[];
+      clusters: string[];
+      topologies: string[];
+    }
+  >();
   for (const mechanic of controlPlane.mechanicCatalog.mechanics) {
-    const match = /^gen(\d+)\.runtime\.ruleset$/.exec(mechanic.mechanicId);
+    const match = /^gen(\d+)\.runtime\./.exec(mechanic.mechanicId);
     if (!match) {
+      continue;
+    }
+    if (mechanic.obligationSeed !== "ruleset") {
       continue;
     }
 
     const gen = Number.parseInt(match[1] ?? "", 10);
-    runtimeMechanicMetadataEntries.push([
-      gen,
-      {
-        mechanicIds: [mechanic.mechanicId],
-        authorityKeys: [mechanic.authorityKey],
-        clusters: [mechanic.cluster],
-        topologies: mechanic.topologies,
-      },
-    ]);
+    runtimeMechanicMetadataByMechanicId.set(mechanic.mechanicId, {
+      generation: gen,
+      mechanicId: mechanic.mechanicId,
+      mechanicIds: [mechanic.mechanicId],
+      authorityKeys: [mechanic.authorityKey],
+      clusters: [mechanic.cluster],
+      topologies: [...mechanic.topologies],
+    });
   }
-  const runtimeMechanicMetadataByGeneration = new Map(runtimeMechanicMetadataEntries);
   const { summary, checks } = buildProofSummary(
     gitSha,
     suites,
     generationResults,
-    runtimeMechanicMetadataByGeneration,
+    runtimeMechanicMetadataByMechanicId,
   );
   const resultsDir = writeProofArtifacts(repoRoot, gitSha, summary, checks);
   console.log(formatRunnerOutput(summary));

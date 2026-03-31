@@ -554,6 +554,8 @@ export interface AbilityContext {
   readonly trigger: AbilityTrigger;
   /** The move involved in the trigger, if applicable */
   readonly move?: MoveData;
+  /** Source effect id for primary-status triggers when the inflicting effect is not a move. */
+  readonly statusSourceEffectId?: string;
   /** Damage dealt this turn, if the trigger is damage-related */
   readonly damage?: number;
   /**
