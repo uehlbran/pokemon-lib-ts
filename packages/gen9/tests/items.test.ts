@@ -2,6 +2,7 @@ import type { ActivePokemon, BattleSide, BattleState, ItemContext } from "@pokem
 import type { PokemonType, PrimaryStatus, SeededRandom } from "@pokemon-lib-ts/core";
 import { createEvs, createIvs } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
+import { GEN9_ABILITY_IDS } from "../src/data";
 import {
   applyGen9HeldItem,
   getBlackSludgeEffect,
@@ -93,6 +94,11 @@ const MOVE_FIXTURES = {
     id: TEST_MOVE_IDS.iceBeam,
     type: TEST_TYPE_IDS.ice,
     category: TEST_MOVE_CATEGORIES.special,
+  },
+  stickyWeb: {
+    id: TEST_MOVE_IDS.stickyWeb,
+    type: TEST_TYPE_IDS.bug,
+    category: TEST_MOVE_CATEGORIES.status,
   },
   surf: {
     id: TEST_MOVE_IDS.surf,
@@ -1585,6 +1591,28 @@ describe("Consumable Items", () => {
       expect(result.messages).toEqual([]);
     });
 
+    it("given Clear Amulet and Sticky Web, when on-stat-change fires, then it blocks the Speed drop with the fail message", () => {
+      const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.clearAmulet });
+      const ctx = {
+        ...createItemContext({ pokemon, move: MOVE_FIXTURES.stickyWeb }),
+        statChange: {
+          phase: "before",
+          source: "opponent",
+          attempted: [{ stat: TEST_STAT_IDS.speed, stages: -1 }],
+          applied: [],
+          causeId: TEST_MOVE_IDS.stickyWeb,
+          causeType: "move",
+        },
+      } as ItemContext;
+
+      const result = applyGen9HeldItem(TEST_TRIGGER_IDS.onStatChange, ctx);
+      expect(result.activated).toBe(true);
+      expect(result.blockedStatChanges).toEqual([TEST_STAT_IDS.speed]);
+      expect(result.messages).toEqual([
+        `${pokemon.pokemon.nickname ?? `Pokemon #${pokemon.pokemon.speciesId}`}'s Clear Amulet prevented its stats from being lowered!`,
+      ]);
+    });
+
     it("given Eject Pack and an applied self stat drop, when on-stat-change fires, then forces a self switch and consumes", () => {
       const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.ejectPack });
       const ctx = {
@@ -1643,8 +1671,54 @@ describe("Consumable Items", () => {
       expect(result.effects[1]).toEqual(consumeSelf(TEST_ITEM_IDS.adrenalineOrb));
     });
 
-    it("given Adrenaline Orb and an Intimidate drop that applies no Attack reduction, when on-stat-change fires, then it does not activate", () => {
+    it("given Adrenaline Orb and a blocked Intimidate drop, when on-stat-change fires, then it still activates", () => {
+      const pokemon = createOnFieldPokemon({
+        heldItem: TEST_ITEM_IDS.adrenalineOrb,
+        ability: GEN9_ABILITY_IDS.hyperCutter,
+      });
+      const ctx = {
+        ...createItemContext({ pokemon }),
+        statChange: {
+          phase: "after",
+          source: "opponent",
+          attempted: [{ stat: TEST_STAT_IDS.attack, stages: -1 }],
+          applied: [],
+          causeId: "intimidate",
+          causeType: "ability",
+        },
+      } as ItemContext;
+
+      const result = applyGen9HeldItem(TEST_TRIGGER_IDS.onStatChange, ctx);
+      expect(result.activated).toBe(true);
+      expect(result.effects[0]).toEqual(statBoostSelf(TEST_STAT_IDS.speed));
+      expect(result.effects[1]).toEqual(consumeSelf(TEST_ITEM_IDS.adrenalineOrb));
+    });
+
+    it("given Adrenaline Orb and an Intimidate drop at the Attack floor, when on-stat-change fires, then it does not activate", () => {
       const pokemon = createOnFieldPokemon({ heldItem: TEST_ITEM_IDS.adrenalineOrb });
+      pokemon.statStages.attack = -6;
+      const ctx = {
+        ...createItemContext({ pokemon }),
+        statChange: {
+          phase: "after",
+          source: "opponent",
+          attempted: [{ stat: TEST_STAT_IDS.attack, stages: -1 }],
+          applied: [],
+          causeId: "intimidate",
+          causeType: "ability",
+        },
+      } as ItemContext;
+
+      const result = applyGen9HeldItem(TEST_TRIGGER_IDS.onStatChange, ctx);
+      expect(result).toEqual({ activated: false, effects: [], messages: [] });
+    });
+
+    it("given Adrenaline Orb and a Contrary Intimidate drop at the positive cap, when on-stat-change fires, then it does not activate", () => {
+      const pokemon = createOnFieldPokemon({
+        heldItem: TEST_ITEM_IDS.adrenalineOrb,
+        ability: GEN9_ABILITY_IDS.contrary,
+      });
+      pokemon.statStages.attack = 6;
       const ctx = {
         ...createItemContext({ pokemon }),
         statChange: {

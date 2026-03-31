@@ -35,6 +35,17 @@
       "obligationSeed": "workflow"
     },
     {
+      "mechanicId": "shared.contract.reference-ids",
+      "cluster": "protocol-completeness",
+      "topologies": ["singles"],
+      "orderingSensitive": false,
+      "persistent": false,
+      "proofStatus": "legacy-partial",
+      "authorityKey": "shared.engine-contracts",
+      "requiredSuites": ["typecheck:contracts"],
+      "obligationSeed": "contract"
+    },
+    {
       "mechanicId": "shared.contract.damage-context",
       "cluster": "protocol-completeness",
       "topologies": ["singles"],

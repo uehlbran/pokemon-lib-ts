@@ -704,6 +704,9 @@ export interface ItemContext {
    *
    * `attempted` always contains the original requested deltas. `applied` only
    * contains deltas that actually changed stages after clamping / blocking.
+   * This lets post-apply item hooks distinguish blocked Intimidate-style drops
+   * from stage-floor/stage-cap no-ops by comparing the attempted deltas with
+   * the holder's resulting stages.
    */
   readonly statChange?: {
     readonly phase: "before" | "after" | "foe-after";

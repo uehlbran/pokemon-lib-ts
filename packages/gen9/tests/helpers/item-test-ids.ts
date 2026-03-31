@@ -124,6 +124,7 @@ export const TEST_MOVE_IDS = {
   hyperVoice: requireMoveId("Hyper Voice"),
   iceBeam: requireMoveId("Ice Beam"),
   octolock: OCTOLOCK_MOVE_ID,
+  stickyWeb: requireMoveId("Sticky Web"),
   surf: requireMoveId("Surf"),
   tackle: requireMoveId("Tackle"),
   thunderbolt: requireMoveId("Thunderbolt"),

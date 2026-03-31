@@ -196,6 +196,118 @@ class CompetingSwitchItemRuleset extends MockRuleset {
   }
 }
 
+class EmptyAppliedReactionRuleset extends MockRuleset {
+  override hasHeldItems(): boolean {
+    return true;
+  }
+
+  override applyHeldItem(trigger: string, context: ItemContext) {
+    if (
+      trigger === CORE_ITEM_TRIGGER_IDS.onStatChange &&
+      context.statChange?.phase === "after" &&
+      context.pokemon.pokemon.uid === "charizard-1" &&
+      context.statChange.attempted.some(
+        (change) => change.stat === CORE_STAT_IDS.attack && change.stages < 0,
+      ) &&
+      context.statChange.applied.length === 0
+    ) {
+      return {
+        activated: true,
+        effects: [
+          {
+            type: BATTLE_ITEM_EFFECT_TYPES.statBoost,
+            target: BATTLE_EFFECT_TARGETS.self,
+            value: CORE_STAT_IDS.speed,
+          },
+        ],
+        messages: ["Adrenaline Orb-style reaction activated!"],
+      };
+    }
+
+    return { activated: false, effects: [], messages: [] };
+  }
+}
+
+class DeferredHeldItemChainRuleset extends MockRuleset {
+  override hasHeldItems(): boolean {
+    return true;
+  }
+
+  override calculateDamage() {
+    return {
+      damage: 20,
+      effectiveness: 2,
+      isCrit: false,
+      randomFactor: 1,
+    };
+  }
+
+  override applyHeldItem(trigger: string, context: ItemContext) {
+    if (
+      trigger === CORE_ITEM_TRIGGER_IDS.onDamageTaken &&
+      context.pokemon.pokemon.uid === "blastoise-1"
+    ) {
+      return {
+        activated: true,
+        effects: [
+          {
+            type: BATTLE_ITEM_EFFECT_TYPES.statBoost,
+            target: BATTLE_EFFECT_TARGETS.self,
+            value: CORE_STAT_IDS.attack,
+          },
+        ],
+        messages: ["First deferred stat boost activated!"],
+      };
+    }
+
+    if (
+      trigger === CORE_ITEM_TRIGGER_IDS.onFoeStatChange &&
+      context.pokemon.pokemon.uid === "charizard-1" &&
+      context.statChange?.phase === "foe-after" &&
+      context.statChange.applied.some(
+        (change) => change.stat === CORE_STAT_IDS.attack && change.stages > 0,
+      ) &&
+      context.pokemon.statStages.speed === 0
+    ) {
+      return {
+        activated: true,
+        effects: [
+          {
+            type: BATTLE_ITEM_EFFECT_TYPES.statBoost,
+            target: BATTLE_EFFECT_TARGETS.self,
+            value: CORE_STAT_IDS.speed,
+          },
+        ],
+        messages: ["Second deferred stat boost activated!"],
+      };
+    }
+
+    if (
+      trigger === CORE_ITEM_TRIGGER_IDS.onFoeStatChange &&
+      context.pokemon.pokemon.uid === "blastoise-1" &&
+      context.statChange?.phase === "foe-after" &&
+      context.statChange.applied.some(
+        (change) => change.stat === CORE_STAT_IDS.speed && change.stages > 0,
+      ) &&
+      context.pokemon.statStages.spAttack === 0
+    ) {
+      return {
+        activated: true,
+        effects: [
+          {
+            type: BATTLE_ITEM_EFFECT_TYPES.statBoost,
+            target: BATTLE_EFFECT_TARGETS.self,
+            value: CORE_STAT_IDS.spAttack,
+          },
+        ],
+        messages: ["Third deferred stat boost activated!"],
+      };
+    }
+
+    return { activated: false, effects: [], messages: [] };
+  }
+}
+
 function createHeldItemStatBoostEngine(ruleset: HeldItemStatBoostRuleset) {
   const config: BattleConfig = {
     generation: 9,
@@ -389,5 +501,40 @@ describe("BattleEngine held-item stat boosts", () => {
         (event) => event.type === "message" && event.text === "Charizard's Eject Pack activated!",
       ),
     ).toBe(false);
+  });
+
+  it("given a post-apply held item reaction with no applied stat delta, when the drop clamps at the stage floor, then the engine still runs the after-phase item hook", () => {
+    const ruleset = new EmptyAppliedReactionRuleset();
+    ruleset.setMoveEffectResult({
+      statChanges: [
+        { target: BATTLE_EFFECT_TARGETS.attacker, stat: CORE_STAT_IDS.attack, stages: -1 },
+      ],
+    });
+    const engine = createStatChangeEngine(ruleset, CORE_ITEM_IDS.leftovers, null);
+    engine.start();
+    engine.state.sides[0].active[0]!.statStages.attack = -6;
+
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    expect(engine.state.sides[0].active[0]?.statStages.attack).toBe(-6);
+    expect(engine.state.sides[0].active[0]?.statStages.speed).toBe(1);
+  });
+
+  it("given deferred held-item boosts that enqueue more deferred held-item boosts, when the queue flushes, then it drains until the chain is fully applied", () => {
+    const ruleset = new DeferredHeldItemChainRuleset();
+    const engine = createStatChangeEngine(
+      ruleset,
+      CORE_ITEM_IDS.leftovers,
+      CORE_ITEM_IDS.leftovers,
+    );
+    engine.start();
+
+    engine.submitAction(0, { type: "move", side: 0, moveIndex: 0 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    expect(engine.state.sides[1].active[0]?.statStages.attack).toBe(1);
+    expect(engine.state.sides[0].active[0]?.statStages.speed).toBe(1);
+    expect(engine.state.sides[1].active[0]?.statStages.spAttack).toBe(1);
   });
 });

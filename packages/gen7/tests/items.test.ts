@@ -784,8 +784,56 @@ describe("applyGen7HeldItem -- on-stat-change", () => {
     expect(result).toEqual({ activated: false, effects: [], messages: [] });
   });
 
-  it("given Adrenaline Orb and an Intimidate drop that clamps to zero applied stages, when on-stat-change fires, then it does not activate", () => {
+  it("given Adrenaline Orb and a blocked Intimidate drop, when on-stat-change fires, then it still activates", () => {
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.adrenalineOrb,
+      ability: ABILITY_IDS.hyperCutter,
+    });
+    const ctx = {
+      ...createItemContext({ pokemon }),
+      statChange: {
+        phase: "after",
+        source: "opponent",
+        attempted: [{ stat: "attack", stages: -1 }],
+        applied: [],
+        causeId: GEN7_ABILITY_IDS.intimidate,
+        causeType: "ability",
+      },
+    } as ItemContext;
+
+    const result = applyGen7HeldItem(ITEM_TRIGGERS.onStatChange, ctx);
+    expect(result.activated).toBe(true);
+    expect(result.effects).toEqual([
+      { type: "stat-boost", target: "self", value: "speed" },
+      { type: "consume", target: "self", value: ITEM_IDS.adrenalineOrb },
+    ]);
+  });
+
+  it("given Adrenaline Orb and an Intimidate drop at the Attack floor, when on-stat-change fires, then it does not activate", () => {
     const pokemon = createOnFieldPokemon({ heldItem: ITEM_IDS.adrenalineOrb });
+    pokemon.statStages.attack = -6;
+    const ctx = {
+      ...createItemContext({ pokemon }),
+      statChange: {
+        phase: "after",
+        source: "opponent",
+        attempted: [{ stat: "attack", stages: -1 }],
+        applied: [],
+        causeId: GEN7_ABILITY_IDS.intimidate,
+        causeType: "ability",
+      },
+    } as ItemContext;
+
+    const result = applyGen7HeldItem(ITEM_TRIGGERS.onStatChange, ctx);
+    expect(result).toEqual({ activated: false, effects: [], messages: [] });
+  });
+
+  it("given Adrenaline Orb and a Contrary Intimidate drop at the positive cap, when on-stat-change fires, then it does not activate", () => {
+    const pokemon = createOnFieldPokemon({
+      heldItem: ITEM_IDS.adrenalineOrb,
+      ability: ABILITY_IDS.contrary,
+    });
+    pokemon.statStages.attack = 6;
     const ctx = {
       ...createItemContext({ pokemon }),
       statChange: {

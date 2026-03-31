@@ -2033,15 +2033,24 @@ function handleOnStatChange(item: string, context: ItemContext): ItemResult {
     // Adrenaline Orb: +1 Speed after an Intimidate-style Attack drop from the foe.
     // Source: Showdown data/items.ts -- adrenalineorb.onAfterBoost
     case ITEM_IDS.adrenalineOrb: {
+      const attemptedAttackDrop = statChange.attempted.some(
+        (change) => change.stat === CORE_STAT_IDS.attack && change.stages < 0,
+      );
       const appliedAttackDrop = statChange.applied.some(
         (change) => change.stat === CORE_STAT_IDS.attack && change.stages < 0,
       );
+      const currentAttackStage = pokemon.statStages[CORE_STAT_IDS.attack] ?? 0;
+      const nullifiedByStageClamp =
+        !appliedAttackDrop &&
+        (!attemptedAttackDrop ||
+          currentAttackStage <= -6 ||
+          (pokemon.pokemon.ability === GEN9_ABILITY_IDS.contrary && currentAttackStage >= 6));
       const currentSpeedStage = pokemon.statStages[CORE_STAT_IDS.speed] ?? 0;
       if (
         statChange.phase !== "after" ||
         statChange.source !== EFFECT_TARGET.opponent ||
         statChange.causeId !== GEN9_ABILITY_IDS.intimidate ||
-        !appliedAttackDrop ||
+        nullifiedByStageClamp ||
         currentSpeedStage >= 6
       ) {
         return NO_ACTIVATION;

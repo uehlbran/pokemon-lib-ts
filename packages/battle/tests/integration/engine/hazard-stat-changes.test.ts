@@ -1,13 +1,14 @@
 import type { DataManager, PokemonInstance } from "@pokemon-lib-ts/core";
 import {
   CORE_HAZARD_IDS,
+  CORE_ITEM_IDS,
   CORE_MOVE_IDS,
   CORE_STAT_IDS,
   createPokemonInstance,
   SeededRandom,
 } from "@pokemon-lib-ts/core";
 import { describe, expect, it } from "vitest";
-import type { BattleConfig, EntryHazardResult } from "../../../src/context";
+import type { BattleConfig, EntryHazardResult, ItemContext } from "../../../src/context";
 import { BattleEngine } from "../../../src/engine";
 import type { BattleEvent } from "../../../src/events";
 import type { ActivePokemon, BattleSide, BattleState } from "../../../src/state";
@@ -69,6 +70,38 @@ function createHazardBattleEngine(overrides?: {
   engine.on((e) => events.push(e));
 
   return { engine, ruleset, events };
+}
+
+class StickyWebHeldItemBlockRuleset extends MockRuleset {
+  readonly capturedStatChangeContexts: ItemContext["statChange"][] = [];
+
+  override hasHeldItems(): boolean {
+    return true;
+  }
+
+  override applyHeldItem(trigger: string, context: ItemContext) {
+    if (trigger !== "on-stat-change" || !context.statChange) {
+      return { activated: false, effects: [], messages: [] };
+    }
+
+    this.capturedStatChangeContexts.push(context.statChange);
+    if (
+      context.statChange.phase === "before" &&
+      context.statChange.source === "opponent" &&
+      context.statChange.causeId === CORE_HAZARD_IDS.stickyWeb &&
+      context.statChange.causeType === "move" &&
+      context.opponent
+    ) {
+      return {
+        activated: true,
+        effects: [],
+        messages: ["Clear Amulet blocked Sticky Web!"],
+        blockedStatChanges: [CORE_STAT_IDS.speed],
+      };
+    }
+
+    return { activated: false, effects: [], messages: [] };
+  }
 }
 
 describe("Entry hazard stat changes in sendOut (issue #609)", () => {
@@ -165,5 +198,45 @@ describe("Entry hazard stat changes in sendOut (issue #609)", () => {
     // Source: EntryHazardResult.statChanges applied by engine after damage
     expect(pikachu.statStages.attack).toBe(-1);
     expect(pikachu.pokemon.calculatedStats?.hp).toBe(pikachu.pokemon.currentHp + 25);
+  });
+
+  it("given Sticky Web metadata for a held-item blocker, when a Pokemon switches in, then the engine routes it as an opponent-caused move stat drop", () => {
+    const ruleset = new StickyWebHeldItemBlockRuleset();
+    ruleset.getAvailableHazards = () => [CORE_HAZARD_IDS.stickyWeb];
+    ruleset.applyEntryHazards = (): EntryHazardResult => ({
+      damage: 0,
+      statusInflicted: null,
+      statChanges: [{ stat: CORE_STAT_IDS.speed, stages: -1 }],
+      messages: ["Pikachu was caught in a Sticky Web!"],
+    });
+
+    const charizard = createBattlePokemonFixture(createMockDataManager(), 6, "charizard-1", 1);
+    const pikachu = createBattlePokemonFixture(createMockDataManager(), 25, "pikachu-1", 2);
+    pikachu.heldItem = CORE_ITEM_IDS.leftovers;
+    const { engine, events } = createHazardBattleEngine({
+      ruleset,
+      team1: [charizard, pikachu],
+    });
+
+    engine.start();
+
+    const state = engine.getState();
+    state.sides[0].hazards.push({ type: CORE_HAZARD_IDS.stickyWeb, layers: 1 });
+    events.length = 0;
+
+    engine.submitAction(0, { type: "switch", side: 0, switchTo: 1 });
+    engine.submitAction(1, { type: "move", side: 1, moveIndex: 0 });
+
+    const incoming = state.sides[0].active[0]!;
+    expect(incoming.statStages.speed).toBe(0);
+    expect(events.filter((event) => event.type === "stat-change")).toHaveLength(0);
+    expect(ruleset.capturedStatChangeContexts).toContainEqual({
+      phase: "before",
+      source: "opponent",
+      attempted: [{ stat: CORE_STAT_IDS.speed, stages: -1 }],
+      applied: [],
+      causeId: CORE_HAZARD_IDS.stickyWeb,
+      causeType: "move",
+    });
   });
 });

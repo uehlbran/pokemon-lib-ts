@@ -14,6 +14,17 @@ describe("control plane ownership mapping", () => {
     expect(classification.ownershipKeys).toContain("workflow:tooling:compliance");
   });
 
+  it("classifies control-plane registry files as runtime-owning oracle tooling", () => {
+    const controlPlane = loadControlPlane(repoRoot);
+    const classification = classifyRepoFile(
+      controlPlane,
+      "tools/oracle-validation/control-plane/ownership-map.v1.json",
+    );
+
+    expect(classification.fileClass).toBe("runtime-owning");
+    expect(classification.ownershipKeys).toContain("oracle:tooling:runner");
+  });
+
   it("classifies tests as evidence-only", () => {
     const controlPlane = loadControlPlane(repoRoot);
     const classification = classifyRepoFile(
@@ -40,6 +51,19 @@ describe("control plane ownership mapping", () => {
     ]);
     expect(classification.ruleMatches).toHaveLength(7);
     expect(classification.ruleMatches.every((rule) => rule.allowSharedFile)).toBe(true);
+  });
+
+  it("maps core reference ids into the reference-id contract bucket", () => {
+    const controlPlane = loadControlPlane(repoRoot);
+    const classification = classifyRepoFile(
+      controlPlane,
+      "packages/core/src/constants/reference-ids.ts",
+    );
+
+    expect(classification.fileClass).toBe("runtime-owning");
+    expect(classification.ruleMatches.flatMap((rule) => rule.mechanicIds)).toContain(
+      "shared.contract.reference-ids",
+    );
   });
 
   it("expands importer changes into runtime and oracle tooling ownership", () => {

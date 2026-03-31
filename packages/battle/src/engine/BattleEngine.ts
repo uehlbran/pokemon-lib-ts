@@ -11,6 +11,7 @@ import type {
 import {
   CORE_ABILITY_IDS,
   CORE_ABILITY_TRIGGER_IDS,
+  CORE_HAZARD_IDS,
   CORE_ITEM_IDS,
   CORE_ITEM_TRIGGER_IDS,
   CORE_MOVE_CATEGORIES,
@@ -1778,9 +1779,11 @@ export class BattleEngine implements BattleEventEmitter {
       if (hazardResult.statusInflicted && !active.pokemon.status) {
         this.applyPrimaryStatus(active, hazardResult.statusInflicted, side.index);
       }
-      // Source: Showdown data/moves.ts — stickyweb: this.boost({spe: -1}, pokemon)
+      // Source: Showdown data/moves.ts — stickyweb: this.boost({spe: -1}, pokemon,
+      //   pokemon.side.foe.active[0], this.dex.getActiveMove('stickyweb'))
       // Apply stat changes from hazards (e.g. Sticky Web −1 Speed)
       if (hazardResult.statChanges && hazardResult.statChanges.length > 0) {
+        const hazardSourcePokemon = this.getOpponentActive(side.index);
         this.applyStatChangeBatch(
           active,
           side.index,
@@ -1789,10 +1792,13 @@ export class BattleEngine implements BattleEventEmitter {
             stages: change.stages,
           })),
           {
-            opponent: null,
-            source: BATTLE_EFFECT_TARGETS.field,
-            causeId: BATTLE_SOURCE_IDS.entryHazard,
-            causeType: "hazard",
+            opponent: hazardSourcePokemon,
+            source: hazardSourcePokemon
+              ? BATTLE_EFFECT_TARGETS.opponent
+              : BATTLE_EFFECT_TARGETS.field,
+            // Sticky Web's hazard id and move id are the same canonical runtime id.
+            causeId: CORE_HAZARD_IDS.stickyWeb,
+            causeType: "move",
           },
         );
       }
@@ -5665,18 +5671,27 @@ export class BattleEngine implements BattleEventEmitter {
   }
 
   private flushPendingHeldItemResults(): void {
-    if (this.pendingHeldItemResults.length === 0) return;
-    const pending = this.pendingHeldItemResults;
-    this.pendingHeldItemResults = [];
-    for (const entry of pending) {
-      const active = this.state.sides[entry.side]?.active[0];
-      if (active !== entry.pokemon) continue;
-      if (entry.pokemon.pokemon.currentHp <= 0) continue;
-      if (entry.pokemon.pokemon.heldItem !== entry.expectedHeldItemId) continue;
-      if (entry.opponent) {
-        this.processItemResult(entry.result, entry.pokemon, entry.opponent, entry.side);
-      } else {
-        this.processItemResult(entry.result, entry.pokemon, entry.side);
+    let processedEntries = 0;
+    while (this.pendingHeldItemResults.length > 0) {
+      const pending = this.pendingHeldItemResults;
+      this.pendingHeldItemResults = [];
+      for (const entry of pending) {
+        processedEntries += 1;
+        if (processedEntries > 128) {
+          throw new Error(
+            "Held-item reaction queue did not stabilize after 128 deferred item results.",
+          );
+        }
+
+        const active = this.state.sides[entry.side]?.active[0];
+        if (active !== entry.pokemon) continue;
+        if (entry.pokemon.pokemon.currentHp <= 0) continue;
+        if (entry.pokemon.pokemon.heldItem !== entry.expectedHeldItemId) continue;
+        if (entry.opponent) {
+          this.processItemResult(entry.result, entry.pokemon, entry.opponent, entry.side);
+        } else {
+          this.processItemResult(entry.result, entry.pokemon, entry.side);
+        }
       }
     }
   }
@@ -5755,6 +5770,7 @@ export class BattleEngine implements BattleEventEmitter {
     for (const change of changes) {
       if (blockedStats.has(change.stat)) continue;
       const currentStage = target.statStages[change.stat];
+      // Source: Showdown sim/pokemon.ts -- boostBy clamps stat stages to [-6, 6]
       const newStage = Math.max(-6, Math.min(6, currentStage + change.stages));
       const appliedStages = newStage - currentStage;
       if (appliedStages === 0) continue;

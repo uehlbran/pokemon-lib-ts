@@ -17,7 +17,7 @@ import {
   getTypeEffectiveness,
   TYPE_EFFECTIVENESS_MULTIPLIERS,
 } from "@pokemon-lib-ts/core";
-import { GEN8_ABILITY_IDS, GEN8_ITEM_IDS } from "./data/reference-ids";
+import { GEN8_ABILITY_IDS, GEN8_ITEM_IDS, GEN8_MOVE_IDS } from "./data/reference-ids";
 import { GEN8_TYPE_CHART } from "./Gen8TypeChart.js";
 
 // ---------------------------------------------------------------------------
@@ -1906,7 +1906,7 @@ function handleOnStatChange(item: string, context: ItemContext): ItemResult {
     case ITEM_IDS.ejectPack: {
       if (
         statChange.phase !== "after" ||
-        statChange.causeId === "parting-shot" ||
+        statChange.causeId === GEN8_MOVE_IDS.partingShot ||
         !statChange.applied.some((change) => change.stages < 0) ||
         !canHolderSwitchOut(context)
       ) {
@@ -1934,15 +1934,24 @@ function handleOnStatChange(item: string, context: ItemContext): ItemResult {
     // Adrenaline Orb: +1 Speed after an Intimidate-style Attack drop from the foe.
     // Source: Showdown data/items.ts -- adrenalineorb.onAfterBoost
     case ITEM_IDS.adrenalineOrb: {
+      const attemptedAttackDrop = statChange.attempted.some(
+        (change) => change.stat === CORE_STAT_IDS.attack && change.stages < 0,
+      );
       const appliedAttackDrop = statChange.applied.some(
         (change) => change.stat === CORE_STAT_IDS.attack && change.stages < 0,
       );
+      const currentAttackStage = pokemon.statStages[CORE_STAT_IDS.attack] ?? 0;
+      const nullifiedByStageClamp =
+        !appliedAttackDrop &&
+        (!attemptedAttackDrop ||
+          currentAttackStage <= -6 ||
+          (pokemon.pokemon.ability === GEN8_ABILITY_IDS.contrary && currentAttackStage >= 6));
       const currentSpeedStage = pokemon.statStages[CORE_STAT_IDS.speed] ?? 0;
       if (
         statChange.phase !== "after" ||
         statChange.source !== BATTLE_EFFECT_TARGETS.opponent ||
         statChange.causeId !== GEN8_ABILITY_IDS.intimidate ||
-        !appliedAttackDrop ||
+        nullifiedByStageClamp ||
         currentSpeedStage >= 6
       ) {
         return NO_ACTIVATION;

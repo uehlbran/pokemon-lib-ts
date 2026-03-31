@@ -18,6 +18,7 @@
         "packages/*/src/**",
         "packages/*/data/**",
         "tools/data-importer/**",
+        "tools/oracle-validation/control-plane/**",
         "tools/oracle-validation/src/**",
         "scripts/**",
         ".github/workflows/**"
@@ -29,7 +30,7 @@
       "ownershipKey": "core:leaf-mechanic:entities-and-constants",
       "ownerKind": "leaf-mechanic",
       "patterns": ["packages/core/src/constants/**", "packages/core/src/entities/**"],
-      "mechanicIds": ["shared.contract.move-effect-result"],
+      "mechanicIds": ["shared.contract.move-effect-result", "shared.contract.reference-ids"],
       "authorityKeys": ["shared.engine-contracts"],
       "propagatesTo": ["battle:contract:move-effect-result"]
     },
@@ -287,7 +288,11 @@
     {
       "ownershipKey": "oracle:tooling:runner",
       "ownerKind": "tooling",
-      "patterns": ["tools/oracle-validation/src/**", "tools/oracle-validation/data/**"],
+      "patterns": [
+        "tools/oracle-validation/control-plane/**",
+        "tools/oracle-validation/src/**",
+        "tools/oracle-validation/data/**"
+      ],
       "mechanicIds": [
         "shared.tooling.changed-mechanics.reporting",
         "shared.tooling.oracle-runner.artifacts"
