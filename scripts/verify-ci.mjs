@@ -64,6 +64,8 @@ await runVerification({
         "--executed-suite",
         "control-plane",
         "--executed-suite",
+        "lint",
+        "--executed-suite",
         "mutation-audit",
         "--executed-suite",
         "oracle-fast",
